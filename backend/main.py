@@ -93,9 +93,17 @@ async def inference_stream(prompt: str) -> AsyncGenerator[dict, None]:
             evidence
         )
 
+        # Log inference results
+        formula_count = posteriors.get('formula_count', 0)
+        tiers_executed = posteriors.get('tiers_executed', 0)
+        posteriors_count = len(posteriors.get('values', {}))
+        print(f"[INFERENCE] Formulas executed: {formula_count} | Tiers: {tiers_executed} | Posteriors: {posteriors_count}")
+
         yield {
             "event": "status",
-            "data": json.dumps({"message": "Generating consciousness physics articulation..."})
+            "data": json.dumps({
+                "message": f"Inference complete: {formula_count} formulas, {tiers_executed} tiers, {posteriors_count} posteriors"
+            })
         }
 
         # Step 3: Format results with OpenAI (streaming via Responses API)
@@ -269,6 +277,12 @@ Return ONLY valid JSON (no markdown, no explanation) with this structure:
 
 async def format_results_streaming(prompt: str, evidence: dict, posteriors: dict) -> AsyncGenerator[str, None]:
     """Use OpenAI Responses API to format posteriors into consciousness physics articulation"""
+
+    # Log what's being sent to LLM for articulation
+    obs_count = len(evidence.get('observations', []))
+    posteriors_count = len(posteriors.get('values', {}))
+    formula_count = posteriors.get('formula_count', 0)
+    print(f"[LLM ARTICULATION] Sending to gpt-5.2: {obs_count} observations, {posteriors_count} posteriors from {formula_count} formulas")
 
     if not OPENAI_API_KEY:
         # Fallback: format results without OpenAI
