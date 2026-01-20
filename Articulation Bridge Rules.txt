@@ -1,0 +1,80 @@
+# Bridge Implementation Logic (Core Principles Only)
+
+## THE BRIDGE: Backend Values → LLM Articulation
+
+---
+
+## Principle 1: Semantic Organization
+
+**Purpose:** Group 450 flat values by meaning, not by calculation tier.
+
+**Categories:**
+1. Core consciousness state (operators, S-level, drives)
+2. Transformation readiness (breakthrough probability, timelines)
+3. Active dynamics (matrix positions, death processes)
+4. Energy distribution (chakras, drives internalization)
+5. Obstacles (bottlenecks)
+6. Opportunities (leverage points)
+
+**Why:** LLM understands relationships between grouped values better than flat lists.
+
+---
+
+## Principle 2: Bottleneck Detection
+
+**Logic:** Identify which operators are blocking progress.
+
+**Detection rules:**
+- Attachment-related operators >0.8 = bottleneck
+- Flow-related operators <0.2 = bottleneck  
+- Matrix positions at negative poles = bottleneck
+- Inverse pairs (high Maya + low Witness) = bottleneck
+
+**Output:** List of bottleneck variables with impact level.
+
+---
+
+## Principle 3: Leverage Identification
+
+**Logic:** Calculate high-multiplier opportunities.
+
+**Detection rules:**
+- High coherence (>0.7) + Available networks + Grace (>0.4) = 1.5x-2x multiplier
+- Team aligned + Innovation ready + Market timing = 1.2x-1.5x multiplier
+- Grace activated + High surrender = 2x-5x multiplier
+
+**Output:** Top 3 leverage points with activation requirements.
+
+---
+
+## Principle 4: Prompt Structure
+
+**Send to LLM:**
+1. OOF.txt framework (for interpretation reference)
+2. User context from Call 1
+3. Web research findings
+4. Organized values (categories above)
+5. Five generation instructions:
+   - Current reality (where they actually are)
+   - Structural gap (consciousness creating distance)
+   - Root causes (which operators bottleneck)
+   - Transformation pathway (what needs to shift)
+   - Practical leverage (concrete actions)
+
+**Critical requirement:** Framework concealment - no operator names in output, use domain language.
+
+---
+
+## Principle 5: Token Management
+
+**If prompt exceeds limit:**
+- Always include: Tier 1, bottlenecks, leverage points
+- Conditionally include: Tier 2-3 if extreme values
+- Summarize: Tier 4-5 as statements not raw values
+- Skip: Tier 6 entirely
+
+---
+
+## That's It
+
+The bridge is: **Organize → Detect patterns → Build prompt → Send to LLM**
