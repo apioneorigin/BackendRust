@@ -35,6 +35,14 @@ if OPENAI_API_KEY:
 REGISTRY_PATH = Path(__file__).parent.parent / "registry.json"
 inference_engine = InferenceEngine(str(REGISTRY_PATH))
 
+# Load OOF Framework for OpenAI context
+OOF_PATH = Path(__file__).parent.parent / "OOF.txt"
+OOF_FRAMEWORK = ""
+if OOF_PATH.exists():
+    with open(OOF_PATH, 'r', encoding='utf-8') as f:
+        OOF_FRAMEWORK = f.read()
+    print(f"Loaded OOF Framework: {len(OOF_FRAMEWORK)} characters")
+
 
 @app.get("/", response_class=HTMLResponse)
 async def serve_frontend():
@@ -114,7 +122,7 @@ async def inference_stream(prompt: str) -> AsyncGenerator[dict, None]:
 
 
 async def parse_query_with_openai(prompt: str) -> dict:
-    """Use OpenAI to extract structured evidence from user query"""
+    """Use OpenAI to extract structured evidence from user query using OOF Framework"""
 
     if not openai_client:
         # Fallback: simple keyword extraction
@@ -129,39 +137,46 @@ async def parse_query_with_openai(prompt: str) -> dict:
             "targets": ["Transformation", "Grace", "Karma", "NextActions"]
         }
 
-    system_prompt = """You are an evidence extractor for the Reality Transformer consciousness engine.
+    system_prompt = f"""You are an evidence extractor for the Reality Transformer consciousness engine.
+You have complete knowledge of the One Origin Framework (OOF) - a consciousness physics system.
 
-Extract structured evidence from the user's query. The system uses these core operators:
-- Consciousness (Ψ): Level of awareness (0-1)
-- Karma (K): Accumulated actions/patterns (0-1)
-- Maya (M): Illusion/attachment level (0-1)
-- Grace (G): Divine support/flow (0-1)
-- Aspiration: Goal orientation (0-1)
-- Fear: Fear level (0-1)
-- Desire (Kama): Desire intensity (0-1)
-- Awareness: Mindfulness level (0-1)
-- Resistance: Resistance to change (0-1)
-- Surrender: Letting go capacity (0-1)
+=== OOF FRAMEWORK KNOWLEDGE ===
+{OOF_FRAMEWORK}
+=== END OOF FRAMEWORK ===
+
+Using the OOF framework above, analyze the user's query and extract:
+1. Their current consciousness state (S1-S8 level)
+2. Active operators and their estimated values (0-1 scale)
+3. Which OOF components are most relevant to their situation
+
+The 25 core operators include:
+Ψ (Consciousness), K (Karma), M (Maya), G (Grace), W (Witness),
+A (Awareness), P (Prana), E (Entropy), V (Void), L (Love), R (Resonance),
+At (Attachment), Av (Aversion), Se (Seva), Ce (Cleaning), Su (Surrender),
+As (Aspiration), Fe (Fear), De (Desire), Re (Resistance), Hf (Habit Force),
+Sa (Samskara), Bu (Buddhi), Ma (Manas), Ch (Chitta)
 
 Return ONLY valid JSON with this structure:
-{
+{{
   "user_identity": "string describing who the user is",
   "goal": "string describing their goal",
+  "s_level": "S1-S8 estimated consciousness level",
   "observations": [
-    {"var": "VariableName", "value": 0.0-1.0, "confidence": 0.0-1.0}
+    {{"var": "OperatorName", "value": 0.0-1.0, "confidence": 0.0-1.0, "reasoning": "brief explanation"}}
   ],
-  "targets": ["VarName1", "VarName2"] // What to analyze
-}"""
+  "targets": ["VarName1", "VarName2"],
+  "relevant_oof_components": ["Sacred Chain", "Cascade", etc.]
+}}"""
 
     try:
         response = await openai_client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4o",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": prompt}
             ],
             temperature=0.3,
-            max_tokens=500,
+            max_tokens=1000,
             response_format={"type": "json_object"}
         )
 
@@ -181,7 +196,7 @@ Return ONLY valid JSON with this structure:
 
 
 async def format_results_streaming(prompt: str, evidence: dict, posteriors: dict) -> AsyncGenerator[str, None]:
-    """Use OpenAI to format posteriors into natural language, streaming tokens"""
+    """Use OpenAI to format posteriors into consciousness physics articulation using OOF Framework"""
 
     if not openai_client:
         # Fallback: format results without OpenAI
@@ -191,39 +206,61 @@ async def format_results_streaming(prompt: str, evidence: dict, posteriors: dict
             await asyncio.sleep(0.02)
         return
 
-    system_prompt = """You are Reality Transformer, a consciousness-based transformation engine.
+    system_prompt = f"""You are Reality Transformer, a consciousness-based transformation engine powered by the One Origin Framework (OOF).
 
-You analyze queries through the lens of consciousness, karma, and transformation mathematics.
-Speak with wisdom, clarity, and actionable depth. Use the OOF (One Origin Framework) insights provided.
+=== OOF FRAMEWORK KNOWLEDGE ===
+{OOF_FRAMEWORK}
+=== END OOF FRAMEWORK ===
+
+You articulate transformation insights using consciousness physics from the OOF framework above.
+Your responses should:
+
+1. RECOGNITION: Identify their Sacred Chain level (S1-S8) and dominant operators
+2. DIAGNOSIS: Which operators are active/blocked and why
+3. MECHANISM: Explain HOW their current reality is being generated using OOF formulas
+4. PATH: What transformation is available based on their configuration
+5. ACTION: Concrete next steps aligned with their S-level
+6. GRACE: What support/opening is available
 
 Guidelines:
-- Be insightful and profound, but practical
-- Reference specific variables and their values when relevant
-- Provide concrete next actions
-- Use metaphors from consciousness and transformation
-- Keep response focused and structured"""
+- Use OOF terminology naturally (Karma, Maya, Witness, Grace, etc.)
+- Reference specific formulas when explaining mechanisms
+- Translate technical terms for accessibility (e.g., "Maya" = "blind spots")
+- Be profound yet practical - every insight should lead to action
+- Speak to the soul, not just the mind
+- Honor both shadow and light in their situation"""
 
     user_content = f"""Original query: {prompt}
 
-Evidence extracted:
-- Identity: {evidence.get('user_identity', 'User')}
-- Goal: {evidence.get('goal', prompt)}
-- Observations: {json.dumps(evidence.get('observations', []), indent=2)}
+=== CONSCIOUSNESS ANALYSIS ===
+User Identity: {evidence.get('user_identity', 'User')}
+Goal: {evidence.get('goal', prompt)}
+Estimated S-Level: {evidence.get('s_level', 'Unknown')}
+Relevant OOF Components: {evidence.get('relevant_oof_components', [])}
 
-Inference results (posteriors):
+Operator Observations:
+{json.dumps(evidence.get('observations', []), indent=2)}
+
+=== INFERENCE ENGINE RESULTS ===
 {json.dumps(posteriors, indent=2)}
 
-Provide a deep, transformative response addressing their query with actionable insights."""
+=== TASK ===
+Provide a deep, transformative response that:
+1. Explains their current reality through OOF consciousness physics
+2. Identifies the key operators creating their situation
+3. Maps the transformation path available to them
+4. Gives specific, actionable next steps
+5. Speaks with wisdom and compassion"""
 
     try:
         stream = await openai_client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4o",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_content}
             ],
             temperature=0.7,
-            max_tokens=2000,
+            max_tokens=4000,
             stream=True
         )
 
@@ -282,7 +319,9 @@ async def health_check():
         "status": "healthy",
         "registry_loaded": inference_engine.is_loaded,
         "formula_count": inference_engine.formula_count,
-        "openai_configured": openai_client is not None
+        "openai_configured": openai_client is not None,
+        "oof_framework_loaded": len(OOF_FRAMEWORK) > 0,
+        "oof_framework_size": len(OOF_FRAMEWORK)
     }
 
 
