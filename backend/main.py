@@ -1,20 +1,20 @@
 """
 Reality Transformer Backend
-FastAPI server with OpenAI integration and SSE streaming
+FastAPI server with OpenAI Responses API integration, web research, and SSE streaming
+Uses gpt-5.2 model exclusively
 """
 
 import os
 import json
 import asyncio
+import httpx
 from pathlib import Path
 from typing import Optional, AsyncGenerator
 
 from fastapi import FastAPI, Query, HTTPException
 from fastapi.responses import HTMLResponse, FileResponse
-from fastapi.staticfiles import StaticFiles
 from sse_starlette.sse import EventSourceResponse
 from dotenv import load_dotenv
-from openai import AsyncOpenAI
 
 from inference import InferenceEngine
 
@@ -22,14 +22,12 @@ from inference import InferenceEngine
 load_dotenv()
 
 # Initialize FastAPI app
-app = FastAPI(title="Reality Transformer", version="1.0.0")
+app = FastAPI(title="Reality Transformer", version="2.0.0")
 
-# Initialize OpenAI client
-openai_client: Optional[AsyncOpenAI] = None
+# OpenAI Configuration
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-
-if OPENAI_API_KEY:
-    openai_client = AsyncOpenAI(api_key=OPENAI_API_KEY)
+OPENAI_MODEL = "gpt-5.2"  # Single model used across all calls
+OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses"
 
 # Initialize inference engine
 REGISTRY_PATH = Path(__file__).parent.parent / "registry.json"
@@ -57,7 +55,7 @@ async def serve_frontend():
 async def run_inference(prompt: str = Query(..., description="User query")):
     """
     Main SSE endpoint for running inference
-    Flow: Parse Query -> Run Inference -> Format Results -> Stream Response
+    Flow: Web Research + Parse Query -> Run Inference -> Format Results -> Stream Response
     """
     return EventSourceResponse(
         inference_stream(prompt),
@@ -71,17 +69,17 @@ async def inference_stream(prompt: str) -> AsyncGenerator[dict, None]:
     start_time = time.time()
 
     try:
-        # Step 1: Parse query with OpenAI
+        # Step 1: Parse query with OpenAI + Web Research
         yield {
             "event": "status",
-            "data": json.dumps({"message": "Parsing your query..."})
+            "data": json.dumps({"message": "Researching context and parsing query..."})
         }
 
-        evidence = await parse_query_with_openai(prompt)
+        evidence = await parse_query_with_web_research(prompt)
 
         yield {
             "event": "status",
-            "data": json.dumps({"message": f"Extracted {len(evidence.get('observations', []))} evidence points..."})
+            "data": json.dumps({"message": f"Extracted {len(evidence.get('observations', []))} tier-1 operator values..."})
         }
 
         # Step 2: Run inference
@@ -97,10 +95,10 @@ async def inference_stream(prompt: str) -> AsyncGenerator[dict, None]:
 
         yield {
             "event": "status",
-            "data": json.dumps({"message": "Generating insights..."})
+            "data": json.dumps({"message": "Generating consciousness physics articulation..."})
         }
 
-        # Step 3: Format results with OpenAI (streaming)
+        # Step 3: Format results with OpenAI (streaming via Responses API)
         async for token in format_results_streaming(prompt, evidence, posteriors):
             yield {
                 "event": "token",
@@ -121,10 +119,16 @@ async def inference_stream(prompt: str) -> AsyncGenerator[dict, None]:
         }
 
 
-async def parse_query_with_openai(prompt: str) -> dict:
-    """Use OpenAI to extract structured evidence from user query using OOF Framework"""
+async def parse_query_with_web_research(prompt: str) -> dict:
+    """
+    Use OpenAI Responses API with web_search tool to:
+    1. Research relevant context about user's query
+    2. Calculate optimal tier-1 operator values using OOF Framework
 
-    if not openai_client:
+    Returns structured evidence for inference engine
+    """
+
+    if not OPENAI_API_KEY:
         # Fallback: simple keyword extraction
         return {
             "user_identity": "User",
@@ -137,52 +141,120 @@ async def parse_query_with_openai(prompt: str) -> dict:
             "targets": ["Transformation", "Grace", "Karma", "NextActions"]
         }
 
-    system_prompt = f"""You are an evidence extractor for the Reality Transformer consciousness engine.
+    instructions = f"""You are the Reality Transformer consciousness analysis engine.
 You have complete knowledge of the One Origin Framework (OOF) - a consciousness physics system.
 
 === OOF FRAMEWORK KNOWLEDGE ===
 {OOF_FRAMEWORK}
 === END OOF FRAMEWORK ===
 
-Using the OOF framework above, analyze the user's query and extract:
-1. Their current consciousness state (S1-S8 level)
-2. Active operators and their estimated values (0-1 scale)
-3. Which OOF components are most relevant to their situation
+YOUR TASK:
+1. Use web_search to research relevant context about the user's query (industry, domain, current events, etc.)
+2. Combine web research with OOF framework knowledge
+3. Calculate the BEST POSSIBLE and MAXIMUM ACCURATE tier-1 operator values (all 25 operators)
 
-The 25 core operators include:
+The 25 core operators (all must be calculated 0.0-1.0):
 Ψ (Consciousness), K (Karma), M (Maya), G (Grace), W (Witness),
 A (Awareness), P (Prana), E (Entropy), V (Void), L (Love), R (Resonance),
 At (Attachment), Av (Aversion), Se (Seva), Ce (Cleaning), Su (Surrender),
 As (Aspiration), Fe (Fear), De (Desire), Re (Resistance), Hf (Habit Force),
 Sa (Samskara), Bu (Buddhi), Ma (Manas), Ch (Chitta)
 
-Return ONLY valid JSON with this structure:
+CRITICAL: You MUST use web research to inform your operator calculations.
+For example:
+- If user asks about a company, research that company's current situation
+- If user asks about a career, research industry trends
+- If user asks about relationships, research relevant psychology/context
+- Use research to make operator values MORE ACCURATE and CONTEXTUAL
+
+Return ONLY valid JSON (no markdown, no explanation) with this structure:
 {{
-  "user_identity": "string describing who the user is",
-  "goal": "string describing their goal",
+  "user_identity": "detailed description based on query + research",
+  "goal": "their goal informed by research context",
   "s_level": "S1-S8 estimated consciousness level",
+  "web_research_summary": "key insights from web research that informed calculations",
   "observations": [
-    {{"var": "OperatorName", "value": 0.0-1.0, "confidence": 0.0-1.0, "reasoning": "brief explanation"}}
+    {{"var": "Ψ", "value": 0.0-1.0, "confidence": 0.0-1.0, "reasoning": "based on query + research"}},
+    {{"var": "K", "value": 0.0-1.0, "confidence": 0.0-1.0, "reasoning": "..."}},
+    {{"var": "M", "value": 0.0-1.0, "confidence": 0.0-1.0, "reasoning": "..."}},
+    ... (ALL 25 operators)
   ],
-  "targets": ["VarName1", "VarName2"],
-  "relevant_oof_components": ["Sacred Chain", "Cascade", etc.]
+  "targets": ["key variables to analyze"],
+  "relevant_oof_components": ["Sacred Chain", "Cascade", "UCB", etc.]
 }}"""
 
-    try:
-        response = await openai_client.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.3,
-            max_tokens=1000,
-            response_format={"type": "json_object"}
-        )
+    request_body = {
+        "model": OPENAI_MODEL,
+        "instructions": instructions,
+        "input": [{
+            "type": "message",
+            "role": "user",
+            "content": [{"type": "input_text", "text": f"User query:\n{prompt}"}]
+        }],
+        "tools": [{
+            "type": "web_search",
+            "user_location": {"type": "approximate", "timezone": "UTC"}
+        }],
+        "tool_choice": "auto"
+    }
 
-        return json.loads(response.choices[0].message.content)
+    try:
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            response = await client.post(
+                OPENAI_RESPONSES_URL,
+                headers={
+                    "Authorization": f"Bearer {OPENAI_API_KEY}",
+                    "Content-Type": "application/json"
+                },
+                json=request_body
+            )
+
+            if response.status_code != 200:
+                print(f"OpenAI API error: {response.status_code} - {response.text}")
+                raise Exception(f"OpenAI API error: {response.status_code}")
+
+            data = response.json()
+
+            # Extract response text from Responses API format
+            output = data.get("output", [])
+            msg = next((o for o in output if o.get("type") == "message" and o.get("role") == "assistant"), None)
+
+            if msg:
+                content = msg.get("content", [])
+                text_part = next((c for c in content if c.get("type") == "output_text"), None)
+                if text_part:
+                    response_text = text_part.get("text", "")
+                    # Parse JSON from response
+                    # Try to extract JSON if wrapped in markdown
+                    if "```json" in response_text:
+                        json_match = response_text.split("```json")[1].split("```")[0]
+                        return json.loads(json_match.strip())
+                    elif "```" in response_text:
+                        json_match = response_text.split("```")[1].split("```")[0]
+                        return json.loads(json_match.strip())
+                    else:
+                        return json.loads(response_text.strip())
+
+            # If we couldn't parse, try output_text directly
+            if "output_text" in data:
+                return json.loads(data["output_text"])
+
+            raise Exception("Could not parse response from OpenAI Responses API")
+
+    except json.JSONDecodeError as e:
+        print(f"JSON parse error: {e}")
+        # Fallback
+        return {
+            "user_identity": "User",
+            "goal": prompt,
+            "observations": [
+                {"var": "Consciousness", "value": 0.7, "confidence": 0.8},
+                {"var": "Aspiration", "value": 0.85, "confidence": 0.9}
+            ],
+            "targets": ["Transformation", "Grace", "Karma"]
+        }
     except Exception as e:
-        print(f"OpenAI parse error: {e}")
+        print(f"OpenAI Responses API error: {e}")
         # Fallback
         return {
             "user_identity": "User",
@@ -196,9 +268,9 @@ Return ONLY valid JSON with this structure:
 
 
 async def format_results_streaming(prompt: str, evidence: dict, posteriors: dict) -> AsyncGenerator[str, None]:
-    """Use OpenAI to format posteriors into consciousness physics articulation using OOF Framework"""
+    """Use OpenAI Responses API to format posteriors into consciousness physics articulation"""
 
-    if not openai_client:
+    if not OPENAI_API_KEY:
         # Fallback: format results without OpenAI
         fallback_text = format_results_fallback(prompt, evidence, posteriors)
         for word in fallback_text.split():
@@ -206,7 +278,7 @@ async def format_results_streaming(prompt: str, evidence: dict, posteriors: dict
             await asyncio.sleep(0.02)
         return
 
-    system_prompt = f"""You are Reality Transformer, a consciousness-based transformation engine powered by the One Origin Framework (OOF).
+    instructions = f"""You are Reality Transformer, a consciousness-based transformation engine powered by the One Origin Framework (OOF).
 
 === OOF FRAMEWORK KNOWLEDGE ===
 {OOF_FRAMEWORK}
@@ -228,17 +300,19 @@ Guidelines:
 - Translate technical terms for accessibility (e.g., "Maya" = "blind spots")
 - Be profound yet practical - every insight should lead to action
 - Speak to the soul, not just the mind
-- Honor both shadow and light in their situation"""
+- Honor both shadow and light in their situation
+- Incorporate web research insights from the analysis phase"""
 
     user_content = f"""Original query: {prompt}
 
-=== CONSCIOUSNESS ANALYSIS ===
+=== CONSCIOUSNESS ANALYSIS (with web research) ===
 User Identity: {evidence.get('user_identity', 'User')}
 Goal: {evidence.get('goal', prompt)}
 Estimated S-Level: {evidence.get('s_level', 'Unknown')}
+Web Research Summary: {evidence.get('web_research_summary', 'N/A')}
 Relevant OOF Components: {evidence.get('relevant_oof_components', [])}
 
-Operator Observations:
+Operator Observations (all 25 tier-1 values):
 {json.dumps(evidence.get('observations', []), indent=2)}
 
 === INFERENCE ENGINE RESULTS ===
@@ -248,28 +322,57 @@ Operator Observations:
 Provide a deep, transformative response that:
 1. Explains their current reality through OOF consciousness physics
 2. Identifies the key operators creating their situation
-3. Maps the transformation path available to them
-4. Gives specific, actionable next steps
-5. Speaks with wisdom and compassion"""
+3. Uses the web research context to make insights more relevant
+4. Maps the transformation path available to them
+5. Gives specific, actionable next steps
+6. Speaks with wisdom and compassion"""
+
+    request_body = {
+        "model": OPENAI_MODEL,
+        "instructions": instructions,
+        "input": [{
+            "type": "message",
+            "role": "user",
+            "content": [{"type": "input_text", "text": user_content}]
+        }],
+        "stream": True
+    }
 
     try:
-        stream = await openai_client.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_content}
-            ],
-            temperature=0.7,
-            max_tokens=4000,
-            stream=True
-        )
+        async with httpx.AsyncClient(timeout=180.0) as client:
+            async with client.stream(
+                "POST",
+                OPENAI_RESPONSES_URL,
+                headers={
+                    "Authorization": f"Bearer {OPENAI_API_KEY}",
+                    "Content-Type": "application/json"
+                },
+                json=request_body
+            ) as response:
+                if response.status_code != 200:
+                    error_text = await response.aread()
+                    print(f"OpenAI streaming error: {response.status_code} - {error_text}")
+                    raise Exception(f"OpenAI API error: {response.status_code}")
 
-        async for chunk in stream:
-            if chunk.choices[0].delta.content:
-                yield chunk.choices[0].delta.content
+                async for line in response.aiter_lines():
+                    if line.startswith("data: "):
+                        data_str = line[6:]
+                        if data_str == "[DONE]":
+                            break
+                        try:
+                            data = json.loads(data_str)
+                            # Extract text from streaming response
+                            if "delta" in data:
+                                delta = data.get("delta", {})
+                                if "text" in delta:
+                                    yield delta["text"]
+                            elif "output_text" in data:
+                                yield data["output_text"]
+                        except json.JSONDecodeError:
+                            continue
 
     except Exception as e:
-        print(f"OpenAI format error: {e}")
+        print(f"OpenAI streaming error: {e}")
         fallback_text = format_results_fallback(prompt, evidence, posteriors)
         for word in fallback_text.split():
             yield word + " "
@@ -288,7 +391,8 @@ def format_results_fallback(prompt: str, evidence: dict, posteriors: dict) -> st
     ]
 
     for obs in evidence.get("observations", []):
-        lines.append(f"- {obs['var']}: {obs['value']:.2f} (confidence: {obs['confidence']:.2f})")
+        if isinstance(obs, dict) and 'var' in obs and 'value' in obs:
+            lines.append(f"- {obs['var']}: {obs['value']:.2f} (confidence: {obs.get('confidence', 0.5):.2f})")
 
     lines.append("")
     lines.append("### Consciousness State Analysis")
@@ -317,11 +421,13 @@ async def health_check():
     """Health check endpoint"""
     return {
         "status": "healthy",
+        "model": OPENAI_MODEL,
         "registry_loaded": inference_engine.is_loaded,
         "formula_count": inference_engine.formula_count,
-        "openai_configured": openai_client is not None,
+        "openai_configured": OPENAI_API_KEY is not None,
         "oof_framework_loaded": len(OOF_FRAMEWORK) > 0,
-        "oof_framework_size": len(OOF_FRAMEWORK)
+        "oof_framework_size": len(OOF_FRAMEWORK),
+        "web_research_enabled": True
     }
 
 
