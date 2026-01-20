@@ -33,13 +33,13 @@ OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses"
 REGISTRY_PATH = Path(__file__).parent.parent / "registry.json"
 inference_engine = InferenceEngine(str(REGISTRY_PATH))
 
-# Load OOF Framework for OpenAI context
-OOF_PATH = Path(__file__).parent.parent / "OOF.txt"
+# Load IOOF Framework for OpenAI context (full instruction set)
+IOOF_PATH = Path(__file__).parent.parent / "IOOF.txt"
 OOF_FRAMEWORK = ""
-if OOF_PATH.exists():
-    with open(OOF_PATH, 'r', encoding='utf-8') as f:
+if IOOF_PATH.exists():
+    with open(IOOF_PATH, 'r', encoding='utf-8') as f:
         OOF_FRAMEWORK = f.read()
-    print(f"Loaded OOF Framework: {len(OOF_FRAMEWORK)} characters")
+    print(f"Loaded IOOF Framework: {len(OOF_FRAMEWORK)} characters")
 
 
 @app.get("/", response_class=HTMLResponse)
