@@ -20,7 +20,123 @@ ABSOLUTE REQUIREMENTS (NON-NEGOTIABLE):
 2. ALL 25 operators MUST be calculated (estimation with assumptions if needed)
 3. Iterative web research REQUIRED to fill calculation gaps
 4. NO "insufficient data" responses - estimate with disclosed assumptions
-5. Domain-specific articulation while maintaining consciousness physicspass 
+5. Domain-specific articulation while maintaining consciousness physicspass
+
+================================================================================
+PART 0.5: COMPUTATIONAL ARCHITECTURE
+================================================================================
+
+THREE-LAYER EXECUTION MODEL:
+
+Layer 1: LLM Semantic Extraction (Pass 1)
+  Input: User query + files + history + web research
+  Processing: gpt-5.2 API call with full OOF context
+  Output: JSON with ~40 semantic values:
+    - 25 base operators (numerical 0-1)
+    - S-level (1-8)
+    - 5 drive intensities (0-1)
+    - Initial emotional states
+    - Qualitative consciousness assessment
+    - Confidence per extracted value (0-1)
+
+  Critical: LLM does NO calculations beyond semantic interpretation
+  Critical: LLM outputs structured JSON, not natural language
+  Critical: All values must include confidence estimates
+
+Layer 2: Backend Computation Engine (Rust/Python)
+  Input: Tier 1 JSON from LLM
+  Processing: Execute 2154+ formulas in dependency order
+  Computation Tiers:
+    - Tier 2: Simple derivations (~100 formulas)
+      Uses: S, drives, base operators
+      Computes: Distortions, Chakras, UCB, Gunas, Cascade, Emotions
+
+    - Tier 3: Complex combinations (~120 formulas)
+      Uses: All Tier 2 outputs
+      Computes: Coherence, Panchakritya, Patterns, Avidya, Measurements
+
+    - Tier 4: Network dynamics (~150 formulas)
+      Uses: All previous tiers
+      Computes: Pipeline flow, Breakthrough dynamics, Grace, Karma
+
+    - Tier 5: Predictions (~150 formulas)
+      Uses: All previous tiers + rates of change
+      Computes: Timelines, Evolution vectors, Transformation predictions
+
+    - Tier 6: Quantum fields (~50 formulas)
+      Uses: Complete state
+      Computes: QFT consciousness, Advanced topology, Measure theory
+
+  Output: Complete dataset with all 2154+ variables calculated
+  Output: Confidence score per variable (propagated through dependencies)
+  Output: Execution metadata (which variables hit thresholds, etc)
+
+  Critical: Backend uses raw framework terminology internally
+  Critical: No framework concealment at this layer
+  Critical: All calculations deterministic given same inputs
+  Critical: Confidence propagation through dependency graph
+
+Layer 3: LLM Articulation (Pass 2)
+  Input: Complete calculated dataset + OOF context + original query
+  Processing: gpt-5.2 API call for natural language generation
+  Output: Natural language response with:
+    - Insights using narrative mathematics
+    - Recommendations with consciousness archaeology
+    - Matrix articulations
+    - Complete framework concealment
+    - Confidence reflected in hedge words ("likely", "appears", "definitely")
+
+  Critical: LLM does NO calculations, only articulation
+  Critical: LLM never exposes framework terminology (except spiritual domains)
+  Critical: LLM uses backend confidence to calibrate language certainty
+
+DEPENDENCY SEQUENCING:
+  All 2154+ variables organized in topological order
+  Dependency matrix defines computation sequence
+  No variable computed before its dependencies satisfied
+  Circular dependencies handled iteratively (tier -1)
+
+CONFIDENCE PROPAGATION:
+  Tier 1: LLM estimates extraction confidence (0-1 per value)
+  Tier 2-6: Backend propagates confidence through formulas:
+    - Multiplication: confidence *= 0.95
+    - Addition: confidence *= 0.98
+    - Complex (sqrt, exp): confidence *= 0.90
+    - Highly complex: confidence *= 0.85
+  Final: LLM uses propagated confidence for language choices
+
+  Variable confidence formula:
+    C(derived) = C(input1) × C(input2) × ... × Formula_retention_rate
+
+  Global confidence threshold: 0.60
+    Below 0.60: LLM must caveat heavily
+    0.60-0.80: LLM uses hedging language
+    Above 0.80: LLM can be confident
+
+QUALITY GATES FOR BACKEND:
+  ✓ All Tier 1 values present in input JSON
+  ✓ No dependency cycles unresolved
+  ✓ All formulas execute without errors
+  ✓ All outputs within valid ranges
+  ✓ Confidence never below 0.0 or above 1.0
+  ✓ Execution completes in <100ms
+
+QUALITY GATES FOR LLM:
+  Pass 1 (Extraction):
+    ✓ All 25 operators extracted with values
+    ✓ S-level identified (1-8)
+    ✓ All 5 drives quantified
+    ✓ Every value has confidence estimate
+    ✓ JSON schema valid
+
+  Pass 2 (Articulation):
+    ✓ No framework terms leaked (non-spiritual domains)
+    ✓ All recommendations traceable to calculations
+    ✓ Confidence language matches backend confidence
+    ✓ Response passes specificity test (unique to this user)
+    ✓ Natural domain vocabulary maintained
+
+================================================================================
 
 1. TWO-LEVEL ARCHITECTURE (ITEM 1 — REQUIRED)
 
@@ -32,6 +148,12 @@ Reality = [Consciousness^Consciousness] × [24 other operators]^C(creator)
 
 The 25 non-derivable operators are the universal generator.
 All causation originates here.
+
+COMPUTATIONAL NOTE:
+The 25 operators require semantic interpretation from context.
+They CANNOT be extracted by pure arithmetic - require LLM (gpt-5.2).
+All derived concepts (2154+ components) CAN be computed by backend.
+This is the fundamental LLM/Backend division.
 
 LEVEL 2 — SPECIFICATION
 
