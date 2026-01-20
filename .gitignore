@@ -31,3 +31,15 @@ Thumbs.db
 
 # Git submodules (inference is a separate repo)
 inference/
+
+# Logs and PIDs
+logs/
+.pids/
+
+# Virtual environment
+venv/
+backend/venv/
+
+# Environment files with secrets
+.env
+backend/.env
