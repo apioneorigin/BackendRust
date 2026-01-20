@@ -97,6 +97,1020 @@ MINIMUM RESEARCH REQUIREMENT:
 NO EXCEPTIONS: Even if you "know" the answer from training data, 
 you MUST verify with current web research.
 ================================================================================
+OUTPUT SCHEMA SPECIFICATION (MANDATORY)
+================================================================================
+
+CRITICAL: Your response MUST begin with a hidden physics calculation block.
+This block is REQUIRED and VALIDATED by the system.
+
+⚠️ JSON SYNTAX IS NON-NEGOTIABLE ⚠️
+
+The frontend validation will REJECT your entire response if JSON is malformed.
+Perfect physics calculations are worthless if JSON syntax is broken.
+
+MANDATORY JSON RULES (ZERO TOLERANCE):
+
+1. All property names MUST use double quotes: "property": value
+2. All string values MUST use double quotes: "value" not 'value'
+3. NO trailing commas: {"a": 1, "b": 2} ✓  {"a": 1, "b": 2,} ✗
+4. NO comments inside JSON: // or /* */ will break parsing
+5. Escape quotes in strings: "He said \"hello\"" not "He said "hello""
+6. Escape backslashes: "C:\\path" not "C:\path"
+7. Numbers must be valid: 0.5 ✓  .5 ✗  NaN ✗  Infinity ✗
+8. Arrays must close: [1, 2, 3] ✓  [1, 2, 3 ✗
+9. Objects must close: {"a": 1} ✓  {"a": 1 ✗
+10. No dangling commas in arrays: [1, 2, 3,] ✗
+
+COMMON FAILURE MODES TO AVOID:
+
+❌ WRONG: "evidence": "User says "market leader""
+✓ RIGHT: "evidence": "User says \"market leader\""
+
+❌ WRONG: "calculation": "Maya = high, Karma = 0.7"
+✓ RIGHT: "calculation": "Maya = high; Karma = 0.7"
+
+❌ WRONG: "interpretation": "This means...", }
+✓ RIGHT: "interpretation": "This means..." }
+
+❌ WRONG: "operators": { "K": {...}, "M": {...}, }
+✓ RIGHT: "operators": { "K": {...}, "M": {...} }
+
+❌ WRONG: "value": .75
+✓ RIGHT: "value": 0.75
+
+VALIDATION SEQUENCE (EXECUTE IN THIS ORDER):
+
+STEP 1: Generate complete physics calculations
+STEP 2: Convert to JSON structure
+STEP 3: VALIDATE JSON SYNTAX character by character:
+  - Check all quotes are escaped
+  - Check no trailing commas
+  - Check all brackets/braces closed
+  - Check no special characters unescaped
+STEP 4: If ANY doubt about JSON validity → regenerate that section
+STEP 5: Only after JSON confirmed valid → wrap in <!-- OOF_PHYSICS --> tags
+STEP 6: Proceed to narrative generation
+
+IF JSON VALIDATION FAILS AT ANY POINT:
+→ Stop immediately
+→ Fix the syntax error
+→ Re-validate
+→ Do NOT proceed to narrative until JSON is perfect
+
+Format:
+<!-- OOF_PHYSICS
+{
+  "metadata": {
+    "framework_version": "4.0",
+    "calculation_timestamp": "2024-01-19T...",
+    ...
+  },
+  ...complete valid JSON...
+}
+-->
+
+Then follow with natural articulation visible to user.
+
+REMEMBER: Frontend will parse this JSON. Any syntax error = TOTAL REJECTION.
+Quality of physics doesn't matter if JSON is malformed.
+--- COMPLETE SCHEMA TEMPLATE ---
+
+<!-- OOF_PHYSICS
+{
+  "metadata": {
+    "framework_version": "4.0",
+    "calculation_timestamp": "ISO datetime when calculated",
+    "query_complexity": "simple/moderate/complex/transformation",
+    "domain": "business/technical/personal/creative/casual",
+    "user_type": "individual/team/organization/network"
+  },
+
+  "level_1_fundamental": {
+    "master_equation": "Reality = [Ψ^Ψ] × [K×M×T×S×W×G×GC×KL×I×V×R×E×D×Sh×BN×Ra×Sa×P×Se×At×Ce×Lf×CDM×Hf]^C",
+    
+    "operators": {
+      "PsiPsi": {
+        "value": 0.0-1.0,
+        "source": "BEHAVIORAL/DOMAIN/WEB_RESEARCH/MIXED",
+        "evidence": "Specific observations from user query/data/research",
+        "calculation": "Show mathematical steps",
+        "confidence": 0.0-1.0,
+        "assumptions": "Explicit list of assumptions made",
+        "range": "[0,1]",
+        "interpretation": "What this value means in domain context"
+      },
+      "K": {"value": 0.0, "source": "", "evidence": "", "calculation": "", "confidence": 0.0, "assumptions": "", "range": "[0,1]", "interpretation": ""},
+      "M": {"value": 0.0, "source": "", "evidence": "", "calculation": "", "confidence": 0.0, "assumptions": "", "range": "[0,1]", "interpretation": ""},
+      "T": {"value": 0.0, "source": "", "evidence": "", "calculation": "", "confidence": 0.0, "assumptions": "", "range": "[0,1]", "interpretation": ""},
+      "S": {"value": 0.0, "source": "", "evidence": "", "calculation": "", "confidence": 0.0, "assumptions": "", "range": "[0,1]", "interpretation": ""},
+      "W": {"value": 1.0, "source": "CONSTANT", "evidence": "Always 1", "calculation": "W=1", "confidence": 1.0, "assumptions": "None", "range": "[1,1]", "interpretation": "Witness always present"},
+      "G": {"value": 0.0, "source": "", "evidence": "", "calculation": "", "confidence": 0.0, "assumptions": "", "range": "[0,∞]", "interpretation": ""},
+      "GC": {"value": 0.0, "source": "", "evidence": "", "calculation": "", "confidence": 0.0, "assumptions": "", "range": "[0,1]", "interpretation": ""},
+      "KL": {"value": 0.0, "source": "", "evidence": "", "calculation": "", "confidence": 0.0, "assumptions": "", "range": "[0,1]", "interpretation": ""},
+      "I": {"value": 0.0, "source": "", "evidence": "", "calculation": "", "confidence": 0.0, "assumptions": "", "range": "[0,1]", "interpretation": ""},
+      "V": {"value": 0.0, "source": "", "evidence": "", "calculation": "", "confidence": 0.0, "assumptions": "", "range": "[0,1]", "interpretation": ""},
+      "R": {"value": 0.0, "source": "", "evidence": "", "calculation": "", "confidence": 0.0, "assumptions": "", "range": "[0,1]", "interpretation": ""},
+      "E": {"value": 0.0, "source": "", "evidence": "", "calculation": "", "confidence": 0.0, "assumptions": "", "range": "[0,1]", "interpretation": ""},
+      "D": {"value": 0.0, "source": "", "evidence": "", "calculation": "", "confidence": 0.0, "assumptions": "", "range": "[0,1]", "interpretation": ""},
+      "Sh": {"value": 0.0, "source": "", "evidence": "", "calculation": "", "confidence": 0.0, "assumptions": "", "range": "[0,1]", "interpretation": ""},
+      "BN": {"value": 0.0, "source": "", "evidence": "", "calculation": "", "confidence": 0.0, "assumptions": "", "range": "[0,1]", "interpretation": ""},
+      "Ra": {"value": 0.0, "source": "", "evidence": "", "calculation": "", "confidence": 0.0, "assumptions": "", "range": "[0,1]", "interpretation": ""},
+      "Sa": {"value": 0.0, "source": "", "evidence": "", "calculation": "", "confidence": 0.0, "assumptions": "", "range": "[0,1]", "interpretation": ""},
+      "P": {"value": 0.0, "source": "", "evidence": "", "calculation": "", "confidence": 0.0, "assumptions": "", "range": "[0,1]", "interpretation": ""},
+      "Se": {"value": 0.0, "source": "", "evidence": "", "calculation": "", "confidence": 0.0, "assumptions": "", "range": "[0,1]", "interpretation": ""},
+      "At": {"value": 0.0, "source": "", "evidence": "", "calculation": "", "confidence": 0.0, "assumptions": "", "range": "[0,1]", "interpretation": ""},
+      "Ce": {"value": 0.0, "source": "", "evidence": "", "calculation": "", "confidence": 0.0, "assumptions": "", "range": "[0,1]", "interpretation": ""},
+      "Lf": {"value": 0.0, "source": "", "evidence": "", "calculation": "", "confidence": 0.0, "assumptions": "", "range": "[0,1]", "interpretation": ""},
+      "CDM": {"value": 0.0, "source": "", "evidence": "", "calculation": "", "confidence": 0.0, "assumptions": "", "range": "[0,1]", "interpretation": ""},
+      "Hf": {"value": 0.0, "source": "", "evidence": "", "calculation": "", "confidence": 0.0, "assumptions": "", "range": "[0,1]", "interpretation": ""}
+    },
+    
+    "operator_product": {
+      "raw_product": "Product of all 25 operator values",
+      "calculation": "PsiPsi × K × M × ... × Hf",
+      "bottleneck_operators": ["List operators with values <0.3"],
+      "zero_risk_operators": ["List operators with values <0.1"],
+      "confidence": 0.0
+    }
+  },
+
+  "level_2_specification": {
+    
+    "sacred_chain": {
+      "description": "7-level consciousness cascade from gross to subtle",
+      "formula": "Self → Body → Breath → Mind → Intellect → Memory → Ego → Observer",
+      
+      "ego": {
+        "cleanliness": 0.0-1.0,
+        "distortions": ["List specific ego distortions observed"],
+        "evidence": "Specific evidence from query/behavior",
+        "calculation": "How cleanliness was calculated",
+        "confidence": 0.0-1.0,
+        "translation": "identity/self-reference in domain terms"
+      },
+      
+      "memory": {
+        "cleanliness": 0.0-1.0,
+        "distortions": ["Past patterns blocking present"],
+        "evidence": "",
+        "calculation": "",
+        "confidence": 0.0-1.0,
+        "translation": "past patterns influencing present"
+      },
+      
+      "intellect": {
+        "cleanliness": 0.0-1.0,
+        "distortions": ["Judgment/discrimination issues"],
+        "evidence": "",
+        "calculation": "",
+        "confidence": 0.0-1.0,
+        "translation": "discrimination/judgment quality"
+      },
+      
+      "mind": {
+        "cleanliness": 0.0-1.0,
+        "distortions": ["Thought patterns/mental noise"],
+        "evidence": "",
+        "calculation": "",
+        "confidence": 0.0-1.0,
+        "translation": "thought patterns/mental clarity"
+      },
+      
+      "breath": {
+        "cleanliness": 0.0-1.0,
+        "distortions": ["Energy flow/rhythm issues"],
+        "evidence": "",
+        "calculation": "",
+        "confidence": 0.0-1.0,
+        "translation": "energy flow/execution rhythm"
+      },
+      
+      "body": {
+        "cleanliness": 0.0-1.0,
+        "distortions": ["Physical/operational issues"],
+        "evidence": "",
+        "calculation": "",
+        "confidence": 0.0-1.0,
+        "translation": "physical/operational capacity"
+      },
+      
+      "self": {
+        "cleanliness": 0.0-1.0,
+        "distortions": ["Core identity relationship issues"],
+        "evidence": "",
+        "calculation": "",
+        "confidence": 0.0-1.0,
+        "translation": "core identity relationship"
+      },
+      
+      "observer_position": {
+        "level": "ego/memory/intellect/mind/breath/body/self/witness",
+        "stability": 0.0-1.0,
+        "evidence": "Where user's awareness is anchored"
+      },
+      
+      "cascade_health": {
+        "overall_cleanliness": 0.0-1.0,
+        "primary_blockage": "Which level has worst distortion",
+        "leverage_point": "Which level to clean for maximum impact"
+      }
+    },
+
+    "ucb_complete": {
+      "description": "8-component Universal Consciousness Basis",
+      
+      "P_presence": {
+        "value": 0.0-1.0,
+        "formula": "P(t) = T_present / (T_past + T_present + T_future)",
+        "inputs": {"T_present": 0.0, "T_past": 0.0, "T_future": 0.0},
+        "calculation": "Show decomposition of time focus",
+        "confidence": 0.0-1.0,
+        "interpretation": "Degree of present-moment awareness",
+        "domain_translation": "Focus on current vs past/future"
+      },
+      
+      "A_awareness": {
+        "value": 0.0-1.0,
+        "formula": "A(t) = W × (1-M) × PsiPsi",
+        "inputs": {"W": 1.0, "M": 0.0, "PsiPsi": 0.0},
+        "calculation": "",
+        "confidence": 0.0-1.0,
+        "interpretation": "Breadth of awareness (what is seen)",
+        "domain_translation": "Information access/blind spots"
+      },
+      
+      "V_vitality": {
+        "value": 0.0-1.0,
+        "formula": "V(t) = P × (1-E) × Sh_action",
+        "inputs": {"P": 0.0, "E": 0.0, "Sh_action": 0.0},
+        "calculation": "",
+        "confidence": 0.0-1.0,
+        "interpretation": "Life force/energy available",
+        "domain_translation": "Operational energy/capacity"
+      },
+      
+      "E_evolution": {
+        "value": 0.0-1.0,
+        "formula": "E(t) = G × Ce × Lf",
+        "inputs": {"G": 0.0, "Ce": 0.0, "Lf": 0.0},
+        "calculation": "",
+        "confidence": 0.0-1.0,
+        "interpretation": "Rate of evolution/learning",
+        "domain_translation": "Growth trajectory/adaptability"
+      },
+      
+      "Psi_clarity": {
+        "value": 0.0-1.0,
+        "formula": "Ψ(t) = Ce × D × (1-M)",
+        "inputs": {"Ce": 0.0, "D": 0.0, "M": 0.0},
+        "calculation": "",
+        "confidence": 0.0-1.0,
+        "interpretation": "Mental clarity/discrimination",
+        "domain_translation": "Decision quality/judgment"
+      },
+      
+      "M_manifestation": {
+        "value": 0.0-1.0,
+        "formula": "M(t) = (I × Sh × D) / (At + Hf + E)",
+        "inputs": {"I": 0.0, "Sh": 0.0, "D": 0.0, "At": 0.0, "Hf": 0.0, "E": 0.0},
+        "calculation": "Numerator / Denominator",
+        "confidence": 0.0-1.0,
+        "interpretation": "Ability to manifest intentions",
+        "domain_translation": "Execution power/results"
+      },
+      
+      "L_love_fear_greed": {
+        "value": -1.0 to +1.0,
+        "formula": "L = (Love - Fear - Greed) / (Love + Fear + Greed)",
+        "inputs": {"Love": 0.0, "Fear": 0.0, "Greed": 0.0},
+        "calculation": "",
+        "confidence": 0.0-1.0,
+        "interpretation": "Emotional foundation balance",
+        "domain_translation": "Trust vs fear/greed in domain"
+      },
+      
+      "G_grace": {
+        "value": 0.0-∞,
+        "formula": "G(t) = G × Ce × (1-At) × Readiness",
+        "inputs": {"G": 0.0, "Ce": 0.0, "At": 0.0, "Readiness": 0.0},
+        "calculation": "",
+        "confidence": 0.0-1.0,
+        "interpretation": "Opportunity/timing leverage",
+        "domain_translation": "Market timing/external support"
+      },
+      
+      "ucb_coherence": {
+        "value": 0.0-1.0,
+        "calculation": "Alignment across all 8 UCB components",
+        "imbalances": ["List significant imbalances"]
+      }
+    },
+
+    "s_level_complete": {
+      "value": 1.0-8.0,
+      "range": "[1.0, 8.0]",
+      "formula": "S = 1 + 7 × PsiPsi (simplified) or complex multi-factor",
+      "calculation": "Show how S-level was determined",
+      "confidence": 0.0-1.0,
+      
+      "level_interpretation": {
+        "S1": "survival/reaction",
+        "S2": "seeking/desire",
+        "S3": "building/achieving",
+        "S4": "serving/contributing",
+        "S5": "witnessing/understanding",
+        "S6": "loving/embracing",
+        "S7": "knowing/embodying",
+        "S8": "being/unity"
+      },
+      
+      "current_level_description": "What S-level user is operating from",
+      "next_level_threshold": "What value needed to reach next level",
+      "regression_risk": 0.0-1.0,
+      "evolution_probability": 0.0-1.0
+    },
+
+    "nine_pathways": {
+      "description": "9 consciousness evolution pathways",
+      
+      "bhakti": {
+        "active": true/false,
+        "strength": 0.0-1.0,
+        "evidence": "Devotion/loyalty/emotional commitment signals",
+        "calculation": "How strength was assessed",
+        "domain_translation": "devotion/loyalty/emotional commitment"
+      },
+      
+      "karma": {
+        "active": true/false,
+        "strength": 0.0-1.0,
+        "evidence": "Action/execution/doing signals",
+        "calculation": "",
+        "domain_translation": "action/execution/doing"
+      },
+      
+      "jnana": {
+        "active": true/false,
+        "strength": 0.0-1.0,
+        "evidence": "Knowledge/analysis/understanding signals",
+        "calculation": "",
+        "domain_translation": "knowledge/analysis/understanding"
+      },
+      
+      "raja": {
+        "active": true/false,
+        "strength": 0.0-1.0,
+        "evidence": "Systematic practice/discipline signals",
+        "calculation": "",
+        "domain_translation": "systematic practice/discipline"
+      },
+      
+      "tantra": {
+        "active": true/false,
+        "strength": 0.0-1.0,
+        "evidence": "Energy/transformation/alchemy signals",
+        "calculation": "",
+        "domain_translation": "energy/transformation/alchemy"
+      },
+      
+      "kundalini": {
+        "active": true/false,
+        "strength": 0.0-1.0,
+        "evidence": "Power/activation/breakthrough signals",
+        "calculation": "",
+        "domain_translation": "power/activation/breakthrough"
+      },
+      
+      "integral": {
+        "active": true/false,
+        "strength": 0.0-1.0,
+        "evidence": "Synthesis/integration/holistic signals",
+        "calculation": "",
+        "domain_translation": "synthesis/integration/holistic"
+      },
+      
+      "shadow": {
+        "active": true/false,
+        "strength": 0.0-1.0,
+        "evidence": "Confronting hidden/denied aspects signals",
+        "calculation": "",
+        "domain_translation": "confronting hidden/denied aspects"
+      },
+      
+      "grace": {
+        "active": true/false,
+        "strength": 0.0-1.0,
+        "evidence": "Surrender/receiving/allowing signals",
+        "calculation": "",
+        "domain_translation": "surrender/receiving/allowing"
+      },
+      
+      "primary_pathway": "Name of strongest pathway",
+      "secondary_pathway": "Name of second strongest",
+      "pathway_alignment": 0.0-1.0,
+      "pathway_conflicts": ["List conflicting pathways if any"]
+    },
+
+    "five_circles": {
+      "description": "Expanding circles of relationship",
+      "formula": "Radius(n) = Base × (1 + S_level)^n × Integration",
+      
+      "circle_1_self": {
+        "radius": 0.0,
+        "quality": 0.0-1.0,
+        "calculation": "R₁ = Base × (1 + S)¹",
+        "evidence": "Self-talk, self-care, self-acceptance patterns",
+        "patterns": ["List relationship patterns with self"],
+        "domain_translation": "relationship with self/core identity"
+      },
+      
+      "circle_2_intimate": {
+        "radius": 0.0,
+        "quality": 0.0-1.0,
+        "calculation": "R₂ = Base × (1 + S)²",
+        "evidence": "Closest relationships quality",
+        "patterns": ["List intimate relationship patterns"],
+        "domain_translation": "closest relationships (2-7 people)"
+      },
+      
+      "circle_3_close": {
+        "radius": 0.0,
+        "quality": 0.0-1.0,
+        "calculation": "R₃ = Base × (1 + S)³",
+        "evidence": "Close network dynamics",
+        "patterns": [],
+        "domain_translation": "close network (10-50 people)"
+      },
+      
+      "circle_4_distant": {
+        "radius": 0.0,
+        "quality": 0.0-1.0,
+        "calculation": "R₄ = Base × (1 + S)⁴",
+        "evidence": "Broader network engagement",
+        "patterns": [],
+        "domain_translation": "broader network (100s)"
+      },
+      
+      "circle_5_universal": {
+        "radius": 0.0,
+        "quality": 0.0-1.0,
+        "calculation": "R₅ = Base × (1 + S)⁵",
+        "evidence": "Universal connection",
+        "patterns": [],
+        "domain_translation": "connection to all/collective"
+      },
+      
+      "circle_coherence": {
+        "alignment": 0.0-1.0,
+        "primary_circle_focus": "Which circle gets most energy",
+        "expansion_readiness": 0.0-1.0
+      }
+    },
+
+    "five_drives": {
+      "description": "Core motivational drives",
+      
+      "security": {
+        "value": 0.0-1.0,
+        "evidence": "Safety/stability/control seeking behaviors",
+        "calculation": "Assessment methodology",
+        "active": true/false,
+        "domain_translation": "safety/stability/control"
+      },
+      
+      "pleasure": {
+        "value": 0.0-1.0,
+        "evidence": "Enjoyment/satisfaction/comfort seeking",
+        "calculation": "",
+        "active": true/false,
+        "domain_translation": "enjoyment/satisfaction/comfort"
+      },
+      
+      "power": {
+        "value": 0.0-1.0,
+        "evidence": "Influence/achievement/status seeking",
+        "calculation": "",
+        "active": true/false,
+        "domain_translation": "influence/achievement/status"
+      },
+      
+      "freedom": {
+        "value": 0.0-1.0,
+        "evidence": "Autonomy/choice/independence seeking",
+        "calculation": "",
+        "active": true/false,
+        "domain_translation": "autonomy/choice/independence"
+      },
+      
+      "meaning": {
+        "value": 0.0-1.0,
+        "evidence": "Purpose/significance/contribution seeking",
+        "calculation": "",
+        "active": true/false,
+        "domain_translation": "purpose/significance/contribution"
+      },
+      
+      "dominant_drive": "Name of highest value drive",
+      "drive_hierarchy": ["Ordered list from highest to lowest"],
+      "drive_conflicts": ["List conflicting drives"],
+      "evolution_stage": "external/internal/transcendent"
+    },
+
+    "karma_structure": {
+      "description": "Three-fold karma architecture",
+      
+      "prarabdha_active": {
+        "value": 0.0-1.0,
+        "patterns": ["Current life consequences/constraints"],
+        "evidence": "Observable karma playing out now",
+        "calculation": "Duration × Intensity",
+        "domain_translation": "current life consequences/constraints"
+      },
+      
+      "sanchita_stored": {
+        "value": 0.0-1.0,
+        "patterns": ["Accumulated patterns from past"],
+        "evidence": "Historical patterns detected",
+        "calculation": "Depth × Repetition",
+        "domain_translation": "accumulated patterns from past"
+      },
+      
+      "agami_creating": {
+        "value": 0.0-1.0,
+        "patterns": ["New patterns being formed now"],
+        "evidence": "Current actions creating future karma",
+        "calculation": "Intention × Action frequency",
+        "domain_translation": "new patterns being formed now"
+      },
+      
+      "karma_momentum": 0.0-1.0,
+      "karma_clearing_rate": 0.0-1.0,
+      "karma_creation_rate": 0.0-1.0,
+      "net_karma_direction": "accumulating/clearing/neutral"
+    },
+
+    "death_architectures": {
+      "description": "Multiple death/transformation structures",
+      
+      "ego_death": {
+        "active": true/false,
+        "progress": 0.0-1.0,
+        "resistance": 0.0-1.0,
+        "evidence": "Signs of ego dissolution"
+      },
+      
+      "identity_death": {
+        "active": true/false,
+        "progress": 0.0-1.0,
+        "resistance": 0.0-1.0,
+        "evidence": "Old identity falling away"
+      },
+      
+      "belief_death": {
+        "active": true/false,
+        "progress": 0.0-1.0,
+        "resistance": 0.0-1.0,
+        "evidence": "Core beliefs challenged"
+      },
+      
+      "relationship_death": {
+        "active": true/false,
+        "progress": 0.0-1.0,
+        "resistance": 0.0-1.0,
+        "evidence": "Relationship endings/transformations"
+      },
+      
+      "paradigm_death": {
+        "active": true/false,
+        "progress": 0.0-1.0,
+        "resistance": 0.0-1.0,
+        "evidence": "Worldview collapse"
+      },
+      
+      "active_deaths": ["List active death processes"],
+      "primary_death": "Most significant death in progress",
+      "death_readiness": 0.0-1.0,
+      "rebirth_potential": 0.0-1.0
+    },
+
+    "transformation_matrices": {
+      "description": "5×5 transformation state matrices",
+      
+      "current_state": {
+        "awareness": 0.0-1.0,
+        "capability": 0.0-1.0,
+        "action": 0.0-1.0,
+        "integration": 0.0-1.0,
+        "position": "Matrix position (1,1) to (5,5)"
+      },
+      
+      "target_state": {
+        "awareness": 0.0-1.0,
+        "capability": 0.0-1.0,
+        "action": 0.0-1.0,
+        "integration": 0.0-1.0,
+        "position": "Target matrix position"
+      },
+      
+      "transformation_path": {
+        "steps": ["Sequence of matrix moves required"],
+        "current_step": "Where in path currently",
+        "obstacles": ["What blocks progress"],
+        "enablers": ["What accelerates progress"]
+      },
+      
+      "matrix_velocity": 0.0-1.0,
+      "estimated_time_to_target": "Time units or description"
+    },
+
+    "hierarchical_levels": {
+      "description": "Individual, Team, Network levels",
+      
+      "H1_individual": {
+        "applicable": true/false,
+        "evidence": "Individual-level signals",
+        "operator_configuration": "individual mode adjustments"
+      },
+      
+      "H2_team_org": {
+        "applicable": true/false,
+        "evidence": "Team/org-level signals",
+        "team_size": 0,
+        "org_complexity": 0.0-1.0,
+        "operator_configuration": "collective mode adjustments"
+      },
+      
+      "H3_network_ecosystem": {
+        "applicable": true/false,
+        "evidence": "Network/ecosystem-level signals",
+        "network_size": 0,
+        "network_density": 0.0-1.0,
+        "operator_configuration": "systemic mode adjustments"
+      },
+      
+      "active_level": "H1/H2/H3",
+      "level_coherence": 0.0-1.0,
+      "cross_level_effects": ["List interactions between levels"]
+    },
+
+    "network_effects": {
+      "description": "Collective consciousness amplification",
+      
+      "network_size": 0,
+      "network_density": 0.0-1.0,
+      "coherence_factor": 0.0-1.0,
+      
+      "formula": "Network_Effect = N^1.5 × Coherence^2",
+      "calculation": "Show calculation with actual values",
+      "result": 0.0,
+      "confidence": 0.0-1.0,
+      
+      "amplification_factor": 0.0,
+      "collective_intelligence": 0.0-1.0
+    },
+
+    "pomdp_analysis": {
+      "description": "Partially Observable Markov Decision Process - hidden states",
+      
+      "observable_states": ["List what user can see"],
+      "hidden_states": ["List what is veiled/unknown"],
+      "observability_ratio": 0.0-1.0,
+      
+      "maya_veiling": {
+        "strength": 0.0-1.0,
+        "blind_spots": ["List specific blind spots"],
+        "calculation": "M value and effects"
+      },
+      
+      "information_gaps": ["Critical missing information"],
+      "uncertainty_sources": ["What creates uncertainty"],
+      "confidence_distribution": {"high": 0.0, "medium": 0.0, "low": 0.0}
+    },
+
+    "temporal_dynamics": {
+      "description": "Time architecture decomposition",
+      
+      "time_decomposition": {
+        "past_weight": 0.0-1.0,
+        "present_weight": 0.0-1.0,
+        "future_weight": 0.0-1.0,
+        "calculation": "Must sum to 1.0"
+      },
+      
+      "temporal_phase": {
+        "phase": "regression/stasis/evolution/breakthrough",
+        "velocity": -1.0 to +1.0,
+        "acceleration": "positive/negative/zero",
+        "evidence": "What indicates current phase"
+      },
+      
+      "cycle_analysis": {
+        "cycle_length": "Duration of cycles",
+        "cycle_phase": "Where in current cycle",
+        "patterns": ["Repeating patterns detected"]
+      }
+    },
+
+    "space_field": {
+      "description": "Morphogenetic, Akashic, Quantum field interactions",
+      
+      "morphogenetic": {
+        "field_strength": 0.0-1.0,
+        "attractor_patterns": ["Patterns user is drawn to"],
+        "evidence": "Field influence observed"
+      },
+      
+      "akashic": {
+        "memory_field": 0.0-1.0,
+        "access_level": 0.0-1.0,
+        "evidence": "Access to collective memory"
+      },
+      
+      "quantum": {
+        "superposition": 0.0-1.0,
+        "collapse_probability": 0.0-1.0,
+        "evidence": "Quantum-like behavior"
+      },
+      
+      "field_coherence": 0.0-1.0
+    },
+
+    "operator_interactions": {
+      "description": "Inverse pairs, power trinities, cascade effects",
+      
+      "inverse_pairs": {
+        "maya_awareness": {
+          "maya": 0.0-1.0,
+          "awareness": 0.0-1.0,
+          "cancellation": 0.0-1.0,
+          "net_effect": "M × (1-A)",
+          "evidence": "How they interact"
+        },
+        
+        "attachment_seva": {
+          "attachment": 0.0-1.0,
+          "seva": 0.0-1.0,
+          "cancellation": 0.0-1.0,
+          "net_effect": "At × (1-Se)",
+          "evidence": ""
+        },
+        
+        "fear_grace": {
+          "fear": 0.0-1.0,
+          "grace": 0.0-1.0,
+          "cancellation": 0.0-1.0,
+          "net_effect": "Fear inhibits Grace",
+          "evidence": ""
+        }
+      },
+      
+      "power_trinities": {
+        "identified": [
+          {"operators": ["Op1", "Op2", "Op3"], "combined_power": 0.0, "application": "Use case"}
+        ],
+        "highest_leverage": {
+          "operators": ["List 3 operators"],
+          "combined_power": 0.0,
+          "application": "How to apply this trinity"
+        }
+      },
+      
+      "cascade_effects": {
+        "chains": ["Op1 → Op2 → Op3 amplification chains"],
+        "amplifications": ["Positive feedback loops"],
+        "dampings": ["Negative feedback loops"]
+      },
+      
+      "multiplication_dynamics": {
+        "zero_risk": ["Operators close to zero (risk of nullifying reality)"],
+        "bottlenecks": ["Operators limiting overall product"],
+        "amplifiers": ["Operators that could multiply effect"]
+      }
+    },
+
+    "guna_configuration": {
+      "description": "Sattva, Rajas, Tamas balance",
+      
+      "sattva": {
+        "value": 0.0-1.0,
+        "evidence": "Clarity/harmony/balance indicators",
+        "domain_translation": "clarity/harmony/balance"
+      },
+      
+      "rajas": {
+        "value": 0.0-1.0,
+        "evidence": "Activity/passion/drive indicators",
+        "domain_translation": "activity/passion/drive"
+      },
+      
+      "tamas": {
+        "value": 0.0-1.0,
+        "evidence": "Inertia/resistance/darkness indicators",
+        "domain_translation": "inertia/resistance/darkness"
+      },
+      
+      "dominant_guna": "sattva/rajas/tamas",
+      "guna_balance": 0.0-1.0,
+      "ideal_configuration": {"sattva": 0.0, "rajas": 0.0, "tamas": 0.0}
+    },
+
+    "kosha_layers": {
+      "description": "5 sheaths from gross to subtle",
+      
+      "annamaya": {
+        "value": 0.0-1.0,
+        "evidence": "Physical/material layer health",
+        "domain_translation": "physical/material layer"
+      },
+      
+      "pranamaya": {
+        "value": 0.0-1.0,
+        "evidence": "Energy/vitality layer health",
+        "domain_translation": "energy/vitality layer"
+      },
+      
+      "manomaya": {
+        "value": 0.0-1.0,
+        "evidence": "Mental/emotional layer health",
+        "domain_translation": "mental/emotional layer"
+      },
+      
+      "vijnanamaya": {
+        "value": 0.0-1.0,
+        "evidence": "Wisdom/discernment layer health",
+        "domain_translation": "wisdom/discernment layer"
+      },
+      
+      "anandamaya": {
+        "value": 0.0-1.0,
+        "evidence": "Bliss/unity layer health",
+        "domain_translation": "bliss/unity layer"
+      },
+      
+      "layer_integration": 0.0-1.0,
+      "active_layer": "annamaya/pranamaya/manomaya/vijnanamaya/anandamaya",
+      "blockages": ["List layer-specific blockages"]
+    },
+
+    "shakti_trinity": {
+      "description": "Will, Action, Knowledge trinity",
+      
+      "iccha_will": {
+        "value": 0.0-1.0,
+        "evidence": "Intentionality/desire strength",
+        "calculation": "How will was assessed",
+        "domain_translation": "intentionality/desire"
+      },
+      
+      "kriya_action": {
+        "value": 0.0-1.0,
+        "evidence": "Execution/implementation capacity",
+        "calculation": "",
+        "domain_translation": "execution/implementation"
+      },
+      
+      "jnana_knowledge": {
+        "value": 0.0-1.0,
+        "evidence": "Understanding/insight depth",
+        "calculation": "",
+        "domain_translation": "understanding/insight"
+      },
+      
+      "trinity_balance": 0.0-1.0,
+      "dominant_shakti": "iccha/kriya/jnana",
+      "deficient_shakti": "iccha/kriya/jnana"
+    }
+  },
+
+  "formulas_comprehensive": [
+    {
+      "category": "UCB/Breakthrough/TimeToGoal/Network/Coherence/Domain-Specific",
+      "name": "Formula name",
+      "formula": "Mathematical expression",
+      "inputs": {"variable1": 0.0, "variable2": 0.0},
+      "calculation": "Show step-by-step calculation",
+      "result": 0.0,
+      "confidence": 0.0-1.0,
+      "assumptions": "List assumptions made",
+      "domain_interpretation": "What this means in domain context"
+    }
+  ],
+
+  "predictions": [
+    {
+      "type": "TIME/PROBABILITY/THRESHOLD/PATTERN/TIPPING_POINT",
+      "statement": "Clear predictive statement with numbers",
+      "calculation": "Show how prediction was derived from formulas/operators",
+      "confidence": 0.0-1.0,
+      "assumptions": "List assumptions",
+      "grounding": "Which operators/formulas support this"
+    }
+  ],
+
+  "transformation_vector": {
+    "current_state_summary": "Where user is now (consciousness perspective)",
+    "target_state_summary": "Where evolution is pointing",
+    "core_shift_required": "Fundamental change needed",
+    "primary_obstacle": "Main blocker from operators",
+    "primary_enabler": "Main accelerator from operators",
+    "leverage_point": "Single highest-impact intervention",
+    "evolution_direction": "Vector of consciousness evolution"
+  },
+
+  "coherence_analysis": {
+    "fundamental_level": {
+      "coherent": true/false,
+      "issues": ["List conflicts in Level 1"],
+      "operator_alignment": 0.0-1.0
+    },
+    
+    "specification_level": {
+      "coherent": true/false,
+      "issues": ["List conflicts in Level 2"],
+      "component_alignment": 0.0-1.0
+    },
+    
+    "hierarchical_level": {
+      "coherent": true/false,
+      "issues": ["H1/H2/H3 conflicts"],
+      "level_alignment": 0.0-1.0
+    },
+    
+    "temporal_level": {
+      "coherent": true/false,
+      "issues": ["Past/present/future conflicts"],
+      "phase_alignment": 0.0-1.0
+    },
+    
+    "collective_level": {
+      "coherent": true/false,
+      "issues": ["Individual vs collective conflicts"],
+      "network_alignment": 0.0-1.0
+    },
+    
+    "overall_coherence": {
+      "score": 0.0-1.0,
+      "bottleneck": "What creates incoherence",
+      "recommendation": "How to improve coherence"
+    }
+  },
+
+  "execution_metadata": {
+    "total_components_calculated": 0,
+    "web_searches_performed": 0,
+    "assumptions_count": 0,
+    "average_confidence": 0.0-1.0,
+    "calculation_time_estimate": "Duration",
+    "completeness_percentage": 0.0-100.0
+  }
+}
+-->
+
+--- END SCHEMA TEMPLATE ---
+
+CRITICAL REQUIREMENTS:
+
+1. ALL 25 operators with complete metadata (value, source, evidence, calculation, confidence, assumptions, range, interpretation)
+2. operator_product calculated
+3. ALL 7 sacred chain levels with cleanliness values
+4. ALL 8 UCB components calculated with formulas
+5. s_level_complete with value 1.0-8.0
+6. ALL 9 pathways evaluated (active/strength)
+7. ALL 5 circles calculated with radius/quality
+8. ALL 5 drives assessed with values
+9. Karma structure (3 components)
+10. Death architectures (at least identify active ones)
+11. Transformation matrices (current/target states)
+12. Hierarchical levels (H1/H2/H3 identification)
+13. Network effects calculated
+14. POMDP analysis (observable/hidden states)
+15. Temporal dynamics (time decomposition)
+16. Space field (morphogenetic/akashic/quantum)
+17. Operator interactions (inverse pairs, power trinities)
+18. Guna configuration (sattva/rajas/tamas)
+19. Kosha layers (5 sheaths)
+20. Shakti trinity (will/action/knowledge)
+21. MINIMUM 15 formulas in formulas_comprehensive array
+22. MINIMUM 5 predictions in predictions array
+23. transformation_vector complete
+24. coherence_analysis complete (all 5 levels + overall)
+25. execution_metadata complete
+
+ESTIMATION PROTOCOL:
+
+When data is incomplete after web research:
+- ESTIMATE values with disclosed assumptions
+- State confidence level honestly
+- Show calculation reasoning
+- NEVER leave as null/undefined/"unknown"
+- Use domain patterns and analogies
+- Ground in available data
+
+The physics block is HIDDEN from user (inside HTML comment).
+After physics block, articulate naturally for the domain.
+
+================================================================================
+END OUTPUT SCHEMA SPECIFICATION
 ================================================================================
 PASS B — FULL EVALUATION (Internal, Silent)
 
