@@ -2,6 +2,11 @@
 Reality Transformer Backend
 FastAPI server with OpenAI Responses API integration, web research, and SSE streaming
 Uses gpt-5.2 model exclusively
+
+Articulation Bridge Integration:
+- Organizes 450+ backend values into semantic categories
+- Detects bottlenecks and leverage points algorithmically
+- Builds structured articulation prompts for natural language generation
 """
 
 import os
@@ -9,7 +14,8 @@ import json
 import asyncio
 import httpx
 from pathlib import Path
-from typing import Optional, AsyncGenerator
+from typing import Optional, AsyncGenerator, Dict, Any
+from dataclasses import asdict
 
 from fastapi import FastAPI, Query, HTTPException
 from fastapi.responses import HTMLResponse, FileResponse
@@ -17,12 +23,17 @@ from sse_starlette.sse import EventSourceResponse
 from dotenv import load_dotenv
 
 from inference import InferenceEngine
+from value_organizer import ValueOrganizer
+from bottleneck_detector import BottleneckDetector
+from leverage_identifier import LeverageIdentifier
+from articulation_prompt_builder import ArticulationPromptBuilder, build_articulation_context
+from consciousness_state import ConsciousnessState, UserContext, WebResearch
 
 # Load environment variables
 load_dotenv()
 
 # Initialize FastAPI app
-app = FastAPI(title="Reality Transformer", version="2.0.0")
+app = FastAPI(title="Reality Transformer", version="3.0.0")
 
 # OpenAI Configuration
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -33,6 +44,12 @@ OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses"
 REGISTRY_PATH = Path(__file__).parent.parent / "registry.json"
 inference_engine = InferenceEngine(str(REGISTRY_PATH))
 
+# Initialize Articulation Bridge components
+value_organizer = ValueOrganizer()
+bottleneck_detector = BottleneckDetector()
+leverage_identifier = LeverageIdentifier()
+prompt_builder = ArticulationPromptBuilder()
+
 # Load IOOF Framework for OpenAI context (full instruction set)
 IOOF_PATH = Path(__file__).parent.parent / "IOOF.txt"
 OOF_FRAMEWORK = ""
@@ -40,6 +57,7 @@ if IOOF_PATH.exists():
     with open(IOOF_PATH, 'r', encoding='utf-8') as f:
         OOF_FRAMEWORK = f.read()
     print(f"Loaded IOOF Framework: {len(OOF_FRAMEWORK)} characters")
+print("Articulation Bridge initialized: ValueOrganizer, BottleneckDetector, LeverageIdentifier, PromptBuilder")
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -106,8 +124,44 @@ async def inference_stream(prompt: str) -> AsyncGenerator[dict, None]:
             })
         }
 
-        # Step 3: Format results with OpenAI (streaming via Responses API)
-        async for token in format_results_streaming(prompt, evidence, posteriors):
+        # Step 3: Articulation Bridge - Organize, Detect, Build Prompt
+        yield {
+            "event": "status",
+            "data": json.dumps({"message": "Organizing consciousness state into semantic categories..."})
+        }
+
+        # Organize values into semantic structure
+        consciousness_state = value_organizer.organize(
+            raw_values=posteriors,
+            tier1_values=evidence,
+            user_id="",
+            session_id=""
+        )
+
+        # Detect bottlenecks
+        bottlenecks = bottleneck_detector.detect(consciousness_state)
+        consciousness_state.bottlenecks = bottlenecks
+        bottleneck_summary = bottleneck_detector.get_summary(bottlenecks)
+
+        # Identify leverage points
+        leverage_points = leverage_identifier.identify(consciousness_state)
+        consciousness_state.leverage_points = leverage_points
+        leverage_summary = leverage_identifier.get_summary(leverage_points)
+
+        yield {
+            "event": "status",
+            "data": json.dumps({
+                "message": f"Analysis complete: {bottleneck_summary['total_count']} bottlenecks, {leverage_summary['total_count']} leverage points (max {leverage_summary['max_multiplier']}x)"
+            })
+        }
+
+        # Step 4: Build articulation prompt and stream response
+        yield {
+            "event": "status",
+            "data": json.dumps({"message": "Generating articulation with gpt-5.2..."})
+        }
+
+        async for token in format_results_streaming_bridge(prompt, evidence, posteriors, consciousness_state):
             yield {
                 "event": "token",
                 "data": json.dumps({"text": token})
@@ -275,14 +329,21 @@ Return ONLY valid JSON (no markdown, no explanation) with this structure:
         }
 
 
-async def format_results_streaming(prompt: str, evidence: dict, posteriors: dict) -> AsyncGenerator[str, None]:
-    """Use OpenAI Responses API to format posteriors into consciousness physics articulation"""
+async def format_results_streaming_bridge(
+    prompt: str,
+    evidence: dict,
+    posteriors: dict,
+    consciousness_state: ConsciousnessState
+) -> AsyncGenerator[str, None]:
+    """
+    Use Articulation Bridge to format results with organized semantic structure.
+    This is Call 2 in the bridge architecture - the articulation call.
+    """
 
     # Log what's being sent to LLM for articulation
-    obs_count = len(evidence.get('observations', []))
-    posteriors_count = len(posteriors.get('values', {}))
-    formula_count = posteriors.get('formula_count', 0)
-    print(f"[LLM ARTICULATION] Sending to gpt-5.2: {obs_count} observations, {posteriors_count} posteriors from {formula_count} formulas")
+    bottleneck_count = len(consciousness_state.bottlenecks)
+    leverage_count = len(consciousness_state.leverage_points)
+    print(f"[ARTICULATION BRIDGE] Sending to gpt-5.2: {bottleneck_count} bottlenecks, {leverage_count} leverage points")
 
     if not OPENAI_API_KEY:
         # Fallback: format results without OpenAI
@@ -292,12 +353,130 @@ async def format_results_streaming(prompt: str, evidence: dict, posteriors: dict
             await asyncio.sleep(0.02)
         return
 
-    # IMPORTANT: This is the ARTICULATION call - optimized for natural language, NOT agent rigidity
-    # Per OpenAI Responses API guidance:
-    # - No JSON schema constraints
-    # - Higher temperature for expressiveness
-    # - Explicit request for natural voice, metaphor, cadence
-    # - Separate from structured agent logic (1st call handles that)
+    # Build articulation context using the bridge
+    articulation_context = build_articulation_context(
+        user_identity=evidence.get('user_identity', 'User'),
+        domain=evidence.get('domain', 'general'),
+        goal=evidence.get('goal', prompt),
+        current_situation=prompt,
+        consciousness_state=consciousness_state,
+        web_research_summary=evidence.get('web_research_summary', ''),
+        key_facts=evidence.get('key_facts', []),
+        framework_concealment=True,  # Hide OOF terminology in output
+        domain_language=True  # Use natural domain language
+    )
+
+    # Build the structured articulation prompt
+    articulation_prompt = prompt_builder.build_prompt(articulation_context)
+
+    # Log prompt size
+    print(f"[ARTICULATION BRIDGE] Built prompt: {len(articulation_prompt)} characters")
+
+    # System instructions for the articulation call
+    instructions = f"""You are Reality Transformer, a consciousness-based transformation engine.
+
+You are receiving a STRUCTURED ANALYSIS from the One Origin Framework (OOF).
+Your task is to ARTICULATE these insights in NATURAL, DOMAIN-APPROPRIATE language.
+
+=== OOF FRAMEWORK KNOWLEDGE ===
+{OOF_FRAMEWORK}
+=== END OOF FRAMEWORK ===
+
+=== CRITICAL ARTICULATION RULES ===
+1. NEVER use framework terminology in your response:
+   - Do NOT say "Maya operator", "S-level", "Karma", "Grace flow"
+   - Instead translate: "You're seeing success as external rather than internal"
+
+2. NATURAL CADENCE:
+   - Write as a wise advisor, not a report generator
+   - Use metaphor, rhythm, rhetorical questions
+   - Vary sentence length
+   - Create moments of insight
+
+3. DOMAIN LANGUAGE:
+   - Match your vocabulary to the user's context
+   - Business queries get business language
+   - Personal queries get personal language
+
+4. GROUNDED INSIGHTS:
+   - Every claim connects to calculated values (internally)
+   - But expressed naturally (externally)
+
+5. ACTIONABLE:
+   - End with concrete next steps
+   - Respect current capacity
+   - Don't overwhelm
+=== END ARTICULATION RULES ==="""
+
+    request_body = {
+        "model": OPENAI_MODEL,
+        "instructions": instructions,
+        "input": [{
+            "type": "message",
+            "role": "user",
+            "content": [{"type": "input_text", "text": articulation_prompt}]
+        }],
+        "temperature": 0.85,  # Higher for natural articulation
+        "stream": True
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=180.0) as client:
+            async with client.stream(
+                "POST",
+                OPENAI_RESPONSES_URL,
+                headers={
+                    "Authorization": f"Bearer {OPENAI_API_KEY}",
+                    "Content-Type": "application/json"
+                },
+                json=request_body
+            ) as response:
+                if response.status_code != 200:
+                    error_text = await response.aread()
+                    print(f"OpenAI streaming error: {response.status_code} - {error_text}")
+                    raise Exception(f"OpenAI API error: {response.status_code}")
+
+                async for line in response.aiter_lines():
+                    if line.startswith("data: "):
+                        data_str = line[6:]
+                        if data_str == "[DONE]":
+                            break
+                        try:
+                            data = json.loads(data_str)
+                            # Extract text from streaming response
+                            if "delta" in data:
+                                delta = data.get("delta", {})
+                                if "text" in delta:
+                                    yield delta["text"]
+                            elif "output_text" in data:
+                                yield data["output_text"]
+                        except json.JSONDecodeError:
+                            continue
+
+    except Exception as e:
+        print(f"OpenAI streaming error: {e}")
+        fallback_text = format_results_fallback_bridge(prompt, evidence, consciousness_state)
+        for word in fallback_text.split():
+            yield word + " "
+            await asyncio.sleep(0.02)
+
+
+async def format_results_streaming(prompt: str, evidence: dict, posteriors: dict) -> AsyncGenerator[str, None]:
+    """Legacy function - kept for backwards compatibility. Use format_results_streaming_bridge instead."""
+
+    # Log what's being sent to LLM for articulation
+    obs_count = len(evidence.get('observations', []))
+    posteriors_count = len(posteriors.get('values', {}))
+    formula_count = posteriors.get('formula_count', 0)
+    print(f"[LLM ARTICULATION - LEGACY] Sending to gpt-5.2: {obs_count} observations, {posteriors_count} posteriors from {formula_count} formulas")
+
+    if not OPENAI_API_KEY:
+        # Fallback: format results without OpenAI
+        fallback_text = format_results_fallback(prompt, evidence, posteriors)
+        for word in fallback_text.split():
+            yield word + " "
+            await asyncio.sleep(0.02)
+        return
 
     instructions = f"""You are Reality Transformer, a consciousness-based transformation engine powered by the One Origin Framework (OOF).
 
@@ -414,7 +593,7 @@ Provide a deep, transformative response that:
 
 
 def format_results_fallback(prompt: str, evidence: dict, posteriors: dict) -> str:
-    """Format results without OpenAI"""
+    """Format results without OpenAI (legacy fallback)"""
 
     lines = [
         f"## Transformation Analysis",
@@ -450,18 +629,89 @@ def format_results_fallback(prompt: str, evidence: dict, posteriors: dict) -> st
     return "\n".join(lines)
 
 
+def format_results_fallback_bridge(
+    prompt: str,
+    evidence: dict,
+    consciousness_state: ConsciousnessState
+) -> str:
+    """Format results without OpenAI using articulation bridge data"""
+
+    ops = consciousness_state.tier1.core_operators
+    s_level = consciousness_state.tier1.s_level
+    matrices = consciousness_state.tier3.transformation_matrices
+
+    lines = [
+        "## Consciousness Analysis",
+        "",
+        f"**Your Inquiry:** {prompt}",
+        "",
+        "### Current State",
+        f"You are operating at a consciousness level characterized by {s_level.label}.",
+        f"Your present-moment awareness is at {ops.P_presence * 100:.0f}%, with overall consciousness quality at {ops.Psi_quality * 100:.0f}%.",
+        "",
+        "### Key Patterns Identified",
+    ]
+
+    # Add bottlenecks
+    if consciousness_state.bottlenecks:
+        lines.append("")
+        lines.append("**Areas Needing Attention:**")
+        for b in consciousness_state.bottlenecks[:3]:
+            lines.append(f"- {b.description}")
+
+    # Add leverage points
+    if consciousness_state.leverage_points:
+        lines.append("")
+        lines.append("**Opportunities for Growth:**")
+        for lp in consciousness_state.leverage_points[:3]:
+            lines.append(f"- {lp.description} ({lp.multiplier}x potential)")
+
+    # Add matrix positions
+    lines.append("")
+    lines.append("### Transformation Readiness")
+    lines.append(f"- Truth clarity: {matrices.truth_position} ({matrices.truth_score * 100:.0f}%)")
+    lines.append(f"- Power stance: {matrices.power_position} ({matrices.power_score * 100:.0f}%)")
+    lines.append(f"- Freedom orientation: {matrices.freedom_position} ({matrices.freedom_score * 100:.0f}%)")
+
+    # Add recommendations
+    lines.append("")
+    lines.append("### Next Steps")
+    lines.append("1. Focus on the primary bottleneck identified above")
+    lines.append("2. Activate the highest leverage point available to you")
+    lines.append("3. Maintain awareness of your transformation pathway")
+
+    return "\n".join(lines)
+
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
     return {
         "status": "healthy",
+        "version": "3.0.0",
         "model": OPENAI_MODEL,
         "registry_loaded": inference_engine.is_loaded,
         "formula_count": inference_engine.formula_count,
         "openai_configured": OPENAI_API_KEY is not None,
         "oof_framework_loaded": len(OOF_FRAMEWORK) > 0,
         "oof_framework_size": len(OOF_FRAMEWORK),
-        "web_research_enabled": True
+        "web_research_enabled": True,
+        "articulation_bridge": {
+            "enabled": True,
+            "components": [
+                "ValueOrganizer",
+                "BottleneckDetector",
+                "LeverageIdentifier",
+                "ArticulationPromptBuilder"
+            ],
+            "features": [
+                "Semantic value organization",
+                "Algorithmic bottleneck detection",
+                "Leverage point calculation",
+                "Structured prompt generation",
+                "Framework concealment"
+            ]
+        }
     }
 
 
