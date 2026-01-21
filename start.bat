@@ -67,3 +67,11 @@ echo ============================================================
 echo.
 
 python -m uvicorn main:app --host 0.0.0.0 --port 3000
+if errorlevel 1 (
+    echo.
+    echo ============================================================
+    echo ERROR: Server crashed or failed to start
+    echo Check the error messages above
+    echo ============================================================
+    pause
+)
