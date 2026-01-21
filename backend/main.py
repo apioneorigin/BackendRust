@@ -649,20 +649,34 @@ SECTION 5: FIRST STEPS
                         try:
                             data = json.loads(data_str)
 
-                            # Log evidence searches
-                            if "tool_calls" in data:
-                                for tool in data.get("tool_calls", []):
-                                    if tool.get("type") == "web_search":
-                                        query = tool.get("query", tool.get("arguments", {}).get("query", ""))
-                                        print(f"[EVIDENCE SEARCH] Query: {query}")
+                            # Log evidence searches (with type safety)
+                            if isinstance(data, dict) and "tool_calls" in data:
+                                tool_calls = data.get("tool_calls", [])
+                                if isinstance(tool_calls, list):
+                                    for tool in tool_calls:
+                                        if isinstance(tool, dict) and tool.get("type") == "web_search":
+                                            query = tool.get("query", "")
+                                            if not query and "arguments" in tool:
+                                                args = tool.get("arguments", {})
+                                                if isinstance(args, dict):
+                                                    query = args.get("query", "")
+                                            if query:
+                                                print(f"[EVIDENCE SEARCH] Query: {query}")
 
                             # Extract text from streaming response
-                            if "delta" in data:
-                                delta = data.get("delta", {})
-                                if "text" in delta:
-                                    yield delta["text"]
-                            elif "output_text" in data:
-                                yield data["output_text"]
+                            if isinstance(data, dict):
+                                if "delta" in data:
+                                    delta = data.get("delta", {})
+                                    if isinstance(delta, dict) and "text" in delta:
+                                        yield delta["text"]
+                                elif "output_text" in data:
+                                    yield data["output_text"]
+                                # Handle Responses API format
+                                elif "type" in data and data.get("type") == "response.output_text.delta":
+                                    if "delta" in data:
+                                        yield data["delta"]
+                                elif "type" in data and data.get("type") == "response.output_text.done":
+                                    pass  # End of text output
                         except json.JSONDecodeError:
                             continue
 
