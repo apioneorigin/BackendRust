@@ -20,6 +20,7 @@ import os
 import json
 import asyncio
 import httpx
+import time
 from pathlib import Path
 from typing import Optional, AsyncGenerator, Dict, Any
 from dataclasses import asdict
@@ -35,6 +36,16 @@ from bottleneck_detector import BottleneckDetector
 from leverage_identifier import LeverageIdentifier
 from articulation_prompt_builder import ArticulationPromptBuilder, build_articulation_context
 from consciousness_state import ConsciousnessState, UserContext, WebResearch
+
+# Import logging
+from logging_config import (
+    api_logger,
+    articulation_logger,
+    reverse_logger,
+    pipeline_logger,
+    consciousness_logger,
+    get_logger
+)
 
 # Reverse Causality Mapping imports
 from reverse_causality import (
@@ -71,14 +82,17 @@ bottleneck_detector = BottleneckDetector()
 leverage_identifier = LeverageIdentifier()
 prompt_builder = ArticulationPromptBuilder()
 
-# Load IOOF Framework for OpenAI context (full instruction set)
-IOOF_PATH = Path(__file__).parent.parent / "IOOF.txt"
+# Load OOF Framework for OpenAI context (full instruction set)
+OOF_PATH = Path(__file__).parent.parent / "OOF_Math.txt"
 OOF_FRAMEWORK = ""
-if IOOF_PATH.exists():
-    with open(IOOF_PATH, 'r', encoding='utf-8') as f:
+if OOF_PATH.exists():
+    with open(OOF_PATH, 'r', encoding='utf-8') as f:
         OOF_FRAMEWORK = f.read()
-    print(f"Loaded IOOF Framework: {len(OOF_FRAMEWORK)} characters")
-print("Articulation Bridge initialized: ValueOrganizer, BottleneckDetector, LeverageIdentifier, PromptBuilder")
+    api_logger.info(f"Loaded OOF Framework: {len(OOF_FRAMEWORK)} characters")
+else:
+    api_logger.warning(f"OOF Framework not found at {OOF_PATH}")
+
+api_logger.info("Articulation Bridge initialized: ValueOrganizer, BottleneckDetector, LeverageIdentifier, PromptBuilder")
 
 # Initialize Reverse Causality Mapping components
 reverse_engine = ReverseCausalityEngine()
@@ -91,7 +105,7 @@ grace_calculator = GraceCalculator()
 progress_tracker = ProgressTracker()
 coherence_validator = CoherenceValidator()
 mvt_calculator = MVTCalculator()
-print("Reverse Causality Mapping initialized: 10 components loaded")
+api_logger.info("Reverse Causality Mapping initialized: 10 components loaded")
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -117,32 +131,42 @@ async def run_inference(prompt: str = Query(..., description="User query")):
 
 async def inference_stream(prompt: str) -> AsyncGenerator[dict, None]:
     """Generate SSE events for the inference pipeline with evidence enrichment and optional reverse mapping"""
-    import time
     start_time = time.time()
+
+    # Start pipeline logging
+    pipeline_logger.start_pipeline(prompt)
 
     try:
         # Step 0: Detect if query is future-oriented
         is_future_oriented = detect_future_oriented_language(prompt)
         query_mode = "hybrid (analysis + pathways)" if is_future_oriented else "analysis"
-        print(f"[QUERY MODE] Future-oriented: {is_future_oriented} → Mode: {query_mode}")
+        api_logger.info(f"[QUERY MODE] Future-oriented: {is_future_oriented} → Mode: {query_mode}")
+        pipeline_logger.log_step("Query Analysis", {"future_oriented": is_future_oriented, "mode": query_mode})
 
         # Step 1: Parse query with OpenAI + Web Research
+        api_logger.info("[STEP 1] Parsing query with web research")
         yield {
             "event": "status",
             "data": json.dumps({"message": "Researching context and parsing query..."})
         }
 
         evidence = await parse_query_with_web_research(prompt)
+        obs_count = len(evidence.get('observations', []))
+        api_logger.info(f"[EVIDENCE] Extracted {obs_count} observations")
+        api_logger.debug(f"[EVIDENCE] Goal: {evidence.get('goal', 'N/A')}")
+        api_logger.debug(f"[EVIDENCE] Domain: {evidence.get('domain', 'N/A')}")
+        pipeline_logger.log_step("Evidence Extraction", {"observations": obs_count})
 
         yield {
             "event": "status",
-            "data": json.dumps({"message": f"Extracted {len(evidence.get('observations', []))} tier-1 operator values..."})
+            "data": json.dumps({"message": f"Extracted {obs_count} tier-1 operator values..."})
         }
 
         # Step 2: Run inference
+        api_logger.info("[STEP 2] Running inference engine")
         yield {
             "event": "status",
-            "data": json.dumps({"message": "Running consciousness inference (2,154 formulas)..."})
+            "data": json.dumps({"message": f"Running consciousness inference ({inference_engine.formula_count} formulas)..."})
         }
 
         posteriors = await asyncio.to_thread(
@@ -154,7 +178,8 @@ async def inference_stream(prompt: str) -> AsyncGenerator[dict, None]:
         formula_count = posteriors.get('formula_count', 0)
         tiers_executed = posteriors.get('tiers_executed', 0)
         posteriors_count = len(posteriors.get('values', {}))
-        print(f"[INFERENCE] Formulas executed: {formula_count} | Tiers: {tiers_executed} | Posteriors: {posteriors_count}")
+        api_logger.info(f"[INFERENCE] Formulas: {formula_count} | Tiers: {tiers_executed} | Posteriors: {posteriors_count}")
+        pipeline_logger.log_step("Inference", {"formulas": formula_count, "tiers": tiers_executed, "posteriors": posteriors_count})
 
         yield {
             "event": "status",
@@ -164,28 +189,42 @@ async def inference_stream(prompt: str) -> AsyncGenerator[dict, None]:
         }
 
         # Step 3: Articulation Bridge - Organize, Detect, Build Prompt
+        api_logger.info("[STEP 3] Articulation Bridge processing")
         yield {
             "event": "status",
             "data": json.dumps({"message": "Organizing consciousness state into semantic categories..."})
         }
 
         # Organize values into semantic structure
+        articulation_logger.info("[VALUE ORGANIZER] Organizing posteriors into consciousness state")
         consciousness_state = value_organizer.organize(
             raw_values=posteriors,
             tier1_values=evidence,
             user_id="",
             session_id=""
         )
+        articulation_logger.info(f"[VALUE ORGANIZER] S-Level: {consciousness_state.tier1.s_level.current:.1f} ({consciousness_state.tier1.s_level.label})")
+        articulation_logger.debug(f"[VALUE ORGANIZER] Tier1 operators: {len(vars(consciousness_state.tier1))} fields")
 
         # Detect bottlenecks
+        articulation_logger.info("[BOTTLENECK DETECTOR] Analyzing bottlenecks")
         bottlenecks = bottleneck_detector.detect(consciousness_state)
         consciousness_state.bottlenecks = bottlenecks
         bottleneck_summary = bottleneck_detector.get_summary(bottlenecks)
+        articulation_logger.info(f"[BOTTLENECK DETECTOR] Found {bottleneck_summary['total_count']} bottlenecks")
+        for bn in bottlenecks[:3]:
+            articulation_logger.debug(f"  - {bn.category}: {bn.name} (severity: {bn.severity:.2f})")
+        pipeline_logger.log_step("Bottleneck Detection", {"count": bottleneck_summary['total_count']})
 
         # Identify leverage points
+        articulation_logger.info("[LEVERAGE IDENTIFIER] Identifying leverage points")
         leverage_points = leverage_identifier.identify(consciousness_state)
         consciousness_state.leverage_points = leverage_points
         leverage_summary = leverage_identifier.get_summary(leverage_points)
+        articulation_logger.info(f"[LEVERAGE IDENTIFIER] Found {leverage_summary['total_count']} leverage points (max {leverage_summary['max_multiplier']}x)")
+        for lp in leverage_points[:3]:
+            articulation_logger.debug(f"  - {lp.category}: {lp.name} (multiplier: {lp.multiplier:.2f}x)")
+        pipeline_logger.log_step("Leverage Identification", {"count": leverage_summary['total_count'], "max_mult": leverage_summary['max_multiplier']})
 
         yield {
             "event": "status",
@@ -197,6 +236,7 @@ async def inference_stream(prompt: str) -> AsyncGenerator[dict, None]:
         # Step 3.5: Run reverse mapping if future-oriented
         reverse_mapping_data = None
         if is_future_oriented:
+            reverse_logger.info("[REVERSE MAPPING] Starting future-oriented transformation analysis")
             yield {
                 "event": "status",
                 "data": json.dumps({"message": "Computing transformation pathways (reverse causality mapping)..."})
@@ -211,6 +251,8 @@ async def inference_stream(prompt: str) -> AsyncGenerator[dict, None]:
 
                 pathway_count = reverse_mapping_data.get('pathways_generated', 0)
                 mvt_count = reverse_mapping_data.get('mvt_operators', 0)
+                reverse_logger.info(f"[REVERSE MAPPING] Complete: {pathway_count} pathways, {mvt_count} MVT operators")
+                pipeline_logger.log_step("Reverse Mapping", {"pathways": pathway_count, "mvt_operators": mvt_count})
 
                 yield {
                     "event": "status",
@@ -219,10 +261,11 @@ async def inference_stream(prompt: str) -> AsyncGenerator[dict, None]:
                     })
                 }
             except Exception as e:
-                print(f"[REVERSE MAPPING] Error: {e} - continuing without pathways")
+                reverse_logger.error(f"[REVERSE MAPPING] Error: {e} - continuing without pathways", exc_info=True)
                 reverse_mapping_data = None
 
         # Step 4: Build articulation prompt and stream response with evidence enrichment
+        api_logger.info("[STEP 4] Generating articulation response")
         yield {
             "event": "status",
             "data": json.dumps({
@@ -230,16 +273,24 @@ async def inference_stream(prompt: str) -> AsyncGenerator[dict, None]:
             })
         }
 
+        token_count = 0
         async for token in format_results_streaming_bridge(
             prompt, evidence, posteriors, consciousness_state, reverse_mapping_data
         ):
+            token_count += 1
             yield {
                 "event": "token",
                 "data": json.dumps({"text": token})
             }
 
+        api_logger.info(f"[ARTICULATION] Streamed {token_count} tokens")
+        pipeline_logger.log_step("Articulation", {"tokens": token_count})
+
         # Done
         elapsed = time.time() - start_time
+        api_logger.info(f"[PIPELINE COMPLETE] Total time: {elapsed:.2f}s | Mode: {query_mode} | Reverse mapping: {reverse_mapping_data is not None}")
+        pipeline_logger.end_pipeline(success=True)
+
         yield {
             "event": "done",
             "data": json.dumps({
@@ -251,7 +302,8 @@ async def inference_stream(prompt: str) -> AsyncGenerator[dict, None]:
 
     except Exception as e:
         import traceback
-        traceback.print_exc()
+        api_logger.error(f"[PIPELINE ERROR] {type(e).__name__}: {e}", exc_info=True)
+        pipeline_logger.end_pipeline(success=False)
         yield {
             "event": "error",
             "data": json.dumps({"message": str(e)})
@@ -349,7 +401,7 @@ Return ONLY valid JSON (no markdown, no explanation) with this structure:
             )
 
             if response.status_code != 200:
-                print(f"OpenAI API error: {response.status_code} - {response.text}")
+                api_logger.error(f"OpenAI API error: {response.status_code} - {response.text}")
                 raise Exception(f"OpenAI API error: {response.status_code}")
 
             data = response.json()
@@ -381,7 +433,7 @@ Return ONLY valid JSON (no markdown, no explanation) with this structure:
             raise Exception("Could not parse response from OpenAI Responses API")
 
     except json.JSONDecodeError as e:
-        print(f"JSON parse error: {e}")
+        api_logger.error(f"JSON parse error: {e}")
         # Fallback
         return {
             "user_identity": "User",
@@ -393,7 +445,7 @@ Return ONLY valid JSON (no markdown, no explanation) with this structure:
             "targets": ["Transformation", "Grace", "Karma"]
         }
     except Exception as e:
-        print(f"OpenAI Responses API error: {e}")
+        api_logger.error(f"OpenAI Responses API error: {e}")
         # Fallback
         return {
             "user_identity": "User",
@@ -427,10 +479,16 @@ async def format_results_streaming_bridge(
     bottleneck_count = len(consciousness_state.bottlenecks)
     leverage_count = len(consciousness_state.leverage_points)
     has_reverse_mapping = reverse_mapping is not None
-    print(f"[ARTICULATION BRIDGE] Sending to gpt-5.2: {bottleneck_count} bottlenecks, {leverage_count} leverage points, reverse_mapping={has_reverse_mapping}")
+    articulation_logger.info(f"[ARTICULATION BRIDGE] Sending to {OPENAI_MODEL}:")
+    articulation_logger.info(f"  - Bottlenecks: {bottleneck_count}")
+    articulation_logger.info(f"  - Leverage points: {leverage_count}")
+    articulation_logger.info(f"  - Reverse mapping: {has_reverse_mapping}")
+    articulation_logger.debug(f"  - S-Level: {consciousness_state.tier1.s_level.current:.1f}")
+    articulation_logger.debug(f"  - Domain: {evidence.get('domain', 'general')}")
 
     if not OPENAI_API_KEY:
         # Fallback: format results without OpenAI
+        articulation_logger.warning("[ARTICULATION BRIDGE] No OpenAI API key - using fallback")
         fallback_text = format_results_fallback(prompt, evidence, posteriors)
         for word in fallback_text.split():
             yield word + " "
@@ -438,6 +496,7 @@ async def format_results_streaming_bridge(
         return
 
     # Build articulation context using the bridge
+    articulation_logger.debug("[ARTICULATION BRIDGE] Building articulation context")
     articulation_context = build_articulation_context(
         user_identity=evidence.get('user_identity', 'User'),
         domain=evidence.get('domain', 'general'),
@@ -452,6 +511,7 @@ async def format_results_streaming_bridge(
 
     # Build the structured articulation prompt
     articulation_prompt = prompt_builder.build_prompt(articulation_context)
+    articulation_logger.info(f"[ARTICULATION BRIDGE] Built prompt: {len(articulation_prompt)} characters")
 
     # Add reverse mapping data if available
     if reverse_mapping:
@@ -638,7 +698,7 @@ SECTION 5: FIRST STEPS
             ) as response:
                 if response.status_code != 200:
                     error_text = await response.aread()
-                    print(f"OpenAI streaming error: {response.status_code} - {error_text}")
+                    api_logger.error(f"OpenAI streaming error: {response.status_code} - {error_text}")
                     raise Exception(f"OpenAI API error: {response.status_code}")
 
                 async for line in response.aiter_lines():
@@ -681,7 +741,7 @@ SECTION 5: FIRST STEPS
                             continue
 
     except Exception as e:
-        print(f"OpenAI streaming error: {e}")
+        api_logger.error(f"OpenAI streaming error: {e}")
         fallback_text = format_results_fallback_bridge(prompt, evidence, consciousness_state)
         for word in fallback_text.split():
             yield word + " "
@@ -791,7 +851,7 @@ Provide a deep, transformative response that:
             ) as response:
                 if response.status_code != 200:
                     error_text = await response.aread()
-                    print(f"OpenAI streaming error: {response.status_code} - {error_text}")
+                    api_logger.error(f"OpenAI streaming error: {response.status_code} - {error_text}")
                     raise Exception(f"OpenAI API error: {response.status_code}")
 
                 async for line in response.aiter_lines():
@@ -812,7 +872,7 @@ Provide a deep, transformative response that:
                             continue
 
     except Exception as e:
-        print(f"OpenAI streaming error: {e}")
+        api_logger.error(f"OpenAI streaming error: {e}")
         fallback_text = format_results_fallback(prompt, evidence, posteriors)
         for word in fallback_text.split():
             yield word + " "
@@ -1229,17 +1289,26 @@ async def run_reverse_mapping_for_articulation(
     This extracts the key information from reverse mapping without streaming,
     so it can be passed to the unified articulation call.
     """
+    reverse_logger.info("=" * 50)
+    reverse_logger.info("[REVERSE MAPPING] Starting reverse causality analysis")
+    reverse_logger.info(f"[REVERSE MAPPING] Goal: {goal[:80]}...")
+
     # Extract current operators from evidence
     current_operators = _extract_operators_from_evidence(evidence)
+    reverse_logger.debug(f"[REVERSE MAPPING] Extracted {len(current_operators)} current operators")
 
     # Get current S-level from consciousness state
     current_s_level = consciousness_state.tier1.s_level.current if hasattr(consciousness_state.tier1, 's_level') else 3.0
+    reverse_logger.info(f"[REVERSE MAPPING] Current S-Level: {current_s_level:.1f}")
 
     # Find matching signatures
+    reverse_logger.debug("[REVERSE MAPPING] Searching signature library...")
     matching_signatures = signature_library.find_signatures_for_goal(goal, current_s_level)
+    reverse_logger.info(f"[REVERSE MAPPING] Found {len(matching_signatures)} matching signatures")
 
     if matching_signatures:
         primary_signature = matching_signatures[0]
+        reverse_logger.debug(f"[REVERSE MAPPING] Using signature: {primary_signature.name if hasattr(primary_signature, 'name') else 'primary'}")
         required_operators = primary_signature.operator_minimums.copy()
         for op, max_val in primary_signature.operator_maximums.items():
             if op not in required_operators or required_operators[op] > max_val:
@@ -1247,28 +1316,38 @@ async def run_reverse_mapping_for_articulation(
         target_s_level = primary_signature.optimal_s_level
     else:
         # Use reverse engine for custom goal
+        reverse_logger.debug("[REVERSE MAPPING] No signature match - using reverse engine")
         result = reverse_engine.solve_for_outcome(
             'breakthrough_probability', 0.7, current_operators
         )
         required_operators = result.required_state.operator_values
         target_s_level = current_s_level + 1
 
+    reverse_logger.info(f"[REVERSE MAPPING] Target S-Level: {target_s_level:.1f} (delta: {target_s_level - current_s_level:+.1f})")
+    reverse_logger.debug(f"[REVERSE MAPPING] Required operators: {len(required_operators)}")
+
     # Check constraints
+    reverse_logger.debug("[REVERSE MAPPING] Checking constraints...")
     constraint_result = constraint_checker.check_all_constraints(
         current_operators, required_operators, current_s_level, target_s_level, goal
     )
+    reverse_logger.info(f"[REVERSE MAPPING] Constraints: feasible={constraint_result.feasible}, score={constraint_result.overall_feasibility_score:.2f}")
 
     # Validate coherence
+    reverse_logger.debug("[REVERSE MAPPING] Validating coherence...")
     coherence_result = coherence_validator.validate_coherence(
         required_operators, target_s_level
     )
+    reverse_logger.info(f"[REVERSE MAPPING] Coherence: valid={coherence_result.is_coherent}, score={coherence_result.coherence_score:.2f}")
 
     # Apply coherence corrections if needed
     if coherence_result.suggested_adjustments:
+        reverse_logger.debug(f"[REVERSE MAPPING] Applying {len(coherence_result.suggested_adjustments)} coherence corrections")
         for op, val in coherence_result.suggested_adjustments.items():
             required_operators[op] = val
 
     # Generate pathways
+    reverse_logger.debug("[REVERSE MAPPING] Generating transformation pathways...")
     pathways = pathway_generator.generate_pathways(
         current_operators=current_operators,
         required_operators=required_operators,
@@ -1276,32 +1355,47 @@ async def run_reverse_mapping_for_articulation(
         target_s_level=target_s_level,
         num_pathways=5
     )
+    reverse_logger.info(f"[REVERSE MAPPING] Generated {len(pathways)} pathways")
 
     # Optimize pathways
+    reverse_logger.debug("[REVERSE MAPPING] Optimizing pathways...")
     optimization_result = pathway_optimizer.optimize_pathways(pathways)
 
     # Calculate MVT
+    reverse_logger.debug("[REVERSE MAPPING] Calculating minimum viable transformation...")
     mvt = mvt_calculator.calculate_mvt(
         current_operators, required_operators, max_operators=5
     )
+    reverse_logger.info(f"[REVERSE MAPPING] MVT: {mvt.total_operators_changed} operators, efficiency={mvt.mvt_efficiency:.2f}")
+    for change in mvt.changes[:3]:
+        reverse_logger.debug(f"  - {change.operator}: {change.current_value:.2f} → {change.required_value:.2f}")
 
     # Analyze death requirements
+    reverse_logger.debug("[REVERSE MAPPING] Analyzing death requirements...")
     death_sequence = death_sequencer.analyze_death_requirements(
         current_operators, required_operators, goal
     )
+    death_count = len(death_sequence.required_deaths) if hasattr(death_sequence, 'required_deaths') else 0
+    reverse_logger.info(f"[REVERSE MAPPING] Death sequence: {death_count} identity deaths required")
 
     # Calculate grace requirements
+    reverse_logger.debug("[REVERSE MAPPING] Calculating grace requirements...")
     grace_req = grace_calculator.calculate_grace_requirements(
         current_operators, required_operators, goal
     )
+    reverse_logger.info(f"[REVERSE MAPPING] Grace: minimum={grace_req.minimum_grace:.2f}, recommended={grace_req.recommended_grace:.2f}")
 
     # Generate monitoring plan
     best_pathway = pathways[0] if pathways else None
     monitoring_plan = None
     if best_pathway:
+        reverse_logger.debug("[REVERSE MAPPING] Generating monitoring plan...")
         monitoring_plan = progress_tracker.generate_monitoring_plan(
             best_pathway, current_operators, required_operators
         )
+
+    reverse_logger.info("[REVERSE MAPPING] Analysis complete")
+    reverse_logger.info("=" * 50)
 
     # Return structured data for articulation
     return {
@@ -1492,7 +1586,7 @@ Provide transformation guidance that:
             ) as response:
                 if response.status_code != 200:
                     error_text = await response.aread()
-                    print(f"OpenAI streaming error: {response.status_code} - {error_text}")
+                    api_logger.error(f"OpenAI streaming error: {response.status_code} - {error_text}")
                     raise Exception(f"OpenAI API error: {response.status_code}")
 
                 async for line in response.aiter_lines():
@@ -1512,7 +1606,7 @@ Provide transformation guidance that:
                             continue
 
     except Exception as e:
-        print(f"Articulation error: {e}")
+        api_logger.error(f"Articulation error: {e}")
         yield f"\n\nTransformation guidance: Focus on {', '.join(reverse_result['mvt']['operators'][:3])} first."
 
 
