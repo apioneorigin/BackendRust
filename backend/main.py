@@ -417,15 +417,18 @@ async def parse_query_with_web_research(prompt: str, model_config: dict) -> dict
     model = model_config.get("model")
 
     if not api_key:
-        # Fallback: simple keyword extraction
+        # Fallback with minimum required observations for validation
         api_logger.warning(f"No API key for {provider}, using fallback")
         return {
             "user_identity": "User",
             "goal": prompt,
             "observations": [
-                {"var": "Consciousness", "value": 0.7, "confidence": 0.8},
-                {"var": "Aspiration", "value": 0.85, "confidence": 0.9},
-                {"var": "Maya", "value": 0.4, "confidence": 0.7}
+                {"var": "Consciousness", "value": 0.6, "confidence": 0.5},
+                {"var": "Karma", "value": 0.5, "confidence": 0.5},
+                {"var": "Grace", "value": 0.5, "confidence": 0.5},
+                {"var": "Awareness", "value": 0.6, "confidence": 0.5},
+                {"var": "Maya", "value": 0.5, "confidence": 0.5},
+                {"var": "Aspiration", "value": 0.7, "confidence": 0.6}
             ],
             "targets": ["Transformation", "Grace", "Karma", "NextActions"]
         }
@@ -552,6 +555,7 @@ Return ONLY valid JSON (no markdown, no explanation) with this structure:
                     raise Exception(f"OpenAI API error: {response.status_code}")
 
                 data = response.json()
+                api_logger.debug(f"[PARSE] Raw API response keys: {data.keys() if isinstance(data, dict) else type(data)}")
 
                 # Extract response text from Responses API format
                 output = data.get("output", [])
@@ -567,6 +571,10 @@ Return ONLY valid JSON (no markdown, no explanation) with this structure:
                 # If we couldn't get text from message, try output_text directly
                 if not response_text and "output_text" in data:
                     response_text = data["output_text"]
+
+                # Log what we extracted
+                if not response_text:
+                    api_logger.warning(f"[PARSE] No response_text found. Output structure: {[o.get('type') for o in output]}")
 
             # Parse JSON from response text (common for both providers)
             if not response_text:
@@ -584,25 +592,33 @@ Return ONLY valid JSON (no markdown, no explanation) with this structure:
 
     except json.JSONDecodeError as e:
         api_logger.error(f"JSON parse error: {e}")
-        # Fallback
+        # Fallback with minimum required observations for validation
         return {
             "user_identity": "User",
             "goal": prompt,
             "observations": [
-                {"var": "Consciousness", "value": 0.7, "confidence": 0.8},
-                {"var": "Aspiration", "value": 0.85, "confidence": 0.9}
+                {"var": "Consciousness", "value": 0.6, "confidence": 0.5},
+                {"var": "Karma", "value": 0.5, "confidence": 0.5},
+                {"var": "Grace", "value": 0.5, "confidence": 0.5},
+                {"var": "Awareness", "value": 0.6, "confidence": 0.5},
+                {"var": "Maya", "value": 0.5, "confidence": 0.5},
+                {"var": "Aspiration", "value": 0.7, "confidence": 0.6}
             ],
             "targets": ["Transformation", "Grace", "Karma"]
         }
     except Exception as e:
         api_logger.error(f"API error ({provider}): {e}")
-        # Fallback
+        # Fallback with minimum required observations for validation
         return {
             "user_identity": "User",
             "goal": prompt,
             "observations": [
-                {"var": "Consciousness", "value": 0.7, "confidence": 0.8},
-                {"var": "Aspiration", "value": 0.85, "confidence": 0.9}
+                {"var": "Consciousness", "value": 0.6, "confidence": 0.5},
+                {"var": "Karma", "value": 0.5, "confidence": 0.5},
+                {"var": "Grace", "value": 0.5, "confidence": 0.5},
+                {"var": "Awareness", "value": 0.6, "confidence": 0.5},
+                {"var": "Maya", "value": 0.5, "confidence": 0.5},
+                {"var": "Aspiration", "value": 0.7, "confidence": 0.6}
             ],
             "targets": ["Transformation", "Grace", "Karma"]
         }
