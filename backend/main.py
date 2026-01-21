@@ -714,6 +714,13 @@ Check-in schedule: {reverse_mapping.get('check_in_schedule', 'Weekly')}
     # System instructions for the articulation call with evidence enrichment
     instructions = f"""You are Reality Transformer, a consciousness-based transformation engine.
 
+CRITICAL - READ FIRST:
+- Generate ONE single response only
+- Do NOT repeat or duplicate any content
+- Do NOT regenerate previous sections
+- Each paragraph must contain NEW information
+- If you notice you're repeating, STOP and continue with new content
+
 You are receiving a STRUCTURED ANALYSIS from the One Origin Framework (OOF).
 Your task is to ARTICULATE these insights in NATURAL, DOMAIN-APPROPRIATE language.
 
