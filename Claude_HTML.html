@@ -285,8 +285,20 @@
             <div class="metric-value" id="totalTime">—</div>
           </div>
           <div class="metric">
-            <div class="metric-label">Tokens</div>
-            <div class="metric-value" id="tokenCount">0</div>
+            <div class="metric-label">Input</div>
+            <div class="metric-value" id="inputTokens">—</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Output</div>
+            <div class="metric-value" id="outputTokens">—</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Total</div>
+            <div class="metric-value" id="totalTokens">—</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Cost</div>
+            <div class="metric-value" id="cost">—</div>
           </div>
         </div>
       </div>
@@ -347,7 +359,10 @@
       tokenCount = 0;
       updateMetric('ttft', '—');
       updateMetric('totalTime', '—');
-      updateMetric('tokenCount', '0');
+      updateMetric('inputTokens', '—');
+      updateMetric('outputTokens', '—');
+      updateMetric('totalTokens', '—');
+      updateMetric('cost', '—');
 
       // Update UI
       document.getElementById('runBtn').disabled = true;
@@ -378,11 +393,21 @@
         const outputEl = document.getElementById('output');
         outputEl.textContent += data.text;
         tokenCount++;
-        updateMetric('tokenCount', tokenCount);
 
         // Update total time
         const elapsed = Date.now() - startTime;
         updateMetric('totalTime', formatTime(elapsed));
+      });
+
+      eventSource.addEventListener('usage', (e) => {
+        const data = JSON.parse(e.data);
+        updateMetric('inputTokens', data.input_tokens.toLocaleString());
+        updateMetric('outputTokens', data.output_tokens.toLocaleString());
+        updateMetric('totalTokens', data.total_tokens.toLocaleString());
+        // Format cost - show appropriate precision based on value
+        const cost = data.cost || 0;
+        const costStr = cost < 0.01 ? `$${cost.toFixed(4)}` : `$${cost.toFixed(2)}`;
+        updateMetric('cost', costStr);
       });
 
       eventSource.addEventListener('done', (e) => {

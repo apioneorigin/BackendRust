@@ -71,37 +71,43 @@ app = FastAPI(title="Reality Transformer", version="4.1.0")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 
-# Model configurations
+# Model configurations with pricing (per million tokens, Jan 2026)
+# Sources: OpenAI API Pricing, Anthropic Claude Pricing
 MODEL_CONFIGS = {
     "gpt-5.2": {
         "provider": "openai",
         "api_key": OPENAI_API_KEY,
         "endpoint": "https://api.openai.com/v1/responses",
         "streaming_endpoint": "https://api.openai.com/v1/responses",
+        "pricing": {"input": 2.00, "output": 8.00},  # $/million tokens
     },
     "gpt-4.1-mini": {
         "provider": "openai",
         "api_key": OPENAI_API_KEY,
         "endpoint": "https://api.openai.com/v1/responses",
         "streaming_endpoint": "https://api.openai.com/v1/responses",
+        "pricing": {"input": 0.40, "output": 1.60},  # $/million tokens
     },
     "claude-3-haiku-20240307": {
         "provider": "anthropic",
         "api_key": ANTHROPIC_API_KEY,
         "endpoint": "https://api.anthropic.com/v1/messages",
         "streaming_endpoint": "https://api.anthropic.com/v1/messages",
+        "pricing": {"input": 0.25, "output": 1.25},  # $/million tokens
     },
     "claude-sonnet-4-5-20250929": {
         "provider": "anthropic",
         "api_key": ANTHROPIC_API_KEY,
         "endpoint": "https://api.anthropic.com/v1/messages",
         "streaming_endpoint": "https://api.anthropic.com/v1/messages",
+        "pricing": {"input": 3.00, "output": 15.00},  # $/million tokens
     },
     "claude-opus-4-5-20251101": {
         "provider": "anthropic",
         "api_key": ANTHROPIC_API_KEY,
         "endpoint": "https://api.anthropic.com/v1/messages",
         "streaming_endpoint": "https://api.anthropic.com/v1/messages",
+        "pricing": {"input": 5.00, "output": 25.00},  # $/million tokens
     },
 }
 
@@ -379,17 +385,42 @@ async def inference_stream(prompt: str, model_config: dict) -> AsyncGenerator[di
         }
 
         token_count = 0
+        token_usage = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0, "cost": 0.0}
         async for token in format_results_streaming_bridge(
             prompt, evidence, posteriors, consciousness_state, reverse_mapping_data, model_config
         ):
-            token_count += 1
-            yield {
-                "event": "token",
-                "data": json.dumps({"text": token})
-            }
+            # Check if this is a token usage object (yielded at end of stream)
+            if isinstance(token, dict) and token.get("__token_usage__"):
+                input_tokens = token.get("input_tokens", 0)
+                output_tokens = token.get("output_tokens", 0)
+                total_tokens = token.get("total_tokens", 0)
+
+                # Calculate cost based on model pricing
+                pricing = model_config.get("pricing", {"input": 0, "output": 0})
+                cost = (input_tokens * pricing["input"] + output_tokens * pricing["output"]) / 1_000_000
+
+                token_usage = {
+                    "input_tokens": input_tokens,
+                    "output_tokens": output_tokens,
+                    "total_tokens": total_tokens,
+                    "cost": round(cost, 6)
+                }
+                api_logger.info(f"[TOKEN USAGE] Input: {input_tokens}, Output: {output_tokens}, Total: {total_tokens}, Cost: ${cost:.6f}")
+            else:
+                token_count += 1
+                yield {
+                    "event": "token",
+                    "data": json.dumps({"text": token})
+                }
 
         api_logger.info(f"[ARTICULATION] Streamed {token_count} tokens")
         pipeline_logger.log_step("Articulation", {"tokens": token_count})
+
+        # Send token usage event with cost
+        yield {
+            "event": "usage",
+            "data": json.dumps(token_usage)
+        }
 
         # Done
         elapsed = time.time() - start_time
@@ -910,6 +941,10 @@ SECTION 5: FIRST STEPS
                         api_logger.error(f"Anthropic streaming error: {response.status_code} - {error_text}")
                         raise Exception(f"Anthropic API error: {response.status_code}")
 
+                    # Track token usage for Anthropic
+                    input_tokens = 0
+                    output_tokens = 0
+
                     async for line in response.aiter_lines():
                         if line.startswith("data: "):
                             data_str = line[6:]
@@ -920,15 +955,23 @@ SECTION 5: FIRST STEPS
                                 if isinstance(data, dict):
                                     event_type = data.get("type", "")
                                     # Handle Anthropic streaming events
-                                    if event_type == "content_block_delta":
+                                    if event_type == "message_start":
+                                        # Input tokens come in message_start
+                                        usage = data.get("message", {}).get("usage", {})
+                                        input_tokens = usage.get("input_tokens", 0)
+                                    elif event_type == "content_block_delta":
                                         delta = data.get("delta", {})
                                         if delta.get("type") == "text_delta":
                                             yield delta.get("text", "")
                                     elif event_type == "message_delta":
-                                        # End of message
-                                        pass
+                                        # Output tokens come in message_delta
+                                        usage = data.get("usage", {})
+                                        output_tokens = usage.get("output_tokens", 0)
                             except json.JSONDecodeError:
                                 continue
+
+                    # Yield token usage at the end
+                    yield {"__token_usage__": True, "input_tokens": input_tokens, "output_tokens": output_tokens, "total_tokens": input_tokens + output_tokens}
 
             else:
                 # OpenAI Responses API streaming
@@ -959,6 +1002,10 @@ SECTION 5: FIRST STEPS
                         error_text = await response.aread()
                         api_logger.error(f"OpenAI streaming error: {response.status_code} - {error_text}")
                         raise Exception(f"OpenAI API error: {response.status_code}")
+
+                    # Track token usage for OpenAI
+                    input_tokens = 0
+                    output_tokens = 0
 
                     async for line in response.aiter_lines():
                         if line.startswith("data: "):
@@ -1011,11 +1058,19 @@ SECTION 5: FIRST STEPS
                                     elif event_type == "response.content_part.delta":
                                         if "delta" in data and "text" in data["delta"]:
                                             yield data["delta"]["text"]
+                                    # Capture token usage from response.completed event
+                                    elif event_type == "response.completed":
+                                        usage = data.get("response", {}).get("usage", {})
+                                        input_tokens = usage.get("input_tokens", 0)
+                                        output_tokens = usage.get("output_tokens", 0)
                                     # Skip all other events - they contain duplicates or metadata
                                     elif event_type and "error" in event_type.lower():
                                         articulation_logger.error(f"[STREAM ERROR] {data}")
                             except json.JSONDecodeError:
                                 continue
+
+                    # Yield token usage at the end
+                    yield {"__token_usage__": True, "input_tokens": input_tokens, "output_tokens": output_tokens, "total_tokens": input_tokens + output_tokens}
 
     except Exception as e:
         api_logger.error(f"Streaming error ({provider}): {e}")
