@@ -22,7 +22,7 @@ import asyncio
 import httpx
 import time
 from pathlib import Path
-from typing import Optional, AsyncGenerator, Dict, Any
+from typing import Optional, AsyncGenerator, Dict, Any, Tuple, List
 from dataclasses import asdict
 
 from fastapi import FastAPI, Query, HTTPException
@@ -184,6 +184,21 @@ async def inference_stream(prompt: str) -> AsyncGenerator[dict, None]:
             "data": json.dumps({"message": f"Extracted {obs_count} tier-1 operator values..."})
         }
 
+        # Step 1.5: Validate evidence before inference
+        validation_errors = _validate_evidence(evidence)
+        if validation_errors:
+            api_logger.error(f"[VALIDATION] Evidence validation failed: {validation_errors}")
+            yield {
+                "event": "error",
+                "data": json.dumps({
+                    "message": f"Evidence validation failed: {'; '.join(validation_errors)}",
+                    "recoverable": False
+                })
+            }
+            return
+
+        api_logger.info(f"[VALIDATION] Evidence passed validation with {obs_count} observations")
+
         # Step 2: Run inference
         api_logger.info("[STEP 2] Running inference engine")
         yield {
@@ -195,6 +210,18 @@ async def inference_stream(prompt: str) -> AsyncGenerator[dict, None]:
             inference_engine.run_inference,
             evidence
         )
+
+        # Check for inference errors
+        if posteriors.get('error'):
+            api_logger.error(f"[INFERENCE] Error: {posteriors.get('error')}")
+            yield {
+                "event": "error",
+                "data": json.dumps({
+                    "message": f"Inference failed: {posteriors.get('error')}",
+                    "recoverable": False
+                })
+            }
+            return
 
         # Log inference results
         formula_count = posteriors.get('formula_count', 0)
@@ -283,7 +310,16 @@ async def inference_stream(prompt: str) -> AsyncGenerator[dict, None]:
                     })
                 }
             except Exception as e:
-                reverse_logger.error(f"[REVERSE MAPPING] Error: {e} - continuing without pathways", exc_info=True)
+                reverse_logger.error(f"[REVERSE MAPPING] Error: {e}", exc_info=True)
+                # Emit warning to user - pipeline can continue but reverse mapping failed
+                yield {
+                    "event": "warning",
+                    "data": json.dumps({
+                        "component": "reverse_mapping",
+                        "message": f"Reverse causality mapping failed: {str(e)[:100]}",
+                        "impact": "Transformation pathways not available, current state analysis continues"
+                    })
+                }
                 reverse_mapping_data = None
 
         # Step 4: Build articulation prompt and stream response with evidence enrichment
@@ -1109,7 +1145,8 @@ async def reverse_map_stream(
 
         # Get current operators from goal description using LLM
         evidence = await parse_query_with_web_research(goal)
-        current_operators = _extract_operators_from_evidence(evidence)
+        current_operators, operator_confidence = _extract_operators_from_evidence(evidence)
+        reverse_logger.debug(f"[REVERSE STREAM] Extracted {len(current_operators)} operators with confidence data")
 
         # Find matching signatures
         yield {
@@ -1387,9 +1424,11 @@ async def run_reverse_mapping_for_articulation(
     reverse_logger.info("[REVERSE MAPPING] Starting reverse causality analysis")
     reverse_logger.info(f"[REVERSE MAPPING] Goal: {goal[:80]}...")
 
-    # Extract current operators from evidence
-    current_operators = _extract_operators_from_evidence(evidence)
-    reverse_logger.debug(f"[REVERSE MAPPING] Extracted {len(current_operators)} current operators")
+    # Extract current operators from computed consciousness state (not raw evidence)
+    # This uses properly computed tier-1 values after formula execution
+    current_operators = _extract_operators_from_consciousness_state(consciousness_state)
+    reverse_logger.debug(f"[REVERSE MAPPING] Extracted {len(current_operators)} operators from consciousness state")
+    reverse_logger.debug(f"[REVERSE MAPPING] Sample operators: Psi={current_operators.get('Psi_consciousness', 0):.2f}, G={current_operators.get('G_grace', 0):.2f}, K={current_operators.get('K_karma', 0):.2f}")
 
     # Get current S-level from consciousness state
     current_s_level = consciousness_state.tier1.s_level.current
@@ -1521,58 +1560,176 @@ async def run_reverse_mapping_for_articulation(
     }
 
 
-def _extract_operators_from_evidence(evidence: dict) -> Dict[str, float]:
-    """Extract operator values from evidence observations."""
-    operators = {}
+def _validate_evidence(evidence: dict) -> List[str]:
+    """Validate evidence structure and content before inference.
 
-    # Map observation variables to operator names
+    Returns list of error messages. Empty list means validation passed.
+    This ensures the pipeline fails explicitly rather than silently defaulting.
+    """
+    errors = []
+
+    # Check for observations
+    observations = evidence.get('observations', [])
+    if not observations:
+        errors.append("No observations found in evidence")
+        return errors  # Can't continue validation without observations
+
+    # Check observation structure
+    valid_obs_count = 0
+    for i, obs in enumerate(observations):
+        if not isinstance(obs, dict):
+            errors.append(f"Observation {i} is not a dict")
+            continue
+
+        if 'var' not in obs:
+            errors.append(f"Observation {i} missing 'var' field")
+            continue
+
+        if 'value' not in obs:
+            errors.append(f"Observation {i} ({obs.get('var', 'unknown')}) missing 'value' field")
+            continue
+
+        value = obs.get('value')
+        if not isinstance(value, (int, float)):
+            errors.append(f"Observation {obs.get('var')} has non-numeric value: {type(value)}")
+            continue
+
+        if value < 0.0 or value > 1.0:
+            errors.append(f"Observation {obs.get('var')} value {value} out of range [0,1]")
+            continue
+
+        valid_obs_count += 1
+
+    # Require minimum number of valid observations
+    MIN_OBSERVATIONS = 5
+    if valid_obs_count < MIN_OBSERVATIONS:
+        errors.append(f"Insufficient valid observations: {valid_obs_count} < {MIN_OBSERVATIONS} required")
+
+    # Check for core operators (at least some consciousness operators)
+    core_vars = {'Ψ', 'Consciousness', 'K', 'Karma', 'G', 'Grace', 'A', 'Awareness', 'M', 'Maya'}
+    found_core = set()
+    for obs in observations:
+        if isinstance(obs, dict) and obs.get('var') in core_vars:
+            found_core.add(obs.get('var'))
+
+    if len(found_core) < 3:
+        errors.append(f"Missing core operators: found only {len(found_core)} of minimum 3 required")
+
+    return errors
+
+
+def _extract_operators_from_consciousness_state(consciousness_state: ConsciousnessState) -> Dict[str, float]:
+    """Extract operator values from computed consciousness state.
+
+    This uses the properly computed tier-1 values after formula execution,
+    which is the correct source for reverse mapping operations.
+
+    Maps CoreOperators fields to canonical internal operator names used by
+    the reverse engine and signature library.
+    """
+    core = consciousness_state.tier1.core_operators
+
+    # Map CoreOperators fields to canonical internal operator names
+    operators = {
+        # Core consciousness operators
+        'Psi_consciousness': core.Psi_quality,
+        'K_karma': core.K_karma,
+        'M_maya': core.M_maya,
+        'G_grace': core.G_grace,
+        'W_witness': core.W_witness,
+        # Awareness and energy operators
+        'A_awareness': core.A_aware,
+        'P_prana': core.Sh_shakti,  # Shakti/Prana energy
+        'E_entropy': core.E_equanimity,  # Maps to equanimity
+        'V_void': core.V_void,
+        'L_love': consciousness_state.tier1.drives.love_strength,  # From drives
+        'R_resonance': core.Co_coherence,  # Resonance/coherence
+        # Attachment and aversion operators
+        'At_attachment': core.At_attachment,
+        'Av_aversion': core.R_resistance,  # Resistance as aversion proxy
+        # Service and practice operators
+        'Se_seva': core.Se_service,
+        'Ce_cleaning': core.Ce_celebration,  # Celebration/cleaning practice
+        'Su_surrender': core.S_surrender,
+        # Aspiration and desire operators
+        'As_aspiration': core.I_intention,  # Intention as aspiration
+        'Fe_fear': core.F_fear,
+        'De_desire': 1.0 - core.V_void,  # Desire inversely related to void
+        'Re_resistance': core.R_resistance,
+        'Hf_habit': core.Hf_habit,
+        # Mind operators (derived from existing)
+        'Sa_samskara': core.Hf_habit * core.M_manifest,  # Impressions from habits and manifestation
+        'Bu_buddhi': core.A_aware * core.W_witness,  # Discrimination from awareness and witness
+        'Ma_manas': core.P_presence,  # Mind-presence
+        'Ch_chitta': 1.0 - core.M_maya,  # Chitta clarity inversely related to maya
+    }
+
+    return operators
+
+
+def _extract_operators_from_evidence(evidence: dict) -> Tuple[Dict[str, float], Dict[str, float]]:
+    """Extract operator values from evidence observations.
+
+    Maps the 25 core OOF operators from evidence to internal operator names.
+    Does NOT use silent defaults - missing operators should be explicitly handled.
+    """
+    operators = {}
+    confidence = {}
+
+    # Unified mapping for the 25 core operators
+    # Maps both short and long forms to canonical internal names
     var_to_op = {
-        'Ψ': 'Psi_quality', 'Consciousness': 'Psi_quality',
+        # Core consciousness operators
+        'Ψ': 'Psi_consciousness', 'Consciousness': 'Psi_consciousness',
         'K': 'K_karma', 'Karma': 'K_karma',
         'M': 'M_maya', 'Maya': 'M_maya',
         'G': 'G_grace', 'Grace': 'G_grace',
         'W': 'W_witness', 'Witness': 'W_witness',
-        'A': 'A_aware', 'Awareness': 'A_aware',
-        'P': 'P_presence', 'Presence': 'P_presence', 'Prana': 'Sh_shakti',
-        'E': 'E_equanimity',
+        # Awareness and energy operators
+        'A': 'A_awareness', 'Awareness': 'A_awareness',
+        'P': 'P_prana', 'Prana': 'P_prana',  # Fixed: Prana maps to P_prana
+        'E': 'E_entropy', 'Entropy': 'E_entropy',
         'V': 'V_void', 'Void': 'V_void',
+        'L': 'L_love', 'Love': 'L_love',  # Added
+        'R': 'R_resonance', 'Resonance': 'R_resonance',  # Added
+        # Attachment and aversion operators
         'At': 'At_attachment', 'Attachment': 'At_attachment',
-        'Se': 'Se_service', 'Seva': 'Se_service',
-        'Ce': 'Ce_celebration', 'Cleaning': 'Ce_celebration',
-        'Su': 'S_surrender', 'Surrender': 'S_surrender',
-        'Fe': 'F_fear', 'Fear': 'F_fear',
-        'Re': 'R_resistance', 'Resistance': 'R_resistance',
-        'Hf': 'Hf_habit',
-        'I': 'I_intention', 'Intention': 'I_intention',
-        'D': 'D_dharma', 'Dharma': 'D_dharma',
-        'Co': 'Co_coherence', 'Coherence': 'Co_coherence',
-        'Tr': 'Tr_trust', 'Trust': 'Tr_trust',
-        'O': 'O_openness', 'Openness': 'O_openness',
-        'J': 'J_joy', 'Joy': 'J_joy',
-        'Sh': 'Sh_shakti', 'Shakti': 'Sh_shakti',
+        'Av': 'Av_aversion', 'Aversion': 'Av_aversion',  # Added
+        # Service and practice operators
+        'Se': 'Se_seva', 'Seva': 'Se_seva',
+        'Ce': 'Ce_cleaning', 'Cleaning': 'Ce_cleaning',  # Fixed: was Ce_celebration
+        'Su': 'Su_surrender', 'Surrender': 'Su_surrender',
+        # Aspiration and desire operators
+        'As': 'As_aspiration', 'Aspiration': 'As_aspiration',  # Added
+        'Fe': 'Fe_fear', 'Fear': 'Fe_fear',
+        'De': 'De_desire', 'Desire': 'De_desire',  # Added
+        'Re': 'Re_resistance', 'Resistance': 'Re_resistance',
+        'Hf': 'Hf_habit', 'Habit Force': 'Hf_habit', 'Habit_Force': 'Hf_habit',
+        # Mind operators (Antahkarana)
+        'Sa': 'Sa_samskara', 'Samskara': 'Sa_samskara',  # Added
+        'Bu': 'Bu_buddhi', 'Buddhi': 'Bu_buddhi',  # Added
+        'Ma': 'Ma_manas', 'Manas': 'Ma_manas',  # Added
+        'Ch': 'Ch_chitta', 'Chitta': 'Ch_chitta',  # Added
     }
 
     for obs in evidence.get('observations', []):
         if isinstance(obs, dict):
             var = obs.get('var', '')
-            value = obs.get('value', 0.5)
+            value = obs.get('value')
+            conf = obs.get('confidence', 0.5)
+
+            # Validate value is numeric and in range
+            if value is None or not isinstance(value, (int, float)):
+                continue
+            value = max(0.0, min(1.0, float(value)))
 
             op_name = var_to_op.get(var, var)
             operators[op_name] = value
+            confidence[op_name] = conf
 
-    # Fill in defaults for missing operators
-    default_ops = [
-        'P_presence', 'A_aware', 'E_equanimity', 'Psi_quality', 'M_maya',
-        'W_witness', 'I_intention', 'At_attachment', 'Se_service', 'Sh_shakti',
-        'G_grace', 'S_surrender', 'D_dharma', 'K_karma', 'Hf_habit', 'V_void',
-        'Co_coherence', 'R_resistance', 'F_fear', 'J_joy', 'Tr_trust', 'O_openness'
-    ]
-
-    for op in default_ops:
-        if op not in operators:
-            operators[op] = 0.5
-
-    return operators
+    # Return both values and confidence - DO NOT fill defaults silently
+    # Caller must handle missing operators explicitly
+    return operators, confidence
 
 
 async def articulate_reverse_map(
