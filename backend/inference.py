@@ -285,14 +285,26 @@ class InferenceEngine:
         operators = formula.get('operators_used', [])
 
         if not operators:
-            # Simple assignment - single variable passthrough
-            if len(variables_used) == 1:
+            # No explicit operators - handle as implicit operations
+            if len(variables_used) == 0:
+                # Constant/definition - return neutral value
+                return {
+                    'value': 0.5,
+                    'confidence': 0.3
+                }
+            elif len(variables_used) == 1:
+                # Simple assignment - passthrough
                 return {
                     'value': inputs.get(variables_used[0], 0.5),
                     'confidence': min(input_confidences) if input_confidences else 0.5
                 }
-            # No operators and not single variable = malformed formula, skip
-            return None
+            else:
+                # Multiple variables with no operator - implicit combination (mean)
+                values = list(inputs.values())
+                return {
+                    'value': sum(values) / len(values) if values else 0.5,
+                    'confidence': min(input_confidences) if input_confidences else 0.4
+                }
 
         # Compute based on dominant operator
         result = self._compute_expression(expression, inputs, operators)
