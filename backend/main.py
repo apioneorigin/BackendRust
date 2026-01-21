@@ -7,6 +7,13 @@ Articulation Bridge Integration:
 - Organizes 450+ backend values into semantic categories
 - Detects bottlenecks and leverage points algorithmically
 - Builds structured articulation prompts for natural language generation
+
+Reverse Causality Mapping Integration:
+- Works backward from desired future state to required consciousness configuration
+- Generates multiple viable transformation pathways
+- Validates feasibility against Sacred Chain and other constraints
+- Sequences identity deaths and calculates grace requirements
+- Identifies minimum viable transformation
 """
 
 import os
@@ -29,11 +36,25 @@ from leverage_identifier import LeverageIdentifier
 from articulation_prompt_builder import ArticulationPromptBuilder, build_articulation_context
 from consciousness_state import ConsciousnessState, UserContext, WebResearch
 
+# Reverse Causality Mapping imports
+from reverse_causality import (
+    ReverseCausalityEngine,
+    ConsciousnessSignatureLibrary,
+    PathwayGenerator,
+    PathwayOptimizer,
+    ConstraintChecker,
+    DeathSequencer,
+    GraceCalculator,
+    ProgressTracker,
+    CoherenceValidator,
+    MVTCalculator
+)
+
 # Load environment variables
 load_dotenv()
 
 # Initialize FastAPI app
-app = FastAPI(title="Reality Transformer", version="3.0.0")
+app = FastAPI(title="Reality Transformer", version="4.0.0")
 
 # OpenAI Configuration
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -58,6 +79,19 @@ if IOOF_PATH.exists():
         OOF_FRAMEWORK = f.read()
     print(f"Loaded IOOF Framework: {len(OOF_FRAMEWORK)} characters")
 print("Articulation Bridge initialized: ValueOrganizer, BottleneckDetector, LeverageIdentifier, PromptBuilder")
+
+# Initialize Reverse Causality Mapping components
+reverse_engine = ReverseCausalityEngine()
+signature_library = ConsciousnessSignatureLibrary()
+pathway_generator = PathwayGenerator()
+pathway_optimizer = PathwayOptimizer()
+constraint_checker = ConstraintChecker()
+death_sequencer = DeathSequencer()
+grace_calculator = GraceCalculator()
+progress_tracker = ProgressTracker()
+coherence_validator = CoherenceValidator()
+mvt_calculator = MVTCalculator()
+print("Reverse Causality Mapping initialized: 10 components loaded")
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -683,12 +717,522 @@ def format_results_fallback_bridge(
     return "\n".join(lines)
 
 
+# =============================================================================
+# REVERSE CAUSALITY MAPPING ENDPOINTS
+# =============================================================================
+
+@app.get("/api/reverse-map")
+async def reverse_map(
+    goal: str = Query(..., description="Desired future state or goal"),
+    current_s_level: float = Query(3.0, description="Current S-level (1-8)"),
+    target_s_level: float = Query(None, description="Target S-level (optional)")
+):
+    """
+    Reverse Causality Mapping endpoint.
+    Works backward from a desired future state to calculate required consciousness configuration.
+
+    Returns:
+    - Required consciousness signature
+    - Current gap analysis
+    - 3-5 viable transformation pathways with trade-off analysis
+    - Specific Tier 1 operator changes needed
+    - Timeline estimates and monitoring indicators
+    """
+    return EventSourceResponse(
+        reverse_map_stream(goal, current_s_level, target_s_level),
+        media_type="text/event-stream"
+    )
+
+
+async def reverse_map_stream(
+    goal: str,
+    current_s_level: float,
+    target_s_level: Optional[float]
+) -> AsyncGenerator[dict, None]:
+    """Generate SSE events for reverse causality mapping"""
+    import time
+    start_time = time.time()
+
+    try:
+        # Step 1: Parse goal and extract current state
+        yield {
+            "event": "status",
+            "data": json.dumps({"message": "Analyzing desired future state..."})
+        }
+
+        # Get current operators from goal description using LLM
+        evidence = await parse_query_with_web_research(goal)
+        current_operators = _extract_operators_from_evidence(evidence)
+
+        # Find matching signatures
+        yield {
+            "event": "status",
+            "data": json.dumps({"message": "Matching goal to consciousness signatures..."})
+        }
+
+        matching_signatures = signature_library.find_signatures_for_goal(goal, current_s_level)
+
+        if matching_signatures:
+            primary_signature = matching_signatures[0]
+            required_operators = primary_signature.operator_minimums.copy()
+            # Set maximums as targets for blockers
+            for op, max_val in primary_signature.operator_maximums.items():
+                if op not in required_operators or required_operators[op] > max_val:
+                    required_operators[op] = max_val * 0.8  # Target below max
+
+            sig_target_s = primary_signature.optimal_s_level
+        else:
+            # Use reverse engine for custom goal
+            result = reverse_engine.solve_for_outcome(
+                'breakthrough_probability', 0.7, current_operators
+            )
+            required_operators = result.required_state.operator_values
+            sig_target_s = target_s_level or current_s_level + 1
+
+        final_target_s = target_s_level or sig_target_s
+
+        yield {
+            "event": "status",
+            "data": json.dumps({
+                "message": f"Found {len(matching_signatures)} matching signatures, target S-level: {final_target_s:.1f}"
+            })
+        }
+
+        # Step 2: Check constraints
+        yield {
+            "event": "status",
+            "data": json.dumps({"message": "Validating feasibility constraints..."})
+        }
+
+        constraint_result = constraint_checker.check_all_constraints(
+            current_operators, required_operators, current_s_level, final_target_s, goal
+        )
+
+        yield {
+            "event": "constraints",
+            "data": json.dumps({
+                "feasible": constraint_result.feasible,
+                "score": constraint_result.overall_feasibility_score,
+                "blocking_count": constraint_result.blocking_count,
+                "prerequisites": constraint_result.prerequisites[:3]
+            })
+        }
+
+        # Step 3: Validate coherence
+        yield {
+            "event": "status",
+            "data": json.dumps({"message": "Validating fractal coherence..."})
+        }
+
+        coherence_result = coherence_validator.validate_coherence(
+            required_operators, final_target_s
+        )
+
+        # Apply corrections if needed
+        if coherence_result.suggested_adjustments:
+            for op, val in coherence_result.suggested_adjustments.items():
+                required_operators[op] = val
+
+        yield {
+            "event": "coherence",
+            "data": json.dumps({
+                "coherent": coherence_result.is_coherent,
+                "score": coherence_result.coherence_score,
+                "violations": coherence_result.critical_violations
+            })
+        }
+
+        # Step 4: Generate pathways
+        yield {
+            "event": "status",
+            "data": json.dumps({"message": "Generating transformation pathways..."})
+        }
+
+        pathways = pathway_generator.generate_pathways(
+            current_operators=current_operators,
+            required_operators=required_operators,
+            current_s_level=current_s_level,
+            target_s_level=final_target_s,
+            num_pathways=5
+        )
+
+        # Optimize pathways
+        optimization_result = pathway_optimizer.optimize_pathways(pathways)
+
+        yield {
+            "event": "pathways",
+            "data": json.dumps({
+                "count": len(pathways),
+                "best_pathway": optimization_result.best_pathway.pathway_name,
+                "best_score": optimization_result.best_pathway.total_score,
+                "pathways": [
+                    {
+                        "name": p.name,
+                        "strategy": p.strategy,
+                        "duration": p.total_duration_estimate,
+                        "success_prob": p.success_probability,
+                        "steps": len(p.steps)
+                    }
+                    for p in pathways
+                ]
+            })
+        }
+
+        # Step 5: Calculate MVT (Minimum Viable Transformation)
+        yield {
+            "event": "status",
+            "data": json.dumps({"message": "Calculating minimum viable transformation..."})
+        }
+
+        mvt = mvt_calculator.calculate_mvt(
+            current_operators, required_operators, max_operators=5
+        )
+
+        yield {
+            "event": "mvt",
+            "data": json.dumps({
+                "operators_to_change": mvt.total_operators_changed,
+                "full_operators": mvt.full_transformation_operators,
+                "efficiency": mvt.mvt_efficiency,
+                "estimated_time": mvt.estimated_time,
+                "success_probability": mvt.success_probability,
+                "changes": [
+                    {
+                        "operator": c.operator,
+                        "current": c.current_value,
+                        "target": c.target_value,
+                        "priority": c.priority
+                    }
+                    for c in mvt.changes
+                ]
+            })
+        }
+
+        # Step 6: Analyze death requirements
+        yield {
+            "event": "status",
+            "data": json.dumps({"message": "Analyzing identity death requirements..."})
+        }
+
+        death_sequence = death_sequencer.analyze_death_requirements(
+            current_operators, required_operators, goal
+        )
+
+        yield {
+            "event": "death_sequence",
+            "data": json.dumps({
+                "deaths_required": len(death_sequence.deaths_required),
+                "sequence": death_sequence.sequence_order,
+                "void_tolerance_required": death_sequence.void_tolerance_required,
+                "current_void_tolerance": death_sequence.current_void_tolerance,
+                "timeline": death_sequence.timeline_estimate
+            })
+        }
+
+        # Step 7: Calculate grace requirements
+        yield {
+            "event": "status",
+            "data": json.dumps({"message": "Calculating grace activation requirements..."})
+        }
+
+        grace_req = grace_calculator.calculate_grace_requirements(
+            current_operators, required_operators, goal
+        )
+
+        yield {
+            "event": "grace",
+            "data": json.dumps({
+                "dependency": grace_req.grace_dependency,
+                "current_availability": grace_req.current_grace_availability,
+                "required_availability": grace_req.required_grace_availability,
+                "gap": grace_req.grace_gap,
+                "timing_probability": grace_req.grace_timing_probability,
+                "multiplication_factor": grace_req.potential_multiplication_factor
+            })
+        }
+
+        # Step 8: Generate monitoring plan
+        yield {
+            "event": "status",
+            "data": json.dumps({"message": "Generating monitoring plan..."})
+        }
+
+        best_pathway = pathways[0]  # Use best pathway for monitoring
+        monitoring_plan = progress_tracker.generate_monitoring_plan(
+            best_pathway, current_operators, required_operators
+        )
+
+        yield {
+            "event": "monitoring",
+            "data": json.dumps({
+                "total_stages": monitoring_plan.total_stages,
+                "check_in_schedule": monitoring_plan.check_in_schedule,
+                "pivot_conditions": monitoring_plan.pivot_conditions[:3],
+                "success_conditions": monitoring_plan.success_conditions[:3]
+            })
+        }
+
+        # Step 9: Generate articulation
+        yield {
+            "event": "status",
+            "data": json.dumps({"message": "Generating transformation guidance..."})
+        }
+
+        # Build comprehensive reverse mapping result
+        reverse_result = {
+            "goal": goal,
+            "current_s_level": current_s_level,
+            "target_s_level": final_target_s,
+            "feasible": constraint_result.feasible,
+            "coherent": coherence_result.is_coherent,
+            "mvt": {
+                "operators": [c.operator for c in mvt.changes],
+                "implementation_order": mvt.implementation_order
+            },
+            "best_pathway": optimization_result.best_pathway.pathway_name,
+            "timeline": mvt.estimated_time,
+            "grace_dependency": grace_req.grace_dependency
+        }
+
+        # Stream articulation
+        async for token in articulate_reverse_map(goal, evidence, reverse_result):
+            yield {
+                "event": "token",
+                "data": json.dumps({"text": token})
+            }
+
+        # Done
+        elapsed = time.time() - start_time
+        yield {
+            "event": "done",
+            "data": json.dumps({
+                "elapsed_ms": int(elapsed * 1000),
+                "summary": {
+                    "goal_achievable": constraint_result.feasible,
+                    "mvt_operators": mvt.total_operators_changed,
+                    "pathways_generated": len(pathways),
+                    "estimated_timeline": mvt.estimated_time
+                }
+            })
+        }
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        yield {
+            "event": "error",
+            "data": json.dumps({"message": str(e)})
+        }
+
+
+def _extract_operators_from_evidence(evidence: dict) -> Dict[str, float]:
+    """Extract operator values from evidence observations."""
+    operators = {}
+
+    # Map observation variables to operator names
+    var_to_op = {
+        'Ψ': 'Psi_quality', 'Consciousness': 'Psi_quality',
+        'K': 'K_karma', 'Karma': 'K_karma',
+        'M': 'M_maya', 'Maya': 'M_maya',
+        'G': 'G_grace', 'Grace': 'G_grace',
+        'W': 'W_witness', 'Witness': 'W_witness',
+        'A': 'A_aware', 'Awareness': 'A_aware',
+        'P': 'P_presence', 'Presence': 'P_presence', 'Prana': 'Sh_shakti',
+        'E': 'E_equanimity',
+        'V': 'V_void', 'Void': 'V_void',
+        'At': 'At_attachment', 'Attachment': 'At_attachment',
+        'Se': 'Se_service', 'Seva': 'Se_service',
+        'Ce': 'Ce_celebration', 'Cleaning': 'Ce_celebration',
+        'Su': 'S_surrender', 'Surrender': 'S_surrender',
+        'Fe': 'F_fear', 'Fear': 'F_fear',
+        'Re': 'R_resistance', 'Resistance': 'R_resistance',
+        'Hf': 'Hf_habit',
+        'I': 'I_intention', 'Intention': 'I_intention',
+        'D': 'D_dharma', 'Dharma': 'D_dharma',
+        'Co': 'Co_coherence', 'Coherence': 'Co_coherence',
+        'Tr': 'Tr_trust', 'Trust': 'Tr_trust',
+        'O': 'O_openness', 'Openness': 'O_openness',
+        'J': 'J_joy', 'Joy': 'J_joy',
+        'Sh': 'Sh_shakti', 'Shakti': 'Sh_shakti',
+    }
+
+    for obs in evidence.get('observations', []):
+        if isinstance(obs, dict):
+            var = obs.get('var', '')
+            value = obs.get('value', 0.5)
+
+            op_name = var_to_op.get(var, var)
+            operators[op_name] = value
+
+    # Fill in defaults for missing operators
+    default_ops = [
+        'P_presence', 'A_aware', 'E_equanimity', 'Psi_quality', 'M_maya',
+        'W_witness', 'I_intention', 'At_attachment', 'Se_service', 'Sh_shakti',
+        'G_grace', 'S_surrender', 'D_dharma', 'K_karma', 'Hf_habit', 'V_void',
+        'Co_coherence', 'R_resistance', 'F_fear', 'J_joy', 'Tr_trust', 'O_openness'
+    ]
+
+    for op in default_ops:
+        if op not in operators:
+            operators[op] = 0.5
+
+    return operators
+
+
+async def articulate_reverse_map(
+    goal: str,
+    evidence: dict,
+    reverse_result: dict
+) -> AsyncGenerator[str, None]:
+    """Generate natural language articulation of reverse mapping results."""
+
+    if not OPENAI_API_KEY:
+        # Fallback text
+        text = f"""## Transformation Path to Your Goal
+
+**Goal:** {goal}
+
+Based on the reverse causality analysis, here's your path:
+
+### Minimum Viable Transformation
+Focus on these {len(reverse_result['mvt']['operators'])} key changes:
+{', '.join(reverse_result['mvt']['operators'])}
+
+### Recommended Pathway
+{reverse_result['best_pathway']}
+
+### Timeline
+Estimated: {reverse_result['timeline']}
+
+### Grace Dependency
+This transformation is {reverse_result['grace_dependency']:.0%} grace-dependent.
+"""
+        for word in text.split():
+            yield word + " "
+            await asyncio.sleep(0.02)
+        return
+
+    instructions = f"""You are Reality Transformer's Reverse Causality Guide.
+
+You are receiving a REVERSE CAUSALITY ANALYSIS - we've worked backward from the user's
+desired future state to calculate what consciousness changes are required.
+
+=== OOF FRAMEWORK KNOWLEDGE ===
+{OOF_FRAMEWORK[:50000]}
+=== END OOF FRAMEWORK ===
+
+=== ARTICULATION RULES ===
+1. Focus on the PATH FORWARD, not technical analysis
+2. Use natural, inspiring language
+3. Be specific about the changes needed
+4. Acknowledge the gap while emphasizing achievability
+5. Translate framework concepts into practical guidance
+6. End with clear first steps
+=== END ARTICULATION RULES ==="""
+
+    user_content = f"""User's Goal: {goal}
+
+Current S-Level: {reverse_result['current_s_level']}
+Target S-Level: {reverse_result['target_s_level']}
+
+Feasibility: {'✓ Achievable' if reverse_result['feasible'] else '⚠️ Requires intermediate steps'}
+Coherence: {'✓ Coherent' if reverse_result['coherent'] else '⚠️ Needs adjustment'}
+
+=== MINIMUM VIABLE TRANSFORMATION ===
+Instead of changing everything, focus on these key operators:
+{reverse_result['mvt']['operators']}
+Implementation order: {' → '.join(reverse_result['mvt']['implementation_order'])}
+
+=== RECOMMENDED PATHWAY ===
+{reverse_result['best_pathway']}
+Timeline: {reverse_result['timeline']}
+
+=== GRACE DEPENDENCY ===
+{reverse_result['grace_dependency']:.0%} grace-dependent
+
+=== TASK ===
+Provide transformation guidance that:
+1. Acknowledges where they are and where they want to go
+2. Explains the key changes in practical terms
+3. Describes the recommended pathway naturally
+4. Addresses grace vs effort balance
+5. Gives specific first steps
+6. Inspires confidence in the transformation"""
+
+    request_body = {
+        "model": OPENAI_MODEL,
+        "instructions": instructions,
+        "input": [{
+            "type": "message",
+            "role": "user",
+            "content": [{"type": "input_text", "text": user_content}]
+        }],
+        "temperature": 0.85,
+        "stream": True
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=180.0) as client:
+            async with client.stream(
+                "POST",
+                OPENAI_RESPONSES_URL,
+                headers={
+                    "Authorization": f"Bearer {OPENAI_API_KEY}",
+                    "Content-Type": "application/json"
+                },
+                json=request_body
+            ) as response:
+                if response.status_code != 200:
+                    error_text = await response.aread()
+                    print(f"OpenAI streaming error: {response.status_code} - {error_text}")
+                    raise Exception(f"OpenAI API error: {response.status_code}")
+
+                async for line in response.aiter_lines():
+                    if line.startswith("data: "):
+                        data_str = line[6:]
+                        if data_str == "[DONE]":
+                            break
+                        try:
+                            data = json.loads(data_str)
+                            if "delta" in data:
+                                delta = data.get("delta", {})
+                                if "text" in delta:
+                                    yield delta["text"]
+                            elif "output_text" in data:
+                                yield data["output_text"]
+                        except json.JSONDecodeError:
+                            continue
+
+    except Exception as e:
+        print(f"Articulation error: {e}")
+        yield f"\n\nTransformation guidance: Focus on {', '.join(reverse_result['mvt']['operators'][:3])} first."
+
+
+def detect_future_oriented_language(text: str) -> bool:
+    """Detect if user query is future-oriented (goal/desire) vs current state analysis."""
+    future_patterns = [
+        'i want to', 'i wish to', 'my goal is', 'i\'m trying to',
+        'i\'d like to', 'how can i', 'how do i', 'i need to',
+        'become', 'achieve', 'attain', 'reach', 'transform into',
+        'manifest', 'create', 'build', 'develop', 'grow into',
+        'in the future', 'someday', 'eventually', 'soon',
+        'want to be', 'hope to', 'aspire to', 'dream of'
+    ]
+
+    text_lower = text.lower()
+    return any(pattern in text_lower for pattern in future_patterns)
+
+
+# =============================================================================
+# HEALTH AND UTILITY ENDPOINTS
+# =============================================================================
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
     return {
         "status": "healthy",
-        "version": "3.0.0",
+        "version": "4.0.0",
         "model": OPENAI_MODEL,
         "registry_loaded": inference_engine.is_loaded,
         "formula_count": inference_engine.formula_count,
@@ -710,6 +1254,31 @@ async def health_check():
                 "Leverage point calculation",
                 "Structured prompt generation",
                 "Framework concealment"
+            ]
+        },
+        "reverse_causality_mapping": {
+            "enabled": True,
+            "endpoint": "/api/reverse-map",
+            "components": [
+                "ReverseCausalityEngine",
+                "ConsciousnessSignatureLibrary",
+                "PathwayGenerator",
+                "PathwayOptimizer",
+                "ConstraintChecker",
+                "DeathSequencer",
+                "GraceCalculator",
+                "ProgressTracker",
+                "CoherenceValidator",
+                "MVTCalculator"
+            ],
+            "features": [
+                "Backward inference from desired outcomes",
+                "Multi-pathway generation (5 strategies)",
+                "Constraint validation (Sacred Chain, karma, coherence)",
+                "Minimum viable transformation calculation",
+                "Death sequencing (D1-D7)",
+                "Grace dependency analysis",
+                "Progress monitoring plans"
             ]
         }
     }

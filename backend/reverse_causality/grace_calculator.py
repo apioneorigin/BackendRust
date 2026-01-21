@@ -1,0 +1,560 @@
+"""
+Grace Calculator
+Calculates grace activation requirements and optimizes for grace flow
+
+Grace Mechanics:
+- Availability: How accessible grace is (based on surrender, service, dharma)
+- Effectiveness: How well grace works when accessed (reduced by attachment, resistance)
+- Timing: Probability of grace intervention in specific situations
+- Multiplication: How grace multiplies transformation beyond personal effort
+
+Grace Activation Factors:
+1. Surrender (primary gate)
+2. Service orientation
+3. Dharma alignment
+4. Cleaning/purity
+5. Openness/receptivity
+6. Coherence with divine will
+"""
+
+from typing import Dict, List, Any, Optional, Tuple
+from dataclasses import dataclass, field
+import math
+
+
+@dataclass
+class GraceChannel:
+    """A channel through which grace can flow"""
+    name: str
+    current_openness: float  # 0-1
+    required_openness: float  # 0-1 for goal
+    gap: float
+    activation_practices: List[str]
+    primary_operator: str
+
+
+@dataclass
+class GraceBlocker:
+    """Something blocking grace flow"""
+    name: str
+    intensity: float  # 0-1
+    description: str
+    clearing_practices: List[str]
+    primary_operator: str
+
+
+@dataclass
+class GraceRequirement:
+    """Complete grace requirement analysis"""
+    grace_dependency: float  # 0-1 how much goal depends on grace
+    current_grace_availability: float  # 0-1
+    required_grace_availability: float  # 0-1
+    grace_gap: float
+
+    # Channels
+    channels: List[GraceChannel]
+    open_channels: int
+    blocked_channels: int
+
+    # Blockers
+    blockers: List[GraceBlocker]
+    primary_blocker: Optional[str]
+
+    # Activation requirements
+    surrender_requirement: float
+    service_requirement: float
+    dharma_alignment_requirement: float
+
+    # Timing
+    grace_timing_probability: float  # Probability of grace intervention
+    optimal_timing_conditions: List[str]
+
+    # Multiplication
+    potential_multiplication_factor: float  # How much grace could multiply effort
+
+    # Recommendations
+    activation_steps: List[str]
+    timeline_to_activation: str
+    intensity_recommendation: str
+
+
+class GraceCalculator:
+    """
+    Calculate grace requirements and activation strategies.
+    """
+
+    # Grace channels configuration
+    GRACE_CHANNELS = {
+        'surrender': {
+            'operator': 'S_surrender',
+            'weight': 0.3,
+            'practices': ['surrender meditation', 'letting go', 'trust exercises', 'prayer'],
+            'description': 'Primary gate for grace - willingness to let go of control'
+        },
+        'service': {
+            'operator': 'Se_service',
+            'weight': 0.2,
+            'practices': ['selfless service', 'volunteering', 'helping others', 'karma yoga'],
+            'description': 'Service opens heart and aligns with universal flow'
+        },
+        'dharma': {
+            'operator': 'D_dharma',
+            'weight': 0.15,
+            'practices': ['purpose work', 'values clarification', 'aligned action'],
+            'description': 'Living your purpose creates resonance with grace'
+        },
+        'cleaning': {
+            'operator': 'Ce_celebration',
+            'weight': 0.15,
+            'practices': ['morning meditation', 'evening cleaning', 'regular practice'],
+            'description': 'Regular cleaning removes accumulated impressions'
+        },
+        'openness': {
+            'operator': 'O_openness',
+            'weight': 0.1,
+            'practices': ['open awareness', 'beginner mind', 'curiosity cultivation'],
+            'description': 'Receptivity to what grace brings'
+        },
+        'presence': {
+            'operator': 'P_presence',
+            'weight': 0.1,
+            'practices': ['present moment awareness', 'mindfulness', 'embodiment'],
+            'description': 'Being present to receive grace'
+        }
+    }
+
+    # Grace blockers configuration
+    GRACE_BLOCKERS = {
+        'attachment': {
+            'operator': 'At_attachment',
+            'threshold': 0.6,
+            'weight': 0.3,
+            'practices': ['non-attachment meditation', 'letting go practices'],
+            'description': 'Attachment to outcomes blocks grace flow'
+        },
+        'resistance': {
+            'operator': 'R_resistance',
+            'threshold': 0.6,
+            'weight': 0.25,
+            'practices': ['acceptance practice', 'yielding exercises'],
+            'description': 'Resistance prevents grace from working'
+        },
+        'fear': {
+            'operator': 'F_fear',
+            'threshold': 0.6,
+            'weight': 0.2,
+            'practices': ['fear processing', 'trust building', 'courage practices'],
+            'description': 'Fear contracts and blocks receptivity'
+        },
+        'maya': {
+            'operator': 'M_maya',
+            'threshold': 0.7,
+            'weight': 0.15,
+            'practices': ['reality inquiry', 'illusion piercing'],
+            'description': 'Illusion prevents recognizing grace'
+        },
+        'ego': {
+            'operator': 'At_attachment',  # Combined with identity
+            'threshold': 0.7,
+            'weight': 0.1,
+            'practices': ['ego dissolution practices', 'self-inquiry'],
+            'description': 'Strong ego claims credit and blocks further grace'
+        }
+    }
+
+    def __init__(self):
+        pass
+
+    def calculate_grace_requirements(
+        self,
+        current_operators: Dict[str, float],
+        required_operators: Dict[str, float],
+        goal_description: str = ""
+    ) -> GraceRequirement:
+        """
+        Calculate complete grace requirements for a transformation.
+
+        Args:
+            current_operators: Current Tier 1 operator values
+            required_operators: Required Tier 1 operator values
+            goal_description: Optional goal for context
+
+        Returns:
+            GraceRequirement with complete analysis
+        """
+        # Calculate grace dependency
+        grace_dependency = self._calculate_grace_dependency(
+            required_operators, goal_description
+        )
+
+        # Calculate current grace availability
+        current_availability = self._calculate_grace_availability(current_operators)
+
+        # Calculate required grace availability
+        required_availability = self._calculate_required_grace(
+            required_operators, grace_dependency
+        )
+
+        # Analyze channels
+        channels = self._analyze_channels(current_operators, required_operators)
+        open_channels = sum(1 for c in channels if c.gap <= 0)
+        blocked_channels = sum(1 for c in channels if c.gap > 0.2)
+
+        # Analyze blockers
+        blockers = self._analyze_blockers(current_operators)
+        primary_blocker = blockers[0].name if blockers else None
+
+        # Calculate specific requirements
+        surrender_req = required_operators.get('S_surrender', 0.5)
+        service_req = required_operators.get('Se_service', 0.5)
+        dharma_req = required_operators.get('D_dharma', 0.5)
+
+        # Calculate timing probability
+        timing_prob = self._calculate_timing_probability(
+            current_operators, required_operators
+        )
+        optimal_conditions = self._get_optimal_timing_conditions(current_operators)
+
+        # Calculate multiplication factor
+        multiplication = self._calculate_multiplication_factor(
+            current_operators, required_operators
+        )
+
+        # Generate recommendations
+        activation_steps = self._generate_activation_steps(
+            channels, blockers, current_operators
+        )
+        timeline = self._estimate_activation_timeline(
+            current_availability, required_availability
+        )
+        intensity = self._recommend_intensity(grace_dependency, blockers)
+
+        return GraceRequirement(
+            grace_dependency=grace_dependency,
+            current_grace_availability=current_availability,
+            required_grace_availability=required_availability,
+            grace_gap=max(0, required_availability - current_availability),
+            channels=channels,
+            open_channels=open_channels,
+            blocked_channels=blocked_channels,
+            blockers=blockers,
+            primary_blocker=primary_blocker,
+            surrender_requirement=surrender_req,
+            service_requirement=service_req,
+            dharma_alignment_requirement=dharma_req,
+            grace_timing_probability=timing_prob,
+            optimal_timing_conditions=optimal_conditions,
+            potential_multiplication_factor=multiplication,
+            activation_steps=activation_steps,
+            timeline_to_activation=timeline,
+            intensity_recommendation=intensity
+        )
+
+    def _calculate_grace_dependency(
+        self,
+        required: Dict[str, float],
+        goal: str
+    ) -> float:
+        """
+        Calculate how much the goal depends on grace vs effort.
+        """
+        # Check required grace-related operators
+        grace = required.get('G_grace', 0.5)
+        surrender = required.get('S_surrender', 0.5)
+        void = required.get('V_void', 0.5)
+
+        # Higher values indicate more grace dependency
+        base_dependency = (grace * 0.4 + surrender * 0.35 + void * 0.25)
+
+        # Check goal keywords
+        grace_keywords = ['spiritual', 'awakening', 'enlightenment', 'unity',
+                         'grace', 'surrender', 'divine', 'transcend']
+        effort_keywords = ['achieve', 'build', 'create', 'earn', 'work',
+                          'discipline', 'practice', 'effort']
+
+        goal_lower = goal.lower()
+        grace_matches = sum(1 for kw in grace_keywords if kw in goal_lower)
+        effort_matches = sum(1 for kw in effort_keywords if kw in goal_lower)
+
+        if grace_matches > effort_matches:
+            base_dependency = min(1.0, base_dependency + 0.2)
+        elif effort_matches > grace_matches:
+            base_dependency = max(0.2, base_dependency - 0.1)
+
+        return base_dependency
+
+    def _calculate_grace_availability(
+        self,
+        operators: Dict[str, float]
+    ) -> float:
+        """
+        Calculate current grace availability.
+        """
+        availability = 0.0
+
+        for channel_name, config in self.GRACE_CHANNELS.items():
+            op_value = operators.get(config['operator'], 0.5)
+            availability += op_value * config['weight']
+
+        # Reduce by blockers
+        blocker_reduction = 0.0
+        for blocker_name, config in self.GRACE_BLOCKERS.items():
+            op_value = operators.get(config['operator'], 0.5)
+            if op_value > config['threshold']:
+                excess = op_value - config['threshold']
+                blocker_reduction += excess * config['weight']
+
+        return max(0.0, min(1.0, availability - blocker_reduction))
+
+    def _calculate_required_grace(
+        self,
+        required: Dict[str, float],
+        dependency: float
+    ) -> float:
+        """
+        Calculate required grace availability based on goal.
+        """
+        # Base requirement from grace operator
+        base = required.get('G_grace', 0.5)
+
+        # Adjust for dependency
+        return base * (0.5 + dependency * 0.5)
+
+    def _analyze_channels(
+        self,
+        current: Dict[str, float],
+        required: Dict[str, float]
+    ) -> List[GraceChannel]:
+        """
+        Analyze each grace channel.
+        """
+        channels = []
+
+        for channel_name, config in self.GRACE_CHANNELS.items():
+            op = config['operator']
+            current_val = current.get(op, 0.5)
+            required_val = required.get(op, 0.5)
+            gap = required_val - current_val
+
+            channels.append(GraceChannel(
+                name=channel_name,
+                current_openness=current_val,
+                required_openness=required_val,
+                gap=gap,
+                activation_practices=config['practices'],
+                primary_operator=op
+            ))
+
+        # Sort by gap (highest gap first)
+        channels.sort(key=lambda x: -x.gap)
+
+        return channels
+
+    def _analyze_blockers(
+        self,
+        current: Dict[str, float]
+    ) -> List[GraceBlocker]:
+        """
+        Analyze current grace blockers.
+        """
+        blockers = []
+
+        for blocker_name, config in self.GRACE_BLOCKERS.items():
+            op = config['operator']
+            value = current.get(op, 0.5)
+
+            if value > config['threshold'] * 0.8:  # Include near-threshold
+                intensity = (value - config['threshold'] * 0.8) / (1 - config['threshold'] * 0.8)
+                intensity = max(0.0, min(1.0, intensity))
+
+                blockers.append(GraceBlocker(
+                    name=blocker_name,
+                    intensity=intensity,
+                    description=config['description'],
+                    clearing_practices=config['practices'],
+                    primary_operator=op
+                ))
+
+        # Sort by intensity (highest first)
+        blockers.sort(key=lambda x: -x.intensity)
+
+        return blockers
+
+    def _calculate_timing_probability(
+        self,
+        current: Dict[str, float],
+        required: Dict[str, float]
+    ) -> float:
+        """
+        Calculate probability of grace intervention at right time.
+        """
+        surrender = current.get('S_surrender', 0.5)
+        dharma = current.get('D_dharma', 0.5)
+        service = current.get('Se_service', 0.5)
+        attachment = current.get('At_attachment', 0.5)
+
+        # Base timing probability
+        base = (surrender * 0.4 + dharma * 0.3 + service * 0.3)
+
+        # Attachment reduces timing
+        base *= (1 - attachment * 0.4)
+
+        # Alignment with required increases probability
+        alignment = 0
+        for op, req_val in required.items():
+            curr_val = current.get(op, 0.5)
+            if abs(req_val - curr_val) < 0.2:
+                alignment += 0.05
+
+        return min(0.95, base + alignment)
+
+    def _get_optimal_timing_conditions(
+        self,
+        operators: Dict[str, float]
+    ) -> List[str]:
+        """
+        Get conditions when grace is most likely to flow.
+        """
+        conditions = []
+
+        if operators.get('P_presence', 0.5) > 0.6:
+            conditions.append("During meditation when presence is strong")
+
+        if operators.get('S_surrender', 0.5) > 0.5:
+            conditions.append("Moments of genuine letting go")
+
+        if operators.get('Se_service', 0.5) > 0.5:
+            conditions.append("While engaged in selfless service")
+
+        if operators.get('J_joy', 0.5) > 0.6:
+            conditions.append("States of natural joy and celebration")
+
+        if operators.get('O_openness', 0.5) > 0.6:
+            conditions.append("When feeling open and receptive")
+
+        if not conditions:
+            conditions.append("Build foundation practices first")
+
+        return conditions[:4]
+
+    def _calculate_multiplication_factor(
+        self,
+        current: Dict[str, float],
+        required: Dict[str, float]
+    ) -> float:
+        """
+        Calculate potential grace multiplication factor.
+        """
+        # Grace multiplication formula: 1 + (G × S × D × 3)
+        grace = required.get('G_grace', 0.5)
+        surrender = required.get('S_surrender', 0.5)
+        dharma = required.get('D_dharma', 0.5)
+
+        multiplication = 1.0 + (grace * surrender * dharma * 3)
+
+        return multiplication
+
+    def _generate_activation_steps(
+        self,
+        channels: List[GraceChannel],
+        blockers: List[GraceBlocker],
+        current: Dict[str, float]
+    ) -> List[str]:
+        """
+        Generate ordered steps to activate grace.
+        """
+        steps = []
+
+        # First address blockers
+        for blocker in blockers[:2]:
+            if blocker.intensity > 0.3:
+                steps.append(f"Clear {blocker.name}: {blocker.clearing_practices[0]}")
+
+        # Then open channels
+        for channel in channels[:3]:
+            if channel.gap > 0.1:
+                steps.append(f"Open {channel.name} channel: {channel.activation_practices[0]}")
+
+        # General recommendations
+        if current.get('Ce_celebration', 0.5) < 0.6:
+            steps.append("Establish daily cleaning practice (morning meditation)")
+
+        if current.get('S_surrender', 0.5) < 0.5:
+            steps.append("Deepen surrender through trust exercises and letting go")
+
+        return steps[:6]
+
+    def _estimate_activation_timeline(
+        self,
+        current: float,
+        required: float
+    ) -> str:
+        """
+        Estimate timeline to achieve required grace availability.
+        """
+        gap = required - current
+
+        if gap <= 0:
+            return "Grace already available"
+        elif gap < 0.1:
+            return "1-2 weeks of focused practice"
+        elif gap < 0.2:
+            return "2-4 weeks of dedicated practice"
+        elif gap < 0.3:
+            return "1-2 months of consistent practice"
+        elif gap < 0.5:
+            return "2-4 months of deepening practice"
+        else:
+            return "4-6 months or more of sustained practice"
+
+    def _recommend_intensity(
+        self,
+        dependency: float,
+        blockers: List[GraceBlocker]
+    ) -> str:
+        """
+        Recommend intensity of grace activation work.
+        """
+        blocker_intensity = sum(b.intensity for b in blockers) / max(1, len(blockers))
+
+        if dependency > 0.7 and blocker_intensity < 0.4:
+            return "High intensity: Goal highly depends on grace and few blockers present. Prioritize surrender and transmission work."
+        elif dependency > 0.5:
+            return "Moderate intensity: Balance effort with grace activation. Regular practice with periodic intensive work."
+        elif blocker_intensity > 0.5:
+            return "Focus on clearing: Significant blockers present. Clear attachments and resistance before seeking grace."
+        else:
+            return "Gentle intensity: Maintain regular practice. Grace will support effort when conditions align."
+
+    def get_grace_summary(self, requirement: GraceRequirement) -> str:
+        """
+        Generate human-readable grace summary.
+        """
+        summary = f"**Grace Dependency:** {requirement.grace_dependency:.0%}\n"
+        summary += f"**Current Availability:** {requirement.current_grace_availability:.0%}\n"
+        summary += f"**Required Availability:** {requirement.required_grace_availability:.0%}\n"
+
+        if requirement.grace_gap > 0:
+            summary += f"**Gap to Close:** {requirement.grace_gap:.0%}\n"
+        else:
+            summary += "✓ Grace availability sufficient\n"
+
+        summary += f"\n**Channels:** {requirement.open_channels} open, {requirement.blocked_channels} need work\n"
+
+        if requirement.blockers:
+            summary += f"\n**Primary Blocker:** {requirement.primary_blocker}\n"
+            summary += "**Blockers to Clear:**\n"
+            for blocker in requirement.blockers[:3]:
+                summary += f"  - {blocker.name}: {blocker.intensity:.0%} intensity\n"
+
+        summary += f"\n**Grace Timing Probability:** {requirement.grace_timing_probability:.0%}\n"
+        summary += f"**Potential Multiplication:** {requirement.potential_multiplication_factor:.1f}x\n"
+
+        summary += f"\n**Activation Steps:**\n"
+        for i, step in enumerate(requirement.activation_steps[:4], 1):
+            summary += f"  {i}. {step}\n"
+
+        summary += f"\n**Timeline:** {requirement.timeline_to_activation}\n"
+        summary += f"\n**Recommendation:** {requirement.intensity_recommendation}\n"
+
+        return summary

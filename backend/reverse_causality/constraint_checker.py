@@ -1,0 +1,541 @@
+"""
+Constraint Checker
+Validates whether a desired transformation is feasible given current state
+
+Constraints checked:
+1. Sacred Chain - Can't skip S-levels (max 1.5 level jump)
+2. Karma Load - High karma limits manifestation capacity
+3. Belief Compatibility - Can't manifest beyond belief system
+4. Collective Reality Field - Morphogenetic field alignment
+5. Energy Sustainability - Can't maintain what energy doesn't support
+6. Fractal Coherence - Changes must maintain 85% coherence
+7. Death Architecture - Certain deaths must precede others
+"""
+
+from typing import Dict, List, Any, Optional, Tuple
+from dataclasses import dataclass, field
+import math
+
+
+@dataclass
+class ConstraintViolation:
+    """A single constraint violation"""
+    constraint_type: str
+    severity: str  # "blocking", "warning", "info"
+    description: str
+    remediation: str
+    blocking: bool
+
+
+@dataclass
+class ConstraintResult:
+    """Complete constraint check result"""
+    feasible: bool
+    overall_feasibility_score: float  # 0-1
+
+    violations: List[ConstraintViolation]
+    blocking_count: int
+    warning_count: int
+
+    # Specific constraint results
+    sacred_chain_ok: bool
+    karma_ok: bool
+    belief_ok: bool
+    collective_field_ok: bool
+    energy_ok: bool
+    coherence_ok: bool
+    death_sequence_ok: bool
+
+    # Recommendations
+    prerequisites: List[str]  # What must be done first
+    adjustments: List[str]  # Suggested goal adjustments
+    intermediate_goals: List[str]  # Stepping stone goals
+
+
+class ConstraintChecker:
+    """
+    Validate transformation feasibility against all constraints.
+    """
+
+    # S-level characteristics
+    S_LEVEL_CHARACTERISTICS = {
+        1: {'name': 'Survival', 'max_manifestation': 0.3, 'belief_flexibility': 0.2},
+        2: {'name': 'Safety', 'max_manifestation': 0.4, 'belief_flexibility': 0.3},
+        3: {'name': 'Achievement', 'max_manifestation': 0.5, 'belief_flexibility': 0.4},
+        4: {'name': 'Service', 'max_manifestation': 0.65, 'belief_flexibility': 0.5},
+        5: {'name': 'Integration', 'max_manifestation': 0.8, 'belief_flexibility': 0.7},
+        6: {'name': 'Witness', 'max_manifestation': 0.9, 'belief_flexibility': 0.85},
+        7: {'name': 'Unity', 'max_manifestation': 0.95, 'belief_flexibility': 0.95},
+        8: {'name': 'Absolute', 'max_manifestation': 1.0, 'belief_flexibility': 1.0}
+    }
+
+    # Maximum S-level jump possible
+    MAX_S_LEVEL_JUMP = 1.5
+
+    # Minimum coherence required
+    MIN_COHERENCE = 0.85
+
+    def __init__(self):
+        pass
+
+    def check_all_constraints(
+        self,
+        current_operators: Dict[str, float],
+        required_operators: Dict[str, float],
+        current_s_level: float,
+        target_s_level: float,
+        goal_description: str = ""
+    ) -> ConstraintResult:
+        """
+        Check all constraints for a transformation.
+
+        Args:
+            current_operators: Current Tier 1 operator values
+            required_operators: Required Tier 1 operator values
+            current_s_level: Current S-level (1-8)
+            target_s_level: Target S-level
+            goal_description: Optional goal description for belief checking
+
+        Returns:
+            ConstraintResult with all constraint evaluations
+        """
+        violations = []
+
+        # 1. Sacred Chain constraint
+        sacred_chain_result = self._check_sacred_chain(
+            current_s_level, target_s_level
+        )
+        if not sacred_chain_result['ok']:
+            violations.append(sacred_chain_result['violation'])
+
+        # 2. Karma constraint
+        karma_result = self._check_karma(
+            current_operators, required_operators
+        )
+        if not karma_result['ok']:
+            violations.append(karma_result['violation'])
+
+        # 3. Belief compatibility
+        belief_result = self._check_belief_compatibility(
+            current_operators, required_operators, current_s_level, goal_description
+        )
+        if not belief_result['ok']:
+            violations.append(belief_result['violation'])
+
+        # 4. Collective field alignment
+        collective_result = self._check_collective_field(
+            required_operators, current_s_level
+        )
+        if not collective_result['ok']:
+            violations.append(collective_result['violation'])
+
+        # 5. Energy sustainability
+        energy_result = self._check_energy_sustainability(
+            current_operators, required_operators
+        )
+        if not energy_result['ok']:
+            violations.append(energy_result['violation'])
+
+        # 6. Fractal coherence
+        coherence_result = self._check_coherence(
+            current_operators, required_operators
+        )
+        if not coherence_result['ok']:
+            violations.append(coherence_result['violation'])
+
+        # 7. Death sequence
+        death_result = self._check_death_sequence(
+            current_operators, required_operators
+        )
+        if not death_result['ok']:
+            violations.append(death_result['violation'])
+
+        # Calculate overall feasibility
+        blocking_count = sum(1 for v in violations if v.blocking)
+        warning_count = sum(1 for v in violations if not v.blocking)
+
+        feasible = blocking_count == 0
+
+        # Feasibility score
+        if blocking_count > 0:
+            feasibility_score = 0.2 - (blocking_count * 0.05)
+        else:
+            feasibility_score = 1.0 - (warning_count * 0.1)
+        feasibility_score = max(0.0, min(1.0, feasibility_score))
+
+        # Generate recommendations
+        prerequisites, adjustments, intermediate_goals = self._generate_recommendations(
+            violations, current_s_level, target_s_level, current_operators
+        )
+
+        return ConstraintResult(
+            feasible=feasible,
+            overall_feasibility_score=feasibility_score,
+            violations=violations,
+            blocking_count=blocking_count,
+            warning_count=warning_count,
+            sacred_chain_ok=sacred_chain_result['ok'],
+            karma_ok=karma_result['ok'],
+            belief_ok=belief_result['ok'],
+            collective_field_ok=collective_result['ok'],
+            energy_ok=energy_result['ok'],
+            coherence_ok=coherence_result['ok'],
+            death_sequence_ok=death_result['ok'],
+            prerequisites=prerequisites,
+            adjustments=adjustments,
+            intermediate_goals=intermediate_goals
+        )
+
+    def _check_sacred_chain(
+        self,
+        current_s: float,
+        target_s: float
+    ) -> Dict[str, Any]:
+        """
+        Check Sacred Chain constraint - can't skip S-levels.
+        """
+        gap = target_s - current_s
+
+        if gap <= self.MAX_S_LEVEL_JUMP:
+            return {'ok': True, 'violation': None}
+
+        # Violation
+        return {
+            'ok': False,
+            'violation': ConstraintViolation(
+                constraint_type='sacred_chain',
+                severity='blocking',
+                description=f"S-level gap of {gap:.1f} exceeds maximum jump of {self.MAX_S_LEVEL_JUMP}",
+                remediation=f"First achieve S{int(current_s + self.MAX_S_LEVEL_JUMP)}, then progress to S{int(target_s)}",
+                blocking=True
+            )
+        }
+
+    def _check_karma(
+        self,
+        current: Dict[str, float],
+        required: Dict[str, float]
+    ) -> Dict[str, Any]:
+        """
+        Check karma constraint - high karma limits manifestation.
+        """
+        current_karma = current.get('K_karma', 0.5)
+
+        # High karma (>0.7) limits ability to make major changes
+        if current_karma > 0.7:
+            # Check if we're trying to make large changes
+            total_change = sum(
+                abs(required.get(k, 0.5) - current.get(k, 0.5))
+                for k in required
+            )
+            avg_change = total_change / max(1, len(required))
+
+            if avg_change > 0.2:
+                return {
+                    'ok': False,
+                    'violation': ConstraintViolation(
+                        constraint_type='karma',
+                        severity='warning',
+                        description=f"High karma load ({current_karma:.0%}) limits transformation capacity",
+                        remediation="Increase karma burn rate through cleaning, grace, and awareness practices",
+                        blocking=False
+                    )
+                }
+
+        return {'ok': True, 'violation': None}
+
+    def _check_belief_compatibility(
+        self,
+        current: Dict[str, float],
+        required: Dict[str, float],
+        s_level: float,
+        goal: str
+    ) -> Dict[str, Any]:
+        """
+        Check belief compatibility - can't manifest beyond belief system.
+        """
+        # Get belief flexibility for current S-level
+        level_int = max(1, min(8, int(s_level)))
+        belief_flexibility = self.S_LEVEL_CHARACTERISTICS[level_int]['belief_flexibility']
+
+        # Check maya level - high maya = limited belief flexibility
+        maya = current.get('M_maya', 0.5)
+        effective_flexibility = belief_flexibility * (1 - maya * 0.5)
+
+        # Check if required changes exceed belief flexibility
+        # Grace can bypass belief limits
+        grace = required.get('G_grace', 0.5)
+        grace_bypass = grace * 0.3
+
+        total_flexibility = min(1.0, effective_flexibility + grace_bypass)
+
+        # Calculate required belief stretch
+        consciousness_change = abs(
+            required.get('Psi_quality', 0.5) - current.get('Psi_quality', 0.5)
+        )
+        surrender_change = abs(
+            required.get('S_surrender', 0.5) - current.get('S_surrender', 0.5)
+        )
+        void_change = abs(
+            required.get('V_void', 0.5) - current.get('V_void', 0.5)
+        )
+
+        # These operators require significant belief shifts
+        belief_stretch = (consciousness_change + surrender_change + void_change) / 3
+
+        if belief_stretch > total_flexibility:
+            return {
+                'ok': False,
+                'violation': ConstraintViolation(
+                    constraint_type='belief',
+                    severity='warning',
+                    description=f"Transformation requires belief expansion beyond current capacity ({total_flexibility:.0%})",
+                    remediation="Work on reducing maya and increasing openness to expand belief system",
+                    blocking=False
+                )
+            }
+
+        return {'ok': True, 'violation': None}
+
+    def _check_collective_field(
+        self,
+        required: Dict[str, float],
+        s_level: float
+    ) -> Dict[str, Any]:
+        """
+        Check collective reality field alignment.
+        Can't manifest completely disconnected from morphogenetic field.
+        """
+        # At lower S-levels, more bound to collective field
+        level_int = max(1, min(8, int(s_level)))
+        collective_binding = 1 - (level_int / 10)  # S1=0.9, S8=0.2
+
+        # Check if required state is too disconnected
+        coherence = required.get('Co_coherence', 0.5)
+        resonance = required.get('Rs_resonance', 0.5)
+
+        field_alignment = (coherence + resonance) / 2
+
+        if field_alignment < collective_binding * 0.5:
+            return {
+                'ok': False,
+                'violation': ConstraintViolation(
+                    constraint_type='collective_field',
+                    severity='warning',
+                    description="Required state may be too disconnected from collective reality field",
+                    remediation="Increase coherence and resonance to maintain field connection",
+                    blocking=False
+                )
+            }
+
+        return {'ok': True, 'violation': None}
+
+    def _check_energy_sustainability(
+        self,
+        current: Dict[str, float],
+        required: Dict[str, float]
+    ) -> Dict[str, Any]:
+        """
+        Check energy sustainability - can't maintain what energy doesn't support.
+        """
+        current_shakti = current.get('Sh_shakti', 0.5)
+        required_shakti = required.get('Sh_shakti', 0.5)
+
+        # Calculate energy demand of required state
+        high_energy_ops = ['I_intention', 'A_aware', 'W_witness', 'P_presence']
+        energy_demand = sum(required.get(op, 0.5) for op in high_energy_ops) / len(high_energy_ops)
+
+        # Check if current energy can support
+        energy_gap = energy_demand - current_shakti
+
+        if energy_gap > 0.3:
+            return {
+                'ok': False,
+                'violation': ConstraintViolation(
+                    constraint_type='energy',
+                    severity='warning',
+                    description=f"Required state demands more energy ({energy_demand:.0%}) than currently available ({current_shakti:.0%})",
+                    remediation="Build shakti (energy) through practices, rest, and lifestyle adjustments",
+                    blocking=False
+                )
+            }
+
+        return {'ok': True, 'violation': None}
+
+    def _check_coherence(
+        self,
+        current: Dict[str, float],
+        required: Dict[str, float]
+    ) -> Dict[str, Any]:
+        """
+        Check fractal coherence - changes must maintain 85% coherence.
+        """
+        # Check operator pairs that should be coherent
+
+        # Inverse pairs (should sum to ~1)
+        inverse_pairs = [
+            ('At_attachment', 'S_surrender'),
+            ('F_fear', 'Tr_trust'),
+            ('R_resistance', 'O_openness'),
+            ('M_maya', 'A_aware')
+        ]
+
+        # Complementary pairs (should be within 0.2 of each other)
+        complementary_pairs = [
+            ('G_grace', 'S_surrender'),
+            ('A_aware', 'W_witness'),
+            ('P_presence', 'E_equanimity'),
+            ('I_intention', 'D_dharma')
+        ]
+
+        coherence_score = 1.0
+
+        for op1, op2 in inverse_pairs:
+            val1 = required.get(op1, 0.5)
+            val2 = required.get(op2, 0.5)
+            pair_sum = val1 + val2
+            # Should be close to 1
+            deviation = abs(1 - pair_sum)
+            coherence_score -= deviation * 0.1
+
+        for op1, op2 in complementary_pairs:
+            val1 = required.get(op1, 0.5)
+            val2 = required.get(op2, 0.5)
+            gap = abs(val1 - val2)
+            if gap > 0.3:
+                coherence_score -= (gap - 0.3) * 0.15
+
+        coherence_score = max(0.0, coherence_score)
+
+        if coherence_score < self.MIN_COHERENCE:
+            return {
+                'ok': False,
+                'violation': ConstraintViolation(
+                    constraint_type='coherence',
+                    severity='warning',
+                    description=f"Required state has coherence of {coherence_score:.0%}, below minimum {self.MIN_COHERENCE:.0%}",
+                    remediation="Adjust operator values to maintain internal consistency",
+                    blocking=False
+                )
+            }
+
+        return {'ok': True, 'violation': None}
+
+    def _check_death_sequence(
+        self,
+        current: Dict[str, float],
+        required: Dict[str, float]
+    ) -> Dict[str, Any]:
+        """
+        Check death architecture sequence - certain deaths must precede others.
+        """
+        # Death indicators in operators
+        # D1 (Identity) - requires low attachment to self-image
+        # D2 (Belief) - requires low maya
+        # D3 (Emotion) - requires high equanimity
+        # D4 (Attachment) - requires low attachment
+        # D5 (Control) - requires high surrender
+        # D6 (Separation) - requires high coherence/unity
+        # D7 (Ego) - requires very high surrender, void tolerance
+
+        # Check if D7 (ego death) is implied without D1-D6
+        required_void = required.get('V_void', 0.5)
+        required_surrender = required.get('S_surrender', 0.5)
+        current_attachment = current.get('At_attachment', 0.5)
+        current_maya = current.get('M_maya', 0.5)
+
+        # If void > 0.7, likely D7 territory
+        if required_void > 0.7:
+            # Check prerequisites
+            if current_attachment > 0.5 or current_maya > 0.5:
+                return {
+                    'ok': False,
+                    'violation': ConstraintViolation(
+                        constraint_type='death_sequence',
+                        severity='warning',
+                        description="Deep void tolerance (D7) requires prior release of attachment (D4) and maya (D2)",
+                        remediation="Work on attachment release and belief dissolution before deep void practices",
+                        blocking=False
+                    )
+                }
+
+        return {'ok': True, 'violation': None}
+
+    def _generate_recommendations(
+        self,
+        violations: List[ConstraintViolation],
+        current_s: float,
+        target_s: float,
+        current_ops: Dict[str, float]
+    ) -> Tuple[List[str], List[str], List[str]]:
+        """
+        Generate recommendations based on violations.
+        """
+        prerequisites = []
+        adjustments = []
+        intermediate_goals = []
+
+        for violation in violations:
+            if violation.constraint_type == 'sacred_chain':
+                intermediate_s = int(current_s + self.MAX_S_LEVEL_JUMP)
+                intermediate_goals.append(f"Achieve S{intermediate_s} consciousness first")
+                prerequisites.append("Stabilize at next S-level before attempting larger jump")
+
+            elif violation.constraint_type == 'karma':
+                prerequisites.append("Increase karma burn rate through cleaning and awareness")
+                adjustments.append("Consider a longer timeline to allow karma clearing")
+
+            elif violation.constraint_type == 'belief':
+                prerequisites.append("Expand belief system through maya reduction")
+                adjustments.append("Start with more accessible goals to build belief flexibility")
+
+            elif violation.constraint_type == 'energy':
+                prerequisites.append("Build energy reserves before major transformation")
+                adjustments.append("Reduce scope or extend timeline to match available energy")
+
+            elif violation.constraint_type == 'coherence':
+                adjustments.append("Adjust target operator values for better internal coherence")
+
+            elif violation.constraint_type == 'death_sequence':
+                prerequisites.append("Complete preliminary death processes (D1-D4) before deeper work")
+
+        # Remove duplicates
+        prerequisites = list(dict.fromkeys(prerequisites))
+        adjustments = list(dict.fromkeys(adjustments))
+        intermediate_goals = list(dict.fromkeys(intermediate_goals))
+
+        return prerequisites, adjustments, intermediate_goals
+
+    def get_constraint_summary(self, result: ConstraintResult) -> str:
+        """
+        Generate human-readable constraint summary.
+        """
+        if result.feasible:
+            summary = f"✓ Transformation is feasible (Score: {result.overall_feasibility_score:.0%})\n\n"
+        else:
+            summary = f"⚠ Transformation has blocking constraints (Score: {result.overall_feasibility_score:.0%})\n\n"
+
+        if result.blocking_count > 0:
+            summary += f"**Blocking Issues ({result.blocking_count}):**\n"
+            for v in result.violations:
+                if v.blocking:
+                    summary += f"- {v.description}\n"
+                    summary += f"  → {v.remediation}\n"
+
+        if result.warning_count > 0:
+            summary += f"\n**Warnings ({result.warning_count}):**\n"
+            for v in result.violations:
+                if not v.blocking:
+                    summary += f"- {v.description}\n"
+
+        if result.prerequisites:
+            summary += "\n**Prerequisites:**\n"
+            for p in result.prerequisites:
+                summary += f"- {p}\n"
+
+        if result.intermediate_goals:
+            summary += "\n**Suggested Intermediate Goals:**\n"
+            for g in result.intermediate_goals:
+                summary += f"- {g}\n"
+
+        return summary
