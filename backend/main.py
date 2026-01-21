@@ -54,7 +54,7 @@ from reverse_causality import (
 load_dotenv()
 
 # Initialize FastAPI app
-app = FastAPI(title="Reality Transformer", version="4.0.0")
+app = FastAPI(title="Reality Transformer", version="4.1.0")
 
 # OpenAI Configuration
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -116,11 +116,16 @@ async def run_inference(prompt: str = Query(..., description="User query")):
 
 
 async def inference_stream(prompt: str) -> AsyncGenerator[dict, None]:
-    """Generate SSE events for the inference pipeline"""
+    """Generate SSE events for the inference pipeline with evidence enrichment and optional reverse mapping"""
     import time
     start_time = time.time()
 
     try:
+        # Step 0: Detect if query is future-oriented
+        is_future_oriented = detect_future_oriented_language(prompt)
+        query_mode = "hybrid (analysis + pathways)" if is_future_oriented else "analysis"
+        print(f"[QUERY MODE] Future-oriented: {is_future_oriented} → Mode: {query_mode}")
+
         # Step 1: Parse query with OpenAI + Web Research
         yield {
             "event": "status",
@@ -189,13 +194,45 @@ async def inference_stream(prompt: str) -> AsyncGenerator[dict, None]:
             })
         }
 
-        # Step 4: Build articulation prompt and stream response
+        # Step 3.5: Run reverse mapping if future-oriented
+        reverse_mapping_data = None
+        if is_future_oriented:
+            yield {
+                "event": "status",
+                "data": json.dumps({"message": "Computing transformation pathways (reverse causality mapping)..."})
+            }
+
+            try:
+                reverse_mapping_data = await run_reverse_mapping_for_articulation(
+                    goal=evidence.get('goal', prompt),
+                    evidence=evidence,
+                    consciousness_state=consciousness_state
+                )
+
+                pathway_count = reverse_mapping_data.get('pathways_generated', 0)
+                mvt_count = reverse_mapping_data.get('mvt_operators', 0)
+
+                yield {
+                    "event": "status",
+                    "data": json.dumps({
+                        "message": f"Reverse mapping complete: {pathway_count} pathways, {mvt_count} key operators identified"
+                    })
+                }
+            except Exception as e:
+                print(f"[REVERSE MAPPING] Error: {e} - continuing without pathways")
+                reverse_mapping_data = None
+
+        # Step 4: Build articulation prompt and stream response with evidence enrichment
         yield {
             "event": "status",
-            "data": json.dumps({"message": "Generating articulation with gpt-5.2..."})
+            "data": json.dumps({
+                "message": f"Generating articulation with evidence enrichment ({query_mode})..."
+            })
         }
 
-        async for token in format_results_streaming_bridge(prompt, evidence, posteriors, consciousness_state):
+        async for token in format_results_streaming_bridge(
+            prompt, evidence, posteriors, consciousness_state, reverse_mapping_data
+        ):
             yield {
                 "event": "token",
                 "data": json.dumps({"text": token})
@@ -205,10 +242,16 @@ async def inference_stream(prompt: str) -> AsyncGenerator[dict, None]:
         elapsed = time.time() - start_time
         yield {
             "event": "done",
-            "data": json.dumps({"elapsed_ms": int(elapsed * 1000)})
+            "data": json.dumps({
+                "elapsed_ms": int(elapsed * 1000),
+                "mode": query_mode,
+                "reverse_mapping_applied": reverse_mapping_data is not None
+            })
         }
 
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         yield {
             "event": "error",
             "data": json.dumps({"message": str(e)})
@@ -367,17 +410,24 @@ async def format_results_streaming_bridge(
     prompt: str,
     evidence: dict,
     posteriors: dict,
-    consciousness_state: ConsciousnessState
+    consciousness_state: ConsciousnessState,
+    reverse_mapping: Optional[Dict[str, Any]] = None
 ) -> AsyncGenerator[str, None]:
     """
-    Use Articulation Bridge to format results with organized semantic structure.
-    This is Call 2 in the bridge architecture - the articulation call.
+    Unified articulation with evidence enrichment and optional reverse mapping.
+
+    This is the final LLM call that:
+    1. Has web_search tool for evidence enrichment during articulation
+    2. Uses calculated values to guide what to search for
+    3. Integrates reverse mapping data when available (future-oriented queries)
+    4. Produces natural, domain-appropriate insights
     """
 
     # Log what's being sent to LLM for articulation
     bottleneck_count = len(consciousness_state.bottlenecks)
     leverage_count = len(consciousness_state.leverage_points)
-    print(f"[ARTICULATION BRIDGE] Sending to gpt-5.2: {bottleneck_count} bottlenecks, {leverage_count} leverage points")
+    has_reverse_mapping = reverse_mapping is not None
+    print(f"[ARTICULATION BRIDGE] Sending to gpt-5.2: {bottleneck_count} bottlenecks, {leverage_count} leverage points, reverse_mapping={has_reverse_mapping}")
 
     if not OPENAI_API_KEY:
         # Fallback: format results without OpenAI
@@ -403,18 +453,92 @@ async def format_results_streaming_bridge(
     # Build the structured articulation prompt
     articulation_prompt = prompt_builder.build_prompt(articulation_context)
 
+    # Add reverse mapping data if available
+    if reverse_mapping:
+        reverse_mapping_section = f"""
+
+=== REVERSE CAUSALITY MAPPING (Pre-Computed Transformation Data) ===
+This user has a future-oriented goal. The following transformation data has been
+calculated by working backward from their desired outcome:
+
+**Target State:**
+- Goal: {reverse_mapping.get('goal', 'Not specified')}
+- Target S-Level: {reverse_mapping.get('target_s_level', 'N/A')}
+- Feasibility: {'✓ Achievable' if reverse_mapping.get('feasible', False) else '⚠️ Requires intermediate steps'}
+- Coherence: {'✓ Coherent' if reverse_mapping.get('coherent', False) else '⚠️ Needs adjustment'}
+
+**Minimum Viable Transformation (MVT):**
+Focus changes on these key operators (in order):
+{' → '.join(reverse_mapping.get('mvt', {}).get('implementation_order', ['Not calculated']))}
+
+**Recommended Pathway:**
+{reverse_mapping.get('best_pathway', 'Direct transformation')}
+Timeline estimate: {reverse_mapping.get('timeline', 'Variable')}
+
+**Grace Dependency:**
+{reverse_mapping.get('grace_dependency', 0):.0%} of this transformation depends on grace activation
+
+**Death Processes Required:**
+{reverse_mapping.get('deaths_required', 0)} identity deaths in sequence: {', '.join(reverse_mapping.get('death_sequence', ['None']))}
+
+**Monitoring Indicators:**
+Check-in schedule: {reverse_mapping.get('check_in_schedule', 'Weekly')}
+=== END REVERSE CAUSALITY MAPPING ===
+"""
+        articulation_prompt += reverse_mapping_section
+
     # Log prompt size
     print(f"[ARTICULATION BRIDGE] Built prompt: {len(articulation_prompt)} characters")
 
-    # System instructions for the articulation call
+    # Determine response mode
+    response_mode = "HYBRID (Current Analysis + Future Pathways)" if reverse_mapping else "CURRENT ANALYSIS"
+
+    # System instructions for the articulation call with evidence enrichment
     instructions = f"""You are Reality Transformer, a consciousness-based transformation engine.
 
 You are receiving a STRUCTURED ANALYSIS from the One Origin Framework (OOF).
 Your task is to ARTICULATE these insights in NATURAL, DOMAIN-APPROPRIATE language.
 
+=== RESPONSE MODE: {response_mode} ===
+
 === OOF FRAMEWORK KNOWLEDGE ===
 {OOF_FRAMEWORK}
 === END OOF FRAMEWORK ===
+
+=== OPERATOR INTERPRETATION FOR EVIDENCE SEARCH ===
+Use calculated operator values to guide your evidence gathering:
+
+HIGH ATTACHMENT (0.75+):
+- Indicates: Clinging to past patterns, sunk cost fallacy, resistance to necessary change
+- Search for: Legacy system risks, migration delay consequences, competitor advantages from early adoption
+- Evidence type: Industry-specific examples of attachment costs
+
+HIGH MAYA (0.70+):
+- Indicates: Perception gaps, blind spots, beliefs contradicting reality
+- Search for: Objective market data, third-party assessments, competitive positioning reports
+- Evidence type: Reality validators that expose gaps between stated and actual position
+
+SEPARATION MATRIX POSITION:
+- Indicates: Competitive vs collaborative orientation, protective boundaries
+- Search for: Competitive dynamics AND collaborative counterexamples showing integration advantage
+- Evidence type: Both current pattern validation and alternative pathway proof
+
+S-LEVEL 3 (Achievement):
+- Search framing: Use competitive benchmarks, performance metrics, ranking data
+- Evidence that resonates: "Your competitors achieved X, here's the gap"
+
+S-LEVEL 5 (Service):
+- Search framing: Use impact examples, integration cases, ecosystem dynamics
+- Evidence that resonates: "Leaders found success through collaboration"
+
+GRACE ACTIVATION LEVERAGE:
+- Search for: Partnership announcements, collaboration trends, synchronicity indicators
+- Evidence type: Recent alignments, unexpected opportunities, ecosystem formation
+
+HIGH BREAKTHROUGH PROBABILITY (0.70+):
+- Search for: Near-term catalysts, immediate opportunities, emerging possibilities
+- Evidence use: Confirm favorable conditions or identify hidden resistances
+=== END OPERATOR INTERPRETATION ===
 
 === CRITICAL ARTICULATION RULES ===
 1. NEVER use framework terminology in your response:
@@ -440,7 +564,49 @@ Your task is to ARTICULATE these insights in NATURAL, DOMAIN-APPROPRIATE languag
    - End with concrete next steps
    - Respect current capacity
    - Don't overwhelm
-=== END ARTICULATION RULES ==="""
+
+6. EVIDENCE ENRICHMENT:
+   - You have web_search tool available
+   - Use it strategically when calculated patterns need grounding in industry reality
+   - Search for: competitor examples, market data, transformation cases, timeline validation
+   - High maya scores → search for objective third-party data
+   - Bottlenecks → search for consequence evidence (what happens when this pattern persists)
+   - Leverage points → search for opportunity evidence (partnerships, trends, alignments)
+   - Integrate findings naturally into narrative flow - no "according to search" phrasing
+   - Quality over quantity - search when evidence strengthens insight, not exhaustively
+=== END ARTICULATION RULES ===
+
+=== RESPONSE STRUCTURE ===
+{"SECTION 1: WHERE YOU ARE NOW" if True else ""}
+- Articulate current consciousness patterns using calculated values
+- USE web_search to ground insights in observable evidence when it strengthens the point
+- High maya? Search for perception vs reality gaps in their domain
+- High attachment? Search for real-world clinging consequences
+- Make the invisible visible with concrete proof
+
+{"SECTION 2: THE GAP" if True else ""}
+- Articulate distance between current state and goal
+- Use CALCULATED values - no search needed for gap analysis
+- Express in terms they can feel, not abstract metrics
+
+{"SECTION 3: ROOT CAUSE" if True else ""}
+- Explain WHY bottlenecks create their current situation
+- May search for pattern manifestation examples
+- Connect causes to observable effects
+
+{"SECTION 4: TRANSFORMATION PATH" if reverse_mapping else "SECTION 4: DIRECTION"}
+{'''- Articulate from the REVERSE CAUSALITY MAPPING data provided
+- Describe the recommended pathway in natural terms
+- Explain MVT (what changes matter most) without technical labels
+- Address death processes as "what needs to be released"
+- Frame grace dependency as "what support is available"''' if reverse_mapping else '''- Suggest general direction based on leverage points
+- Focus on highest-impact shifts available'''}
+
+SECTION 5: FIRST STEPS
+- Concrete actions from analysis
+- May search for implementation specifics, tools, or examples
+- Respect current capacity - don't overwhelm
+=== END RESPONSE STRUCTURE ==="""
 
     request_body = {
         "model": OPENAI_MODEL,
@@ -451,7 +617,12 @@ Your task is to ARTICULATE these insights in NATURAL, DOMAIN-APPROPRIATE languag
             "content": [{"type": "input_text", "text": articulation_prompt}]
         }],
         "temperature": 0.85,  # Higher for natural articulation
-        "stream": True
+        "stream": True,
+        "tools": [{
+            "type": "web_search",
+            "user_location": {"type": "approximate", "timezone": "UTC"}
+        }],
+        "tool_choice": "auto"
     }
 
     try:
@@ -477,6 +648,14 @@ Your task is to ARTICULATE these insights in NATURAL, DOMAIN-APPROPRIATE languag
                             break
                         try:
                             data = json.loads(data_str)
+
+                            # Log evidence searches
+                            if "tool_calls" in data:
+                                for tool in data.get("tool_calls", []):
+                                    if tool.get("type") == "web_search":
+                                        query = tool.get("query", tool.get("arguments", {}).get("query", ""))
+                                        print(f"[EVIDENCE SEARCH] Query: {query}")
+
                             # Extract text from streaming response
                             if "delta" in data:
                                 delta = data.get("delta", {})
@@ -1025,6 +1204,121 @@ async def reverse_map_stream(
         }
 
 
+async def run_reverse_mapping_for_articulation(
+    goal: str,
+    evidence: dict,
+    consciousness_state: ConsciousnessState
+) -> Dict[str, Any]:
+    """
+    Run reverse causality mapping and return structured data for articulation.
+
+    This extracts the key information from reverse mapping without streaming,
+    so it can be passed to the unified articulation call.
+    """
+    # Extract current operators from evidence
+    current_operators = _extract_operators_from_evidence(evidence)
+
+    # Get current S-level from consciousness state
+    current_s_level = consciousness_state.tier1.s_level.value if hasattr(consciousness_state.tier1, 's_level') else 3.0
+
+    # Find matching signatures
+    matching_signatures = signature_library.find_signatures_for_goal(goal, current_s_level)
+
+    if matching_signatures:
+        primary_signature = matching_signatures[0]
+        required_operators = primary_signature.operator_minimums.copy()
+        for op, max_val in primary_signature.operator_maximums.items():
+            if op not in required_operators or required_operators[op] > max_val:
+                required_operators[op] = max_val * 0.8
+        target_s_level = primary_signature.optimal_s_level
+    else:
+        # Use reverse engine for custom goal
+        result = reverse_engine.solve_for_outcome(
+            'breakthrough_probability', 0.7, current_operators
+        )
+        required_operators = result.required_state.operator_values
+        target_s_level = current_s_level + 1
+
+    # Check constraints
+    constraint_result = constraint_checker.check_all_constraints(
+        current_operators, required_operators, current_s_level, target_s_level, goal
+    )
+
+    # Validate coherence
+    coherence_result = coherence_validator.validate_coherence(
+        required_operators, target_s_level
+    )
+
+    # Apply coherence corrections if needed
+    if coherence_result.suggested_adjustments:
+        for op, val in coherence_result.suggested_adjustments.items():
+            required_operators[op] = val
+
+    # Generate pathways
+    pathways = pathway_generator.generate_pathways(
+        current_operators=current_operators,
+        required_operators=required_operators,
+        current_s_level=current_s_level,
+        target_s_level=target_s_level,
+        num_pathways=5
+    )
+
+    # Optimize pathways
+    optimization_result = pathway_optimizer.optimize_pathways(pathways)
+
+    # Calculate MVT
+    mvt = mvt_calculator.calculate_mvt(
+        current_operators, required_operators, max_operators=5
+    )
+
+    # Analyze death requirements
+    death_sequence = death_sequencer.analyze_death_requirements(
+        current_operators, required_operators, goal
+    )
+
+    # Calculate grace requirements
+    grace_req = grace_calculator.calculate_grace_requirements(
+        current_operators, required_operators, goal
+    )
+
+    # Generate monitoring plan
+    best_pathway = pathways[0] if pathways else None
+    monitoring_plan = None
+    if best_pathway:
+        monitoring_plan = progress_tracker.generate_monitoring_plan(
+            best_pathway, current_operators, required_operators
+        )
+
+    # Return structured data for articulation
+    return {
+        "goal": goal,
+        "current_s_level": current_s_level,
+        "target_s_level": target_s_level,
+        "feasible": constraint_result.feasible,
+        "feasibility_score": constraint_result.overall_feasibility_score,
+        "coherent": coherence_result.is_coherent,
+        "coherence_score": coherence_result.coherence_score,
+        "mvt": {
+            "operators": [c.operator for c in mvt.changes],
+            "implementation_order": mvt.implementation_order,
+            "total_operators": mvt.total_operators_changed,
+            "efficiency": mvt.mvt_efficiency
+        },
+        "best_pathway": optimization_result.best_pathway.pathway_name if optimization_result else "Direct",
+        "pathways_generated": len(pathways),
+        "timeline": mvt.estimated_time,
+        "grace_dependency": grace_req.grace_dependency,
+        "grace_availability": grace_req.current_grace_availability,
+        "deaths_required": len(death_sequence.deaths_required),
+        "death_sequence": death_sequence.sequence_order,
+        "void_tolerance_required": death_sequence.void_tolerance_required,
+        "check_in_schedule": monitoring_plan.check_in_schedule if monitoring_plan else "Weekly",
+        "mvt_operators": mvt.total_operators_changed,
+        "blocking_constraints": constraint_result.blocking_count,
+        "prerequisites": constraint_result.prerequisites[:3] if constraint_result.prerequisites else []
+    }
+
+
 def _extract_operators_from_evidence(evidence: dict) -> Dict[str, float]:
     """Extract operator values from evidence observations."""
     operators = {}
@@ -1232,7 +1526,7 @@ async def health_check():
     """Health check endpoint"""
     return {
         "status": "healthy",
-        "version": "4.0.0",
+        "version": "4.1.0",
         "model": OPENAI_MODEL,
         "registry_loaded": inference_engine.is_loaded,
         "formula_count": inference_engine.formula_count,
@@ -1253,12 +1547,33 @@ async def health_check():
                 "Algorithmic bottleneck detection",
                 "Leverage point calculation",
                 "Structured prompt generation",
-                "Framework concealment"
+                "Framework concealment",
+                "Evidence enrichment (2nd web search)"
+            ]
+        },
+        "evidence_validation": {
+            "enabled": True,
+            "description": "Second web search during articulation for evidence grounding",
+            "features": [
+                "Operator-guided search strategy",
+                "Maya gap validation (perception vs reality)",
+                "Bottleneck consequence evidence",
+                "Leverage opportunity discovery",
+                "Natural evidence integration",
+                "Domain-specific query refinement"
+            ],
+            "search_triggers": [
+                "High maya (0.70+) → objective market data",
+                "High attachment (0.75+) → migration/change consequences",
+                "Separation matrix → competitive dynamics",
+                "Grace leverage → partnership trends",
+                "Breakthrough probability → catalyst validation"
             ]
         },
         "reverse_causality_mapping": {
             "enabled": True,
             "endpoint": "/api/reverse-map",
+            "integrated_with_run": True,
             "components": [
                 "ReverseCausalityEngine",
                 "ConsciousnessSignatureLibrary",
@@ -1278,7 +1593,21 @@ async def health_check():
                 "Minimum viable transformation calculation",
                 "Death sequencing (D1-D7)",
                 "Grace dependency analysis",
-                "Progress monitoring plans"
+                "Progress monitoring plans",
+                "Auto-detection of future-oriented queries",
+                "Unified articulation with current + future analysis"
+            ]
+        },
+        "unified_flow": {
+            "enabled": True,
+            "description": "Single articulation handles evidence search + reverse mapping",
+            "modes": [
+                "analysis: Current state with evidence grounding",
+                "hybrid: Current analysis + transformation pathways (auto-detected)"
+            ],
+            "future_detection_patterns": [
+                "i want to", "my goal is", "how can i", "become",
+                "achieve", "transform into", "manifest", "grow into"
             ]
         }
     }
