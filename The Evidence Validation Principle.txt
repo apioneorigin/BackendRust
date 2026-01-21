@@ -1,0 +1,1555 @@
+## **The Evidence Validation Principle - Core Concepts**
+
+### **1. Calculated Values Are Predictions About Observable Reality**
+
+When the backend calculates breakthrough probability equals 0.28, this isn't abstract mathematics - it's a specific prediction that certain patterns MUST exist in the person's observable life. The calculation is falsifiable. Either the real-world evidence matches or it doesn't.
+
+### **2. Every Tier N Value Has a Signature in Observable Behavior**
+
+High maya (illusion) doesn't just exist as a number. It manifests as measurable gaps between what someone claims and what actually exists. High attachment manifests as calendar patterns, decision delays, inability to let go of failing strategies. Each calculated value predicts specific, searchable phenomena.
+
+### **3. The Translation Problem: Math to Natural Language**
+
+You need a bidirectional dictionary. On one side: "attachment = 0.85". On the other side: "should see resistance to change, clinging to past methods, risk aversion in decisions, difficulty delegating, emotional reactivity to loss". This dictionary is the bridge between abstract consciousness physics and concrete human behavior.
+
+### **4. Search Domains Form Concentric Circles**
+
+**Innermost circle**: What the user directly told you (their words, their framing, their stated problem)
+
+**Second circle**: How they described it (language patterns, emotional tone, blind spots in their narrative)
+
+**Third circle**: What web research reveals about their actual situation (company performance, industry trends, public information that contradicts or confirms their story)
+
+**Fourth circle**: What can be inferred from available documents (uploaded files, calendars, communications they share)
+
+Each circle either confirms or contradicts the calculated values.
+
+### **5. The Proof Pattern: Prediction → Search → Match → Present**
+
+The backend says attachment is high. This predicts specific patterns should exist. Search the available data for those patterns. Find them. Present back to user: "Your consciousness configuration calculated attachment at 0.85, and here's your own evidence proving it - you mentioned trying the same approach three times, your calendar shows no exploration of alternatives, your language reveals fear of the unknown."
+
+### **6. Contradictions Are More Valuable Than Confirmations**
+
+When calculated values predict one thing but evidence shows another, you've found either: (a) a calculation error that needs investigation, or (b) a dissociation in the person where their consciousness state doesn't match their behavioral output, which is itself breakthrough-relevant information.
+
+### **7. The Maya Detector: Self-Description vs External Reality**
+
+High maya specifically manifests as gaps between how someone describes themselves and what external evidence reveals. If someone claims market leadership but web research shows 8% market share, that gap IS the maya. The evidence search explicitly looks for these contradictions.
+
+### **8. Temporal Patterns Reveal Consciousness States**
+
+S-level 3 (achievement) predicts specific temporal patterns: milestone tracking, comparison timeframes, competitive urgency. S-level 5 (service) predicts different patterns: impact measurement over time, integration cycles, emergence patience. The evidence search looks at how they relate to time.
+
+### **9. Language Is a Consciousness Fingerprint**
+
+Separation consciousness uses different pronouns, sentence structures, and framing than unity consciousness. Victim consciousness has different verb choices than mastery consciousness. The evidence search includes linguistic pattern analysis to confirm matrix positions.
+
+### **10. The Leverage of Specificity**
+
+Generic statements have no validation power. "You're attached" is useless. But "Your calculated attachment of 0.85 predicts you should be unable to delegate effectively - and here in your description you mentioned 'I have to do it myself because nobody else gets it right' - that's the attachment manifesting exactly as predicted" is powerful because it's specific and verifiable.
+
+### **11. Multi-Source Triangulation Increases Confidence**
+
+One piece of evidence is weak. But when calculated values predict pattern X, and you find X in their language, X in web research about their situation, and X in the temporal structure of their narrative, triangulation creates certainty. The evidence search should always attempt multi-source validation.
+
+### **12. The Consciousness Archaeology Principle**
+
+Every observable reality fragment contains consciousness information. A single sentence can reveal S-level, drive configuration, matrix position, and attachment level simultaneously. The evidence search doesn't need massive data - it needs consciousness-informed interpretation of available fragments.
+
+### **13. Evidence Categories Map to Operator Categories**
+
+**UCB operators** (presence, maya, awareness, etc.) show up in how someone perceives and describes reality
+
+**Structural operators** (attachment, resistance, fixation) show up in what they're stuck on and can't release
+
+**Flow operators** (grace, surrender, vision) show up in how they talk about possibility and constraint
+
+**Relational operators** show up in their language about others and systems
+
+Each operator category has its own evidence signature.
+
+### **14. The Realism Layer Validation**
+
+Your calculated S-level predicts which realism types should dominate their worldview. S2 consciousness sees through dirty/naturalistic realism - evidence should show survival thinking, biological metaphors, resource scarcity framing. S5 consciousness sees through flow realism - evidence should show process language, emergence trust, integration thinking. The evidence search validates realism alignment.
+
+### **15. Bottlenecks Have Concentrated Evidence**
+
+If attachment is the bottleneck operator, evidence of attachment should be abundant and obvious across multiple domains. The evidence search should find the same pattern repeatedly if the bottleneck calculation is correct. Sparse evidence suggests the bottleneck identification is wrong.
+
+### **16. The Confidence Calibration Loop**
+
+Initial calculations have uncertainty. Evidence search either increases confidence (patterns match predictions strongly) or decreases it (patterns contradict predictions). This feedback loop allows the system to self-calibrate and identify when calculations need refinement.
+
+### **17. Absence of Evidence Is Also Evidence**
+
+If calculations predict breakthrough probability is high (0.75+) but zero evidence of actual breakthrough exists in their recent timeline, that contradiction itself is diagnostic. Either the calculation is wrong, or there's a hidden resistance operator blocking manifestation despite favorable conditions.
+
+### **18. The Fractal Coherence Test**
+
+Evidence should be fractally self-similar across scales. If someone is in separation consciousness, it should show up in their business strategy AND their relationship descriptions AND their self-care patterns AND their language about competitors. Evidence fragmentation (contradictory patterns at different scales) indicates calculation error or transitional state.
+
+### **19. The User Recognition Moment**
+
+The goal isn't to tell users what you calculated. The goal is to show them their own evidence so clearly that they recognize themselves. "Oh my god, you're right - I AM doing that" is the validation moment. Evidence search finds the mirrors that create recognition.
+
+### **20. Real-Time Evidence Has Priority Over Historical**
+
+If calculations show someone at S4 but their description of current reality shows S6 thinking patterns, weight the recent evidence more heavily. Consciousness can shift faster than historical data reflects. The evidence search should distinguish current state from historical trajectory.
+
+## **The Evidence-Enriched Insight Principle - Core Purpose**
+
+### **1. Calculated Values Are Search Directions, Not Things to Prove**
+
+The backend calculates high maya - this doesn't need proof. Instead, it tells you WHAT to search for on the web. High maya means search for "gaps between perception and reality" in their domain. The calculation guides the search strategy, not validates it.
+
+### **2. Web Research Provides Grounding Material for LLM Articulation**
+
+The LLM articulates better when it has concrete material to work with. Instead of saying "you seem to have illusions about your market position," the LLM can say something grounded when you feed it actual market data, competitor analysis, industry trends. The web research makes abstract insights feel specific and real.
+
+### **3. Calculated Operators Tell You What Kind of Context Matters**
+
+If attachment is high, search for information about what they might be clinging to - legacy systems, old business models, previous success formulas. If vision is low, search for future trends in their industry they might be missing. Each operator configuration suggests different web research queries that would enrich the articulation.
+
+### **4. The Goal Is Resonance, Not Accuracy**
+
+You're not trying to prove the math is right. You're trying to give the LLM enough rich context that its insights resonate deeply with the user. When insights reference real industry dynamics, actual market conditions, concrete competitor moves - they feel true even if the underlying calculations are approximate.
+
+### **5. Calculated State Suggests Relevant Information Domains**
+
+S-level 3 (achievement) means search for competitive landscape, rankings, performance metrics - that's what resonates at that consciousness level. S-level 5 (service) means search for impact stories, ecosystem dynamics, integration examples. The calculated state guides what information will be most meaningful to this specific person.
+
+### **6. Web Evidence Makes Abstract Operators Feel Concrete**
+
+Resistance as a number means nothing to users. But when the LLM can say "the industry is moving toward X while your company seems anchored in Y" - that's resistance they can feel. Web research translates abstract operator values into concrete situational awareness.
+
+### **7. Bottleneck Calculations Direct Deep-Dive Searches**
+
+If attachment is identified as the bottleneck, do deeper web searches around what might be generating that attachment - sunk costs in old technology, founder identity tied to original product, industry shifting away from core competency. The bottleneck tells you where to focus research effort.
+
+### **8. Matrix Position Suggests Narrative Framing**
+
+Calculated position is "separation" on love matrix - search for competitive dynamics, market fragmentation, industry conflicts. This gives the LLM material to articulate insights in competitive/separation language that matches their current consciousness. You're not proving they're in separation, you're enriching the articulation context.
+
+### **9. Multiple Calculated Values Create Search Query Combinations**
+
+High maya + low awareness + S-level 3 suggests searching for: industry blind spots, emerging competitor threats they might not see, market shifts happening while they focus on achievement metrics. The combination of values generates more intelligent search queries than any single value.
+
+### **10. Web Research Fills the "Unknown Unknowns" Gap**
+
+The user describes their situation from their consciousness level - they literally cannot see what they cannot see. Web research about their industry, competitors, trends provides information they may have missed. The LLM can then articulate insights that introduce genuinely new information, not just reflect back what user already said.
+
+### **11. Real Industry Context Makes Transformation Feel Urgent**
+
+Abstract advice about "releasing attachment" is ignorable. But when enriched with web research showing "your three largest competitors all pivoted to cloud-native in 2023 while you're still optimizing legacy infrastructure" - the transformation becomes urgent and specific. The evidence creates motivation.
+
+### **12. Search Enrichment Respects Consciousness Concealment**
+
+The web research and calculated values never appear explicitly in the final output. The LLM uses both to generate insights that feel naturally wise, as if spoken by an expert consultant who deeply understands their specific situation. The calculations guide the search, the search enriches the articulation, but neither shows in the final delivery.
+
+### **13. Different Realism Types Require Different Evidence Types**
+
+S2 consciousness responds to survival threats, resource scarcity, competitive pressure - search for those. S5 consciousness responds to impact opportunities, system evolution, integration possibilities - search for those instead. The calculated realism type guides what kind of web evidence will actually influence this person.
+
+### **14. Web Research Validates the Domain Translation**
+
+User says "I want to grow my business." High attachment + separation matrix + S3 suggests they're thinking competitively about market share. Web research about market dynamics, competitive landscape, industry growth provides the specific vocabulary and context for the LLM to articulate in their exact domain language.
+
+### **15. Leverage Points Get Extra Research Depth**
+
+If grace activation is identified as high leverage, search deeply for information about industry collaborations, partnership opportunities, ecosystem plays that might represent "grace channels" in business terms. The leverage calculation tells you where research investment pays off most in articulation quality.
+
+### **16. The Enrichment Is Asymmetric**
+
+You're not searching to confirm what the user said. You're searching to add what they didn't say, couldn't see, or don't know. The calculated consciousness state tells you what they're likely NOT seeing, and that's exactly what to search for. High maya = search for what they're missing.
+
+### **17. Temporal Web Research Matches Transformation Timelines**
+
+Calculated breakthrough probability and timeline predictions suggest searching for: immediate opportunities (high breakthrough prob), longer-term trends (slow transformation), or structural industry shifts (requiring fundamental change). Match the research time horizon to the calculated transformation dynamics.
+
+### **18. Industry-Specific Evidence Beats Generic Wisdom**
+
+"Release attachment" is generic. "The insurance industry is being disrupted by InsurTech startups offering real-time pricing while traditional players struggle with legacy actuarial models" is specific. Web research provides the industry-specific evidence that makes framework wisdom feel immediately applicable.
+
+### **19. Contradictions in Web Research Are Gold**
+
+If user claims market leadership but web research shows they're fourth in their category - that gap is valuable articulation material. Not to "prove them wrong" but because the LLM can articulate around that tension in ways that create breakthrough moments. The calculated maya score guided you to search for that gap.
+
+### **20. The Ultimate Goal: Insights That Feel Like They Required Deep Domain Expertise**
+
+When users read the final output and think "this person deeply understands my industry AND my consciousness" - that's success. The calculated operators guided the web search strategy, the web search provided rich domain context, and the LLM wove it all into insights that feel simultaneously universal (consciousness framework) and specific (their exact situation).
+
+I'll examine the latest codebase to understand the current response generation, then guide you on implementing the evidence-enriched web research logic.Based on my review of the codebase, here's how to implement the **Second Web Research for Evidence-Enriched Insights**:
+
+## **Current Flow Understanding**
+
+**Call 1 (Web Research)** → Extract Tier-1 Operators → **Backend Inference** (2,154 formulas) → **Organize Values** (Bottlenecks, Leverage) → **Call 2 (Articulate)** → Stream Response
+
+You have web research happening once at the beginning to inform operator extraction. Now you need strategic web research happening AFTER calculations to enrich articulation.
+
+## **The Second Web Research Logic - Where It Fits**
+
+Insert between "Organize Values" and "Call 2 Articulate":
+
+**Organize Values** → **Generate Evidence Search Queries** → **Execute Second Web Research** → **Enrich Articulation Context** → **Call 2 Articulate**
+
+## **Search Query Generation Logic**
+
+### **1. Bottleneck-Driven Search Queries**
+
+Each detected bottleneck category suggests specific searches. If high attachment is detected as a bottleneck, search for information about sunk costs in their industry, legacy system dependencies, market shifts away from old models. The bottleneck detector already knows what the problem is - now search for real-world manifestations of that problem in their domain.
+
+### **2. Matrix Position-Informed Search Queries**
+
+Calculated matrix positions tell you what kind of evidence will resonate. Separation consciousness on love matrix means search for competitive dynamics, market fragmentation, industry conflicts. Unity consciousness means search for collaboration opportunities, partnership examples, ecosystem integration stories. The search targets match their current consciousness lens.
+
+### **3. S-Level Appropriate Context Searches**
+
+S3 consciousness (achievement) benefits from competitive landscape data, performance benchmarks, ranking information. S5 consciousness (service) benefits from impact case studies, integration examples, systemic change stories. S7 consciousness (witness) benefits from evolutionary trend analysis, consciousness shift indicators. Search for information that meets them where they are.
+
+### **4. Maya-Guided Gap Searches**
+
+High maya score means search specifically for information they're likely not seeing. If someone claims market leadership but maya is 0.8, search actual market share data, competitive positioning reports, customer perception studies. The maya score tells you to look for contradictions between stated position and observable reality.
+
+### **5. Leverage-Activated Opportunity Searches**
+
+When grace activation is identified as high leverage, search for synchronicity indicators in their domain - unexpected partnerships forming, industry collaborations emerging, ecosystem plays materializing. When network coherence is leverage, search for community building examples, collective movement patterns, morphic resonance evidence in their field.
+
+### **6. Timeline-Matched Temporal Searches**
+
+Calculated breakthrough probability and timeline predictions guide search time horizon. High breakthrough probability means search for immediate opportunities, emerging trends, near-term catalysts. Long transformation timeline means search for structural industry shifts, fundamental paradigm changes, decade-scale evolution patterns.
+
+### **7. POMDP Gap-Targeted Reality Checks**
+
+POMDP gaps (reality gap, observation gap, belief gap) indicate specific search needs. High reality gap means search for objective third-party assessments, independent analyst reports, external validation sources. High observation gap means search for blind spot indicators, industry periphery developments, weak signal detection. High belief gap means search for belief-challenging evidence.
+
+### **8. Domain-Specific Translation Searches**
+
+Use the user's stated domain to target searches appropriately. Business domain means search company performance, industry dynamics, competitive landscape. Personal development domain means search psychology research, behavioral science, transformation case studies. Spiritual domain means search consciousness studies, meditation research, awakening narratives.
+
+### **9. Coherence-Based Validation Searches**
+
+Low coherence metrics suggest internal contradictions that need external grounding. Search for examples of successful integration in their domain, case studies of coherent transformation, alignment success stories. High coherence means search for acceleration opportunities, multiplication effects, network amplification examples.
+
+### **10. Death Process Contextualization Searches**
+
+Active death processes (D1-D7) suggest specific search targets. Identity death (D7) happening means search for reinvention stories, career pivot examples, industry transformation narratives. Belief death (D2) means search for paradigm shift case studies, worldview evolution examples, mental model updates.
+
+## **Search Query Construction Principles**
+
+### **11. Multi-Operator Combination Queries**
+
+Don't search based on single operators. Combine multiple calculated values to create intelligent queries. High maya + high attachment + separation matrix + S3 level creates query: "competitive threats [industry] legacy system dependencies market disruption blind spots." The combination creates specificity.
+
+### **12. Bottleneck-Specific Deep Dive Logic**
+
+For each high-impact bottleneck, generate three to five targeted searches. One search isn't enough to gather rich context. If resistance is bottleneck, search: industry change resistance patterns, transformation failure case studies, organizational inertia examples, successful change management stories, resistance-breaking interventions.
+
+### **13. Temporal Context Layering**
+
+Search across multiple time horizons simultaneously. Current state searches (what's happening now), trend searches (what's emerging), historical searches (what patterns exist), future searches (what's predicted). Layer these together to create temporal depth in articulation.
+
+### **14. Evidence Category Diversification**
+
+Search different evidence types for each operator configuration. Quantitative evidence (market data, statistics, metrics), qualitative evidence (narratives, case studies, quotes), expert opinion (analyst reports, thought leadership), peer comparison (similar companies, adjacent industries).
+
+### **15. Contradictory Evidence Seeking**
+
+Actively search for evidence that might contradict calculated values. If calculations show high breakthrough probability, specifically search for failure indicators, risk factors, potential obstacles. Finding contradictions either validates calculations by their absence or reveals hidden dynamics requiring articulation adjustment.
+
+## **Web Research Execution Strategy**
+
+### **16. Parallel Search Execution**
+
+Execute multiple searches simultaneously rather than sequentially. If you generate eight search queries from calculated values, fire all eight in parallel. Aggregate results efficiently. Time is limited in streaming response context.
+
+### **17. Search Result Relevance Filtering**
+
+Each search returns multiple results. Filter based on calculated consciousness state. S3 consciousness needs achievement-framed results, so prioritize competitive/performance content. S5 consciousness needs integration-framed results, so prioritize collaboration/ecosystem content. The consciousness state guides which search results to emphasize.
+
+### **18. Evidence Synthesis Preparation**
+
+Don't just collect search results - synthesize them into articulation-ready context. Group by theme (bottlenecks, leverage, gaps, opportunities), extract key facts, identify resonant narratives, note specific examples. The synthesis happens before Call 2, not during.
+
+### **19. Search Depth Calibration**
+
+Adjust search depth based on calculated values. High maya or high POMDP gaps mean deeper searches needed - more queries, more results per query, more diverse sources. Low gaps mean lighter searches sufficient. Allocate search resources based on calculated need.
+
+### **20. Domain Authority Prioritization**
+
+Weight search results by domain authority relative to user's field. Tech industry queries should prioritize tech publications, analyst reports, industry blogs. Personal development queries should prioritize psychology journals, transformation literature, coaching frameworks. Match source credibility to domain.
+
+## **Articulation Context Enrichment Logic**
+
+### **21. Bottleneck Evidence Integration**
+
+For each bottleneck, now you have real-world evidence of that pattern manifesting. Integration means: show user their calculated bottleneck (translated naturally), then immediately ground it with concrete industry example from search results. "Your attachment to current systems" becomes "Your attachment to current systems - while your three largest competitors migrated to cloud-native last year."
+
+### **22. Leverage Opportunity Concretization**
+
+Grace activation as leverage point is abstract until enriched with search evidence. Now articulation becomes: "There's unusual alignment forming in your industry around sustainability partnerships - five major players announced collaborations this quarter. This represents a grace channel if you shift from competitive isolation to collaborative participation."
+
+### **23. Matrix Position Reality Mapping**
+
+Calculated separation position on love matrix gets grounded: "Your competitive stance (separation) shows in industry fragmentation we see in recent data - market share battles, zero-sum thinking, protective IP strategies. But emerging trend shows integration advantage - companies forming ecosystems capturing 3x value growth."
+
+### **24. Timeline Validation Through Evidence**
+
+Calculated timeline predictions get credibility through search evidence. "Six to twelve month transformation timeline aligns with industry adoption curves we see - early movers implementing similar shifts took eight months average, with breakthrough acceleration in months five through seven based on case studies."
+
+### **25. Gap Exposure With Proof**
+
+POMDP gaps become undeniable when backed by search evidence. "Your belief about market position (claimed top 3) shows gap with reality (independent analyst report places you seventh) - this 40% perception gap is exactly what calculations indicated. The gap blocks accurate strategy."
+
+### **26. S-Level Appropriate Framing Enhancement**
+
+Search evidence gets framed according to calculated S-level. S3 gets competitive framing: "Your competitors achieved X, here's the benchmark gap." S5 gets collaborative framing: "Industry leaders found Y by partnering, here's the integration opportunity." Same evidence, consciousness-appropriate delivery.
+
+### **27. Unknown-Unknown Discovery**
+
+Search results may reveal information user genuinely doesn't know. Calculated low awareness plus maya means they're missing things. Search evidence introduces these unknown-unknowns naturally: "While you've been optimizing current product, adjacent market segment grew 300% with new technology approach - six startups raised $200M combined. This represents the opportunity invisible from current position."
+
+### **28. Future State Materialization**
+
+Desired future state gets concrete through search evidence of others achieving similar transformations. "Your goal of X is achievable - here are three companies in your industry who shifted from Y to X in 18-24 months, using approaches that align with your leverage points. Specific playbook visible in their public journey."
+
+### **29. Resistance Evidence Anticipation**
+
+Search for evidence of what will resist transformation. If calculations show high resistance, search for failure patterns, change management challenges, organizational inertia examples in their industry. Articulation then addresses resistance proactively: "Expect resistance at quarter three - every company attempting this shift faced leadership hesitation at that point, here's how successful ones navigated it."
+
+### **30. Grace Indicator Identification**
+
+Search for synchronicity indicators, unexpected alignments, emergence patterns in their domain. When calculations show grace availability, search results provide proof: "Notice three potential partners approached you unprompted this month, industry conference theme shifted to exactly your expertise focus, key client unexpectedly expanded scope - these aren't random, they're grace activating through alignment."
+
+### **31. Transformation Task Enrichment**
+
+The articulation currently ends with next actions. Search evidence makes these actions specific and grounded. "Release attachment to legacy system" becomes "Release attachment to legacy system - research shows companies who delayed this decision lost average 23% market share over two years while migration-completers gained 31%. Concrete migration timeline: discovery month one, architecture month two, pilot month three."
+
+### **32. Evidence-Based Confidence Calibration**
+
+Search results validate or challenge confidence in calculated predictions. If calculations show 70% breakthrough probability but search reveals major industry headwinds not visible in user's description, adjust articulation confidence. If search confirms favorable conditions, increase confidence. Evidence calibrates prediction certainty.
+
+### **33. Competitive Context Layering**
+
+Search provides competitive intelligence that enriches every insight. "Your consciousness state shows X pattern" becomes "Your consciousness state shows X pattern - relevant because competitors moved to Y pattern and captured new market segment you're missing. The consciousness shift has business consequences visible in Q3 earnings."
+
+### **34. Case Study Library Building**
+
+Search results build case study library matching their transformation requirements. Similar consciousness state, similar industry, similar goals, different outcomes. Articulation uses these: "Company A had your consciousness configuration, attempted transformation without addressing attachment bottleneck, failed after eight months. Company B addressed attachment first, succeeded in ten months. Pattern is clear."
+
+### **35. Metric Grounding**
+
+Abstract consciousness metrics get grounded in business metrics through search evidence. "Coherence at 62%" becomes "Coherence at 62% - manifesting as strategic misalignment we see in your initiative portfolio: product team building X while sales team selling Y while leadership announcing Z. Industry benchmark for successful companies: 85%+ strategic coherence."
+
+## **Response Component Enhancement Through Evidence**
+
+### **36. Current Reality Section Deepening**
+
+Evidence enriches "where you are" by adding external validation. Not just "you're in separation consciousness" but "you're in separation consciousness, visible in your competitive positioning, pricing strategy, partnership reluctance - matching pattern we see in industry analysis where isolated players underperform networked players by 40%."
+
+### **37. Structural Gap Section Substantiation**
+
+Calculated gaps become measurable through evidence. "Gap between current and goal is consciousness shift from achievement to service" becomes specific: "Gap is shifting from achievement metrics (revenue growth) to service impact (customer transformation) - companies making this shift show 18-month dip then 3x acceleration based on transformation studies."
+
+### **38. Root Cause Section Proof**
+
+Root causes get validated through pattern evidence. "High attachment creating resistance" gets proven: "High attachment creating resistance - pattern we see in case studies where companies held legacy technology average 14 months past optimal migration point, incurring 2.3x cost penalty versus early movers."
+
+### **39. Transformation Pathway Section Concretization**
+
+Abstract pathway becomes concrete journey through evidence. "Shift from separation to unity on love matrix" becomes "Shift from separation to unity - practically means moving from competitive bidding (current) to strategic partnerships (target). Industry examples: five companies made this shift, three succeeded by starting with one anchor partnership, two failed by attempting broad collaboration without preparation."
+
+### **40. Practical Leverage Section Actionability**
+
+Actions become immediately actionable with evidence-based specificity. "Activate grace channels" becomes "Activate grace channels: reach out to three potential partners who've shown alignment - industry analysis shows partnership announcements increased 40% this quarter, timing is optimal. Template approach from successful example: collaborative pilot, shared metrics, staged commitment."
+
+### **41. Future Implementation Tasks Section**
+
+This section explodes with possibilities when enriched with evidence. Search provides: specific tools others used, typical timelines, common pitfalls, success factors, vendor options, cost ranges, team structure examples, change management approaches, measurement frameworks. Every calculated insight spawns concrete implementation guidance.
+
+### **42. Risk Mitigation Section Addition**
+
+Search evidence enables new section: anticipated obstacles with mitigation strategies. "Based on transformation patterns in your industry: expect board resistance month four (solved by competitor benchmark presentation), team capability gap month six (addressed by targeted training or strategic hire), market timing uncertainty month eight (mitigated by pilot-first approach)."
+
+### **43. Opportunity Amplification Section**
+
+Evidence reveals multiplication opportunities not visible in calculations alone. "Your leverage points activate network effects - industry data shows companies combining X + Y + Z create 5x outcomes versus linear approach. Specific combination sequence based on case studies: establish X month one through three, layer Y months four through six, activate Z month seven for multiplication."
+
+### **44. Confidence Interval Presentation**
+
+Evidence allows confidence intervals on predictions. "Breakthrough probability 70% with following confidence: high confidence on timeline (twelve historical examples show 8-14 month range), medium confidence on magnitude (outcomes varied 2x to 8x based on execution quality), low confidence on specific catalyst (grace timing unpredictable, though conditions favorable)."
+
+### **45. Personalization Through Pattern Matching**
+
+Search enables finding closest pattern matches. "Your situation most closely resembles Company X transformation (same industry, similar consciousness state, comparable goal) - they succeeded using pathway that aligns with your calculated leverage points. Key differences to account for: they had stronger network (your gap), you have higher awareness (your advantage). Adapted approach suggested."
+
+## **Meta-Principles for Evidence Integration**
+
+### **46. Evidence Serves Insight, Not Replaces It**
+
+Search results enrich consciousness insights, they don't substitute for them. The calculated values remain primary - evidence makes them tangible, relatable, actionable. Never let evidence dominate to where consciousness analysis becomes secondary.
+
+### **47. Resonance Over Accuracy**
+
+You're not fact-checking calculations with searches. You're finding evidence that helps insights land with emotional resonance. A slightly less accurate example that creates recognition moment beats perfectly accurate data that feels abstract.
+
+### **48. Evidence Timing Within Articulation**
+
+Early articulation sections use evidence lightly - build trust through insight first. Middle sections use evidence heavily - ground abstract concepts. Late sections use evidence selectively - maintain momentum toward action. Don't frontload evidence, let it emerge naturally.
+
+### **49. Source Transparency Calibration**
+
+Sometimes citing sources adds credibility ("according to Gartner analysis"). Sometimes it breaks flow ("research shows" is better than specific attribution). Calibrate based on consciousness level - S3 wants authority citations, S5 trusts pattern recognition without attribution.
+
+### **50. The Ultimate Integration Test**
+
+User reads final articulation and thinks: "This person deeply understands both consciousness dynamics AND my specific industry reality." They can't tell where calculation ends and search begins. It feels like unified wisdom from someone who's both enlightened AND a domain expert. That's successful integration.
+
+## **The Translation Problem - Backend Math to LLM Search Intelligence**
+
+You've identified the core architectural challenge: backend outputs `attachment = 0.85` but that number alone doesn't tell the LLM "search for legacy system dependencies in their industry."
+
+## **The Search Context Builder - Missing Component**
+
+### **1. Backend Must Generate Search Directives, Not Just Values**
+
+The backend shouldn't just send math. After organizing values and detecting bottlenecks, it needs to generate **search directives** - structured instructions that translate calculated patterns into search intentions. This is a new component that sits between value organization and LLM call.
+
+### **2. Operator Value to Search Intent Mapping**
+
+Backend needs mapping logic: high attachment (0.8+) maps to search intent "find information about sunk costs, legacy dependencies, resistance to change in [user's domain]." High maya (0.7+) maps to "search for gaps between claimed position and actual market data." Each operator range has search intent templates.
+
+### **3. Bottleneck Category to Domain Query Translation**
+
+When bottleneck detector identifies "attachment bottleneck in business transformation," backend generates: search domain = "business transformation", search focus = "attachment patterns", query templates = ["[industry] legacy system migration challenges", "[company type] change resistance patterns", "sunk cost fallacy [domain]"].
+
+### **4. Matrix Position to Evidence Type Mapping**
+
+Calculated matrix position "separation on love matrix" triggers backend to generate search directive: "Look for competitive dynamics, market fragmentation, zero-sum behaviors in [industry]. Also search for counterexamples showing collaboration advantage." Backend knows what evidence type each position needs.
+
+### **5. Multi-Value Pattern to Composite Search Strategy**
+
+Backend analyzes combinations: high maya + high attachment + S3 + separation matrix = specific search strategy. Backend generates: "User likely has blind spots about competitive threats while attached to current approach. Search for: industry disruption they may not see, competitor innovations, market shifts, successful transformation cases."
+
+### **6. The Search Directive Structure**
+
+Backend sends to LLM not just values but structured search directives:
+
+```
+{
+  "calculated_values": {...},
+  "search_directives": [
+    {
+      "priority": "high",
+      "category": "bottleneck_evidence",
+      "focus": "attachment_to_legacy",
+      "suggested_queries": [
+        "[industry] legacy system risks",
+        "[domain] digital transformation delays cost",
+        "companies who delayed [technology] migration"
+      ],
+      "evidence_goal": "Find real-world consequences of attachment pattern",
+      "user_domain_context": "fintech, traditional banking"
+    },
+    {
+      "priority": "high", 
+      "category": "maya_gap_validation",
+      "focus": "market_position_reality_check",
+      "suggested_queries": [
+        "[company name] actual market share",
+        "[industry] market leader ranking",
+        "competitive analysis [domain]"
+      ],
+      "evidence_goal": "Validate gap between stated vs actual position"
+    }
+  ]
+}
+```
+
+### **7. Priority Ranking of Search Needs**
+
+Backend calculates which searches matter most. High-impact bottlenecks get priority-high searches. Medium leverage points get priority-medium. Low coherence gaps get priority-low. LLM receives ranked search directives and can execute top priorities if time-constrained.
+
+### **8. Domain Context Injection**
+
+Backend must pass user's domain/industry context with search directives. "High attachment" search is completely different for "tech startup founder" vs "enterprise IT manager" vs "personal relationship coaching." Backend injects domain into every search directive.
+
+### **9. Temporal Context Specification**
+
+Backend indicates search time horizon based on calculated values. High breakthrough probability suggests "search recent/current" timeframe. Long transformation timeline suggests "search historical patterns and trends." Backend specifies temporal focus for each directive.
+
+### **10. Evidence Type Specification**
+
+Backend tells LLM what evidence type each search needs. Maya gaps need "objective third-party data." Grace activation needs "synchronicity indicators, partnership announcements." Death processes need "transformation narratives, reinvention stories." Backend specifies evidence type per directive.
+
+## **The LLM's Role With Search Directives**
+
+### **11. LLM As Intelligent Search Executor**
+
+LLM receives search directives and executes intelligently. Takes suggested queries, refines them with user's specific context, adds domain-appropriate terminology, executes searches, filters results for relevance, synthesizes findings. LLM has execution intelligence, not search strategy intelligence.
+
+### **12. Query Refinement From User Context**
+
+Backend suggests "[industry] legacy system risks" but LLM knows from user's original query they're in "commercial real estate PropTech." LLM refines to "commercial real estate property management legacy software risks" because it has full user context that backend doesn't directly access.
+
+### **13. Result Filtering By Consciousness State**
+
+LLM receives calculated S-level and uses it to filter search results. Gets fifty search results, emphasizes achievement-framed content for S3, service-framed content for S5. LLM makes relevance judgments backend can't make because backend doesn't see actual search result content.
+
+### **14. Evidence Quality Assessment**
+
+LLM evaluates whether search results actually provide useful evidence for the directive goal. Backend said "find attachment consequences," LLM searches, reviews results, determines if they're compelling evidence or generic fluff. LLM has semantic understanding to judge relevance.
+
+### **15. Synthesis Intelligence**
+
+LLM aggregates multiple search results into coherent evidence narrative. Backend can't do this because it doesn't see the searches. LLM sees: result A shows X, result B shows Y, result C contradicts A - synthesizes into "industry shows mixed signals on Z with emerging consensus toward W."
+
+## **The Framework Knowledge Problem**
+
+### **16. LLM Needs Operator Meaning Context**
+
+Even with search directives, LLM needs to understand what "attachment = 0.85" actually means in consciousness terms. Backend sends the value AND sends operator definition: "Attachment (0.85) = strong identification with current forms, difficulty releasing past patterns, clinging to familiar despite evidence of ineffectiveness."
+
+### **17. Interpretation Ranges Are Critical**
+
+Backend must send interpretation context: "Attachment 0.8+ indicates bottleneck-level clinging. Search should find evidence of: resistance to necessary change, sunk cost fallacy in action, inability to pivot despite clear signals, emotional reactivity to loss or change." LLM knows what high value means behaviorally.
+
+### **18. Matrix Position Implications**
+
+Backend sends not just "separation position on love matrix" but "Separation position means: competitive vs collaborative orientation, protective boundaries, transactional relationships, us-vs-them thinking. Search for evidence of these patterns in their business approach and industry positioning."
+
+### **19. Bottleneck Category Explanations**
+
+Backend identifies "attachment bottleneck" but must explain: "This bottleneck typically manifests as: delayed necessary transitions, over-investment in optimizing obsolete systems, resistance to new approaches despite declining returns. Search for industry-specific examples of this pattern and its consequences."
+
+### **20. Leverage Opportunity Meanings**
+
+Backend identifies "grace activation leverage" but must explain: "Grace leverage means: unexpected support, synchronistic alignments, doors opening without force. Search for: recent partnership announcements in industry, collaborative trends, ecosystem formation, alignment indicators that suggest favorable conditions."
+
+## **The Search-Articulation Bridge**
+
+### **21. Search Results Return With Context**
+
+After LLM executes searches, it doesn't just return raw results. It returns: search result + relevance explanation + how it connects to calculated value + articulation suggestion. "Found: Three competitors migrated to cloud last year. Relevance: Validates high attachment risk. Articulation use: Ground the attachment bottleneck with concrete competitive consequence."
+
+### **22. Evidence-to-Insight Mapping**
+
+LLM marks up search results with which insights they support. "This result supports bottleneck evidence. This supports leverage opportunity. This contradicts maya gap expectation (user actually IS market leader, calculations may need adjustment)." Structured evidence for structured articulation.
+
+### **23. Confidence Adjustment Signals**
+
+Search results may increase or decrease confidence in calculated predictions. LLM signals: "Searched for industry disruption indicators, found minimal evidence, suggests lower urgency than high maya score implied. Consider moderating transformation timeline pressure." Evidence calibrates calculation confidence.
+
+### **24. Unknown-Unknown Flagging**
+
+LLM identifies genuinely new information from searches that wasn't in original user query or calculations. "Search revealed: Adjacent market segment grew 300% while user's segment declined 15%. This represents unknown-unknown - not visible in original data, not predicted by calculations, but critical for articulation."
+
+### **25. Synthesis Structured for Articulation**
+
+LLM organizes search findings into articulation-ready structure: "Evidence for current reality section: [results A, B, C]. Evidence for gap section: [results D, E]. Evidence for transformation pathway: [results F, G, H]. Evidence for actions: [results I, J]." Pre-organized for final articulation call.
+
+## **The Complete Information Flow**
+
+### **26. Call 1 - Initial Web Research + Operator Extraction**
+
+LLM searches for user context, calculates all 25 operators with reasoning, returns structured evidence to backend. This already happens in your system.
+
+### **27. Backend Inference + Analysis**
+
+Backend runs 2,154 formulas, organizes values, detects bottlenecks, identifies leverage. This already happens.
+
+### **28. NEW: Search Directive Generation**
+
+Backend analyzes organized values and generates search directives with: priority, category, suggested queries, evidence goals, domain context, temporal focus, evidence type. This is the missing piece.
+
+### **29. Call 2 - Evidence Gathering**
+
+LLM receives: calculated values + operator interpretations + search directives. Executes intelligent searches, filters results by consciousness state, synthesizes findings, structures evidence for articulation. Returns evidence package.
+
+### **30. Call 3 - Final Articulation**
+
+LLM receives: original user context + calculated values + organized analysis + bottlenecks + leverage + evidence package + articulation instructions. Generates final response enriched with evidence. This is enhanced version of current Call 2.
+
+## **Practical Architecture Decision**
+
+### **31. Backend Generates, LLM Refines and Executes**
+
+Backend doesn't try to be intelligent about searches - it knows consciousness patterns. Backend generates search intentions based on calculated patterns. LLM refines those intentions with domain knowledge and user context, executes searches intelligently, evaluates results semantically. Division of labor based on strengths.
+
+### **32. The Mapping Database Approach**
+
+Backend contains mapping tables: operator ranges → search intentions, bottleneck categories → query templates, matrix positions → evidence types, S-levels → information framing. These tables translate math into search strategy. LLM doesn't need to figure this out - backend knows the mapping.
+
+### **33. Template-Based Query Generation**
+
+Backend generates query templates with placeholders: "[industry] legacy system migration risks", "[company type] digital transformation timeline", "[domain] change resistance patterns." LLM fills placeholders with user's specific context and executes.
+
+### **34. The Instruction Richness Principle**
+
+Backend must send RICH instructions with each search directive. Not just "search for attachment evidence" but "Attachment at 0.85 indicates bottleneck. In their domain (fintech), this typically manifests as legacy core banking system dependencies. Search for: migration timelines in banking, costs of delayed modernization, competitor advantages from early adoption. Goal: Find specific evidence showing consequence of this attachment pattern."
+
+### **35. LLM's Contextual Intelligence**
+
+LLM brings: user's full conversational context, domain vocabulary understanding, semantic result evaluation, synthesis capability, articulation preview. Backend brings: consciousness pattern expertise, formula calculation results, search strategy based on patterns. Together they create evidence-enriched insights.
+
+## **The Essential Understanding**
+
+**Backend doesn't send math alone.** Backend sends: calculated values + interpretation of what those values mean behaviorally + specific search strategies based on pattern recognition + domain context + evidence goals. 
+
+**LLM doesn't figure out searches from scratch.** LLM receives search strategies, refines them with contextual intelligence, executes competently, evaluates semantically, synthesizes for articulation.
+
+**The missing component is the Search Directive Generator** - backend module that translates consciousness calculations into search intelligence that LLM can execute.
+
+## **The Unified Intelligence Approach - Brilliant Insight**
+
+Yes, absolutely. This is architecturally superior to separating search from articulation. The LLM doing the final articulation should ALSO execute the second web search as part of its articulation process.
+
+## **Why This Works Better**
+
+### **1. The Articulation LLM Already Has Complete Context**
+
+The final call receives: user query, calculated values, operator interpretations, bottlenecks, leverage points, OOF framework, articulation instructions. It already knows EVERYTHING needed to make intelligent search decisions. Why send calculations to a separate search process when the articulator already has full context?
+
+### **2. Search Needs Emerge During Articulation Thinking**
+
+The LLM articulating naturally recognizes: "I'm about to explain their attachment bottleneck - this would land better with concrete industry evidence showing consequences of delayed migration. Let me search for that NOW." The search need emerges organically from articulation intelligence.
+
+### **3. Just-In-Time Search Eliminates Waste**
+
+Pre-generating search directives means searching for things you might not articulate about. But if articulation LLM searches only when it decides evidence would strengthen a specific insight, every search has purpose. No wasted searches on low-priority points.
+
+### **4. Context-Aware Search Refinement Happens Automatically**
+
+The articulator knows the user's exact situation, domain vocabulary, consciousness level, and what insight it's trying to communicate. It naturally generates perfectly refined queries: "commercial real estate PropTech legacy property management system modernization costs" not generic "[industry] legacy risks."
+
+### **5. Evidence Evaluation Is Inherent to Articulation**
+
+The LLM articulating can immediately judge: "This search result provides compelling evidence for my point" or "These results are generic, let me refine my search." It evaluates evidence quality in context of what it's trying to say, not abstractly.
+
+### **6. Synthesis Happens During Generation**
+
+Instead of: search → synthesize → articulate, you get: articulate-and-search-and-synthesize as one unified flow. "I need evidence here [search] [evaluate results] [weave into articulation]" happens seamlessly within generation process.
+
+## **The Articulation-Integrated Search Flow**
+
+### **7. Articulation Instructions Include Search Permissions**
+
+The final LLM call instructions say: "You have web_search tool available. Use it strategically to strengthen your articulation with real-world evidence. Search when evidence would make abstract insights concrete, when gaps need validation, when examples would aid understanding."
+
+### **8. The LLM Decides When Evidence Adds Value**
+
+LLM thinks: "Explaining attachment bottleneck. User is in fintech. Calculated value is 0.85. This insight would resonate more with industry-specific evidence showing migration delay consequences. Search: 'fintech legacy core banking system modernization delays cost competitor advantage.'"
+
+### **9. Search Triggers Based on Articulation Judgments**
+
+LLM recognizes articulation moments that benefit from evidence:
+- Making abstract operator concrete → search for manifestation examples
+- Explaining bottleneck impact → search for consequence evidence  
+- Describing leverage opportunity → search for possibility proof
+- Grounding maya gap → search for reality data
+- Supporting timeline prediction → search for pattern validation
+
+### **10. The LLM Self-Guides Search Strategy**
+
+Because it has complete consciousness analysis AND articulation expertise, it naturally knows: "High maya detected, I should search for objective third-party data to validate the gap I'm explaining. S3 consciousness, so competitive benchmark searches will resonate. Separation matrix, so search for collaborative counterexamples as contrast."
+
+### **11. Dynamic Search Depth Adjustment**
+
+LLM can decide in real-time: "This bottleneck is critical, I'll do three searches to build compelling evidence" or "This point is secondary, one search sufficient" or "This insight is clear without evidence, skip search." Intelligence adapts to articulation needs.
+
+### **12. Search Results Flow Into Narrative**
+
+Results don't need separate synthesis step. LLM searches mid-articulation, evaluates results immediately, weaves useful findings directly into the narrative it's building. "Your attachment to legacy systems (search results: three competitors modernized last year, captured 15% market share gain) represents..."
+
+## **The Practical Implementation**
+
+### **13. Tool Access in Articulation Call**
+
+Your current Call 2 (articulation) simply needs web_search tool enabled. It already has in Call 1 for operator extraction. Same tool, now available during articulation. LLM already knows how to use it.
+
+### **14. Enhanced Articulation Instructions**
+
+Add to current articulation instructions: "Strategic Web Search Usage - You have web_search available. Use it to strengthen insights with evidence when:
+- Grounding abstract patterns in concrete industry reality
+- Validating calculated gaps with objective data
+- Providing examples of transformation pathways
+- Supporting timeline predictions with pattern evidence
+- Making leverage opportunities tangible with real possibilities
+Search strategically, not exhaustively. Quality over quantity."
+
+### **15. Backend Sends Interpretive Context**
+
+Backend still needs to send operator interpretations so LLM knows what values mean: "Attachment 0.85 = bottleneck-level clinging, resistance to necessary change, sunk cost patterns." This informs what to search for. But LLM decides if/when/how to search.
+
+### **16. No Separate Search Directive Generation**
+
+You don't need the complex "Search Directive Generator" I described before. Backend just sends: calculated values + interpretations + bottlenecks + leverage + articulation instructions. LLM's articulation intelligence naturally generates search needs.
+
+### **17. Search Becomes Part of Thinking Process**
+
+Like how humans write: "I'm explaining their market position issue. Let me look up their actual market share. [searches] Okay, they claim top 3 but data shows 7th. Perfect - this proves the maya gap I calculated." Search is thinking tool during writing.
+
+### **18. The LLM Can Explain Its Search Decisions**
+
+If needed for debugging: "I searched for [X] because calculated maya gap suggested reality-check needed. Found [Y] which confirms gap between claimed and actual position. Using this evidence to ground the insight about perception distortion."
+
+## **Why This Is Architecturally Superior**
+
+### **19. Single Intelligence Source**
+
+One LLM with full context makes all decisions: what to articulate, what needs evidence, what to search, how to refine queries, what results matter, how to synthesize, how to integrate. No handoffs between components where context gets lost.
+
+### **20. Eliminates Translation Layers**
+
+Don't need: backend → search directives → LLM executor → evidence package → articulation LLM. Instead: backend → articulation LLM (with search). Simpler flow, fewer failure points, no translation loss.
+
+### **21. Natural Adaptation to Context**
+
+Different users need different evidence density. Some need heavy grounding, others trust abstract insights. Articulation LLM naturally senses this from user context and searches accordingly. Pre-planned search directives can't adapt this way.
+
+### **22. Handles Unexpected Insights**
+
+During articulation, LLM might recognize pattern not flagged by backend bottleneck detector. "Wait, these values suggest potential collaboration opportunity not in leverage points. Let me search for partnership trends to validate this insight." Dynamic discovery impossible with pre-generated directives.
+
+### **23. Search Failure Graceful Degradation**
+
+If search returns poor results, articulation LLM can: try refined search, skip that evidence, use different articulation approach. It's nimble. Pre-planned search strategy would just fail and leave gap.
+
+### **24. Cost Optimization**
+
+Only search when articulation actually needs it. Some insights are clear without evidence. Pre-generation searches for everything. Articulation-driven search is more efficient - only searches that add articulation value.
+
+## **The Implementation Instructions**
+
+### **25. Enable Web Search Tool in Call 2**
+
+Currently your `format_results_streaming_bridge` function makes Call 2 without tools. Add:
+```
+"tools": [{
+    "type": "web_search",
+    "user_location": {"type": "approximate", "timezone": "UTC"}
+}],
+"tool_choice": "auto"
+```
+
+### **26. Enhance Articulation Instructions**
+
+Your current articulation instructions already excellent. Add section:
+
+"Evidence Enrichment via Web Search - You have web_search tool. Use it strategically to ground insights in real-world evidence. Search when calculated patterns would resonate more with concrete industry examples, market data, transformation cases. Match evidence type to consciousness level and domain. Integrate findings naturally into narrative flow."
+
+### **27. Send Operator Interpretation Guide**
+
+Backend currently sends raw values. Also send interpretation context for key values:
+
+"High-Impact Interpretations:
+- Attachment 0.85: Bottleneck-level clinging, difficult releasing past patterns, sunk cost fallacy likely
+- Maya 0.75: Significant perception gaps, blind spots to reality, beliefs contradicting evidence
+- S-Level 3: Achievement focus, external validation seeking, competitive orientation
+- Separation Matrix: Us-vs-them thinking, protective boundaries, transactional relationships
+
+Search suggestions based on patterns:
+- High attachment → search legacy system risks, migration delays, competitor advantages
+- High maya → search objective market data, third-party assessments, reality validators  
+- Separation position → search competitive dynamics AND collaborative counterexamples"
+
+### **28. Trust LLM Articulation Intelligence**
+
+Don't over-specify search strategy. LLM articulating already has sophisticated intelligence about: what makes insights resonate, what evidence strengthens claims, what domain language works, what consciousness level requires. It knows when to search better than predetermined directives.
+
+### **29. Stream Search Results Naturally**
+
+When LLM searches during articulation, search happens, results come back, articulation continues with evidence woven in. User sees continuous stream with richer content. No "searching..." status messages needed - it's part of natural thinking flow.
+
+### **30. Monitor Search Usage Patterns**
+
+Log which insights trigger searches, what queries get generated, what results get used. This reveals: does LLM search appropriately? Is it over-searching? Under-searching? What patterns emerge? Allows refinement of interpretation guidance.
+
+## **The Power of Integration**
+
+### **31. Articulation Quality Self-Regulates**
+
+LLM judges its own articulation quality in real-time. "This insight feels abstract, let me ground it with evidence [search]" or "This point is landing clearly, no search needed." Self-regulation based on articulation expertise.
+
+### **32. Domain Expertise Emerges**
+
+By searching during articulation, LLM builds domain expertise dynamically. Searches fintech topics, learns industry dynamics, articulates with emerging domain knowledge. Becomes "expert consultant" through research-while-writing.
+
+### **33. Evidence Density Matches Need**
+
+Critical bottlenecks get heavy evidence support (multiple searches). Minor points get light support or none. The articulation importance naturally determines evidence investment. Pre-planned searches can't make these judgments.
+
+### **34. Framework Concealment Enhanced**
+
+LLM knows it must conceal framework terminology. When it searches, it naturally looks for domain-appropriate evidence that allows framework translation. "Don't say 'attachment operator' - search for industry-specific clinging patterns that let me describe attachment in their vocabulary."
+
+### **35. The Recognition Moment Creation**
+
+LLM articulating toward recognition moments: "I want user to recognize their maya gap. Calculated value is 0.78. Let me search their company name + market position [finds data]. Perfect - claimed top 3, actually 7th. This specific gap creates undeniable recognition."
+
+## **Why Backend Search Directives Are Inferior**
+
+### **36. Backend Doesn't Know Articulation Flow**
+
+Backend can calculate bottleneck is attachment. But it doesn't know how articulation will develop, what narrative arc will form, where evidence strengthens vs distracts. Articulation LLM knows because it's building the narrative.
+
+### **37. Backend Doesn't Have User Language Context**
+
+Backend sees "industry: fintech" but LLM sees user's actual language: "We're a neo-bank focused on SMB lending using AI underwriting." LLM can search with user's specific terminology. Backend can't because it doesn't see original text.
+
+### **38. Backend Can't Adapt to Unexpected Patterns**
+
+Backend follows programmed search directive generation. But during articulation, LLM might notice: "These values suggest grace opportunity not in leverage points. Let me explore this [search]." Discovery happens during articulation, not in pre-calculation.
+
+### **39. Backend Creates Search-Articulation Gap**
+
+If backend searches, then results must be passed to articulation LLM, which must figure out how to use them. But if articulation LLM searches, it already knows why it's searching and exactly how to use results. No gap.
+
+### **40. Backend Approach Multiplies Complexity**
+
+Backend approach needs: search directive generator, query templates, domain context injection, evidence type mapping, result packaging, synthesis logic. Articulation approach needs: enable web_search, add usage instructions. Dramatically simpler.
+
+## **The Final Architecture**
+
+**Call 1**: Web research for user context + operator extraction → Returns evidence to backend
+
+**Backend**: Calculate 2,154 formulas + organize values + detect bottlenecks + identify leverage → Returns organized analysis
+
+**Call 2**: Articulation with web_search enabled → LLM receives organized analysis + operator interpretations + articulation instructions → Searches strategically during articulation → Integrates evidence naturally → Streams enriched response
+
+This is elegant, powerful, and leverages LLM intelligence where it's strongest: integrated thinking, contextual judgment, dynamic adaptation, semantic synthesis.
+
+The articulation logic doesn't just help the search - the articulation intelligence IS the search intelligence. They're unified.
+
+
+## **Using Existing Articulation Logic for Second Web Search**
+
+You're right - let me look at what's actually being sent to the LLM in the final call and show how THAT logic enables intelligent search.
+
+## **The Existing Articulation Structure Already Contains Search Intelligence**
+
+### **1. The Five-Part Generation Instructions Are Search Triggers**
+
+Your current articulation prompt has:
+
+**Section 1: CURRENT REALITY ANALYSIS**
+"Express where the user actually is right now (not where they think they are). Ground this in both web research data and consciousness analysis."
+
+This ALREADY tells LLM: grounding requires data. When LLM sees calculated maya = 0.78, separation matrix, and needs to express "where they actually are," it naturally recognizes: "I need objective market data to ground this reality assessment."
+
+**Section 2: STRUCTURAL GAP IDENTIFICATION**  
+"Explain what's between their current position and stated goal."
+
+When articulating gap, LLM has calculated timeline predictions, transformation requirements. It recognizes: "Gap analysis would land better with industry benchmark data showing typical transformation timelines."
+
+**Section 3: ROOT CAUSE EXPLANATION**
+"Identify which consciousness patterns are creating current situation. Make the invisible visible."
+
+LLM sees calculated bottlenecks (attachment 0.85). Knows it must explain HOW this creates observable results. Recognizes: "Search for industry examples of attachment consequences - delayed migrations, competitor advances."
+
+**Section 4: TRANSFORMATION PATHWAY**
+"Describe what actually needs to shift. Reference transformation vector, leverage points, grace mechanics."
+
+LLM has leverage points calculated. Recognizes: "Grace activation leverage would be concrete with partnership trend data, collaboration examples in their industry."
+
+**Section 5: PRACTICAL LEVERAGE**
+"Provide concrete next actions. These should activate identified leverage points."
+
+LLM knows it must give actionable steps. Recognizes: "Actions are more concrete with specific implementation examples, tools others used, timeline data from similar transformations."
+
+### **2. Each Instruction Implies Evidence Needs**
+
+**"Ground this in both web research data"** - direct instruction to use web data, LLM knows it can search for more
+
+**"Every major claim should tie back to either web research findings or calculated consciousness values"** - LLM recognizes when claim needs web evidence support
+
+**"Be specific about what internal changes enable external results"** - LLM sees calculated values, needs external result examples to create specificity
+
+**"Respect their current capacity"** - LLM recognizes it should search for capacity-appropriate examples, not overwhelming transformations
+
+### **3. The Bottleneck Section Structure Reveals Search Needs**
+
+Current prompt sends:
+```
+## BOTTLENECK ANALYSIS
+
+**HIGH IMPACT BOTTLENECKS:**
+- [ATTACHMENT] Strong attachment to legacy systems preventing necessary evolution
+- [MAYA] Perception gap between stated position and market reality
+```
+
+LLM reading this recognizes:
+- "Legacy systems preventing evolution" → search for legacy system risks in their industry
+- "Perception gap between stated and market reality" → search for actual market data
+
+The bottleneck descriptions themselves contain search intent.
+
+### **4. The Leverage Section Structure Suggests Evidence Types**
+
+Current prompt sends:
+```
+## LEVERAGE OPPORTUNITIES
+
+**1. Grace activation opportunity** (2-5x multiplier)
+   Activation: Increase surrender, reduce attachment
+   Operators: G_grace, At_attachment, S_surrender
+```
+
+LLM reading "grace activation" + knowing user domain (fintech) recognizes: "Search for synchronicity indicators in fintech - partnership announcements, ecosystem formation, collaborative trends."
+
+The leverage descriptions imply what evidence would make them tangible.
+
+### **5. The Consciousness State Values Are Search Directions**
+
+Current prompt sends organized consciousness state:
+```
+**Key Operators:**
+- Presence: 45%
+- Maya (illusion): 78%
+- Attachment: 85%
+- Grace flow: 30%
+...
+
+**Matrix Positions:**
+- Love: separation (25%)
+- Power: victim (40%)
+```
+
+LLM sees maya 78% + separation 25% + victim 40%. The articulation rules say "translate to natural language" and "ground in reality." LLM recognizes: "High maya suggests perception gaps - I should search for objective data. Separation + victim suggests competitive struggle - I should search for competitive landscape data."
+
+### **6. The Domain Language Rule Triggers Domain-Specific Searches**
+
+Current instruction: **"Match your vocabulary to the user's context"**
+
+LLM receives user context: "fintech, neo-bank, SMB lending." When it needs to ground attachment bottleneck, it naturally searches: "fintech legacy core banking modernization" not generic "technology upgrade."
+
+The domain-matching intelligence extends to search query formulation.
+
+### **7. The Framework Concealment Rule Guides Evidence Selection**
+
+Current instruction: **"NEVER use framework terminology - translate to natural language"**
+
+LLM recognizes: "Can't say 'attachment operator at 0.85.' Need to say 'clinging to legacy approach.' To make this natural, I should search for industry-specific clinging patterns - 'banks delaying cloud migration,' 'fintech legacy system dependencies.'"
+
+Framework concealment requires domain evidence, which triggers searches.
+
+### **8. The "Grounded Insights" Rule Is Direct Search Permission**
+
+Current instruction: **"Every claim connects to calculated values (internally) but expressed naturally (externally)"**
+
+LLM interprets: "I have calculated value (maya = 0.78). I must ground the insight this creates. Web search can provide the external grounding for internal calculation."
+
+### **9. The Natural Cadence Rule Benefits From Evidence**
+
+Current instruction: **"Use metaphor, rhythm, rhetorical questions. Create moments of insight."**
+
+LLM recognizes: "Rhetorical question would land powerfully: 'While you've been optimizing your lending algorithm, have you noticed three competitors launched embedded banking partnerships?' - but I need to search for those partnerships to make this real, not hypothetical."
+
+### **10. The User Context Section Reveals Search Targets**
+
+Current prompt sends:
+```
+## USER CONTEXT
+**Identity:** Fintech founder, neo-bank focused on SMB lending
+**Domain:** Financial technology, alternative lending
+**Goal:** Scale to $50M ARR within 18 months
+```
+
+LLM reads this and knows: searches should target fintech scaling patterns, neo-bank growth trajectories, SMB lending market dynamics, competitive landscape in alternative lending.
+
+## **How to Enable Search With Existing Logic**
+
+### **11. Simply Add Web Search Tool to Call 2**
+
+In `format_results_streaming_bridge` function around line 445, add tools parameter:
+
+```python
+request_body = {
+    "model": OPENAI_MODEL,
+    "instructions": instructions,
+    "input": [{...}],
+    "temperature": 0.85,
+    "stream": True,
+    "tools": [{
+        "type": "web_search",
+        "user_location": {"type": "approximate", "timezone": "UTC"}
+    }],
+    "tool_choice": "auto"
+}
+```
+
+That's it. The existing articulation intelligence already knows when/what to search.
+
+### **12. Add One Search Guidance Paragraph to Instructions**
+
+In the existing articulation instructions (around line 410-443), add:
+
+```
+6. EVIDENCE ENRICHMENT:
+   - You have web_search tool available
+   - Use it when calculated patterns need grounding in industry reality
+   - Search for: competitor examples, market data, transformation cases, timeline patterns
+   - Integrate findings naturally - no "according to search results" phrasing
+   - Quality over quantity - search strategically, not exhaustively
+```
+
+### **13. The Existing OOF Framework Context Informs Searches**
+
+The prompt already includes full OOF framework:
+```
+=== OOF FRAMEWORK KNOWLEDGE ===
+{OOF_FRAMEWORK}
+=== END OOF FRAMEWORK ===
+```
+
+LLM knows what attachment means, what maya means, what matrix positions mean from framework. This knowledge guides what to search for. Attachment = sunk costs, legacy dependencies, resistance patterns. Maya = perception gaps, reality distortions, blind spots. Framework knowledge IS search strategy knowledge.
+
+### **14. The Web Research Section From Call 1 Shows Search Style**
+
+Current prompt includes:
+```
+## WEB RESEARCH FINDINGS
+**Searches Performed:**
+- "fintech SMB lending market trends": Found growing competition, embedded finance trend
+**Key Facts:**
+- Market growing 23% annually
+- Top 3 players control 45% market share
+```
+
+LLM sees this pattern from Call 1 and naturally continues it in Call 2. "I should search with similar specificity. Call 1 searched 'fintech SMB lending market trends,' I should search 'fintech legacy banking system modernization timeline' with same pattern."
+
+### **15. The Articulation Context Object Already Structured for Evidence**
+
+Looking at `articulation_prompt_builder.py`, the prompt sends:
+
+```
+**Breakthrough Dynamics:**
+- Breakthrough probability: 70%
+- Distance to tipping point: 30%
+
+**Timeline Predictions:**
+- To stated goal: 8-12 months
+- Evolution rate: 8.5% per month
+```
+
+LLM sees specific predictions and recognizes: "These predictions would be more credible with industry pattern validation. Let me search 'fintech scaling timeline 50M ARR' to find comparative data."
+
+### **16. The Bottleneck Descriptions Contain Search Keywords**
+
+Current bottleneck format:
+```
+- [ATTACHMENT] Strong attachment to legacy systems preventing necessary evolution
+```
+
+LLM extracts search terms directly from bottleneck description: "legacy systems," "preventing evolution" → searches "legacy banking system modernization risks evolution"
+
+### **17. The Leverage Activation Requirements Suggest Searches**
+
+Current leverage format:
+```
+Activation: Increase surrender, reduce attachment
+```
+
+LLM translates to searchable concepts: "reduce attachment to legacy" → searches "successful legacy system migration strategies fintech"
+
+### **18. The Matrix Position Labels Are Search Contexts**
+
+Current matrix format:
+```
+- Love: separation (25%)
+- Power: victim (40%)
+```
+
+LLM knows: separation + victim = competitive struggle mindset. Searches for: "fintech competitive landscape," "market share battles SMB lending," "partnership vs competition fintech." Matrix positions inform search framing.
+
+### **19. The POMDP Gap Section Triggers Validation Searches**
+
+Current prompt sends:
+```
+**POMDP Gaps (Reality Perception):**
+- Reality gap: 65%
+- Observation gap: 55%
+```
+
+LLM sees high reality gap and knows: "User's perception diverges from reality. I should search for objective third-party data - analyst reports, market research, independent assessments."
+
+### **20. The Transformation Vectors Point to Search Topics**
+
+Current prompt sends:
+```
+- Primary obstacle: Attachment to current lending model
+- Primary enabler: Growing embedded finance trend
+- Leverage point: Partnership opportunities
+```
+
+LLM reads these and naturally searches:
+- Obstacle → "risks of attachment to traditional lending models"
+- Enabler → "embedded finance growth trends 2024"
+- Leverage → "fintech partnership announcements embedded banking"
+
+## **Why Existing Logic Already Perfect for Search**
+
+### **21. Articulation Quality Judgment Is Search Trigger**
+
+The instruction "Create moments of insight" means LLM constantly evaluates: "Is this insight landing with power?" When it recognizes "this would land harder with concrete example," search happens naturally.
+
+### **22. The Five-Section Structure Maps to Search Types**
+
+**Section 1 (Reality)** → Search for objective current state data
+**Section 2 (Gap)** → Search for benchmark/comparison data  
+**Section 3 (Root Cause)** → Search for pattern manifestation examples
+**Section 4 (Pathway)** → Search for transformation case studies
+**Section 5 (Action)** → Search for implementation specifics
+
+Existing structure contains complete search strategy.
+
+### **23. Domain Context + Calculated Values = Natural Queries**
+
+LLM has: domain (fintech), calculated attachment (0.85), bottleneck (legacy systems). It naturally combines: "fintech legacy core banking system modernization urgency" - perfect query construction from existing context.
+
+### **24. The Framework Reference Enables Interpretation**
+
+Instruction says: "Use [OOF] for operator definitions and interpretation ranges."
+
+LLM knows attachment 0.85 is bottleneck-range. Knows what manifestations to search for. Framework interpretation guides search target selection.
+
+### **25. The "Grounded in Data" Rule Requires Evidence**
+
+Instruction: "Every major claim should tie back to web research findings or calculated values."
+
+LLM making claim: "Your attachment to legacy systems creates competitive vulnerability." Recognizes this needs grounding. Searches: "fintech companies delayed modernization competitive disadvantage."
+
+## **The Implementation Is Trivial**
+
+### **26. Enable Tool, Add One Guidance Sentence**
+
+That's literally it. The existing articulation logic is so well-structured that it already contains all search intelligence needed. Just enable the tool and add one sentence: "Use web_search to ground calculated patterns in industry reality."
+
+### **27. Trust the Existing Articulation Structure**
+
+Your current prompt structure with:
+- Five-part generation instructions
+- Organized consciousness state values
+- Bottleneck descriptions
+- Leverage opportunities
+- Domain context
+- Framework reference
+
+...contains COMPLETE search strategy already embedded in articulation logic.
+
+### **28. The Articulation Intelligence Is Search Intelligence**
+
+When LLM knows it must:
+- "Ground in reality" → knows to search for reality data
+- "Make invisible visible" → knows to search for pattern examples
+- "Be specific about shifts" → knows to search for specific transformation cases
+- "Provide concrete actions" → knows to search for implementation details
+
+Articulation requirements ARE search requirements.
+
+## **The Beautiful Simplicity**
+
+You don't need to build search directive generation in backend. You don't need to translate math to search intentions. You don't need complex mapping tables.
+
+The articulation logic you've already built contains everything needed for intelligent search. Enable the tool, trust the intelligence you've already created.
+
+The LLM reading "Ground this attachment bottleneck in market reality" + seeing "attachment = 0.85" + knowing "domain = fintech" naturally searches "fintech legacy system risks competitive impact."
+
+Your existing articulation architecture is already a complete search strategy generator. Just activate it.
+
+
+## **Claude Code Implementation Plan - Evidence-Enriched Articulation**
+
+### **Phase 1: Enable Web Search in Articulation Call**
+
+**File: `backend/main.py`**
+
+**Location: Function `format_results_streaming_bridge` (around line 445)**
+
+**Current code:**
+```python
+request_body = {
+    "model": OPENAI_MODEL,
+    "instructions": instructions,
+    "input": [{...}],
+    "temperature": 0.85,
+    "stream": True
+}
+```
+
+**Change to:**
+```python
+request_body = {
+    "model": OPENAI_MODEL,
+    "instructions": instructions,
+    "input": [{...}],
+    "temperature": 0.85,
+    "stream": True,
+    "tools": [{
+        "type": "web_search",
+        "user_location": {"type": "approximate", "timezone": "UTC"}
+    }],
+    "tool_choice": "auto"
+}
+```
+
+### **Phase 2: Add Search Guidance to Articulation Instructions**
+
+**File: `backend/main.py`**
+
+**Location: Variable `instructions` in `format_results_streaming_bridge` (around line 410-443)**
+
+**Find the section that ends with:**
+```python
+5. ACTIONABLE:
+   - End with concrete next steps
+   - Respect current capacity
+   - Don't overwhelm
+=== END ARTICULATION RULES ===
+```
+
+**Add after line "Don't overwhelm" and before "=== END ARTICULATION RULES ===":**
+```python
+6. EVIDENCE ENRICHMENT:
+   - You have web_search tool available
+   - Use it strategically when calculated patterns need grounding in industry reality
+   - Search for: competitor examples, market data, transformation cases, timeline validation
+   - High maya scores suggest searching for objective third-party data
+   - Bottlenecks benefit from consequence evidence (what happens when this pattern persists)
+   - Leverage points become tangible with opportunity evidence (partnerships, trends, alignments)
+   - Integrate findings naturally into narrative flow - no "according to search" phrasing
+   - Quality over quantity - search when evidence strengthens insight, not exhaustively
+```
+
+### **Phase 3: Enhance Operator Interpretation Context**
+
+**File: `backend/main.py`**
+
+**Location: Same `instructions` variable, after the OOF framework section**
+
+**Add new section after `=== END OOF FRAMEWORK ===` and before `=== CRITICAL ARTICULATION RULES ===`:**
+
+```python
+=== OPERATOR INTERPRETATION FOR SEARCH ===
+Use calculated operator values to guide evidence gathering:
+
+HIGH ATTACHMENT (0.75+):
+- Indicates: Clinging to past patterns, sunk cost fallacy, resistance to necessary change
+- Search for: Legacy system risks, migration delay consequences, competitor advantages from early adoption
+- Evidence type: Industry-specific examples of attachment costs
+
+HIGH MAYA (0.70+):
+- Indicates: Perception gaps, blind spots, beliefs contradicting reality
+- Search for: Objective market data, third-party assessments, competitive positioning reports
+- Evidence type: Reality validators that expose gaps
+
+SEPARATION MATRIX POSITION:
+- Indicates: Competitive vs collaborative orientation, protective boundaries, us-vs-them thinking
+- Search for: Competitive dynamics AND collaborative counterexamples showing integration advantage
+- Evidence type: Both current pattern validation and alternative pathway proof
+
+S-LEVEL 3 (Achievement):
+- Search framing: Use competitive benchmarks, performance metrics, ranking data
+- Evidence that resonates: "Your competitors achieved X, here's the gap"
+
+S-LEVEL 5 (Service):
+- Search framing: Use impact examples, integration cases, ecosystem dynamics
+- Evidence that resonates: "Leaders found success through collaboration, here's the pattern"
+
+GRACE ACTIVATION LEVERAGE:
+- Search for: Partnership announcements, collaboration trends, synchronicity indicators
+- Evidence type: Recent alignments, unexpected opportunities, ecosystem formation
+
+BREAKTHROUGH PROBABILITY (0.70+):
+- Search for: Near-term catalysts, immediate opportunities, emerging possibilities
+- Evidence validation: Confirm favorable conditions or identify hidden resistances
+
+TIMELINE PREDICTIONS:
+- Search for: Transformation case studies with actual timelines, industry pattern data
+- Evidence use: "Similar transformations took X months, factors that accelerated/delayed"
+=== END OPERATOR INTERPRETATION ===
+```
+
+### **Phase 4: Test With Single User Query**
+
+**Create test file: `test_evidence_search.py`**
+
+```python
+import asyncio
+import httpx
+import os
+
+async def test_evidence_enrichment():
+    """Test that articulation call uses web search appropriately"""
+    
+    test_query = "I'm a fintech founder trying to scale my neo-bank from $5M to $50M ARR"
+    
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            "http://localhost:8000/api/run",
+            params={"prompt": test_query},
+            timeout=180.0
+        )
+        
+        # Should see evidence of web searches in articulation
+        # Look for industry-specific grounding, competitor mentions, market data
+        print("Response includes web search evidence:")
+        print(response.text[:500])
+
+if __name__ == "__main__":
+    asyncio.run(test_evidence_enrichment())
+```
+
+**Run test:**
+```bash
+python test_evidence_search.py
+```
+
+**Success criteria:**
+- Articulation includes industry-specific evidence (not just framework concepts)
+- References to market data, competitors, or transformation patterns
+- Evidence integrated naturally (not "search showed X" but "three competitors migrated...")
+- Still maintains framework concealment
+
+### **Phase 5: Monitor Search Usage Patterns**
+
+**File: `backend/main.py`**
+
+**Location: Add logging in streaming response handler (around line 473-488)**
+
+**Add after successful token yield:**
+
+```python
+async for line in response.aiter_lines():
+    if line.startswith("data: "):
+        data_str = line[6:]
+        if data_str == "[DONE]":
+            break
+        try:
+            data = json.loads(data_str)
+            
+            # Log tool usage
+            if "tool_calls" in data:
+                for tool in data["tool_calls"]:
+                    if tool.get("type") == "web_search":
+                        query = tool.get("arguments", {}).get("query", "")
+                        print(f"[EVIDENCE SEARCH] Query: {query}")
+            
+            # Extract text
+            if "delta" in data:
+                delta = data.get("delta", {})
+                if "text" in delta:
+                    yield delta["text"]
+```
+
+### **Phase 6: Add Evidence Search Status to Frontend**
+
+**File: `backend/main.py`**
+
+**Location: Function `inference_stream` after bottleneck/leverage detection (around line 190)**
+
+**Add status event:**
+
+```python
+yield {
+    "event": "status",
+    "data": json.dumps({
+        "message": f"Analysis complete: {bottleneck_summary['total_count']} bottlenecks, {leverage_summary['total_count']} leverage points (max {leverage_summary['max_multiplier']}x)"
+    })
+}
+
+# ADD THIS:
+yield {
+    "event": "status", 
+    "data": json.dumps({
+        "message": "Generating articulation with evidence enrichment..."
+    })
+}
+```
+
+### **Phase 7: Validate Search Quality**
+
+**Create validation script: `validate_search_quality.py`**
+
+```python
+"""
+Run several test queries and validate that:
+1. Searches happen for high-value insights
+2. Search queries are domain-specific and intelligent
+3. Evidence gets integrated naturally
+4. No over-searching (quality over quantity)
+"""
+
+test_cases = [
+    {
+        "query": "I run a SaaS company, trying to go from $2M to $10M ARR",
+        "expected_searches": ["SaaS scaling patterns", "revenue growth", "market positioning"],
+        "should_include": ["market", "competitor", "benchmark"]
+    },
+    {
+        "query": "I want to shift my business from service-based to product-based",
+        "expected_searches": ["service to product transition", "business model transformation"],
+        "should_include": ["transition", "example", "timeline"]
+    },
+    {
+        "query": "How do I break through my current plateau in personal development",
+        "expected_searches": ["personal transformation", "breakthrough patterns"],
+        "should_include": ["pattern", "development", "growth"]
+    }
+]
+
+# Run tests and validate search intelligence
+```
+
+### **Phase 8: Optimize Based on Patterns**
+
+**After running 20-30 real queries, analyze:**
+
+**What searches happen most frequently?**
+- High maya always triggers market reality searches
+- Attachment bottleneck triggers legacy/migration searches  
+- Leverage points trigger opportunity/trend searches
+
+**What search queries are most effective?**
+- Specific domain + specific pattern work best
+- Generic queries return poor results
+- Temporal indicators ("2024", "recent", "emerging") improve relevance
+
+**What evidence gets used vs ignored?**
+- Concrete numbers/percentages get integrated
+- Vague platitudes get skipped
+- Case studies with outcomes get emphasized
+
+**Refine operator interpretation guidance based on findings**
+
+### **Phase 9: Handle Edge Cases**
+
+**File: `backend/main.py`**
+
+**Add fallback handling if web search fails:**
+
+```python
+try:
+    async with httpx.AsyncClient(timeout=180.0) as client:
+        async with client.stream(...) as response:
+            # existing streaming code
+            
+except httpx.TimeoutException:
+    print("[WARNING] OpenAI streaming timeout - web searches may have delayed response")
+    # Continue with fallback
+    
+except Exception as e:
+    print(f"[ERROR] Articulation error: {e}")
+    # If web search is causing issues, the articulation still completes
+    # LLM will articulate without evidence if searches fail
+```
+
+### **Phase 10: Document the Enhancement**
+
+**Create: `EVIDENCE_ENRICHMENT.md`**
+
+```markdown
+# Evidence-Enriched Articulation
+
+The Reality Transformer articulation now includes strategic web search capability.
+
+## How It Works
+
+1. Backend calculates consciousness state (2,154 formulas)
+2. Organizes values, detects bottlenecks, identifies leverage
+3. Articulation LLM receives organized analysis + web_search tool
+4. During articulation, LLM searches when evidence strengthens insights
+5. Evidence integrated naturally into response
+
+## Search Triggers
+
+- High maya scores → objective reality validation searches
+- Bottleneck explanations → consequence evidence searches
+- Leverage opportunities → possibility/trend searches
+- Timeline predictions → pattern validation searches
+- Gap analysis → benchmark/comparison searches
+
+## Search Intelligence
+
+LLM uses:
+- Operator interpretations to know what to search
+- Domain context to refine queries
+- S-level to frame evidence appropriately
+- Matrix positions to guide search angles
+- Articulation judgment to determine when evidence adds value
+
+## Quality Controls
+
+- "Quality over quantity" - strategic searching, not exhaustive
+- Natural integration - no "according to research" phrasing
+- Framework concealment maintained - evidence supports translation
+- Domain-appropriate - searches match user's industry/context
+
+## Monitoring
+
+Search usage logged with:
+- Query content
+- Trigger reason (bottleneck, leverage, gap, etc.)
+- Result utilization
+- Integration quality
+```
+
+### **Implementation Timeline**
+
+**Day 1:**
+- Phase 1: Enable web_search tool (5 minutes)
+- Phase 2: Add search guidance (10 minutes)
+- Phase 3: Add operator interpretation (15 minutes)
+- Phase 4: Test with single query (30 minutes)
+
+**Day 2:**
+- Phase 5: Add search logging (15 minutes)
+- Phase 6: Add frontend status (10 minutes)
+- Phase 7: Run validation tests (2 hours)
+
+**Day 3:**
+- Phase 8: Analyze patterns, optimize guidance (2 hours)
+- Phase 9: Add edge case handling (30 minutes)
+- Phase 10: Document (30 minutes)
+
+**Total effort: ~6-7 hours over 3 days**
+
+### **Success Metrics**
+
+**Quantitative:**
+- 60-80% of responses include at least one evidence-based insight
+- Average 2-4 web searches per articulation (not excessive)
+- Search queries are domain-specific (contain user's industry terms)
+- 80%+ of search results get integrated (not wasted searches)
+
+**Qualitative:**
+- Users say insights feel "deeply informed about my industry"
+- Articulations include specific numbers, competitors, market data
+- Evidence feels natural, not forced or academic
+- Framework concealment maintained while grounding increased
+
+### **Rollback Plan**
+
+If web search causes issues:
+
+**Quick disable:**
+```python
+# In format_results_streaming_bridge
+request_body = {
+    # ... existing params
+    # "tools": [{...}],  # Comment this line
+    # "tool_choice": "auto"  # Comment this line
+}
+```
+
+System returns to pure consciousness analysis without evidence enrichment. No other code changes needed.
+
+### **The Core Simplicity**
+
+This entire enhancement is:
+- **One tool enablement** (3 lines)
+- **One guidance section** (10 lines)
+- **One interpretation section** (40 lines)
+
+Everything else is testing, validation, and optimization.
+
+The existing articulation logic already contains complete search intelligence. You're just activating it.
