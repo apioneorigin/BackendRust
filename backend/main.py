@@ -67,6 +67,40 @@ load_dotenv()
 # Initialize FastAPI app
 app = FastAPI(title="Reality Transformer", version="4.1.0")
 
+# Streaming retry configuration
+STREAMING_MAX_RETRIES = 4
+STREAMING_BASE_DELAY = 2.0  # seconds (exponential backoff: 2s, 4s, 8s, 16s)
+STREAMING_RETRYABLE_ERRORS = (
+    "incomplete chunked read",
+    "peer closed connection",
+    "connection reset",
+    "read timeout",
+    "server disconnected",
+    "RemoteProtocolError",
+    "ReadError",
+)
+
+
+def is_retryable_streaming_error(error: Exception) -> bool:
+    """Determine if a streaming error should trigger a retry."""
+    error_str = str(error).lower()
+    error_type = type(error).__name__
+
+    # Check error type
+    if error_type in ("RemoteProtocolError", "ReadError", "ReadTimeout", "ConnectTimeout"):
+        return True
+
+    # Check error message
+    for retryable in STREAMING_RETRYABLE_ERRORS:
+        if retryable.lower() in error_str:
+            return True
+
+    # httpx specific errors
+    if isinstance(error, (httpx.RemoteProtocolError, httpx.ReadError, httpx.ReadTimeout)):
+        return True
+
+    return False
+
 # API Configuration - Multi-model support
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
@@ -914,170 +948,217 @@ SECTION 5: FIRST STEPS
 - Respect current capacity - don't overwhelm
 === END RESPONSE STRUCTURE ==="""
 
-    try:
-        async with httpx.AsyncClient(timeout=180.0) as client:
-            if provider == "anthropic":
-                # Anthropic Claude streaming API
-                request_body = {
-                    "model": model,
-                    "max_tokens": 4096,
-                    "system": instructions,
-                    "messages": [{
-                        "role": "user",
-                        "content": articulation_prompt
-                    }],
-                    "stream": True
-                }
-                headers = {
-                    "x-api-key": api_key,
-                    "anthropic-version": "2023-06-01",
-                    "Content-Type": "application/json"
-                }
-                endpoint = model_config.get("streaming_endpoint")
+    # Retry state tracking
+    last_error = None
+    content_yielded = False
+    tokens_yielded = False
+    tokens_streamed = 0
 
-                async with client.stream("POST", endpoint, headers=headers, json=request_body) as response:
-                    if response.status_code != 200:
-                        error_text = await response.aread()
-                        api_logger.error(f"Anthropic streaming error: {response.status_code} - {error_text}")
-                        raise Exception(f"Anthropic API error: {response.status_code}")
+    for attempt in range(STREAMING_MAX_RETRIES + 1):
+        try:
+            async with httpx.AsyncClient(timeout=180.0) as client:
+                if provider == "anthropic":
+                    # Anthropic Claude streaming API
+                    request_body = {
+                        "model": model,
+                        "max_tokens": 4096,
+                        "system": instructions,
+                        "messages": [{
+                            "role": "user",
+                            "content": articulation_prompt
+                        }],
+                        "stream": True
+                    }
+                    headers = {
+                        "x-api-key": api_key,
+                        "anthropic-version": "2023-06-01",
+                        "Content-Type": "application/json"
+                    }
+                    endpoint = model_config.get("streaming_endpoint")
 
-                    # Track token usage for Anthropic
-                    input_tokens = 0
-                    output_tokens = 0
+                    async with client.stream("POST", endpoint, headers=headers, json=request_body) as response:
+                        if response.status_code != 200:
+                            error_text = await response.aread()
+                            api_logger.error(f"Anthropic streaming error: {response.status_code} - {error_text}")
+                            raise Exception(f"Anthropic API error: {response.status_code}")
 
-                    async for line in response.aiter_lines():
-                        if line.startswith("data: "):
-                            data_str = line[6:]
-                            if data_str == "[DONE]":
-                                break
-                            try:
-                                data = json.loads(data_str)
-                                if isinstance(data, dict):
-                                    event_type = data.get("type", "")
-                                    # Handle Anthropic streaming events
-                                    if event_type == "message_start":
-                                        # Input tokens come in message_start
-                                        usage = data.get("message", {}).get("usage", {})
-                                        input_tokens = usage.get("input_tokens", 0)
-                                    elif event_type == "content_block_delta":
-                                        delta = data.get("delta", {})
-                                        if delta.get("type") == "text_delta":
-                                            yield delta.get("text", "")
-                                    elif event_type == "message_delta":
-                                        # Output tokens come in message_delta
-                                        usage = data.get("usage", {})
-                                        output_tokens = usage.get("output_tokens", 0)
-                            except json.JSONDecodeError:
-                                continue
+                        # Track token usage for Anthropic
+                        input_tokens = 0
+                        output_tokens = 0
 
-                    # Yield token usage at the end
-                    yield {"__token_usage__": True, "input_tokens": input_tokens, "output_tokens": output_tokens, "total_tokens": input_tokens + output_tokens}
+                        async for line in response.aiter_lines():
+                            if line.startswith("data: "):
+                                data_str = line[6:]
+                                if data_str == "[DONE]":
+                                    break
+                                try:
+                                    data = json.loads(data_str)
+                                    if isinstance(data, dict):
+                                        event_type = data.get("type", "")
+                                        # Handle Anthropic streaming events
+                                        if event_type == "message_start":
+                                            # Input tokens come in message_start
+                                            usage = data.get("message", {}).get("usage", {})
+                                            input_tokens = usage.get("input_tokens", 0)
+                                        elif event_type == "content_block_delta":
+                                            delta = data.get("delta", {})
+                                            if delta.get("type") == "text_delta":
+                                                text = delta.get("text", "")
+                                                if text:
+                                                    content_yielded = True
+                                                    tokens_streamed += 1
+                                                    yield text
+                                        elif event_type == "message_delta":
+                                            # Output tokens come in message_delta
+                                            usage = data.get("usage", {})
+                                            output_tokens = usage.get("output_tokens", 0)
+                                except json.JSONDecodeError:
+                                    continue
 
-            else:
-                # OpenAI Responses API streaming
-                request_body = {
-                    "model": model,
-                    "instructions": instructions,
-                    "input": [{
-                        "type": "message",
-                        "role": "user",
-                        "content": [{"type": "input_text", "text": articulation_prompt}]
-                    }],
-                    "temperature": 0.85,
-                    "stream": True,
-                    "tools": [{
-                        "type": "web_search",
-                        "user_location": {"type": "approximate", "timezone": "UTC"}
-                    }],
-                    "tool_choice": "auto"
-                }
-                headers = {
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json"
-                }
-                endpoint = model_config.get("streaming_endpoint")
+                        # Stream completed successfully
+                        api_logger.info(f"[ARTICULATION] Streamed {tokens_streamed} tokens")
+                        tokens_yielded = True
+                        yield {"__token_usage__": True, "input_tokens": input_tokens, "output_tokens": output_tokens, "total_tokens": input_tokens + output_tokens}
+                        return  # Success - exit the retry loop
 
-                async with client.stream("POST", endpoint, headers=headers, json=request_body) as response:
-                    if response.status_code != 200:
-                        error_text = await response.aread()
-                        api_logger.error(f"OpenAI streaming error: {response.status_code} - {error_text}")
-                        raise Exception(f"OpenAI API error: {response.status_code}")
+                else:
+                    # OpenAI Responses API streaming
+                    request_body = {
+                        "model": model,
+                        "instructions": instructions,
+                        "input": [{
+                            "type": "message",
+                            "role": "user",
+                            "content": [{"type": "input_text", "text": articulation_prompt}]
+                        }],
+                        "temperature": 0.85,
+                        "stream": True,
+                        "tools": [{
+                            "type": "web_search",
+                            "user_location": {"type": "approximate", "timezone": "UTC"}
+                        }],
+                        "tool_choice": "auto"
+                    }
+                    headers = {
+                        "Authorization": f"Bearer {api_key}",
+                        "Content-Type": "application/json"
+                    }
+                    endpoint = model_config.get("streaming_endpoint")
 
-                    # Track token usage for OpenAI
-                    input_tokens = 0
-                    output_tokens = 0
+                    async with client.stream("POST", endpoint, headers=headers, json=request_body) as response:
+                        if response.status_code != 200:
+                            error_text = await response.aread()
+                            api_logger.error(f"OpenAI streaming error: {response.status_code} - {error_text}")
+                            raise Exception(f"OpenAI API error: {response.status_code}")
 
-                    async for line in response.aiter_lines():
-                        if line.startswith("data: "):
-                            data_str = line[6:]
-                            if data_str == "[DONE]":
-                                break
-                            try:
-                                data = json.loads(data_str)
+                        # Track token usage for OpenAI
+                        input_tokens = 0
+                        output_tokens = 0
 
-                                # Log evidence searches and results (with type safety)
-                                if isinstance(data, dict):
-                                    # Log web search queries
-                                    if "tool_calls" in data:
-                                        tool_calls = data.get("tool_calls", [])
-                                        if isinstance(tool_calls, list):
-                                            for tool in tool_calls:
-                                                if isinstance(tool, dict) and tool.get("type") == "web_search":
-                                                    query = tool.get("query", "")
-                                                    if not query and "arguments" in tool:
-                                                        args = tool.get("arguments", {})
-                                                        if isinstance(args, dict):
-                                                            query = args.get("query", "")
-                                                    if query:
-                                                        articulation_logger.info(f"[ARTICULATION SEARCH] Query: {query}")
+                        async for line in response.aiter_lines():
+                            if line.startswith("data: "):
+                                data_str = line[6:]
+                                if data_str == "[DONE]":
+                                    break
+                                try:
+                                    data = json.loads(data_str)
 
-                                    # Log web search results for grounding
-                                    event_type = data.get("type", "")
-                                    if event_type == "web_search_call" or "web_search" in str(data.get("tool", "")):
-                                        articulation_logger.debug(f"[ARTICULATION SEARCH] Initiated web search")
-                                    if "search_results" in data or "results" in data:
-                                        results = data.get("search_results", data.get("results", []))
-                                        if isinstance(results, list) and results:
-                                            articulation_logger.info(f"[ARTICULATION SEARCH] Retrieved {len(results)} results")
-                                            for r in results[:3]:
-                                                if isinstance(r, dict):
-                                                    title = r.get("title", r.get("name", "Unknown"))
-                                                    url = r.get("url", r.get("link", "N/A"))
-                                                    articulation_logger.debug(f"[ARTICULATION SEARCH]   - {title}: {url}")
+                                    # Log evidence searches and results (with type safety)
+                                    if isinstance(data, dict):
+                                        # Log web search queries
+                                        if "tool_calls" in data:
+                                            tool_calls = data.get("tool_calls", [])
+                                            if isinstance(tool_calls, list):
+                                                for tool in tool_calls:
+                                                    if isinstance(tool, dict) and tool.get("type") == "web_search":
+                                                        query = tool.get("query", "")
+                                                        if not query and "arguments" in tool:
+                                                            args = tool.get("arguments", {})
+                                                            if isinstance(args, dict):
+                                                                query = args.get("query", "")
+                                                        if query:
+                                                            articulation_logger.info(f"[ARTICULATION SEARCH] Query: {query}")
 
-                                # Extract text from streaming response - ONLY handle delta events
-                                # Do NOT handle final/complete events to avoid duplication
-                                if isinstance(data, dict):
-                                    event_type = data.get("type", "")
+                                        # Log web search results for grounding
+                                        event_type = data.get("type", "")
+                                        if event_type == "web_search_call" or "web_search" in str(data.get("tool", "")):
+                                            articulation_logger.debug(f"[ARTICULATION SEARCH] Initiated web search")
+                                        if "search_results" in data or "results" in data:
+                                            results = data.get("search_results", data.get("results", []))
+                                            if isinstance(results, list) and results:
+                                                articulation_logger.info(f"[ARTICULATION SEARCH] Retrieved {len(results)} results")
+                                                for r in results[:3]:
+                                                    if isinstance(r, dict):
+                                                        title = r.get("title", r.get("name", "Unknown"))
+                                                        url = r.get("url", r.get("link", "N/A"))
+                                                        articulation_logger.debug(f"[ARTICULATION SEARCH]   - {title}: {url}")
 
-                                    # ONLY handle incremental delta events - ignore complete/done events
-                                    if event_type == "response.output_text.delta":
-                                        # Primary OpenAI Responses API streaming format
-                                        if "delta" in data:
-                                            yield data["delta"]
-                                    elif event_type == "response.content_part.delta":
-                                        if "delta" in data and "text" in data["delta"]:
-                                            yield data["delta"]["text"]
-                                    # Capture token usage from response.completed event
-                                    elif event_type == "response.completed":
-                                        usage = data.get("response", {}).get("usage", {})
-                                        input_tokens = usage.get("input_tokens", 0)
-                                        output_tokens = usage.get("output_tokens", 0)
-                                    # Skip all other events - they contain duplicates or metadata
-                                    elif event_type and "error" in event_type.lower():
-                                        articulation_logger.error(f"[STREAM ERROR] {data}")
-                            except json.JSONDecodeError:
-                                continue
+                                    # Extract text from streaming response - ONLY handle delta events
+                                    # Do NOT handle final/complete events to avoid duplication
+                                    if isinstance(data, dict):
+                                        event_type = data.get("type", "")
 
-                    # Yield token usage at the end
-                    yield {"__token_usage__": True, "input_tokens": input_tokens, "output_tokens": output_tokens, "total_tokens": input_tokens + output_tokens}
+                                        # ONLY handle incremental delta events - ignore complete/done events
+                                        if event_type == "response.output_text.delta":
+                                            # Primary OpenAI Responses API streaming format
+                                            if "delta" in data:
+                                                content_yielded = True
+                                                tokens_streamed += 1
+                                                yield data["delta"]
+                                        elif event_type == "response.content_part.delta":
+                                            if "delta" in data and "text" in data["delta"]:
+                                                content_yielded = True
+                                                tokens_streamed += 1
+                                                yield data["delta"]["text"]
+                                        # Capture token usage from response.completed event
+                                        elif event_type == "response.completed":
+                                            usage = data.get("response", {}).get("usage", {})
+                                            input_tokens = usage.get("input_tokens", 0)
+                                            output_tokens = usage.get("output_tokens", 0)
+                                        # Skip all other events - they contain duplicates or metadata
+                                        elif event_type and "error" in event_type.lower():
+                                            articulation_logger.error(f"[STREAM ERROR] {data}")
+                                except json.JSONDecodeError:
+                                    continue
 
-    except Exception as e:
-        api_logger.error(f"Streaming error ({provider}): {e}")
-        fallback_text = format_results_fallback_bridge(prompt, evidence, consciousness_state)
-        for word in fallback_text.split():
-            yield word + " "
-            await asyncio.sleep(0.02)
+                        # Stream completed successfully
+                        api_logger.info(f"[ARTICULATION] Streamed {tokens_streamed} tokens")
+                        tokens_yielded = True
+                        yield {"__token_usage__": True, "input_tokens": input_tokens, "output_tokens": output_tokens, "total_tokens": input_tokens + output_tokens}
+                        return  # Success - exit the retry loop
+
+        except Exception as e:
+            last_error = e
+            error_type = type(e).__name__
+
+            # If we already yielded content, we can't retry (user has seen partial response)
+            if content_yielded:
+                api_logger.error(f"Streaming error ({provider}) after yielding content: {e}")
+                api_logger.warning(f"[ARTICULATION] Partial stream: {tokens_streamed} tokens before error")
+                # Yield an error marker so the client knows the stream was incomplete
+                yield "\n\n[Response interrupted - partial content delivered]"
+                return
+
+            # Check if this is a retryable error
+            if is_retryable_streaming_error(e) and attempt < STREAMING_MAX_RETRIES:
+                delay = STREAMING_BASE_DELAY * (2 ** attempt)  # Exponential backoff: 2s, 4s, 8s, 16s
+                api_logger.warning(f"[ARTICULATION RETRY] {error_type}: {e}")
+                api_logger.warning(f"[ARTICULATION RETRY] Attempt {attempt + 1}/{STREAMING_MAX_RETRIES + 1} failed, retrying in {delay}s...")
+                await asyncio.sleep(delay)
+                continue
+
+            # Non-retryable error or max retries exceeded
+            api_logger.error(f"Streaming error ({provider}): {e}")
+            if attempt >= STREAMING_MAX_RETRIES:
+                api_logger.error(f"[ARTICULATION] Max retries ({STREAMING_MAX_RETRIES}) exceeded")
+            break
+
+    # All retries exhausted or non-retryable error - use fallback
+    api_logger.warning(f"[ARTICULATION] Using fallback response after streaming failure")
+    fallback_text = format_results_fallback_bridge(prompt, evidence, consciousness_state)
+    for word in fallback_text.split():
+        yield word + " "
+        await asyncio.sleep(0.02)
 
 
 async def format_results_streaming(prompt: str, evidence: dict, posteriors: dict) -> AsyncGenerator[str, None]:
