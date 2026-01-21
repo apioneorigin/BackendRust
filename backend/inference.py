@@ -456,12 +456,13 @@ class InferenceEngine:
             # Death Architecture Detection (7 types)
             logger.debug("[ADVANCED] Running DeathArchitectureDetector...")
             death = self.death_detector.detect_all(operators)
-            values['death_active'] = 1.0 if death.active_death_process else 0.0
-            values['death_integration'] = death.integration_score if hasattr(death, 'integration_score') else 0.5
+            death_is_active = len(death.active_deaths) > 0
+            values['death_active'] = 1.0 if death_is_active else 0.0
+            values['death_integration'] = death.overall_transformation_depth if hasattr(death, 'overall_transformation_depth') else 0.5
             confidence['death_active'] = 0.9
             confidence['death_integration'] = 0.8
-            active_type = death.active_death_type if hasattr(death, 'active_death_type') else 'none'
-            logger.info(f"[ADVANCED] Death: active={death.active_death_process}, type={active_type}, integration={values['death_integration']:.3f}")
+            active_type = death.primary_death if death.primary_death else 'none'
+            logger.info(f"[ADVANCED] Death: active={death_is_active}, type={active_type}, integration={values['death_integration']:.3f}")
 
             # Grace/Karma Dynamics (12 formulas)
             logger.debug("[ADVANCED] Running GraceKarmaDynamics...")

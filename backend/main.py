@@ -1368,7 +1368,7 @@ async def run_reverse_mapping_for_articulation(
     )
     reverse_logger.info(f"[REVERSE MAPPING] MVT: {mvt.total_operators_changed} operators, efficiency={mvt.mvt_efficiency:.2f}")
     for change in mvt.changes[:3]:
-        reverse_logger.debug(f"  - {change.operator}: {change.current_value:.2f} → {change.required_value:.2f}")
+        reverse_logger.debug(f"  - {change.operator}: {change.current_value:.2f} → {change.target_value:.2f}")
 
     # Analyze death requirements
     reverse_logger.debug("[REVERSE MAPPING] Analyzing death requirements...")
