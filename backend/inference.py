@@ -440,7 +440,7 @@ class InferenceEngine:
         logger.debug("[ADVANCED] Running EmotionAnalyzer...")
         emotions = self.emotion_analyzer.analyze(operators)
         dominant_rasa = emotions.dominant_rasa
-        dominant_intensity = emotions.rasas[dominant_rasa].intensity if dominant_rasa in emotions.rasas else 0.5
+        dominant_intensity = emotions.rasas[dominant_rasa].intensity
         values['emotion_dominant'] = dominant_intensity
         values['emotion_coherence'] = emotions.emotional_coherence
         confidence['emotion_dominant'] = 0.75
