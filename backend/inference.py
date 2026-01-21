@@ -11,24 +11,43 @@ from pathlib import Path
 from typing import Dict, List, Any, Optional
 from collections import defaultdict
 
-# Import logging
-from .logging_config import (
-    inference_logger as logger,
-    formula_logger,
-    CalculationLogger
-)
+# Import logging (handle both relative and absolute imports)
+try:
+    from .logging_config import (
+        inference_logger as logger,
+        formula_logger,
+        CalculationLogger
+    )
+except ImportError:
+    from logging_config import (
+        inference_logger as logger,
+        formula_logger,
+        CalculationLogger
+    )
 
 # Import advanced formula modules
-from .formulas import (
-    MatrixDetector,
-    CascadeCalculator,
-    EmotionAnalyzer,
-    DeathArchitectureDetector,
-    GraceKarmaDynamics,
-    NetworkEmergenceCalculator,
-    QuantumMechanics,
-    RealismEngine
-)
+try:
+    from .formulas import (
+        MatrixDetector,
+        CascadeCalculator,
+        EmotionAnalyzer,
+        DeathArchitectureDetector,
+        GraceKarmaDynamics,
+        NetworkEmergenceCalculator,
+        QuantumMechanics,
+        RealismEngine
+    )
+except ImportError:
+    from formulas import (
+        MatrixDetector,
+        CascadeCalculator,
+        EmotionAnalyzer,
+        DeathArchitectureDetector,
+        GraceKarmaDynamics,
+        NetworkEmergenceCalculator,
+        QuantumMechanics,
+        RealismEngine
+    )
 
 
 class InferenceEngine:
