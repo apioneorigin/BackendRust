@@ -417,10 +417,16 @@ class InferenceEngine:
             matrix_count = 0
             for name, position in matrices.items():
                 key = f"matrix_{name}"
-                values[key] = position.position if hasattr(position, 'position') else 0.5
+                pos_val = position.position if hasattr(position, 'position') else 0.5
+                # Handle both numeric and string positions
+                if isinstance(pos_val, (int, float)):
+                    values[key] = pos_val
+                    logger.debug(f"  [MATRIX] {name}: position={pos_val:.3f}")
+                else:
+                    values[key] = str(pos_val)
+                    logger.debug(f"  [MATRIX] {name}: position={pos_val}")
                 confidence[key] = 0.8
                 matrix_count += 1
-                logger.debug(f"  [MATRIX] {name}: position={values[key]:.3f}")
             logger.info(f"[ADVANCED] MatrixDetector: {matrix_count} matrices computed")
 
             # Cascade Cleanliness (7 levels)

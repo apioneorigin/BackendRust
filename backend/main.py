@@ -213,7 +213,7 @@ async def inference_stream(prompt: str) -> AsyncGenerator[dict, None]:
         bottleneck_summary = bottleneck_detector.get_summary(bottlenecks)
         articulation_logger.info(f"[BOTTLENECK DETECTOR] Found {bottleneck_summary['total_count']} bottlenecks")
         for bn in bottlenecks[:3]:
-            articulation_logger.debug(f"  - {bn.category}: {bn.name} (severity: {bn.severity:.2f})")
+            articulation_logger.debug(f"  - {bn.category}: {bn.variable} = {bn.value:.2f} ({bn.impact})")
         pipeline_logger.log_step("Bottleneck Detection", {"count": bottleneck_summary['total_count']})
 
         # Identify leverage points
@@ -223,7 +223,7 @@ async def inference_stream(prompt: str) -> AsyncGenerator[dict, None]:
         leverage_summary = leverage_identifier.get_summary(leverage_points)
         articulation_logger.info(f"[LEVERAGE IDENTIFIER] Found {leverage_summary['total_count']} leverage points (max {leverage_summary['max_multiplier']}x)")
         for lp in leverage_points[:3]:
-            articulation_logger.debug(f"  - {lp.category}: {lp.name} (multiplier: {lp.multiplier:.2f}x)")
+            articulation_logger.debug(f"  - {lp.description[:50]}... (multiplier: {lp.multiplier:.2f}x)")
         pipeline_logger.log_step("Leverage Identification", {"count": leverage_summary['total_count'], "max_mult": leverage_summary['max_multiplier']})
 
         yield {
