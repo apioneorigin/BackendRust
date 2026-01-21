@@ -191,20 +191,179 @@ class FormulaCompiler:
     def _parse_single_formula(self, line: Dict, formula_id: int) -> Optional[Dict]:
         """Parse a single formula line into components"""
         text = line['text']
-        
+
+        # Filter out non-formula entries at the source
+        # These are definitions/placeholders, not computable formulas
+        skip_prefixes = ('where ', 'Where ', 'WHERE ', 'NEEDS:', 'needs:', 'Needs:',
+                         'If ', 'if ', 'IF ', 'Let ', 'let ', 'LET ')
+        if text.startswith(skip_prefixes):
+            return None
+
+        # Skip lines that are clearly not formulas
+        skip_patterns = [
+            r'^\[',          # Array literals [...]
+            r'=\s*\[',       # Assignment to array
+            r'=\s*\{',       # Assignment to object
+            r':\s*=',        # Colon followed by equals (malformed)
+            r'=\s*∞',        # Assignment to infinity
+            r'constant\s*=', # "constant = value" definitions
+            r'=.*//.*',      # Lines with comments
+        ]
+        for pattern in skip_patterns:
+            if re.search(pattern, text):
+                return None
+
         # Split on equals sign
         if '=' not in text:
             return None
-        
+
         parts = text.split('=', 1)
         if len(parts) != 2:
             return None
-        
+
         left_side = parts[0].strip()
         right_side = parts[1].strip()
-        
+
         # Skip if looks like markdown or not a real formula
         if not left_side or not right_side:
+            return None
+
+        # Skip pure definitions (right side is just a single word/variable)
+        # These are not computable formulas
+        if re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', right_side):
+            return None
+
+        # Skip pure numeric assignments: X = 0.25, X = 1.0, etc.
+        if re.match(r'^-?[\d.]+$', right_side):
+            return None
+
+        # Skip natural language descriptions (contains spaces and common words)
+        natural_lang_words = ['how', 'what', 'which', 'the', 'is', 'are', 'this', 'that',
+                              'level', 'during', 'most', 'count', 'well', 'urgently']
+        right_lower = right_side.lower()
+        if any(f' {word} ' in f' {right_lower} ' for word in natural_lang_words):
+            return None
+
+        # Skip range annotations like [0, 1] or [min, max]
+        if re.match(r'^[A-Za-z_][A-Za-z0-9_]*\s*\[\s*[\d.,\s]+\]$', right_side):
+            return None
+
+        # Skip lines with double equals (definitions like X = Y = Z)
+        if right_side.count('=') > 0:
+            return None
+
+        # Skip incomplete multiline formulas (end with comma or open paren)
+        if right_side.rstrip().endswith((',', '(', '[')):
+            return None
+
+        # Skip lines that are just variable assignments with colons (Body: = Low energy)
+        if left_side.endswith(':') or ':' in left_side:
+            return None
+
+        # Skip single variable/identifier assignments (X = Y, X = f₀)
+        # These are definitions, not computable formulas
+        if re.match(r'^[a-zA-Z_][a-zA-Z0-9_₀-₉]*$', right_side):
+            return None
+
+        # Skip purely descriptive right sides (contain only words and spaces)
+        if re.match(r'^[A-Za-z\s]+$', right_side) and len(right_side.split()) > 1:
+            return None
+
+        # Skip numeric constant definitions: φ = 1.618, π = 3.14159
+        if re.match(r'^[\d.]+\s*(\([^)]+\))?$', right_side):
+            return None
+
+        # Skip Greek letter single assignments: X = φ, Y = ε
+        if re.match(r'^[α-ωΑ-Ωεφπ]$', right_side):
+            return None
+
+        # Skip sequence definitions: n = 1, 2, 3, ...
+        if re.search(r'\d+,\s*\d+,\s*\d+', right_side):
+            return None
+
+        # Skip definitions with units: fS2 = 2 Hz, E = ½mv²
+        if re.search(r'\d+\s*[HhZz]', right_side) or '½mv²' in right_side:
+            return None
+
+        # Skip structure definitions: (A, B, C, ...)
+        if re.match(r'^\([A-Za-z_,\s]+\)$', right_side):
+            return None
+
+        # Skip matrix/index definitions: D[i,j] = 1 if ...
+        if re.search(r'if\s+[a-z]', right_side.lower()):
+            return None
+
+        # Skip confidence descriptions: 0.7 = Implied patterns...
+        if re.match(r'^[\d.]+$', left_side):
+            return None
+
+        # Skip norm expressions: ||X|| = Y
+        if '||' in right_side and not any(op in right_side for op in ['+', '-', '×', '*', '/', '^']):
+            return None
+
+        # Skip pure Greek letter names on left: ∇², φ_i, ε
+        if re.match(r'^[∇∂α-ωΑ-Ω²_]+$', left_side):
+            return None
+
+        # Skip natural language definitions (more aggressive)
+        lang_indicators = ['from', 'toward', 'along', 'strength of', 'phase angle',
+                          'likelihood', 'momentum', 'infinitesimal', 'preserved',
+                          'number of', 'exists', 'unchanged']
+        right_lower = right_side.lower()
+        if any(ind in right_lower for ind in lang_indicators):
+            return None
+
+        # Skip definitions that are just norm expressions: ||X||, |c_k|²
+        if re.match(r'^[|‖][^|‖]+[|‖]²?$', right_side):
+            return None
+
+        # Skip derivative notation on left: dP_A/dt, dX/dt
+        if re.match(r'^d[A-Za-z_]+/dt$', left_side):
+            return None
+
+        # Skip category theory and set notation
+        if re.search(r'\{[^}]+\}', right_side) and not any(op in right_side for op in ['+', '-', '×', '*', '/', '·']):
+            return None
+
+        # Skip range expressions: 1 to ∞, a to b
+        if re.search(r'\d+\s+to\s+', right_side):
+            return None
+
+        # Skip degree notation: 90°
+        if '°' in right_side:
+            return None
+
+        # Skip parenthetical explanations: (identity), (chaos level), etc.
+        if re.match(r'^[^(]+\([^)]+\)$', right_side) and not re.search(r'[+\-×*/·^]', right_side):
+            return None
+
+        # Skip matrix index notation: Matrix[i][j]
+        if re.search(r'\[[^\]]+\]\[[^\]]+\]', right_side):
+            return None
+
+        # Skip property access: concept.dependencies
+        if re.match(r'^[a-z_]+\.[a-z_]+$', right_side):
+            return None
+
+        # Skip tensor notation with subscripts: D ⊙ C
+        if '⊙' in right_side and not any(op in right_side for op in ['+', '-', '×', '*', '/', '·']):
+            return None
+
+        # Skip special assignment names on left: Below, Dihedral, etc.
+        skip_names = ['Below', 'Above', 'Dihedral', 'System_Matrix', 'Bayesian_Network', 'dependencies', 'R_i', 'S_sat']
+        if left_side in skip_names:
+            return None
+
+        # Skip approximate definitions: ≈
+        if '≈' in right_side:
+            return None
+
+        # Skip "at time" expressions
+        if 'at time' in right_side.lower():
+            return None
+
+        # Skip confidence/flag descriptions
+        if 'confidence' in right_side.lower() or 'flag for' in right_side.lower():
             return None
         
         # Extract output variable (clean up any annotations)
@@ -282,12 +441,14 @@ class FormulaCompiler:
     def _extract_operators(self, expression: str) -> Set[str]:
         """Extract all operators used in expression"""
         operators = set()
-        
+
+        # Explicit operator symbols
         operator_symbols = {
             '+': 'addition',
             '-': 'subtraction',
             '*': 'multiplication',
             '×': 'multiplication',
+            '·': 'multiplication',  # Middle dot multiplication
             '/': 'division',
             '^': 'exponentiation',
             '→': 'transformation',
@@ -302,16 +463,65 @@ class FormulaCompiler:
             '∫': 'integration',
             '∂': 'partial_derivative',
             '∑': 'summation',
+            'Σ': 'summation',  # Greek capital sigma
             '∏': 'product',
             '∈': 'element_of',
             '∀': 'for_all',
-            '∃': 'exists'
+            '∃': 'exists',
+            '²': 'square',  # Superscript 2
+            '³': 'cube',  # Superscript 3
+            '∇': 'gradient',  # Nabla/gradient
+            '?': 'ternary',  # Ternary operator
+            ':': 'ternary',  # Part of ternary
+            '>': 'comparison',
+            '<': 'comparison',
+            '≥': 'comparison',
+            '≤': 'comparison',
+            '~': 'sample',  # Statistical sampling
         }
-        
+
         for symbol, name in operator_symbols.items():
             if symbol in expression:
                 operators.add(symbol)
-        
+
+        # Implicit operators - function application f(x, y)
+        # Pattern: identifier followed by parentheses with content
+        if re.search(r'[a-zA-Z_][a-zA-Z0-9_]*\s*\([^)]*\)', expression):
+            operators.add('()')  # Function application operator
+
+        # Named functions like weighted_average, weighted_random, etc.
+        named_functions = ['weighted_average', 'weighted_random', 'max', 'min', 'sum', 'avg',
+                          'sigmoid', 'tanh', 'exp', 'log', 'sqrt', 'abs', 'floor', 'ceil']
+        for func in named_functions:
+            if func in expression.lower():
+                operators.add('()')
+
+        # Quantum/bra-ket notation: |ψ⟩, ⟨ψ|, M̂|ψ⟩
+        if '|' in expression and ('⟩' in expression or '⟨' in expression or '>' in expression):
+            operators.add('|⟩')  # Bra-ket operator
+
+        # Hat operators: M̂, Ĥ, etc. (operator notation in quantum mechanics)
+        # Check for combining hat or precomposed circumflex letters
+        circumflex_letters = 'ÂĈÊĜĤÎĴÔŜÛŴŶâĉêĝĥîĵôŝûŵŷ'
+        if '̂' in expression or any(c in expression for c in circumflex_letters):
+            operators.add('^')  # Operator application
+
+        # Text-based logical operators
+        if ' AND ' in expression or ' and ' in expression:
+            operators.add('∧')
+        if ' OR ' in expression or ' or ' in expression:
+            operators.add('∨')
+        if ' NOT ' in expression or ' not ' in expression:
+            operators.add('¬')
+
+        # Implicit multiplication: (a)(b) or A B where both are expressions
+        if re.search(r'\)\s*\(', expression):
+            operators.add('×')  # Implicit multiplication
+
+        # Subscript/index access: A_i, x_n, etc. followed by operations
+        if re.search(r'_[a-z]\s*[+\-×*/]', expression):
+            operators.add('+')  # Has indexed operations
+
         return operators
     
     def _extract_consciousness_level(self, text: str) -> Optional[str]:

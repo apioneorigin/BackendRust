@@ -285,25 +285,14 @@ class InferenceEngine:
         operators = formula.get('operators_used', [])
 
         if not operators:
-            # Simple assignment or constant
-            if len(variables_used) == 0:
-                # Constant formula with no variables - return default
-                return {
-                    'value': 0.5,
-                    'confidence': 0.3
-                }
-            elif len(variables_used) == 1:
+            # Simple assignment - single variable passthrough
+            if len(variables_used) == 1:
                 return {
                     'value': inputs.get(variables_used[0], 0.5),
                     'confidence': min(input_confidences) if input_confidences else 0.5
                 }
-            else:
-                # Multiple variables with no operator - compute mean (implicit combination)
-                values = list(inputs.values())
-                return {
-                    'value': sum(values) / len(values) if values else 0.5,
-                    'confidence': min(input_confidences) if input_confidences else 0.3
-                }
+            # No operators and not single variable = malformed formula, skip
+            return None
 
         # Compute based on dominant operator
         result = self._compute_expression(expression, inputs, operators)
@@ -338,7 +327,8 @@ class InferenceEngine:
             return 0.5
 
         # Handle different operator types
-        if '×' in operators or '*' in operators:
+        # Multiplication: ×, *, · (middle dot)
+        if '×' in operators or '*' in operators or '·' in operators:
             result = 1.0
             for v in values:
                 result *= v
@@ -374,6 +364,58 @@ class InferenceEngine:
         elif '→' in operators or '←' in operators:
             # Transformation - use weighted average
             return sum(values) / len(values)
+
+        elif '()' in operators:
+            # Function application f(x, y, ...) - treat as weighted combination
+            # First value is typically the function/modifier, rest are inputs
+            if len(values) >= 2:
+                modifier = values[0]
+                inputs_avg = sum(values[1:]) / len(values[1:])
+                return modifier * inputs_avg
+            return values[0] if values else 0.5
+
+        elif '|⟩' in operators:
+            # Quantum bra-ket notation - operator application on state
+            # Result is product of operator strength and state amplitude
+            result = 1.0
+            for v in values:
+                result *= v
+            return result
+
+        elif '²' in operators or '³' in operators:
+            # Square/cube - apply to first value
+            if values:
+                exp = 3 if '³' in operators else 2
+                return min(1.0, values[0] ** exp)
+            return 0.5
+
+        elif '∇' in operators:
+            # Gradient - represents rate of change, use difference
+            if len(values) >= 2:
+                return abs(values[0] - values[-1])
+            return values[0] if values else 0.5
+
+        elif '~' in operators:
+            # Sampling/stochastic - return mean with some variance consideration
+            return sum(values) / len(values) if values else 0.5
+
+        elif '>' in operators or '<' in operators or '≥' in operators or '≤' in operators:
+            # Comparison - return 1 if condition likely true, 0 otherwise
+            if len(values) >= 2:
+                return 1.0 if values[0] > values[1] else 0.0
+            return 0.5
+
+        elif '∧' in operators:
+            # Logical AND - minimum
+            return min(values) if values else 0.5
+
+        elif '∨' in operators:
+            # Logical OR - maximum
+            return max(values) if values else 0.5
+
+        elif 'Σ' in operators or '∑' in operators:
+            # Summation - sum normalized
+            return min(1.0, sum(values) / max(1, len(values)))
 
         else:
             # Default: weighted average
