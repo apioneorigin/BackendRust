@@ -1233,7 +1233,7 @@ async def run_reverse_mapping_for_articulation(
     current_operators = _extract_operators_from_evidence(evidence)
 
     # Get current S-level from consciousness state
-    current_s_level = consciousness_state.tier1.s_level.value if hasattr(consciousness_state.tier1, 's_level') else 3.0
+    current_s_level = consciousness_state.tier1.s_level.current if hasattr(consciousness_state.tier1, 's_level') else 3.0
 
     # Find matching signatures
     matching_signatures = signature_library.find_signatures_for_goal(goal, current_s_level)
