@@ -970,36 +970,22 @@ SECTION 5: FIRST STEPS
                                                     url = r.get("url", r.get("link", "N/A"))
                                                     articulation_logger.debug(f"[ARTICULATION SEARCH]   - {title}: {url}")
 
-                                # Extract text from streaming response
+                                # Extract text from streaming response - ONLY handle delta events
+                                # Do NOT handle final/complete events to avoid duplication
                                 if isinstance(data, dict):
                                     event_type = data.get("type", "")
 
-                                    # Handle various OpenAI Responses API formats
+                                    # ONLY handle incremental delta events - ignore complete/done events
                                     if event_type == "response.output_text.delta":
+                                        # Primary OpenAI Responses API streaming format
                                         if "delta" in data:
                                             yield data["delta"]
                                     elif event_type == "response.content_part.delta":
                                         if "delta" in data and "text" in data["delta"]:
                                             yield data["delta"]["text"]
-                                    elif event_type == "content_block_delta":
-                                        delta = data.get("delta", {})
-                                        if "text" in delta:
-                                            yield delta["text"]
-                                    elif "delta" in data:
-                                        delta = data.get("delta", {})
-                                        if isinstance(delta, dict) and "text" in delta:
-                                            yield delta["text"]
-                                        elif isinstance(delta, str):
-                                            yield delta
-                                    elif "output_text" in data:
-                                        yield data["output_text"]
-                                    elif "text" in data and isinstance(data["text"], str):
-                                        yield data["text"]
+                                    # Skip all other events - they contain duplicates or metadata
                                     elif event_type and "error" in event_type.lower():
                                         articulation_logger.error(f"[STREAM ERROR] {data}")
-                                    elif event_type and event_type not in ["response.created", "response.in_progress",
-                                        "response.output_text.done", "response.done", "response.completed"]:
-                                        articulation_logger.debug(f"[STREAM EVENT] Unhandled type: {event_type}")
                             except json.JSONDecodeError:
                                 continue
 
@@ -1124,13 +1110,13 @@ Provide a deep, transformative response that:
                             break
                         try:
                             data = json.loads(data_str)
-                            # Extract text from streaming response
-                            if "delta" in data:
-                                delta = data.get("delta", {})
-                                if "text" in delta:
-                                    yield delta["text"]
-                            elif "output_text" in data:
-                                yield data["output_text"]
+                            # ONLY handle delta events to avoid duplication
+                            event_type = data.get("type", "") if isinstance(data, dict) else ""
+                            if event_type == "response.output_text.delta" and "delta" in data:
+                                yield data["delta"]
+                            elif event_type == "response.content_part.delta":
+                                if "delta" in data and "text" in data["delta"]:
+                                    yield data["delta"]["text"]
                         except json.JSONDecodeError:
                             continue
 
@@ -1980,12 +1966,13 @@ Provide transformation guidance that:
                             break
                         try:
                             data = json.loads(data_str)
-                            if "delta" in data:
-                                delta = data.get("delta", {})
-                                if "text" in delta:
-                                    yield delta["text"]
-                            elif "output_text" in data:
-                                yield data["output_text"]
+                            # ONLY handle delta events to avoid duplication
+                            event_type = data.get("type", "") if isinstance(data, dict) else ""
+                            if event_type == "response.output_text.delta" and "delta" in data:
+                                yield data["delta"]
+                            elif event_type == "response.content_part.delta":
+                                if "delta" in data and "text" in data["delta"]:
+                                    yield data["delta"]["text"]
                         except json.JSONDecodeError:
                             continue
 
