@@ -725,18 +725,35 @@ SECTION 5: FIRST STEPS
 
                             # Extract text from streaming response
                             if isinstance(data, dict):
-                                if "delta" in data:
+                                event_type = data.get("type", "")
+
+                                # Handle various OpenAI Responses API formats
+                                if event_type == "response.output_text.delta":
+                                    if "delta" in data:
+                                        yield data["delta"]
+                                elif event_type == "response.content_part.delta":
+                                    if "delta" in data and "text" in data["delta"]:
+                                        yield data["delta"]["text"]
+                                elif event_type == "content_block_delta":
+                                    delta = data.get("delta", {})
+                                    if "text" in delta:
+                                        yield delta["text"]
+                                elif "delta" in data:
                                     delta = data.get("delta", {})
                                     if isinstance(delta, dict) and "text" in delta:
                                         yield delta["text"]
+                                    elif isinstance(delta, str):
+                                        yield delta
                                 elif "output_text" in data:
                                     yield data["output_text"]
-                                # Handle Responses API format
-                                elif "type" in data and data.get("type") == "response.output_text.delta":
-                                    if "delta" in data:
-                                        yield data["delta"]
-                                elif "type" in data and data.get("type") == "response.output_text.done":
-                                    pass  # End of text output
+                                elif "text" in data and isinstance(data["text"], str):
+                                    yield data["text"]
+                                elif event_type and "error" in event_type.lower():
+                                    articulation_logger.error(f"[STREAM ERROR] {data}")
+                                # Log unhandled events at debug level for diagnosis
+                                elif event_type and event_type not in ["response.created", "response.in_progress",
+                                    "response.output_text.done", "response.done", "response.completed"]:
+                                    articulation_logger.debug(f"[STREAM EVENT] Unhandled type: {event_type}")
                         except json.JSONDecodeError:
                             continue
 
@@ -1298,7 +1315,7 @@ async def run_reverse_mapping_for_articulation(
     reverse_logger.debug(f"[REVERSE MAPPING] Extracted {len(current_operators)} current operators")
 
     # Get current S-level from consciousness state
-    current_s_level = consciousness_state.tier1.s_level.current if hasattr(consciousness_state.tier1, 's_level') else 3.0
+    current_s_level = consciousness_state.tier1.s_level.current
     reverse_logger.info(f"[REVERSE MAPPING] Current S-Level: {current_s_level:.1f}")
 
     # Find matching signatures
@@ -1308,7 +1325,7 @@ async def run_reverse_mapping_for_articulation(
 
     if matching_signatures:
         primary_signature = matching_signatures[0]
-        reverse_logger.debug(f"[REVERSE MAPPING] Using signature: {primary_signature.name if hasattr(primary_signature, 'name') else 'primary'}")
+        reverse_logger.debug(f"[REVERSE MAPPING] Using signature: {primary_signature.name}")
         required_operators = primary_signature.operator_minimums.copy()
         for op, max_val in primary_signature.operator_maximums.items():
             if op not in required_operators or required_operators[op] > max_val:
@@ -1368,14 +1385,14 @@ async def run_reverse_mapping_for_articulation(
     )
     reverse_logger.info(f"[REVERSE MAPPING] MVT: {mvt.total_operators_changed} operators, efficiency={mvt.mvt_efficiency:.2f}")
     for change in mvt.changes[:3]:
-        reverse_logger.debug(f"  - {change.operator}: {change.current_value:.2f} → {change.required_value:.2f}")
+        reverse_logger.debug(f"  - {change.operator}: {change.current_value:.2f} → {change.target_value:.2f}")
 
     # Analyze death requirements
     reverse_logger.debug("[REVERSE MAPPING] Analyzing death requirements...")
     death_sequence = death_sequencer.analyze_death_requirements(
         current_operators, required_operators, goal
     )
-    death_count = len(death_sequence.required_deaths) if hasattr(death_sequence, 'required_deaths') else 0
+    death_count = len(death_sequence.deaths_required)
     reverse_logger.info(f"[REVERSE MAPPING] Death sequence: {death_count} identity deaths required")
 
     # Calculate grace requirements
