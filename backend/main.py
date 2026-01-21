@@ -91,7 +91,7 @@ MODEL_CONFIGS = {
         "endpoint": "https://api.anthropic.com/v1/messages",
         "streaming_endpoint": "https://api.anthropic.com/v1/messages",
     },
-    "claude-sonnet-4-5-20241022": {
+    "claude-sonnet-4-20250514": {
         "provider": "anthropic",
         "api_key": ANTHROPIC_API_KEY,
         "endpoint": "https://api.anthropic.com/v1/messages",
