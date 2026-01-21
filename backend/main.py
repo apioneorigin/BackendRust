@@ -67,10 +67,40 @@ load_dotenv()
 # Initialize FastAPI app
 app = FastAPI(title="Reality Transformer", version="4.1.0")
 
-# OpenAI Configuration
+# API Configuration - Multi-model support
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-OPENAI_MODEL = "gpt-5.2"  # Single model used across all calls
-OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses"
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+
+# Model configurations
+MODEL_CONFIGS = {
+    "gpt-5.2": {
+        "provider": "openai",
+        "api_key": OPENAI_API_KEY,
+        "endpoint": "https://api.openai.com/v1/responses",
+        "streaming_endpoint": "https://api.openai.com/v1/responses",
+    },
+    "gpt-4.1-mini": {
+        "provider": "openai",
+        "api_key": OPENAI_API_KEY,
+        "endpoint": "https://api.openai.com/v1/responses",
+        "streaming_endpoint": "https://api.openai.com/v1/responses",
+    },
+    "claude-3-haiku-20240307": {
+        "provider": "anthropic",
+        "api_key": ANTHROPIC_API_KEY,
+        "endpoint": "https://api.anthropic.com/v1/messages",
+        "streaming_endpoint": "https://api.anthropic.com/v1/messages",
+    },
+}
+
+DEFAULT_MODEL = "gpt-5.2"
+
+def get_model_config(model: str) -> dict:
+    """Get configuration for a specific model"""
+    if model not in MODEL_CONFIGS:
+        api_logger.warning(f"Unknown model {model}, falling back to {DEFAULT_MODEL}")
+        model = DEFAULT_MODEL
+    return {"model": model, **MODEL_CONFIGS[model]}
 
 # Initialize inference engine
 REGISTRY_PATH = Path(__file__).parent.parent / "registry.json"
@@ -118,18 +148,23 @@ async def serve_frontend():
 
 
 @app.get("/api/run")
-async def run_inference(prompt: str = Query(..., description="User query")):
+async def run_inference(
+    prompt: str = Query(..., description="User query"),
+    model: str = Query(DEFAULT_MODEL, description="Model to use for inference")
+):
     """
     Main SSE endpoint for running inference
     Flow: Web Research + Parse Query -> Run Inference -> Format Results -> Stream Response
     """
+    model_config = get_model_config(model)
+    api_logger.info(f"[MODEL] Using {model_config['model']} ({model_config['provider']})")
     return EventSourceResponse(
-        inference_stream(prompt),
+        inference_stream(prompt, model_config),
         media_type="text/event-stream"
     )
 
 
-async def inference_stream(prompt: str) -> AsyncGenerator[dict, None]:
+async def inference_stream(prompt: str, model_config: dict) -> AsyncGenerator[dict, None]:
     """Generate SSE events for the inference pipeline with evidence enrichment and optional reverse mapping"""
     start_time = time.time()
 
@@ -150,7 +185,7 @@ async def inference_stream(prompt: str) -> AsyncGenerator[dict, None]:
             "data": json.dumps({"message": "Researching context and parsing query..."})
         }
 
-        evidence = await parse_query_with_web_research(prompt)
+        evidence = await parse_query_with_web_research(prompt, model_config)
         obs_count = len(evidence.get('observations', []))
         api_logger.info(f"[EVIDENCE] Extracted {obs_count} observations")
         api_logger.debug(f"[EVIDENCE] Goal: {evidence.get('goal', 'N/A')}")
@@ -333,7 +368,7 @@ async def inference_stream(prompt: str) -> AsyncGenerator[dict, None]:
 
         token_count = 0
         async for token in format_results_streaming_bridge(
-            prompt, evidence, posteriors, consciousness_state, reverse_mapping_data
+            prompt, evidence, posteriors, consciousness_state, reverse_mapping_data, model_config
         ):
             token_count += 1
             yield {
@@ -368,17 +403,22 @@ async def inference_stream(prompt: str) -> AsyncGenerator[dict, None]:
         }
 
 
-async def parse_query_with_web_research(prompt: str) -> dict:
+async def parse_query_with_web_research(prompt: str, model_config: dict) -> dict:
     """
-    Use OpenAI Responses API with web_search tool to:
+    Use LLM API with web_search tool to:
     1. Research relevant context about user's query
     2. Calculate optimal tier-1 operator values using OOF Framework
 
     Returns structured evidence for inference engine
+    Supports both OpenAI and Anthropic providers.
     """
+    provider = model_config.get("provider", "openai")
+    api_key = model_config.get("api_key")
+    model = model_config.get("model")
 
-    if not OPENAI_API_KEY:
+    if not api_key:
         # Fallback: simple keyword extraction
+        api_logger.warning(f"No API key for {provider}, using fallback")
         return {
             "user_identity": "User",
             "goal": prompt,
@@ -449,63 +489,98 @@ Return ONLY valid JSON (no markdown, no explanation) with this structure:
   "relevant_oof_components": ["Sacred Chain", "Cascade", "UCB", etc.]
 }}"""
 
-    request_body = {
-        "model": OPENAI_MODEL,
-        "instructions": instructions,
-        "input": [{
-            "type": "message",
-            "role": "user",
-            "content": [{"type": "input_text", "text": f"User query:\n{prompt}"}]
-        }],
-        "tools": [{
-            "type": "web_search",
-            "user_location": {"type": "approximate", "timezone": "UTC"}
-        }],
-        "tool_choice": "auto"
-    }
-
     try:
         async with httpx.AsyncClient(timeout=120.0) as client:
-            response = await client.post(
-                OPENAI_RESPONSES_URL,
-                headers={
-                    "Authorization": f"Bearer {OPENAI_API_KEY}",
+            if provider == "anthropic":
+                # Anthropic Claude API
+                request_body = {
+                    "model": model,
+                    "max_tokens": 4096,
+                    "system": instructions,
+                    "messages": [{
+                        "role": "user",
+                        "content": f"User query:\n{prompt}"
+                    }]
+                }
+                headers = {
+                    "x-api-key": api_key,
+                    "anthropic-version": "2023-06-01",
                     "Content-Type": "application/json"
-                },
-                json=request_body
-            )
+                }
+                endpoint = model_config.get("endpoint")
 
-            if response.status_code != 200:
-                api_logger.error(f"OpenAI API error: {response.status_code} - {response.text}")
-                raise Exception(f"OpenAI API error: {response.status_code}")
+                response = await client.post(endpoint, headers=headers, json=request_body)
 
-            data = response.json()
+                if response.status_code != 200:
+                    api_logger.error(f"Anthropic API error: {response.status_code} - {response.text}")
+                    raise Exception(f"Anthropic API error: {response.status_code}")
 
-            # Extract response text from Responses API format
-            output = data.get("output", [])
-            msg = next((o for o in output if o.get("type") == "message" and o.get("role") == "assistant"), None)
+                data = response.json()
+                # Extract text from Anthropic response
+                content = data.get("content", [])
+                response_text = ""
+                for block in content:
+                    if block.get("type") == "text":
+                        response_text += block.get("text", "")
 
-            if msg:
-                content = msg.get("content", [])
-                text_part = next((c for c in content if c.get("type") == "output_text"), None)
-                if text_part:
-                    response_text = text_part.get("text", "")
-                    # Parse JSON from response
-                    # Try to extract JSON if wrapped in markdown
-                    if "```json" in response_text:
-                        json_match = response_text.split("```json")[1].split("```")[0]
-                        return json.loads(json_match.strip())
-                    elif "```" in response_text:
-                        json_match = response_text.split("```")[1].split("```")[0]
-                        return json.loads(json_match.strip())
-                    else:
-                        return json.loads(response_text.strip())
+            else:
+                # OpenAI Responses API
+                request_body = {
+                    "model": model,
+                    "instructions": instructions,
+                    "input": [{
+                        "type": "message",
+                        "role": "user",
+                        "content": [{"type": "input_text", "text": f"User query:\n{prompt}"}]
+                    }],
+                    "tools": [{
+                        "type": "web_search",
+                        "user_location": {"type": "approximate", "timezone": "UTC"}
+                    }],
+                    "tool_choice": "auto"
+                }
+                headers = {
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json"
+                }
+                endpoint = model_config.get("endpoint")
 
-            # If we couldn't parse, try output_text directly
-            if "output_text" in data:
-                return json.loads(data["output_text"])
+                response = await client.post(endpoint, headers=headers, json=request_body)
 
-            raise Exception("Could not parse response from OpenAI Responses API")
+                if response.status_code != 200:
+                    api_logger.error(f"OpenAI API error: {response.status_code} - {response.text}")
+                    raise Exception(f"OpenAI API error: {response.status_code}")
+
+                data = response.json()
+
+                # Extract response text from Responses API format
+                output = data.get("output", [])
+                msg = next((o for o in output if o.get("type") == "message" and o.get("role") == "assistant"), None)
+
+                response_text = ""
+                if msg:
+                    content = msg.get("content", [])
+                    text_part = next((c for c in content if c.get("type") == "output_text"), None)
+                    if text_part:
+                        response_text = text_part.get("text", "")
+
+                # If we couldn't get text from message, try output_text directly
+                if not response_text and "output_text" in data:
+                    response_text = data["output_text"]
+
+            # Parse JSON from response text (common for both providers)
+            if not response_text:
+                raise Exception("Empty response from API")
+
+            # Try to extract JSON if wrapped in markdown
+            if "```json" in response_text:
+                json_match = response_text.split("```json")[1].split("```")[0]
+                return json.loads(json_match.strip())
+            elif "```" in response_text:
+                json_match = response_text.split("```")[1].split("```")[0]
+                return json.loads(json_match.strip())
+            else:
+                return json.loads(response_text.strip())
 
     except json.JSONDecodeError as e:
         api_logger.error(f"JSON parse error: {e}")
@@ -520,7 +595,7 @@ Return ONLY valid JSON (no markdown, no explanation) with this structure:
             "targets": ["Transformation", "Grace", "Karma"]
         }
     except Exception as e:
-        api_logger.error(f"OpenAI Responses API error: {e}")
+        api_logger.error(f"API error ({provider}): {e}")
         # Fallback
         return {
             "user_identity": "User",
@@ -538,7 +613,8 @@ async def format_results_streaming_bridge(
     evidence: dict,
     posteriors: dict,
     consciousness_state: ConsciousnessState,
-    reverse_mapping: Optional[Dict[str, Any]] = None
+    reverse_mapping: Optional[Dict[str, Any]] = None,
+    model_config: Optional[dict] = None
 ) -> AsyncGenerator[str, None]:
     """
     Unified articulation with evidence enrichment and optional reverse mapping.
@@ -549,21 +625,28 @@ async def format_results_streaming_bridge(
     3. Integrates reverse mapping data when available (future-oriented queries)
     4. Produces natural, domain-appropriate insights
     """
+    # Get model config
+    if model_config is None:
+        model_config = get_model_config(DEFAULT_MODEL)
+
+    provider = model_config.get("provider", "openai")
+    api_key = model_config.get("api_key")
+    model = model_config.get("model")
 
     # Log what's being sent to LLM for articulation
     bottleneck_count = len(consciousness_state.bottlenecks)
     leverage_count = len(consciousness_state.leverage_points)
     has_reverse_mapping = reverse_mapping is not None
-    articulation_logger.info(f"[ARTICULATION BRIDGE] Sending to {OPENAI_MODEL}:")
+    articulation_logger.info(f"[ARTICULATION BRIDGE] Sending to {model} ({provider}):")
     articulation_logger.info(f"  - Bottlenecks: {bottleneck_count}")
     articulation_logger.info(f"  - Leverage points: {leverage_count}")
     articulation_logger.info(f"  - Reverse mapping: {has_reverse_mapping}")
     articulation_logger.debug(f"  - S-Level: {consciousness_state.tier1.s_level.current:.1f}")
     articulation_logger.debug(f"  - Domain: {evidence.get('domain', 'general')}")
 
-    if not OPENAI_API_KEY:
-        # Fallback: format results without OpenAI
-        articulation_logger.warning("[ARTICULATION BRIDGE] No OpenAI API key - using fallback")
+    if not api_key:
+        # Fallback: format results without API
+        articulation_logger.warning(f"[ARTICULATION BRIDGE] No API key for {provider} - using fallback")
         fallback_text = format_results_fallback(prompt, evidence, posteriors)
         for word in fallback_text.split():
             yield word + " "
@@ -765,113 +848,156 @@ SECTION 5: FIRST STEPS
 - Respect current capacity - don't overwhelm
 === END RESPONSE STRUCTURE ==="""
 
-    request_body = {
-        "model": OPENAI_MODEL,
-        "instructions": instructions,
-        "input": [{
-            "type": "message",
-            "role": "user",
-            "content": [{"type": "input_text", "text": articulation_prompt}]
-        }],
-        "temperature": 0.85,  # Higher for natural articulation
-        "stream": True,
-        "tools": [{
-            "type": "web_search",
-            "user_location": {"type": "approximate", "timezone": "UTC"}
-        }],
-        "tool_choice": "auto"
-    }
-
     try:
         async with httpx.AsyncClient(timeout=180.0) as client:
-            async with client.stream(
-                "POST",
-                OPENAI_RESPONSES_URL,
-                headers={
-                    "Authorization": f"Bearer {OPENAI_API_KEY}",
+            if provider == "anthropic":
+                # Anthropic Claude streaming API
+                request_body = {
+                    "model": model,
+                    "max_tokens": 4096,
+                    "system": instructions,
+                    "messages": [{
+                        "role": "user",
+                        "content": articulation_prompt
+                    }],
+                    "stream": True
+                }
+                headers = {
+                    "x-api-key": api_key,
+                    "anthropic-version": "2023-06-01",
                     "Content-Type": "application/json"
-                },
-                json=request_body
-            ) as response:
-                if response.status_code != 200:
-                    error_text = await response.aread()
-                    api_logger.error(f"OpenAI streaming error: {response.status_code} - {error_text}")
-                    raise Exception(f"OpenAI API error: {response.status_code}")
+                }
+                endpoint = model_config.get("streaming_endpoint")
 
-                async for line in response.aiter_lines():
-                    if line.startswith("data: "):
-                        data_str = line[6:]
-                        if data_str == "[DONE]":
-                            break
-                        try:
-                            data = json.loads(data_str)
+                async with client.stream("POST", endpoint, headers=headers, json=request_body) as response:
+                    if response.status_code != 200:
+                        error_text = await response.aread()
+                        api_logger.error(f"Anthropic streaming error: {response.status_code} - {error_text}")
+                        raise Exception(f"Anthropic API error: {response.status_code}")
 
-                            # Log evidence searches and results (with type safety)
-                            if isinstance(data, dict):
-                                # Log web search queries
-                                if "tool_calls" in data:
-                                    tool_calls = data.get("tool_calls", [])
-                                    if isinstance(tool_calls, list):
-                                        for tool in tool_calls:
-                                            if isinstance(tool, dict) and tool.get("type") == "web_search":
-                                                query = tool.get("query", "")
-                                                if not query and "arguments" in tool:
-                                                    args = tool.get("arguments", {})
-                                                    if isinstance(args, dict):
-                                                        query = args.get("query", "")
-                                                if query:
-                                                    articulation_logger.info(f"[ARTICULATION SEARCH] Query: {query}")
+                    async for line in response.aiter_lines():
+                        if line.startswith("data: "):
+                            data_str = line[6:]
+                            if data_str == "[DONE]":
+                                break
+                            try:
+                                data = json.loads(data_str)
+                                if isinstance(data, dict):
+                                    event_type = data.get("type", "")
+                                    # Handle Anthropic streaming events
+                                    if event_type == "content_block_delta":
+                                        delta = data.get("delta", {})
+                                        if delta.get("type") == "text_delta":
+                                            yield delta.get("text", "")
+                                    elif event_type == "message_delta":
+                                        # End of message
+                                        pass
+                            except json.JSONDecodeError:
+                                continue
 
-                                # Log web search results for grounding
-                                event_type = data.get("type", "")
-                                if event_type == "web_search_call" or "web_search" in str(data.get("tool", "")):
-                                    articulation_logger.debug(f"[ARTICULATION SEARCH] Initiated web search")
-                                if "search_results" in data or "results" in data:
-                                    results = data.get("search_results", data.get("results", []))
-                                    if isinstance(results, list) and results:
-                                        articulation_logger.info(f"[ARTICULATION SEARCH] Retrieved {len(results)} results")
-                                        for r in results[:3]:  # Log first 3 results
-                                            if isinstance(r, dict):
-                                                title = r.get("title", r.get("name", "Unknown"))
-                                                url = r.get("url", r.get("link", "N/A"))
-                                                articulation_logger.debug(f"[ARTICULATION SEARCH]   - {title}: {url}")
+            else:
+                # OpenAI Responses API streaming
+                request_body = {
+                    "model": model,
+                    "instructions": instructions,
+                    "input": [{
+                        "type": "message",
+                        "role": "user",
+                        "content": [{"type": "input_text", "text": articulation_prompt}]
+                    }],
+                    "temperature": 0.85,
+                    "stream": True,
+                    "tools": [{
+                        "type": "web_search",
+                        "user_location": {"type": "approximate", "timezone": "UTC"}
+                    }],
+                    "tool_choice": "auto"
+                }
+                headers = {
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json"
+                }
+                endpoint = model_config.get("streaming_endpoint")
 
-                            # Extract text from streaming response
-                            if isinstance(data, dict):
-                                event_type = data.get("type", "")
+                async with client.stream("POST", endpoint, headers=headers, json=request_body) as response:
+                    if response.status_code != 200:
+                        error_text = await response.aread()
+                        api_logger.error(f"OpenAI streaming error: {response.status_code} - {error_text}")
+                        raise Exception(f"OpenAI API error: {response.status_code}")
 
-                                # Handle various OpenAI Responses API formats
-                                if event_type == "response.output_text.delta":
-                                    if "delta" in data:
-                                        yield data["delta"]
-                                elif event_type == "response.content_part.delta":
-                                    if "delta" in data and "text" in data["delta"]:
-                                        yield data["delta"]["text"]
-                                elif event_type == "content_block_delta":
-                                    delta = data.get("delta", {})
-                                    if "text" in delta:
-                                        yield delta["text"]
-                                elif "delta" in data:
-                                    delta = data.get("delta", {})
-                                    if isinstance(delta, dict) and "text" in delta:
-                                        yield delta["text"]
-                                    elif isinstance(delta, str):
-                                        yield delta
-                                elif "output_text" in data:
-                                    yield data["output_text"]
-                                elif "text" in data and isinstance(data["text"], str):
-                                    yield data["text"]
-                                elif event_type and "error" in event_type.lower():
-                                    articulation_logger.error(f"[STREAM ERROR] {data}")
-                                # Log unhandled events at debug level for diagnosis
-                                elif event_type and event_type not in ["response.created", "response.in_progress",
-                                    "response.output_text.done", "response.done", "response.completed"]:
-                                    articulation_logger.debug(f"[STREAM EVENT] Unhandled type: {event_type}")
-                        except json.JSONDecodeError:
-                            continue
+                    async for line in response.aiter_lines():
+                        if line.startswith("data: "):
+                            data_str = line[6:]
+                            if data_str == "[DONE]":
+                                break
+                            try:
+                                data = json.loads(data_str)
+
+                                # Log evidence searches and results (with type safety)
+                                if isinstance(data, dict):
+                                    # Log web search queries
+                                    if "tool_calls" in data:
+                                        tool_calls = data.get("tool_calls", [])
+                                        if isinstance(tool_calls, list):
+                                            for tool in tool_calls:
+                                                if isinstance(tool, dict) and tool.get("type") == "web_search":
+                                                    query = tool.get("query", "")
+                                                    if not query and "arguments" in tool:
+                                                        args = tool.get("arguments", {})
+                                                        if isinstance(args, dict):
+                                                            query = args.get("query", "")
+                                                    if query:
+                                                        articulation_logger.info(f"[ARTICULATION SEARCH] Query: {query}")
+
+                                    # Log web search results for grounding
+                                    event_type = data.get("type", "")
+                                    if event_type == "web_search_call" or "web_search" in str(data.get("tool", "")):
+                                        articulation_logger.debug(f"[ARTICULATION SEARCH] Initiated web search")
+                                    if "search_results" in data or "results" in data:
+                                        results = data.get("search_results", data.get("results", []))
+                                        if isinstance(results, list) and results:
+                                            articulation_logger.info(f"[ARTICULATION SEARCH] Retrieved {len(results)} results")
+                                            for r in results[:3]:
+                                                if isinstance(r, dict):
+                                                    title = r.get("title", r.get("name", "Unknown"))
+                                                    url = r.get("url", r.get("link", "N/A"))
+                                                    articulation_logger.debug(f"[ARTICULATION SEARCH]   - {title}: {url}")
+
+                                # Extract text from streaming response
+                                if isinstance(data, dict):
+                                    event_type = data.get("type", "")
+
+                                    # Handle various OpenAI Responses API formats
+                                    if event_type == "response.output_text.delta":
+                                        if "delta" in data:
+                                            yield data["delta"]
+                                    elif event_type == "response.content_part.delta":
+                                        if "delta" in data and "text" in data["delta"]:
+                                            yield data["delta"]["text"]
+                                    elif event_type == "content_block_delta":
+                                        delta = data.get("delta", {})
+                                        if "text" in delta:
+                                            yield delta["text"]
+                                    elif "delta" in data:
+                                        delta = data.get("delta", {})
+                                        if isinstance(delta, dict) and "text" in delta:
+                                            yield delta["text"]
+                                        elif isinstance(delta, str):
+                                            yield delta
+                                    elif "output_text" in data:
+                                        yield data["output_text"]
+                                    elif "text" in data and isinstance(data["text"], str):
+                                        yield data["text"]
+                                    elif event_type and "error" in event_type.lower():
+                                        articulation_logger.error(f"[STREAM ERROR] {data}")
+                                    elif event_type and event_type not in ["response.created", "response.in_progress",
+                                        "response.output_text.done", "response.done", "response.completed"]:
+                                        articulation_logger.debug(f"[STREAM EVENT] Unhandled type: {event_type}")
+                            except json.JSONDecodeError:
+                                continue
 
     except Exception as e:
-        api_logger.error(f"OpenAI streaming error: {e}")
+        api_logger.error(f"Streaming error ({provider}): {e}")
         fallback_text = format_results_fallback_bridge(prompt, evidence, consciousness_state)
         for word in fallback_text.split():
             yield word + " "
