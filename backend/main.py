@@ -725,18 +725,35 @@ SECTION 5: FIRST STEPS
 
                             # Extract text from streaming response
                             if isinstance(data, dict):
-                                if "delta" in data:
+                                event_type = data.get("type", "")
+
+                                # Handle various OpenAI Responses API formats
+                                if event_type == "response.output_text.delta":
+                                    if "delta" in data:
+                                        yield data["delta"]
+                                elif event_type == "response.content_part.delta":
+                                    if "delta" in data and "text" in data["delta"]:
+                                        yield data["delta"]["text"]
+                                elif event_type == "content_block_delta":
+                                    delta = data.get("delta", {})
+                                    if "text" in delta:
+                                        yield delta["text"]
+                                elif "delta" in data:
                                     delta = data.get("delta", {})
                                     if isinstance(delta, dict) and "text" in delta:
                                         yield delta["text"]
+                                    elif isinstance(delta, str):
+                                        yield delta
                                 elif "output_text" in data:
                                     yield data["output_text"]
-                                # Handle Responses API format
-                                elif "type" in data and data.get("type") == "response.output_text.delta":
-                                    if "delta" in data:
-                                        yield data["delta"]
-                                elif "type" in data and data.get("type") == "response.output_text.done":
-                                    pass  # End of text output
+                                elif "text" in data and isinstance(data["text"], str):
+                                    yield data["text"]
+                                elif event_type and "error" in event_type.lower():
+                                    articulation_logger.error(f"[STREAM ERROR] {data}")
+                                # Log unhandled events at debug level for diagnosis
+                                elif event_type and event_type not in ["response.created", "response.in_progress",
+                                    "response.output_text.done", "response.done", "response.completed"]:
+                                    articulation_logger.debug(f"[STREAM EVENT] Unhandled type: {event_type}")
                         except json.JSONDecodeError:
                             continue
 
