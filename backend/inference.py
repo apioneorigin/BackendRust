@@ -286,12 +286,24 @@ class InferenceEngine:
 
         if not operators:
             # Simple assignment or constant
-            if len(variables_used) == 1:
+            if len(variables_used) == 0:
+                # Constant formula with no variables - return default
+                return {
+                    'value': 0.5,
+                    'confidence': 0.3
+                }
+            elif len(variables_used) == 1:
                 return {
                     'value': inputs.get(variables_used[0], 0.5),
                     'confidence': min(input_confidences) if input_confidences else 0.5
                 }
-            return None
+            else:
+                # Multiple variables with no operator - compute mean (implicit combination)
+                values = list(inputs.values())
+                return {
+                    'value': sum(values) / len(values) if values else 0.5,
+                    'confidence': min(input_confidences) if input_confidences else 0.3
+                }
 
         # Compute based on dominant operator
         result = self._compute_expression(expression, inputs, operators)

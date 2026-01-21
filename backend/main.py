@@ -155,7 +155,29 @@ async def inference_stream(prompt: str) -> AsyncGenerator[dict, None]:
         api_logger.info(f"[EVIDENCE] Extracted {obs_count} observations")
         api_logger.debug(f"[EVIDENCE] Goal: {evidence.get('goal', 'N/A')}")
         api_logger.debug(f"[EVIDENCE] Domain: {evidence.get('domain', 'N/A')}")
-        pipeline_logger.log_step("Evidence Extraction", {"observations": obs_count})
+
+        # Log evidence grounding details
+        user_identity = evidence.get('user_identity', 'Unknown')
+        api_logger.info(f"[EVIDENCE] Identity assumed: {user_identity}")
+
+        search_queries = evidence.get('search_queries_used', [])
+        if search_queries:
+            api_logger.info(f"[EVIDENCE] Web searches performed: {len(search_queries)}")
+            for query in search_queries[:5]:  # Log first 5 queries
+                api_logger.debug(f"[EVIDENCE]   - Search: {query}")
+
+        key_facts = evidence.get('key_facts', [])
+        if key_facts:
+            api_logger.info(f"[EVIDENCE] Key facts extracted: {len(key_facts)}")
+            for fact in key_facts[:3]:  # Log first 3 facts
+                if isinstance(fact, dict):
+                    api_logger.debug(f"[EVIDENCE]   - Fact: {fact.get('fact', 'N/A')[:100]}...")
+
+        web_summary = evidence.get('web_research_summary', '')
+        if web_summary:
+            api_logger.info(f"[EVIDENCE] Research summary: {web_summary[:200]}...")
+
+        pipeline_logger.log_step("Evidence Extraction", {"observations": obs_count, "search_queries": len(search_queries), "key_facts": len(key_facts)})
 
         yield {
             "event": "status",
@@ -340,9 +362,22 @@ You have complete knowledge of the One Origin Framework (OOF) - a consciousness 
 === END OOF FRAMEWORK ===
 
 YOUR TASK:
-1. Use web_search to research relevant context about the user's query (industry, domain, current events, etc.)
-2. Combine web research with OOF framework knowledge
-3. Calculate the BEST POSSIBLE and MAXIMUM ACCURATE tier-1 operator values (all 25 operators)
+1. IDENTITY ASSUMPTION (CRITICAL):
+   - Assume the MOST FAMOUS/LIKELY interpretation of any name or entity
+   - "Nirma" → Nirma Ltd (Indian FMCG company, famous detergent brand, founded by Karsanbhai Patel)
+   - "Apple" → Apple Inc (technology company)
+   - "Tesla" → Tesla Inc (EV company)
+   - DO NOT ask for clarification - assume and proceed
+   - Focus on applying consciousness physics, NOT on identification
+   - The user's job is to correct if assumption is wrong
+
+2. Use web_search EXTENSIVELY to research:
+   - The assumed entity's current market position, revenue, competitors
+   - Recent news, challenges, opportunities
+   - Industry trends and dynamics
+   - Leadership, strategy, culture indicators
+
+3. Calculate ACCURATE tier-1 operator values based on REAL DATA from web search
 
 The 25 core operators (all must be calculated 0.0-1.0):
 Ψ (Consciousness), K (Karma), M (Maya), G (Grace), W (Witness),
@@ -353,17 +388,21 @@ Sa (Samskara), Bu (Buddhi), Ma (Manas), Ch (Chitta)
 
 CRITICAL: You MUST use web research to inform your operator calculations.
 For example:
-- If user asks about a company, research that company's current situation
-- If user asks about a career, research industry trends
-- If user asks about relationships, research relevant psychology/context
-- Use research to make operator values MORE ACCURATE and CONTEXTUAL
+- "I am Nirma" → Search for "Nirma Ltd market position 2024", "Nirma vs competitors", "Indian detergent market"
+- Use SPECIFIC search queries for the assumed entity
+- Make operator values reflect REAL situation from web data
+- Higher confidence when backed by web evidence
 
 Return ONLY valid JSON (no markdown, no explanation) with this structure:
 {{
-  "user_identity": "detailed description based on query + research",
+  "user_identity": "detailed description based on query + research (e.g., 'Nirma Ltd - Indian FMCG company, value detergent segment leader')",
   "goal": "their goal informed by research context",
   "s_level": "S1-S8 estimated consciousness level",
   "web_research_summary": "key insights from web research that informed calculations",
+  "search_queries_used": ["query1", "query2", ...],
+  "key_facts": [
+    {{"fact": "specific fact from research", "source": "source name", "relevance": "how it affects operators"}}
+  ],
   "observations": [
     {{"var": "Ψ", "value": 0.0-1.0, "confidence": 0.0-1.0, "reasoning": "based on query + research"}},
     {{"var": "K", "value": 0.0-1.0, "confidence": 0.0-1.0, "reasoning": "..."}},
@@ -634,6 +673,28 @@ HIGH BREAKTHROUGH PROBABILITY (0.70+):
    - Leverage points → search for opportunity evidence (partnerships, trends, alignments)
    - Integrate findings naturally into narrative flow - no "according to search" phrasing
    - Quality over quantity - search when evidence strengthens insight, not exhaustively
+
+7. CITATIONS - MANDATORY:
+   - At the END of your response, include a "Sources:" section
+   - List all web sources used with format: [Title](URL)
+   - This helps user verify and explore further
+   - Example:
+     Sources:
+     - [Nirma Ltd Annual Report 2024](https://example.com/nirma-report)
+     - [Indian FMCG Market Analysis](https://example.com/fmcg)
+
+8. NO DUPLICATION - CRITICAL:
+   - NEVER repeat content - each section must be unique
+   - Do NOT copy-paste or restate previous sections
+   - If you find yourself repeating, stop and move forward
+   - The response should be ONE continuous narrative, not repeated blocks
+
+9. IDENTITY ASSUMPTION:
+   - Assume the most likely/famous interpretation of names
+   - "Nirma" → Nirma Ltd (Indian FMCG company, detergent brand)
+   - "Apple" → Apple Inc
+   - Focus on applying consciousness physics, NOT on identification
+   - It's the user's job to clarify if the assumption is wrong
 === END ARTICULATION RULES ===
 
 === RESPONSE STRUCTURE ===
@@ -709,19 +770,35 @@ SECTION 5: FIRST STEPS
                         try:
                             data = json.loads(data_str)
 
-                            # Log evidence searches (with type safety)
-                            if isinstance(data, dict) and "tool_calls" in data:
-                                tool_calls = data.get("tool_calls", [])
-                                if isinstance(tool_calls, list):
-                                    for tool in tool_calls:
-                                        if isinstance(tool, dict) and tool.get("type") == "web_search":
-                                            query = tool.get("query", "")
-                                            if not query and "arguments" in tool:
-                                                args = tool.get("arguments", {})
-                                                if isinstance(args, dict):
-                                                    query = args.get("query", "")
-                                            if query:
-                                                print(f"[EVIDENCE SEARCH] Query: {query}")
+                            # Log evidence searches and results (with type safety)
+                            if isinstance(data, dict):
+                                # Log web search queries
+                                if "tool_calls" in data:
+                                    tool_calls = data.get("tool_calls", [])
+                                    if isinstance(tool_calls, list):
+                                        for tool in tool_calls:
+                                            if isinstance(tool, dict) and tool.get("type") == "web_search":
+                                                query = tool.get("query", "")
+                                                if not query and "arguments" in tool:
+                                                    args = tool.get("arguments", {})
+                                                    if isinstance(args, dict):
+                                                        query = args.get("query", "")
+                                                if query:
+                                                    articulation_logger.info(f"[ARTICULATION SEARCH] Query: {query}")
+
+                                # Log web search results for grounding
+                                event_type = data.get("type", "")
+                                if event_type == "web_search_call" or "web_search" in str(data.get("tool", "")):
+                                    articulation_logger.debug(f"[ARTICULATION SEARCH] Initiated web search")
+                                if "search_results" in data or "results" in data:
+                                    results = data.get("search_results", data.get("results", []))
+                                    if isinstance(results, list) and results:
+                                        articulation_logger.info(f"[ARTICULATION SEARCH] Retrieved {len(results)} results")
+                                        for r in results[:3]:  # Log first 3 results
+                                            if isinstance(r, dict):
+                                                title = r.get("title", r.get("name", "Unknown"))
+                                                url = r.get("url", r.get("link", "N/A"))
+                                                articulation_logger.debug(f"[ARTICULATION SEARCH]   - {title}: {url}")
 
                             # Extract text from streaming response
                             if isinstance(data, dict):
