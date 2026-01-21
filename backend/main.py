@@ -71,37 +71,43 @@ app = FastAPI(title="Reality Transformer", version="4.1.0")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 
-# Model configurations
+# Model configurations with pricing (per million tokens, Jan 2026)
+# Sources: OpenAI API Pricing, Anthropic Claude Pricing
 MODEL_CONFIGS = {
     "gpt-5.2": {
         "provider": "openai",
         "api_key": OPENAI_API_KEY,
         "endpoint": "https://api.openai.com/v1/responses",
         "streaming_endpoint": "https://api.openai.com/v1/responses",
+        "pricing": {"input": 2.00, "output": 8.00},  # $/million tokens
     },
     "gpt-4.1-mini": {
         "provider": "openai",
         "api_key": OPENAI_API_KEY,
         "endpoint": "https://api.openai.com/v1/responses",
         "streaming_endpoint": "https://api.openai.com/v1/responses",
+        "pricing": {"input": 0.40, "output": 1.60},  # $/million tokens
     },
     "claude-3-haiku-20240307": {
         "provider": "anthropic",
         "api_key": ANTHROPIC_API_KEY,
         "endpoint": "https://api.anthropic.com/v1/messages",
         "streaming_endpoint": "https://api.anthropic.com/v1/messages",
+        "pricing": {"input": 0.25, "output": 1.25},  # $/million tokens
     },
     "claude-sonnet-4-5-20250929": {
         "provider": "anthropic",
         "api_key": ANTHROPIC_API_KEY,
         "endpoint": "https://api.anthropic.com/v1/messages",
         "streaming_endpoint": "https://api.anthropic.com/v1/messages",
+        "pricing": {"input": 3.00, "output": 15.00},  # $/million tokens
     },
     "claude-opus-4-5-20251101": {
         "provider": "anthropic",
         "api_key": ANTHROPIC_API_KEY,
         "endpoint": "https://api.anthropic.com/v1/messages",
         "streaming_endpoint": "https://api.anthropic.com/v1/messages",
+        "pricing": {"input": 5.00, "output": 25.00},  # $/million tokens
     },
 }
 
@@ -379,18 +385,27 @@ async def inference_stream(prompt: str, model_config: dict) -> AsyncGenerator[di
         }
 
         token_count = 0
-        token_usage = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
+        token_usage = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0, "cost": 0.0}
         async for token in format_results_streaming_bridge(
             prompt, evidence, posteriors, consciousness_state, reverse_mapping_data, model_config
         ):
             # Check if this is a token usage object (yielded at end of stream)
             if isinstance(token, dict) and token.get("__token_usage__"):
+                input_tokens = token.get("input_tokens", 0)
+                output_tokens = token.get("output_tokens", 0)
+                total_tokens = token.get("total_tokens", 0)
+
+                # Calculate cost based on model pricing
+                pricing = model_config.get("pricing", {"input": 0, "output": 0})
+                cost = (input_tokens * pricing["input"] + output_tokens * pricing["output"]) / 1_000_000
+
                 token_usage = {
-                    "input_tokens": token.get("input_tokens", 0),
-                    "output_tokens": token.get("output_tokens", 0),
-                    "total_tokens": token.get("total_tokens", 0)
+                    "input_tokens": input_tokens,
+                    "output_tokens": output_tokens,
+                    "total_tokens": total_tokens,
+                    "cost": round(cost, 6)
                 }
-                api_logger.info(f"[TOKEN USAGE] Input: {token_usage['input_tokens']}, Output: {token_usage['output_tokens']}, Total: {token_usage['total_tokens']}")
+                api_logger.info(f"[TOKEN USAGE] Input: {input_tokens}, Output: {output_tokens}, Total: {total_tokens}, Cost: ${cost:.6f}")
             else:
                 token_count += 1
                 yield {
@@ -401,7 +416,7 @@ async def inference_stream(prompt: str, model_config: dict) -> AsyncGenerator[di
         api_logger.info(f"[ARTICULATION] Streamed {token_count} tokens")
         pipeline_logger.log_step("Articulation", {"tokens": token_count})
 
-        # Send token usage event
+        # Send token usage event with cost
         yield {
             "event": "usage",
             "data": json.dumps(token_usage)

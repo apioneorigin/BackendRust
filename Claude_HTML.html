@@ -296,6 +296,10 @@
             <div class="metric-label">Total</div>
             <div class="metric-value" id="totalTokens">—</div>
           </div>
+          <div class="metric">
+            <div class="metric-label">Cost</div>
+            <div class="metric-value" id="cost">—</div>
+          </div>
         </div>
       </div>
       <div id="output" class="empty-state">
@@ -358,6 +362,7 @@
       updateMetric('inputTokens', '—');
       updateMetric('outputTokens', '—');
       updateMetric('totalTokens', '—');
+      updateMetric('cost', '—');
 
       // Update UI
       document.getElementById('runBtn').disabled = true;
@@ -399,6 +404,10 @@
         updateMetric('inputTokens', data.input_tokens.toLocaleString());
         updateMetric('outputTokens', data.output_tokens.toLocaleString());
         updateMetric('totalTokens', data.total_tokens.toLocaleString());
+        // Format cost - show appropriate precision based on value
+        const cost = data.cost || 0;
+        const costStr = cost < 0.01 ? `$${cost.toFixed(4)}` : `$${cost.toFixed(2)}`;
+        updateMetric('cost', costStr);
       });
 
       eventSource.addEventListener('done', (e) => {
