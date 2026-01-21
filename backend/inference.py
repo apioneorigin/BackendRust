@@ -408,111 +408,118 @@ class InferenceEngine:
 
         # Extract operators from state for the formula modules
         operators = {k: v for k, v in state.items() if v != 0.5}
+        s_level = operators.get('S_level', operators.get('s_level', 3.0))
         logger.debug(f"[ADVANCED] Input operators: {len(operators)} non-default values")
 
-        try:
-            # Matrix Detection (7 matrices)
-            logger.debug("[ADVANCED] Running MatrixDetector...")
-            matrices = self.matrix_detector.detect_all(operators)
-            matrix_count = 0
-            for name, position in matrices.items():
-                key = f"matrix_{name}"
-                pos_val = position.position if hasattr(position, 'position') else 0.5
-                # Handle both numeric and string positions
-                if isinstance(pos_val, (int, float)):
-                    values[key] = pos_val
-                    logger.debug(f"  [MATRIX] {name}: position={pos_val:.3f}")
-                else:
-                    values[key] = str(pos_val)
-                    logger.debug(f"  [MATRIX] {name}: position={pos_val}")
-                confidence[key] = 0.8
-                matrix_count += 1
-            logger.info(f"[ADVANCED] MatrixDetector: {matrix_count} matrices computed")
+        # Matrix Detection (7 matrices) - returns Dict[str, MatrixPosition]
+        logger.debug("[ADVANCED] Running MatrixDetector...")
+        matrices = self.matrix_detector.detect_all(operators)
+        for name, position in matrices.items():
+            key = f"matrix_{name}"
+            values[key] = position.score  # MatrixPosition.score is the numeric value
+            values[f"matrix_{name}_stage"] = position.stage
+            confidence[key] = 0.8
+            logger.debug(f"  [MATRIX] {name}: stage={position.stage}, score={position.score:.3f}, position={position.position}")
+        logger.info(f"[ADVANCED] MatrixDetector: {len(matrices)} matrices computed")
 
-            # Cascade Cleanliness (7 levels)
-            logger.debug("[ADVANCED] Running CascadeCalculator...")
-            cascade = self.cascade_calculator.calculate_cascade(operators)
-            values['cascade_overall'] = cascade.overall_cleanliness
-            values['cascade_flow'] = cascade.flow_efficiency
-            confidence['cascade_overall'] = 0.85
-            confidence['cascade_flow'] = 0.85
-            logger.info(f"[ADVANCED] Cascade: overall={cascade.overall_cleanliness:.3f}, flow={cascade.flow_efficiency:.3f}")
-            for level in cascade.levels:
-                key = f"cascade_{level.name.lower()}"
-                values[key] = level.cleanliness
-                confidence[key] = 0.8
-                logger.debug(f"  [CASCADE] {level.name}: cleanliness={level.cleanliness:.3f}")
+        # Cascade Cleanliness (7 levels) - returns CascadeState
+        logger.debug("[ADVANCED] Running CascadeCalculator...")
+        cascade = self.cascade_calculator.calculate_cascade(operators)
+        values['cascade_overall'] = cascade.overall_cleanliness
+        values['cascade_flow'] = cascade.flow_efficiency
+        confidence['cascade_overall'] = 0.85
+        confidence['cascade_flow'] = 0.85
+        logger.info(f"[ADVANCED] Cascade: overall={cascade.overall_cleanliness:.3f}, flow={cascade.flow_efficiency:.3f}")
+        for level in cascade.levels:
+            key = f"cascade_{level.name.lower()}"
+            values[key] = level.cleanliness
+            confidence[key] = 0.8
+            logger.debug(f"  [CASCADE] {level.name}: cleanliness={level.cleanliness:.3f}")
 
-            # Emotion Analysis (29 emotions)
-            logger.debug("[ADVANCED] Running EmotionAnalyzer...")
-            emotions = self.emotion_analyzer.analyze(operators)
-            values['emotion_dominant'] = emotions.dominant_rasa_intensity if hasattr(emotions, 'dominant_rasa_intensity') else 0.5
-            values['emotion_stability'] = emotions.emotional_stability if hasattr(emotions, 'emotional_stability') else 0.5
-            confidence['emotion_dominant'] = 0.75
-            confidence['emotion_stability'] = 0.75
-            dominant_rasa = emotions.dominant_rasa if hasattr(emotions, 'dominant_rasa') else 'unknown'
-            logger.info(f"[ADVANCED] Emotions: dominant={dominant_rasa}, intensity={values['emotion_dominant']:.3f}, stability={values['emotion_stability']:.3f}")
+        # Emotion Analysis (29 emotions) - returns EmotionalProfile
+        logger.debug("[ADVANCED] Running EmotionAnalyzer...")
+        emotions = self.emotion_analyzer.analyze(operators)
+        dominant_rasa = emotions.dominant_rasa
+        dominant_intensity = emotions.rasas[dominant_rasa].intensity if dominant_rasa in emotions.rasas else 0.5
+        values['emotion_dominant'] = dominant_intensity
+        values['emotion_coherence'] = emotions.emotional_coherence
+        confidence['emotion_dominant'] = 0.75
+        confidence['emotion_coherence'] = 0.75
+        logger.info(f"[ADVANCED] Emotions: dominant={dominant_rasa}, intensity={dominant_intensity:.3f}, coherence={emotions.emotional_coherence:.3f}")
 
-            # Death Architecture Detection (7 types)
-            logger.debug("[ADVANCED] Running DeathArchitectureDetector...")
-            death = self.death_detector.detect_all(operators)
-            death_is_active = len(death.active_deaths) > 0
-            values['death_active'] = 1.0 if death_is_active else 0.0
-            values['death_integration'] = death.overall_transformation_depth if hasattr(death, 'overall_transformation_depth') else 0.5
-            confidence['death_active'] = 0.9
-            confidence['death_integration'] = 0.8
-            active_type = death.primary_death if death.primary_death else 'none'
-            logger.info(f"[ADVANCED] Death: active={death_is_active}, type={active_type}, integration={values['death_integration']:.3f}")
+        # Death Architecture Detection (7 types) - returns DeathArchitectureState
+        logger.debug("[ADVANCED] Running DeathArchitectureDetector...")
+        death = self.death_detector.detect_all(operators)
+        death_is_active = len(death.active_deaths) > 0
+        values['death_active'] = 1.0 if death_is_active else 0.0
+        values['death_integration'] = death.overall_transformation_depth
+        values['void_tolerance'] = death.void_tolerance
+        values['rebirth_readiness'] = death.rebirth_readiness
+        confidence['death_active'] = 0.9
+        confidence['death_integration'] = 0.8
+        confidence['void_tolerance'] = 0.8
+        confidence['rebirth_readiness'] = 0.8
+        active_type = death.primary_death if death.primary_death else 'none'
+        logger.info(f"[ADVANCED] Death: active={death_is_active}, type={active_type}, integration={death.overall_transformation_depth:.3f}")
 
-            # Grace/Karma Dynamics (12 formulas)
-            logger.debug("[ADVANCED] Running GraceKarmaDynamics...")
-            dynamics = self.dynamics_calculator.calculate_all(operators)
-            values['grace_availability'] = dynamics.grace_state.availability if hasattr(dynamics.grace_state, 'availability') else 0.5
-            values['karma_burn_rate'] = dynamics.karma_state.burn_rate if hasattr(dynamics.karma_state, 'burn_rate') else 0.5
-            values['dharmic_alignment'] = dynamics.dharmic_alignment if hasattr(dynamics, 'dharmic_alignment') else 0.5
-            confidence['grace_availability'] = 0.8
-            confidence['karma_burn_rate'] = 0.8
-            confidence['dharmic_alignment'] = 0.85
-            logger.info(f"[ADVANCED] Dynamics: grace={values['grace_availability']:.3f}, karma_burn={values['karma_burn_rate']:.3f}, dharma={values['dharmic_alignment']:.3f}")
+        # Grace/Karma Dynamics (12 formulas) - returns DynamicsState
+        logger.debug("[ADVANCED] Running GraceKarmaDynamics...")
+        dynamics = self.dynamics_calculator.calculate_all(operators)
+        values['grace_availability'] = dynamics.grace.availability
+        values['grace_effectiveness'] = dynamics.grace.effectiveness
+        values['karma_burn_rate'] = dynamics.karma.burn_rate
+        values['karma_net_change'] = dynamics.karma.net_change
+        values['grace_karma_ratio'] = dynamics.grace_karma_ratio
+        values['transformation_momentum'] = dynamics.transformation_momentum
+        confidence['grace_availability'] = 0.8
+        confidence['grace_effectiveness'] = 0.8
+        confidence['karma_burn_rate'] = 0.8
+        confidence['karma_net_change'] = 0.8
+        confidence['grace_karma_ratio'] = 0.85
+        confidence['transformation_momentum'] = 0.85
+        logger.info(f"[ADVANCED] Dynamics: grace={dynamics.grace.availability:.3f}, karma_burn={dynamics.karma.burn_rate:.3f}, ratio={dynamics.grace_karma_ratio:.3f}")
 
-            # Network Emergence (8 formulas)
-            logger.debug("[ADVANCED] Running NetworkEmergenceCalculator...")
-            network = self.network_calculator.calculate_network_state(
-                n_participants=1,
-                avg_coherence=operators.get('Coherence', 0.5),
-                avg_resonance=operators.get('Resonance', 0.5)
-            )
-            values['network_emergence'] = network.emergence_potential if hasattr(network, 'emergence_potential') else 0.5
-            values['network_field_strength'] = network.field_strength if hasattr(network, 'field_strength') else 0.5
-            confidence['network_emergence'] = 0.7
-            confidence['network_field_strength'] = 0.7
-            logger.info(f"[ADVANCED] Network: emergence={values['network_emergence']:.3f}, field_strength={values['network_field_strength']:.3f}")
+        # Network Emergence (8 formulas) - returns NetworkState
+        logger.debug("[ADVANCED] Running NetworkEmergenceCalculator...")
+        coherence_val = operators.get('Co_coherence', operators.get('Coherence', 0.5))
+        network = self.network_calculator.calculate_network_state(
+            individual_coherence=coherence_val,
+            individual_s_level=s_level,
+            connected_nodes=1
+        )
+        values['network_emergence'] = network.collective_breakthrough_prob
+        values['network_field_strength'] = network.morphic_field_strength
+        values['network_coherence_multiplier'] = network.coherence_multiplier
+        values['network_critical_mass'] = network.critical_mass_proximity
+        confidence['network_emergence'] = 0.7
+        confidence['network_field_strength'] = 0.7
+        confidence['network_coherence_multiplier'] = 0.7
+        confidence['network_critical_mass'] = 0.7
+        logger.info(f"[ADVANCED] Network: emergence={network.collective_breakthrough_prob:.3f}, field={network.morphic_field_strength:.3f}")
 
-            # Quantum Mechanics (15 formulas)
-            logger.debug("[ADVANCED] Running QuantumMechanics...")
-            quantum = self.quantum_calculator.calculate_quantum_state(operators)
-            values['quantum_coherence'] = quantum.coherence if hasattr(quantum, 'coherence') else 0.5
-            values['quantum_tunneling'] = quantum.tunneling_probability if hasattr(quantum, 'tunneling_probability') else 0.5
-            confidence['quantum_coherence'] = 0.7
-            confidence['quantum_tunneling'] = 0.7
-            logger.info(f"[ADVANCED] Quantum: coherence={values['quantum_coherence']:.3f}, tunneling={values['quantum_tunneling']:.3f}")
+        # Quantum Mechanics (15 formulas) - returns QuantumState
+        logger.debug("[ADVANCED] Running QuantumMechanics...")
+        quantum = self.quantum_calculator.calculate_quantum_state(operators, s_level)
+        values['quantum_coherence_time'] = quantum.coherence_time
+        values['quantum_tunneling'] = quantum.tunneling_probability
+        values['quantum_entanglement'] = quantum.entanglement_strength
+        values['quantum_collapse_readiness'] = quantum.collapse_readiness
+        confidence['quantum_coherence_time'] = 0.7
+        confidence['quantum_tunneling'] = 0.7
+        confidence['quantum_entanglement'] = 0.7
+        confidence['quantum_collapse_readiness'] = 0.7
+        logger.info(f"[ADVANCED] Quantum: coherence_time={quantum.coherence_time:.3f}, tunneling={quantum.tunneling_probability:.3f}")
 
-            # Realism Engine (60 types)
-            logger.debug("[ADVANCED] Running RealismEngine...")
-            s_level = operators.get('S_level', operators.get('s_level', 3.0))
-            realism = self.realism_engine.calculate_realism_profile(operators, s_level)
-            values['realism_primary'] = realism.primary_score if hasattr(realism, 'primary_score') else 0.5
-            values['realism_blend'] = realism.blend_coherence if hasattr(realism, 'blend_coherence') else 0.5
-            confidence['realism_primary'] = 0.8
-            confidence['realism_blend'] = 0.75
-            primary_type = realism.primary_realism if hasattr(realism, 'primary_realism') else 'unknown'
-            logger.info(f"[ADVANCED] Realism: type={primary_type}, score={values['realism_primary']:.3f}, blend={values['realism_blend']:.3f}")
+        # Realism Engine (60 types) - returns RealismProfile
+        logger.debug("[ADVANCED] Running RealismEngine...")
+        realism = self.realism_engine.calculate_realism_profile(operators, s_level)
+        values['realism_dominant_weight'] = realism.dominant_weight
+        values['realism_coherence'] = realism.coherence
+        confidence['realism_dominant_weight'] = 0.8
+        confidence['realism_coherence'] = 0.75
+        logger.info(f"[ADVANCED] Realism: type={realism.dominant_realism}, weight={realism.dominant_weight:.3f}, coherence={realism.coherence:.3f}")
 
-            logger.info(f"[ADVANCED] All modules complete: {len(values)} values computed")
-
-        except Exception as e:
-            # Log but don't fail - advanced formulas are enhancement only
-            logger.error(f"[ADVANCED] Error in formula modules: {e}", exc_info=True)
+        logger.info(f"[ADVANCED] All modules complete: {len(values)} values computed")
 
         return {"values": values, "confidence": confidence}
 

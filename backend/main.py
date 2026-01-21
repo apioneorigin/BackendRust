@@ -1315,7 +1315,7 @@ async def run_reverse_mapping_for_articulation(
     reverse_logger.debug(f"[REVERSE MAPPING] Extracted {len(current_operators)} current operators")
 
     # Get current S-level from consciousness state
-    current_s_level = consciousness_state.tier1.s_level.current if hasattr(consciousness_state.tier1, 's_level') else 3.0
+    current_s_level = consciousness_state.tier1.s_level.current
     reverse_logger.info(f"[REVERSE MAPPING] Current S-Level: {current_s_level:.1f}")
 
     # Find matching signatures
@@ -1325,7 +1325,7 @@ async def run_reverse_mapping_for_articulation(
 
     if matching_signatures:
         primary_signature = matching_signatures[0]
-        reverse_logger.debug(f"[REVERSE MAPPING] Using signature: {primary_signature.name if hasattr(primary_signature, 'name') else 'primary'}")
+        reverse_logger.debug(f"[REVERSE MAPPING] Using signature: {primary_signature.name}")
         required_operators = primary_signature.operator_minimums.copy()
         for op, max_val in primary_signature.operator_maximums.items():
             if op not in required_operators or required_operators[op] > max_val:
@@ -1392,7 +1392,7 @@ async def run_reverse_mapping_for_articulation(
     death_sequence = death_sequencer.analyze_death_requirements(
         current_operators, required_operators, goal
     )
-    death_count = len(death_sequence.required_deaths) if hasattr(death_sequence, 'required_deaths') else 0
+    death_count = len(death_sequence.deaths_required)
     reverse_logger.info(f"[REVERSE MAPPING] Death sequence: {death_count} identity deaths required")
 
     # Calculate grace requirements
