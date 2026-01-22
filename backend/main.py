@@ -672,7 +672,7 @@ Return ONLY valid JSON (no markdown, no explanation) with this structure:
                                         "targets": {"type": "array", "items": {"type": "string"}},
                                         "relevant_oof_components": {"type": "array", "items": {"type": "string"}}
                                     },
-                                    "required": ["user_identity", "goal", "observations", "targets"],
+                                    "required": ["user_identity", "goal", "s_level", "web_research_summary", "search_queries_used", "key_facts", "observations", "targets", "relevant_oof_components"],
                                     "additionalProperties": False
                                 },
                                 "strict": True
