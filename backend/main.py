@@ -486,29 +486,15 @@ async def parse_query_with_web_research(prompt: str, model_config: dict) -> dict
     1. Research relevant context about user's query
     2. Calculate optimal tier-1 operator values using OOF Framework
 
-    Returns structured evidence for inference engine
-    Supports both OpenAI and Anthropic providers.
+    Returns structured evidence for inference engine.
+    Supports both OpenAI and Anthropic providers with web search.
     """
     provider = model_config.get("provider", "openai")
     api_key = model_config.get("api_key")
     model = model_config.get("model")
 
     if not api_key:
-        # Fallback with minimum required observations for validation
-        api_logger.warning(f"No API key for {provider}, using fallback")
-        return {
-            "user_identity": "User",
-            "goal": prompt,
-            "observations": [
-                {"var": "Consciousness", "value": 0.6, "confidence": 0.5},
-                {"var": "Karma", "value": 0.5, "confidence": 0.5},
-                {"var": "Grace", "value": 0.5, "confidence": 0.5},
-                {"var": "Awareness", "value": 0.6, "confidence": 0.5},
-                {"var": "Maya", "value": 0.5, "confidence": 0.5},
-                {"var": "Aspiration", "value": 0.7, "confidence": 0.6}
-            ],
-            "targets": ["Transformation", "Grace", "Karma", "NextActions"]
-        }
+        raise ValueError(f"No API key configured for provider: {provider}")
 
     instructions = f"""You are the Reality Transformer consciousness analysis engine.
 You have complete knowledge of the One Origin Framework (OOF) - a consciousness physics system.
@@ -569,136 +555,219 @@ Return ONLY valid JSON (no markdown, no explanation) with this structure:
   "relevant_oof_components": ["Sacred Chain", "Cascade", "UCB", etc.]
 }}"""
 
-    try:
-        async with httpx.AsyncClient(timeout=120.0) as client:
-            if provider == "anthropic":
-                # Anthropic Claude API
-                request_body = {
-                    "model": model,
-                    "max_tokens": 4096,
-                    "system": instructions,
-                    "messages": [{
-                        "role": "user",
-                        "content": f"User query:\n{prompt}"
-                    }]
-                }
-                headers = {
-                    "x-api-key": api_key,
-                    "anthropic-version": "2023-06-01",
-                    "Content-Type": "application/json"
-                }
-                endpoint = model_config.get("endpoint")
+    last_error = None
+    response_text = ""
+    search_queries_logged = []
 
-                response = await client.post(endpoint, headers=headers, json=request_body)
+    for attempt in range(STREAMING_MAX_RETRIES + 1):
+        try:
+            async with httpx.AsyncClient(timeout=120.0) as client:
+                if provider == "anthropic":
+                    # Anthropic Claude API with web search via computer_use beta
+                    request_body = {
+                        "model": model,
+                        "max_tokens": 8192,
+                        "system": instructions,
+                        "messages": [{
+                            "role": "user",
+                            "content": f"User query:\n{prompt}\n\nIMPORTANT: Use the web_search tool to gather real data before responding."
+                        }],
+                        "tools": [{
+                            "type": "web_search_20250305",
+                            "name": "web_search",
+                            "max_uses": 10
+                        }]
+                    }
+                    headers = {
+                        "x-api-key": api_key,
+                        "anthropic-version": "2023-06-01",
+                        "anthropic-beta": "web-search-2025-03-05",
+                        "Content-Type": "application/json"
+                    }
+                    endpoint = model_config.get("endpoint")
 
-                if response.status_code != 200:
-                    api_logger.error(f"Anthropic API error: {response.status_code} - {response.text}")
-                    raise Exception(f"Anthropic API error: {response.status_code}")
+                    api_logger.info(f"[PARSE] Calling Anthropic {model} with web_search tool")
+                    response = await client.post(endpoint, headers=headers, json=request_body)
 
-                data = response.json()
-                # Extract text from Anthropic response
-                content = data.get("content", [])
-                response_text = ""
-                for block in content:
-                    if block.get("type") == "text":
-                        response_text += block.get("text", "")
+                    if response.status_code != 200:
+                        error_text = response.text
+                        api_logger.error(f"Anthropic API error: {response.status_code} - {error_text}")
+                        raise Exception(f"Anthropic API error: {response.status_code}: {error_text}")
 
-            else:
-                # OpenAI Responses API
-                request_body = {
-                    "model": model,
-                    "instructions": instructions,
-                    "input": [{
-                        "type": "message",
-                        "role": "user",
-                        "content": [{"type": "input_text", "text": f"User query:\n{prompt}"}]
-                    }],
-                    "tools": [{
-                        "type": "web_search",
-                        "user_location": {"type": "approximate", "timezone": "UTC"}
-                    }],
-                    "tool_choice": "auto"
-                }
-                headers = {
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json"
-                }
-                endpoint = model_config.get("endpoint")
+                    data = response.json()
 
-                response = await client.post(endpoint, headers=headers, json=request_body)
+                    # Log web search tool uses
+                    content = data.get("content", [])
+                    for block in content:
+                        if block.get("type") == "tool_use" and block.get("name") == "web_search":
+                            query = block.get("input", {}).get("query", "")
+                            if query:
+                                search_queries_logged.append(query)
+                                api_logger.info(f"[PARSE SEARCH] Anthropic query: {query}")
 
-                if response.status_code != 200:
-                    api_logger.error(f"OpenAI API error: {response.status_code} - {response.text}")
-                    raise Exception(f"OpenAI API error: {response.status_code}")
+                    # Extract text from Anthropic response
+                    response_text = ""
+                    for block in content:
+                        if block.get("type") == "text":
+                            response_text += block.get("text", "")
 
-                data = response.json()
-                api_logger.debug(f"[PARSE] Raw API response keys: {data.keys() if isinstance(data, dict) else type(data)}")
+                    if not response_text:
+                        api_logger.error(f"[PARSE] Anthropic returned no text. Content types: {[b.get('type') for b in content]}")
+                        raise Exception(f"Anthropic returned no text content. Response structure: {list(data.keys())}")
 
-                # Extract response text from Responses API format
-                output = data.get("output", [])
-                msg = next((o for o in output if o.get("type") == "message" and o.get("role") == "assistant"), None)
+                else:
+                    # OpenAI Responses API with web search
+                    request_body = {
+                        "model": model,
+                        "instructions": instructions,
+                        "input": [{
+                            "type": "message",
+                            "role": "user",
+                            "content": [{"type": "input_text", "text": f"User query:\n{prompt}"}]
+                        }],
+                        "tools": [{
+                            "type": "web_search",
+                            "user_location": {"type": "approximate", "timezone": "UTC"}
+                        }],
+                        "tool_choice": "required"  # Force web search to be used
+                    }
+                    headers = {
+                        "Authorization": f"Bearer {api_key}",
+                        "Content-Type": "application/json"
+                    }
+                    endpoint = model_config.get("endpoint")
 
-                response_text = ""
-                if msg:
-                    content = msg.get("content", [])
-                    text_part = next((c for c in content if c.get("type") == "output_text"), None)
-                    if text_part:
-                        response_text = text_part.get("text", "")
+                    api_logger.info(f"[PARSE] Calling OpenAI {model} with web_search tool (required)")
+                    response = await client.post(endpoint, headers=headers, json=request_body)
 
-                # If we couldn't get text from message, try output_text directly
-                if not response_text and "output_text" in data:
-                    response_text = data["output_text"]
+                    if response.status_code != 200:
+                        error_text = response.text
+                        api_logger.error(f"OpenAI API error: {response.status_code} - {error_text}")
+                        raise Exception(f"OpenAI API error: {response.status_code}: {error_text}")
 
-                # Log what we extracted
-                if not response_text:
-                    api_logger.warning(f"[PARSE] No response_text found. Output structure: {[o.get('type') for o in output]}")
+                    data = response.json()
+                    api_logger.debug(f"[PARSE] OpenAI response keys: {list(data.keys())}")
 
-            # Parse JSON from response text (common for both providers)
-            if not response_text:
-                raise Exception("Empty response from API")
+                    # Log web search queries from OpenAI response
+                    output = data.get("output", [])
+                    for item in output:
+                        if item.get("type") == "web_search_call":
+                            query = item.get("query", "")
+                            if query:
+                                search_queries_logged.append(query)
+                                api_logger.info(f"[PARSE SEARCH] OpenAI query: {query}")
 
-            # Try to extract JSON if wrapped in markdown
-            if "```json" in response_text:
-                json_match = response_text.split("```json")[1].split("```")[0]
-                return json.loads(json_match.strip())
-            elif "```" in response_text:
-                json_match = response_text.split("```")[1].split("```")[0]
-                return json.loads(json_match.strip())
-            else:
-                return json.loads(response_text.strip())
+                    # Extract response text - try multiple paths for robustness
+                    response_text = ""
 
-    except json.JSONDecodeError as e:
-        api_logger.error(f"JSON parse error: {e}")
-        # Fallback with minimum required observations for validation
-        return {
-            "user_identity": "User",
-            "goal": prompt,
-            "observations": [
-                {"var": "Consciousness", "value": 0.6, "confidence": 0.5},
-                {"var": "Karma", "value": 0.5, "confidence": 0.5},
-                {"var": "Grace", "value": 0.5, "confidence": 0.5},
-                {"var": "Awareness", "value": 0.6, "confidence": 0.5},
-                {"var": "Maya", "value": 0.5, "confidence": 0.5},
-                {"var": "Aspiration", "value": 0.7, "confidence": 0.6}
-            ],
-            "targets": ["Transformation", "Grace", "Karma"]
-        }
-    except Exception as e:
-        api_logger.error(f"API error ({provider}): {e}")
-        # Fallback with minimum required observations for validation
-        return {
-            "user_identity": "User",
-            "goal": prompt,
-            "observations": [
-                {"var": "Consciousness", "value": 0.6, "confidence": 0.5},
-                {"var": "Karma", "value": 0.5, "confidence": 0.5},
-                {"var": "Grace", "value": 0.5, "confidence": 0.5},
-                {"var": "Awareness", "value": 0.6, "confidence": 0.5},
-                {"var": "Maya", "value": 0.5, "confidence": 0.5},
-                {"var": "Aspiration", "value": 0.7, "confidence": 0.6}
-            ],
-            "targets": ["Transformation", "Grace", "Karma"]
-        }
+                    # Path 1: Direct output_text field (newer API versions)
+                    if "output_text" in data and data["output_text"]:
+                        response_text = data["output_text"]
+                        api_logger.debug("[PARSE] Extracted from output_text field")
+
+                    # Path 2: output array with message type
+                    if not response_text:
+                        for item in output:
+                            if item.get("type") == "message" and item.get("role") == "assistant":
+                                content = item.get("content", [])
+                                for c in content:
+                                    if c.get("type") == "output_text":
+                                        response_text = c.get("text", "")
+                                        if response_text:
+                                            api_logger.debug("[PARSE] Extracted from output[].content[].text")
+                                            break
+                                    elif c.get("type") == "text":
+                                        response_text = c.get("text", "")
+                                        if response_text:
+                                            api_logger.debug("[PARSE] Extracted from output[].content[].text (text type)")
+                                            break
+                            if response_text:
+                                break
+
+                    # Path 3: choices array (legacy format)
+                    if not response_text and "choices" in data:
+                        choices = data.get("choices", [])
+                        if choices:
+                            message = choices[0].get("message", {})
+                            response_text = message.get("content", "")
+                            if response_text:
+                                api_logger.debug("[PARSE] Extracted from choices[].message.content")
+
+                    if not response_text:
+                        api_logger.error(f"[PARSE] OpenAI returned no text. Full response: {json.dumps(data, indent=2)[:2000]}")
+                        raise Exception(f"OpenAI returned no text content. Response keys: {list(data.keys())}, output types: {[o.get('type') for o in output]}")
+
+                # Log search queries count
+                api_logger.info(f"[PARSE] Web searches performed: {len(search_queries_logged)}")
+
+                # Parse JSON from response text
+                api_logger.debug(f"[PARSE] Response text length: {len(response_text)}, first 500 chars: {response_text[:500]}")
+
+                # Extract JSON - handle markdown wrapping
+                json_text = response_text.strip()
+                if "```json" in json_text:
+                    json_text = json_text.split("```json")[1].split("```")[0].strip()
+                elif "```" in json_text:
+                    # Try to find JSON block
+                    parts = json_text.split("```")
+                    for part in parts[1::2]:  # Check odd indices (inside code blocks)
+                        part = part.strip()
+                        if part.startswith("{"):
+                            json_text = part
+                            break
+
+                # Remove any leading/trailing non-JSON content
+                if not json_text.startswith("{"):
+                    start_idx = json_text.find("{")
+                    if start_idx != -1:
+                        json_text = json_text[start_idx:]
+                if not json_text.endswith("}"):
+                    end_idx = json_text.rfind("}")
+                    if end_idx != -1:
+                        json_text = json_text[:end_idx + 1]
+
+                result = json.loads(json_text)
+
+                # Inject logged search queries if not present in result
+                if search_queries_logged and not result.get("search_queries_used"):
+                    result["search_queries_used"] = search_queries_logged
+
+                # Validate required fields
+                if "observations" not in result or not result["observations"]:
+                    raise ValueError("Response missing required 'observations' field")
+
+                api_logger.info(f"[PARSE] Successfully parsed response with {len(result.get('observations', []))} observations")
+                return result
+
+        except (json.JSONDecodeError, ValueError) as e:
+            last_error = e
+            api_logger.error(f"[PARSE] Parse error on attempt {attempt + 1}: {e}")
+            if response_text:
+                api_logger.error(f"[PARSE] Raw response (first 1000 chars): {response_text[:1000]}")
+
+            if attempt < STREAMING_MAX_RETRIES:
+                delay = STREAMING_BASE_DELAY * (2 ** attempt)
+                api_logger.warning(f"[PARSE RETRY] Attempt {attempt + 1}/{STREAMING_MAX_RETRIES + 1} failed, retrying in {delay}s...")
+                await asyncio.sleep(delay)
+                continue
+            break
+
+        except Exception as e:
+            last_error = e
+            error_type = type(e).__name__
+
+            if is_retryable_streaming_error(e) and attempt < STREAMING_MAX_RETRIES:
+                delay = STREAMING_BASE_DELAY * (2 ** attempt)
+                api_logger.warning(f"[PARSE RETRY] {error_type}: {e}")
+                api_logger.warning(f"[PARSE RETRY] Attempt {attempt + 1}/{STREAMING_MAX_RETRIES + 1} failed, retrying in {delay}s...")
+                await asyncio.sleep(delay)
+                continue
+
+            api_logger.error(f"[PARSE] Non-retryable error ({provider}): {e}")
+            break
+
+    # All retries exhausted - raise the error
+    raise RuntimeError(f"parse_query_with_web_research failed after {STREAMING_MAX_RETRIES + 1} attempts: {last_error}")
 
 
 async def format_results_streaming_bridge(
