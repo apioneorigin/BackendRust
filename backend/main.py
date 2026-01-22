@@ -535,9 +535,14 @@ For example:
 - Make operator values reflect REAL situation from web data
 - Higher confidence when backed by web evidence
 
-Return ONLY valid JSON (no markdown, no explanation) with this structure:
+CRITICAL: Return ONLY valid JSON. You MUST include ALL 25 operators in observations array.
+
+The observations array MUST contain EXACTLY these 25 operators (use these exact var names):
+Ψ, K, M, G, W, A, P, E, V, L, R, At, Av, Se, Ce, Su, As, Fe, De, Re, Hf, Sa, Bu, Ma, Ch
+
+JSON structure:
 {{
-  "user_identity": "detailed description based on query + research (e.g., 'Nirma Ltd - Indian FMCG company, value detergent segment leader')",
+  "user_identity": "detailed description based on query + research",
   "goal": "their goal informed by research context",
   "s_level": "S1-S8 estimated consciousness level",
   "web_research_summary": "key insights from web research that informed calculations",
@@ -546,13 +551,34 @@ Return ONLY valid JSON (no markdown, no explanation) with this structure:
     {{"fact": "specific fact from research", "source": "source name", "relevance": "how it affects operators"}}
   ],
   "observations": [
-    {{"var": "Ψ", "value": 0.0-1.0, "confidence": 0.0-1.0, "reasoning": "based on query + research"}},
-    {{"var": "K", "value": 0.0-1.0, "confidence": 0.0-1.0, "reasoning": "..."}},
-    {{"var": "M", "value": 0.0-1.0, "confidence": 0.0-1.0, "reasoning": "..."}},
-    ... (ALL 25 operators)
+    {{"var": "Ψ", "value": 0.65, "confidence": 0.8, "reasoning": "based on web research data"}},
+    {{"var": "K", "value": 0.45, "confidence": 0.7, "reasoning": "..."}},
+    {{"var": "M", "value": 0.55, "confidence": 0.7, "reasoning": "..."}},
+    {{"var": "G", "value": 0.50, "confidence": 0.6, "reasoning": "..."}},
+    {{"var": "W", "value": 0.40, "confidence": 0.6, "reasoning": "..."}},
+    {{"var": "A", "value": 0.60, "confidence": 0.7, "reasoning": "..."}},
+    {{"var": "P", "value": 0.55, "confidence": 0.6, "reasoning": "..."}},
+    {{"var": "E", "value": 0.35, "confidence": 0.6, "reasoning": "..."}},
+    {{"var": "V", "value": 0.30, "confidence": 0.5, "reasoning": "..."}},
+    {{"var": "L", "value": 0.50, "confidence": 0.6, "reasoning": "..."}},
+    {{"var": "R", "value": 0.45, "confidence": 0.6, "reasoning": "..."}},
+    {{"var": "At", "value": 0.60, "confidence": 0.7, "reasoning": "..."}},
+    {{"var": "Av", "value": 0.40, "confidence": 0.6, "reasoning": "..."}},
+    {{"var": "Se", "value": 0.35, "confidence": 0.5, "reasoning": "..."}},
+    {{"var": "Ce", "value": 0.40, "confidence": 0.5, "reasoning": "..."}},
+    {{"var": "Su", "value": 0.30, "confidence": 0.5, "reasoning": "..."}},
+    {{"var": "As", "value": 0.70, "confidence": 0.8, "reasoning": "..."}},
+    {{"var": "Fe", "value": 0.45, "confidence": 0.6, "reasoning": "..."}},
+    {{"var": "De", "value": 0.55, "confidence": 0.6, "reasoning": "..."}},
+    {{"var": "Re", "value": 0.50, "confidence": 0.6, "reasoning": "..."}},
+    {{"var": "Hf", "value": 0.55, "confidence": 0.6, "reasoning": "..."}},
+    {{"var": "Sa", "value": 0.50, "confidence": 0.5, "reasoning": "..."}},
+    {{"var": "Bu", "value": 0.55, "confidence": 0.6, "reasoning": "..."}},
+    {{"var": "Ma", "value": 0.50, "confidence": 0.6, "reasoning": "..."}},
+    {{"var": "Ch", "value": 0.45, "confidence": 0.5, "reasoning": "..."}}
   ],
-  "targets": ["key variables to analyze"],
-  "relevant_oof_components": ["Sacred Chain", "Cascade", "UCB", etc.]
+  "targets": ["Transformation", "Grace", "Karma"],
+  "relevant_oof_components": ["Sacred Chain", "Cascade", "UCB"]
 }}"""
 
     last_error = None
@@ -2028,15 +2054,31 @@ def _validate_evidence(evidence: dict) -> List[str]:
     if valid_obs_count < MIN_OBSERVATIONS:
         errors.append(f"Insufficient valid observations: {valid_obs_count} < {MIN_OBSERVATIONS} required")
 
-    # Check for core operators (at least some consciousness operators)
-    core_vars = {'Ψ', 'Consciousness', 'K', 'Karma', 'G', 'Grace', 'A', 'Awareness', 'M', 'Maya'}
-    found_core = set()
-    for obs in observations:
-        if isinstance(obs, dict) and obs.get('var') in core_vars:
-            found_core.add(obs.get('var'))
+    # All 25 core operators - both symbol and full name forms
+    CORE_OPERATORS_25 = {
+        # Symbol forms
+        'Ψ', 'K', 'M', 'G', 'W', 'A', 'P', 'E', 'V', 'L', 'R',
+        'At', 'Av', 'Se', 'Ce', 'Su', 'As', 'Fe', 'De', 'Re', 'Hf', 'Sa', 'Bu', 'Ma', 'Ch',
+        # Full name forms
+        'Consciousness', 'Karma', 'Maya', 'Grace', 'Witness', 'Awareness', 'Prana', 'Entropy',
+        'Void', 'Love', 'Resonance', 'Attachment', 'Aversion', 'Seva', 'Cleaning', 'Surrender',
+        'Aspiration', 'Fear', 'Desire', 'Resistance', 'Habit Force', 'HabitForce',
+        'Samskara', 'Buddhi', 'Manas', 'Chitta'
+    }
 
-    if len(found_core) < 3:
-        errors.append(f"Missing core operators: found only {len(found_core)} of minimum 3 required")
+    # Map observation vars to canonical operator names
+    found_operators = set()
+    for obs in observations:
+        if isinstance(obs, dict):
+            var = obs.get('var', '')
+            if var in CORE_OPERATORS_25:
+                # Normalize to canonical form
+                found_operators.add(var)
+
+    # Require ALL 25 operators
+    if len(found_operators) < 25:
+        missing_count = 25 - len(found_operators)
+        errors.append(f"Missing core operators: found {len(found_operators)}/25 (missing {missing_count})")
 
     return errors
 
