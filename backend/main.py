@@ -629,7 +629,55 @@ Return ONLY valid JSON (no markdown, no explanation) with this structure:
                             "type": "web_search",
                             "user_location": {"type": "approximate", "timezone": "UTC"}
                         }],
-                        "tool_choice": "required"  # Force web search to be used
+                        "tool_choice": "auto",
+                        "text": {
+                            "format": {
+                                "type": "json_schema",
+                                "name": "evidence_extraction",
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "user_identity": {"type": "string"},
+                                        "goal": {"type": "string"},
+                                        "s_level": {"type": "string"},
+                                        "web_research_summary": {"type": "string"},
+                                        "search_queries_used": {"type": "array", "items": {"type": "string"}},
+                                        "key_facts": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "fact": {"type": "string"},
+                                                    "source": {"type": "string"},
+                                                    "relevance": {"type": "string"}
+                                                },
+                                                "required": ["fact", "source", "relevance"],
+                                                "additionalProperties": False
+                                            }
+                                        },
+                                        "observations": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "var": {"type": "string"},
+                                                    "value": {"type": "number"},
+                                                    "confidence": {"type": "number"},
+                                                    "reasoning": {"type": "string"}
+                                                },
+                                                "required": ["var", "value", "confidence", "reasoning"],
+                                                "additionalProperties": False
+                                            }
+                                        },
+                                        "targets": {"type": "array", "items": {"type": "string"}},
+                                        "relevant_oof_components": {"type": "array", "items": {"type": "string"}}
+                                    },
+                                    "required": ["user_identity", "goal", "observations", "targets"],
+                                    "additionalProperties": False
+                                },
+                                "strict": True
+                            }
+                        }
                     }
                     headers = {
                         "Authorization": f"Bearer {api_key}",
@@ -650,12 +698,35 @@ Return ONLY valid JSON (no markdown, no explanation) with this structure:
 
                     # Log web search queries from OpenAI response
                     output = data.get("output", [])
+                    output_types = [item.get("type") for item in output]
+                    api_logger.debug(f"[PARSE] Output types: {output_types}")
+
                     for item in output:
-                        if item.get("type") == "web_search_call":
+                        item_type = item.get("type", "")
+                        # Check multiple possible web search result formats
+                        if item_type == "web_search_call":
                             query = item.get("query", "")
                             if query:
                                 search_queries_logged.append(query)
-                                api_logger.info(f"[PARSE SEARCH] OpenAI query: {query}")
+                                api_logger.info(f"[PARSE SEARCH] Query: {query}")
+                        elif "web_search" in item_type or "search" in item_type.lower():
+                            # Log any search-related items
+                            api_logger.info(f"[PARSE SEARCH] Found {item_type}: {str(item)[:200]}")
+                            if "query" in item:
+                                search_queries_logged.append(item["query"])
+                        # Also check for tool_call format
+                        elif item_type == "tool_call" and item.get("name") == "web_search":
+                            args = item.get("arguments", {})
+                            if isinstance(args, str):
+                                import json as json_mod
+                                try:
+                                    args = json_mod.loads(args)
+                                except:
+                                    pass
+                            query = args.get("query", "") if isinstance(args, dict) else ""
+                            if query:
+                                search_queries_logged.append(query)
+                                api_logger.info(f"[PARSE SEARCH] Query: {query}")
 
                     # Extract response text - try multiple paths for robustness
                     response_text = ""
