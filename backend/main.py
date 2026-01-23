@@ -202,7 +202,9 @@ async def serve_frontend():
 @app.get("/api/run")
 async def run_inference(
     prompt: str = Query(..., description="User query"),
-    model: str = Query(DEFAULT_MODEL, description="Model to use for inference")
+    model: str = Query(DEFAULT_MODEL, description="Model to use for inference"),
+    web_search_data: bool = Query(True, description="Enable web search for data gathering (Get Data)"),
+    web_search_insights: bool = Query(True, description="Enable web search for evidence grounding (Mine Insights)")
 ):
     """
     Main SSE endpoint for running inference
@@ -210,13 +212,14 @@ async def run_inference(
     """
     model_config = get_model_config(model)
     api_logger.info(f"[MODEL] Using {model_config['model']} ({model_config['provider']})")
+    api_logger.info(f"[WEB SEARCH] Get Data: {web_search_data}, Mine Insights: {web_search_insights}")
     return EventSourceResponse(
-        inference_stream(prompt, model_config),
+        inference_stream(prompt, model_config, web_search_data, web_search_insights),
         media_type="text/event-stream"
     )
 
 
-async def inference_stream(prompt: str, model_config: dict) -> AsyncGenerator[dict, None]:
+async def inference_stream(prompt: str, model_config: dict, web_search_data: bool = True, web_search_insights: bool = True) -> AsyncGenerator[dict, None]:
     """Generate SSE events for the inference pipeline with evidence enrichment and optional reverse mapping"""
     start_time = time.time()
 
@@ -231,13 +234,13 @@ async def inference_stream(prompt: str, model_config: dict) -> AsyncGenerator[di
         pipeline_logger.log_step("Query Analysis", {"future_oriented": is_future_oriented, "mode": query_mode})
 
         # Step 1: Parse query with OpenAI + Web Research
-        api_logger.info("[STEP 1] Parsing query with web research")
+        api_logger.info(f"[STEP 1] Parsing query (web_search_data={web_search_data})")
         yield {
             "event": "status",
-            "data": json.dumps({"message": "Researching context and parsing query..."})
+            "data": json.dumps({"message": f"{'Researching context and parsing' if web_search_data else 'Parsing'} query..."})
         }
 
-        evidence = await parse_query_with_web_research(prompt, model_config)
+        evidence = await parse_query_with_web_research(prompt, model_config, web_search_data)
         obs_count = len(evidence.get('observations', []))
         api_logger.info(f"[EVIDENCE] Extracted {obs_count} observations")
         api_logger.debug(f"[EVIDENCE] Goal: {evidence.get('goal', 'N/A')}")
@@ -421,7 +424,7 @@ async def inference_stream(prompt: str, model_config: dict) -> AsyncGenerator[di
         token_count = 0
         token_usage = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0, "cost": 0.0}
         async for token in format_results_streaming_bridge(
-            prompt, evidence, posteriors, consciousness_state, reverse_mapping_data, model_config
+            prompt, evidence, posteriors, consciousness_state, reverse_mapping_data, model_config, web_search_insights
         ):
             # Check if this is a token usage object (yielded at end of stream)
             if isinstance(token, dict) and token.get("__token_usage__"):
@@ -480,14 +483,14 @@ async def inference_stream(prompt: str, model_config: dict) -> AsyncGenerator[di
         }
 
 
-async def parse_query_with_web_research(prompt: str, model_config: dict) -> dict:
+async def parse_query_with_web_research(prompt: str, model_config: dict, use_web_search: bool = True) -> dict:
     """
-    Use LLM API with web_search tool to:
-    1. Research relevant context about user's query
+    Use LLM API with optional web_search tool to:
+    1. Research relevant context about user's query (if web search enabled)
     2. Calculate optimal tier-1 operator values using OOF Framework
 
     Returns structured evidence for inference engine.
-    Supports both OpenAI and Anthropic providers with web search.
+    Supports both OpenAI and Anthropic providers with optional web search.
     """
     provider = model_config.get("provider", "openai")
     api_key = model_config.get("api_key")
@@ -495,6 +498,28 @@ async def parse_query_with_web_research(prompt: str, model_config: dict) -> dict
 
     if not api_key:
         raise ValueError(f"No API key configured for provider: {provider}")
+
+    api_logger.info(f"[PARSE] Web search enabled: {use_web_search}")
+
+    # Build web search instructions conditionally
+    web_search_instructions = """
+2. Use web_search EXTENSIVELY to research:
+   - The assumed entity's current market position, revenue, competitors
+   - Recent news, challenges, opportunities
+   - Industry trends and dynamics
+   - Leadership, strategy, culture indicators
+
+3. Calculate ACCURATE tier-1 operator values based on REAL DATA from web search
+
+CRITICAL: You MUST use web research to inform your operator calculations.
+For example:
+- "I am Nirma" → Search for "Nirma Ltd market position 2024", "Nirma vs competitors", "Indian detergent market"
+- Use SPECIFIC search queries for the assumed entity
+- Make operator values reflect REAL situation from web data
+- Higher confidence when backed by web evidence""" if use_web_search else """
+2. Calculate tier-1 operator values based on your knowledge and the query context
+
+3. Use your best judgment to estimate operator values based on available information"""
 
     instructions = f"""You are the Reality Transformer consciousness analysis engine.
 You have complete knowledge of the One Origin Framework (OOF) - a consciousness physics system.
@@ -512,14 +537,7 @@ YOUR TASK:
    - DO NOT ask for clarification - assume and proceed
    - Focus on applying consciousness physics, NOT on identification
    - The user's job is to correct if assumption is wrong
-
-2. Use web_search EXTENSIVELY to research:
-   - The assumed entity's current market position, revenue, competitors
-   - Recent news, challenges, opportunities
-   - Industry trends and dynamics
-   - Leadership, strategy, culture indicators
-
-3. Calculate ACCURATE tier-1 operator values based on REAL DATA from web search
+{web_search_instructions}
 
 The 25 core operators (all must be calculated 0.0-1.0):
 Ψ (Consciousness), K (Karma), M (Maya), G (Grace), W (Witness),
@@ -527,13 +545,6 @@ A (Awareness), P (Prana), E (Entropy), V (Void), L (Love), R (Resonance),
 At (Attachment), Av (Aversion), Se (Seva), Ce (Cleaning), Su (Surrender),
 As (Aspiration), Fe (Fear), De (Desire), Re (Resistance), Hf (Habit Force),
 Sa (Samskara), Bu (Buddhi), Ma (Manas), Ch (Chitta)
-
-CRITICAL: You MUST use web research to inform your operator calculations.
-For example:
-- "I am Nirma" → Search for "Nirma Ltd market position 2024", "Nirma vs competitors", "Indian detergent market"
-- Use SPECIFIC search queries for the assumed entity
-- Make operator values reflect REAL situation from web data
-- Higher confidence when backed by web evidence
 
 CRITICAL: Return ONLY valid JSON. You MUST include ALL 25 operators in observations array.
 
@@ -589,30 +600,41 @@ JSON structure:
         try:
             async with httpx.AsyncClient(timeout=120.0) as client:
                 if provider == "anthropic":
-                    # Anthropic Claude API with web search via computer_use beta
+                    # Anthropic Claude API with optional web search
+                    user_content = f"User query:\n{prompt}"
+                    if use_web_search:
+                        user_content += "\n\nIMPORTANT: Use the web_search tool to gather real data before responding."
+
                     request_body = {
                         "model": model,
                         "max_tokens": 8192,
                         "system": instructions,
                         "messages": [{
                             "role": "user",
-                            "content": f"User query:\n{prompt}\n\nIMPORTANT: Use the web_search tool to gather real data before responding."
-                        }],
-                        "tools": [{
+                            "content": user_content
+                        }]
+                    }
+
+                    # Add web search tool if enabled
+                    if use_web_search:
+                        request_body["tools"] = [{
                             "type": "web_search_20250305",
                             "name": "web_search",
                             "max_uses": 10
                         }]
-                    }
+
                     headers = {
                         "x-api-key": api_key,
                         "anthropic-version": "2023-06-01",
-                        "anthropic-beta": "web-search-2025-03-05",
                         "Content-Type": "application/json"
                     }
+                    # Add beta header only if web search is enabled
+                    if use_web_search:
+                        headers["anthropic-beta"] = "web-search-2025-03-05"
+
                     endpoint = model_config.get("endpoint")
 
-                    api_logger.info(f"[PARSE] Calling Anthropic {model} with web_search tool")
+                    api_logger.info(f"[PARSE] Calling Anthropic {model} (web_search={use_web_search})")
                     response = await client.post(endpoint, headers=headers, json=request_body)
 
                     if response.status_code != 200:
@@ -642,7 +664,7 @@ JSON structure:
                         raise Exception(f"Anthropic returned no text content. Response structure: {list(data.keys())}")
 
                 else:
-                    # OpenAI Responses API with web search
+                    # OpenAI Responses API with optional web search
                     request_body = {
                         "model": model,
                         "instructions": instructions,
@@ -651,11 +673,6 @@ JSON structure:
                             "role": "user",
                             "content": [{"type": "input_text", "text": f"User query:\n{prompt}"}]
                         }],
-                        "tools": [{
-                            "type": "web_search",
-                            "user_location": {"type": "approximate", "timezone": "UTC"}
-                        }],
-                        "tool_choice": "auto",
                         "text": {
                             "format": {
                                 "type": "json_schema",
@@ -705,13 +722,22 @@ JSON structure:
                             }
                         }
                     }
+
+                    # Add web search tool if enabled
+                    if use_web_search:
+                        request_body["tools"] = [{
+                            "type": "web_search",
+                            "user_location": {"type": "approximate", "timezone": "UTC"}
+                        }]
+                        request_body["tool_choice"] = "auto"
+
                     headers = {
                         "Authorization": f"Bearer {api_key}",
                         "Content-Type": "application/json"
                     }
                     endpoint = model_config.get("endpoint")
 
-                    api_logger.info(f"[PARSE] Calling OpenAI {model} with web_search tool (required)")
+                    api_logger.info(f"[PARSE] Calling OpenAI {model} (web_search={use_web_search})")
                     response = await client.post(endpoint, headers=headers, json=request_body)
 
                     if response.status_code != 200:
@@ -873,17 +899,19 @@ async def format_results_streaming_bridge(
     posteriors: dict,
     consciousness_state: ConsciousnessState,
     reverse_mapping: Optional[Dict[str, Any]] = None,
-    model_config: Optional[dict] = None
+    model_config: Optional[dict] = None,
+    use_web_search: bool = True
 ) -> AsyncGenerator[str, None]:
     """
     Unified articulation with evidence enrichment and optional reverse mapping.
 
     This is the final LLM call that:
-    1. Has web_search tool for evidence enrichment during articulation
+    1. Has optional web_search tool for evidence enrichment during articulation
     2. Uses calculated values to guide what to search for
     3. Integrates reverse mapping data when available (future-oriented queries)
     4. Produces natural, domain-appropriate insights
     """
+    articulation_logger.info(f"[ARTICULATION BRIDGE] Web search enabled: {use_web_search}")
     # Get model config
     if model_config is None:
         model_config = get_model_config(DEFAULT_MODEL)
@@ -989,7 +1017,7 @@ Your task is to ARTICULATE these insights in NATURAL, DOMAIN-APPROPRIATE languag
 {OOF_FRAMEWORK}
 === END OOF FRAMEWORK ===
 
-=== OPERATOR INTERPRETATION FOR EVIDENCE SEARCH ===
+{'''=== OPERATOR INTERPRETATION FOR EVIDENCE SEARCH ===
 Use calculated operator values to guide your evidence gathering:
 
 HIGH ATTACHMENT (0.75+):
@@ -1022,7 +1050,7 @@ GRACE ACTIVATION LEVERAGE:
 HIGH BREAKTHROUGH PROBABILITY (0.70+):
 - Search for: Near-term catalysts, immediate opportunities, emerging possibilities
 - Evidence use: Confirm favorable conditions or identify hidden resistances
-=== END OPERATOR INTERPRETATION ===
+=== END OPERATOR INTERPRETATION ===''' if use_web_search else ''}
 
 === CRITICAL ARTICULATION RULES ===
 1. NEVER use framework terminology in your response:
@@ -1049,7 +1077,7 @@ HIGH BREAKTHROUGH PROBABILITY (0.70+):
    - Respect current capacity
    - Don't overwhelm
 
-6. EVIDENCE ENRICHMENT:
+{'''6. EVIDENCE ENRICHMENT:
    - You have web_search tool available
    - Use it strategically when calculated patterns need grounding in industry reality
    - Search for: competitor examples, market data, transformation cases, timeline validation
@@ -1068,7 +1096,7 @@ HIGH BREAKTHROUGH PROBABILITY (0.70+):
      - [Nirma Ltd Annual Report 2024](https://example.com/nirma-report)
      - [Indian FMCG Market Analysis](https://example.com/fmcg)
 
-8. NO DUPLICATION - CRITICAL:
+''' if use_web_search else ''}8. NO DUPLICATION - CRITICAL:
    - NEVER repeat content - each section must be unique
    - Do NOT copy-paste or restate previous sections
    - If you find yourself repeating, stop and move forward
@@ -1083,21 +1111,21 @@ HIGH BREAKTHROUGH PROBABILITY (0.70+):
 === END ARTICULATION RULES ===
 
 === RESPONSE STRUCTURE ===
-{"SECTION 1: WHERE YOU ARE NOW" if True else ""}
+SECTION 1: WHERE YOU ARE NOW
 - Articulate current consciousness patterns using calculated values
-- USE web_search to ground insights in observable evidence when it strengthens the point
+{'''- USE web_search to ground insights in observable evidence when it strengthens the point
 - High maya? Search for perception vs reality gaps in their domain
-- High attachment? Search for real-world clinging consequences
+- High attachment? Search for real-world clinging consequences''' if use_web_search else ''}
 - Make the invisible visible with concrete proof
 
-{"SECTION 2: THE GAP" if True else ""}
+SECTION 2: THE GAP
 - Articulate distance between current state and goal
-- Use CALCULATED values - no search needed for gap analysis
+- Use CALCULATED values
 - Express in terms they can feel, not abstract metrics
 
-{"SECTION 3: ROOT CAUSE" if True else ""}
+SECTION 3: ROOT CAUSE
 - Explain WHY bottlenecks create their current situation
-- May search for pattern manifestation examples
+{'''- May search for pattern manifestation examples''' if use_web_search else ''}
 - Connect causes to observable effects
 
 {"SECTION 4: TRANSFORMATION PATH" if reverse_mapping else "SECTION 4: DIRECTION"}
@@ -1110,7 +1138,7 @@ HIGH BREAKTHROUGH PROBABILITY (0.70+):
 
 SECTION 5: FIRST STEPS
 - Concrete actions from analysis
-- May search for implementation specifics, tools, or examples
+{'''- May search for implementation specifics, tools, or examples''' if use_web_search else ''}
 - Respect current capacity - don't overwhelm
 === END RESPONSE STRUCTURE ==="""
 
@@ -1198,13 +1226,16 @@ SECTION 5: FIRST STEPS
                             "content": [{"type": "input_text", "text": articulation_prompt}]
                         }],
                         "temperature": 0.85,
-                        "stream": True,
-                        "tools": [{
+                        "stream": True
+                    }
+
+                    # Add web search tool if enabled (Mine Insights)
+                    if use_web_search:
+                        request_body["tools"] = [{
                             "type": "web_search",
                             "user_location": {"type": "approximate", "timezone": "UTC"}
-                        }],
-                        "tool_choice": "auto"
-                    }
+                        }]
+                        request_body["tool_choice"] = "auto"
                     headers = {
                         "Authorization": f"Bearer {api_key}",
                         "Content-Type": "application/json"
