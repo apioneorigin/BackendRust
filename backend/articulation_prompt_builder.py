@@ -9,7 +9,8 @@ Shows "Not available" for blocked calculations instead of assuming defaults.
 from typing import List, Optional, Any
 from consciousness_state import (
     ArticulationContext, ConsciousnessState, Bottleneck, LeveragePoint,
-    UserContext, WebResearch, ArticulationInstructions, InferenceMetadataState
+    UserContext, WebResearch, ArticulationInstructions, InferenceMetadataState,
+    SearchGuidance, EvidenceSearchQuery, ConsciousnessRealityMapping
 )
 
 
@@ -47,11 +48,52 @@ class ArticulationPromptBuilder:
             self._build_consciousness_state_section(context.consciousness_state),
             self._build_bottleneck_section(context.consciousness_state.bottlenecks),
             self._build_leverage_section(context.consciousness_state.leverage_points),
+            self._build_search_guidance_section(context.search_guidance),
             self._build_generation_instructions(context.instructions),
             self._build_user_query(context.user_context)
         ]
 
         return '\n\n---\n\n'.join(sections)
+
+    def _build_search_guidance_section(self, search_guidance: SearchGuidance) -> str:
+        """Build the search guidance section for evidence grounding in Call 2"""
+        if not search_guidance or not search_guidance.high_priority_values:
+            return ""
+
+        sections = ["## SEARCH GUIDANCE FOR EVIDENCE GROUNDING\n"]
+
+        # Query pattern
+        if search_guidance.query_pattern:
+            sections.append(f"**Query Pattern Detected:** {search_guidance.query_pattern.title()}\n")
+
+        # High priority values
+        if search_guidance.high_priority_values:
+            sections.append("**High-Priority Values to Ground with Evidence:**")
+            for i, value in enumerate(search_guidance.high_priority_values[:8], 1):
+                sections.append(f"  {i}. {value}")
+            sections.append("")
+
+        # Evidence search queries
+        if search_guidance.evidence_search_queries:
+            sections.append("**Recommended Evidence Searches:**")
+            for esq in search_guidance.evidence_search_queries[:5]:
+                sections.append(f"  - For '{esq.target_value}': Search \"{esq.search_query}\" (proof type: {esq.proof_type})")
+            sections.append("")
+
+        # Consciousness-to-reality mappings
+        if search_guidance.consciousness_to_reality_mappings:
+            sections.append("**Consciousness → Reality Mappings (use these to find proof):**")
+            for crm in search_guidance.consciousness_to_reality_mappings[:5]:
+                sections.append(f"  - {crm.consciousness_value}")
+                sections.append(f"    → Observable: {crm.observable_reality}")
+                sections.append(f"    → Search for: {crm.proof_search}")
+            sections.append("")
+
+        sections.append("""**Evidence Integration Instructions:**
+When web search is enabled, use these search queries to find CITED PROOF for the calculated consciousness values.
+Each major insight should connect: Consciousness Pattern → Observable Reality → Cited Evidence.""")
+
+        return '\n'.join(sections)
 
     def _build_header(self) -> str:
         """Build the prompt header"""
@@ -407,7 +449,60 @@ Respect their current capacity - don't suggest actions requiring development the
 - **Insight Priority:** Lead with the most impactful insights. Don't try to communicate everything - focus on what matters most for their transformation.
 
 - **Grounded in Data:** Every major claim should tie back to either web research findings or calculated consciousness values. But express these naturally, not as citations.
-{priorities_str}"""
+{priorities_str}
+
+## EVIDENCE-GROUNDING PROTOCOL
+
+When web search is enabled, you must GROUND consciousness values in observable reality.
+Use the search_guidance from Call 1 to find cited proof for key insights.
+
+### CONSCIOUSNESS → REALITY MANIFESTATION PATTERNS
+
+Use these mappings to translate calculated values into searchable evidence:
+
+**HIGH ATTACHMENT (At > 0.70)**
+- Observable: Resistance to change, sunk cost behavior, loyalty to legacy
+- Search for: "[entity] migration challenges", "[entity] change resistance", "[entity] legacy systems"
+- Proof type: Industry reports, analyst assessments, leadership quotes
+
+**HIGH MAYA (M > 0.65)**
+- Observable: Market perception vs reality gaps, optimistic forecasting, blind spots
+- Search for: "[entity] analyst vs reality", "[entity] market expectations", "[entity] missed targets"
+- Proof type: Third-party assessments, competitor comparisons, historical predictions vs outcomes
+
+**SEPARATION MATRIX POSITION**
+- Observable: Competitive vs collaborative behavior, protective boundaries, siloed operations
+- Search for: "[entity] competitive strategy", "[entity] vs [competitors]", "[entity] partnership failures"
+- Proof type: Strategy analysis, partnership history, market positioning
+
+**HIGH RESISTANCE (Re > 0.60)**
+- Observable: Organizational friction, slow adoption, internal politics
+- Search for: "[entity] organizational challenges", "[entity] internal conflicts", "[entity] transformation failures"
+- Proof type: Employee reviews, leadership changes, restructuring news
+
+**GRACE AVAILABILITY (G > 0.60)**
+- Observable: Synchronicities, unexpected opportunities, favorable conditions
+- Search for: "[entity] new partnerships", "[entity] market opportunities", "[entity] recent wins"
+- Proof type: Partnership announcements, market trends favoring entity, recent successes
+
+**BREAKTHROUGH PROBABILITY (> 0.65)**
+- Observable: Near-term catalysts, emerging opportunities, inflection signals
+- Search for: "[entity] upcoming catalyst", "[entity] innovation announcements", "[entity] market timing"
+- Proof type: Product launches, strategic initiatives, market timing indicators
+
+**DEATH ARCHITECTURE ACTIVE**
+- Observable: What is ending/dying - old products, old strategies, old identity
+- Search for: "[entity] discontinuing", "[entity] pivot strategy", "[entity] sunset products"
+- Proof type: Discontinuation announcements, strategic pivots, phase-outs
+
+### EVIDENCE INTEGRATION RULES
+
+1. **Search Strategically**: Use the evidence_search_queries from search_guidance
+2. **Cite Naturally**: Integrate evidence into narrative flow - no "according to search" phrasing
+3. **Ground Major Claims**: Every significant insight should have observable proof
+4. **Quality Over Quantity**: 3-5 well-cited insights > 10 vague claims
+5. **Connect Dots**: Show how consciousness pattern → observable reality → cited proof
+6. **Include Sources**: End with "Sources:" section listing all web sources used"""
 
     def _build_user_query(self, user_context: UserContext) -> str:
         """Build the user query section"""
@@ -431,11 +526,48 @@ def build_articulation_context(
     web_research_summary: str = "",
     key_facts: Optional[List[str]] = None,
     framework_concealment: bool = True,
-    domain_language: bool = True
+    domain_language: bool = True,
+    search_guidance_data: Optional[dict] = None
 ) -> ArticulationContext:
     """
     Helper function to build ArticulationContext from components.
+
+    Args:
+        search_guidance_data: Optional dict from Call 1 with structure:
+            {
+                "high_priority_values": [...],
+                "evidence_search_queries": [...],
+                "consciousness_to_reality_mappings": [...]
+            }
     """
+    # Build search_guidance from dict if provided
+    search_guidance = SearchGuidance()
+    if search_guidance_data:
+        search_guidance.high_priority_values = search_guidance_data.get('high_priority_values', [])
+        search_guidance.query_pattern = search_guidance_data.get('query_pattern', '')
+
+        # Build evidence search queries
+        for esq in search_guidance_data.get('evidence_search_queries', []):
+            if isinstance(esq, dict):
+                search_guidance.evidence_search_queries.append(
+                    EvidenceSearchQuery(
+                        target_value=esq.get('target_value', ''),
+                        search_query=esq.get('search_query', ''),
+                        proof_type=esq.get('proof_type', '')
+                    )
+                )
+
+        # Build consciousness-to-reality mappings
+        for crm in search_guidance_data.get('consciousness_to_reality_mappings', []):
+            if isinstance(crm, dict):
+                search_guidance.consciousness_to_reality_mappings.append(
+                    ConsciousnessRealityMapping(
+                        consciousness_value=crm.get('consciousness_value', ''),
+                        observable_reality=crm.get('observable_reality', ''),
+                        proof_search=crm.get('proof_search', '')
+                    )
+                )
+
     return ArticulationContext(
         user_context=UserContext(
             identity=user_identity,
@@ -448,7 +580,8 @@ def build_articulation_context(
             searches_performed=[{"query": "context research", "summary": web_research_summary}] if web_research_summary else [],
             key_facts=key_facts or [],
             competitive_context=None,
-            market_data=None
+            market_data=None,
+            search_guidance=search_guidance
         ),
         consciousness_state=consciousness_state,
         instructions=ArticulationInstructions(
@@ -461,5 +594,6 @@ def build_articulation_context(
                 "leverage_points",
                 "transformation_pathway"
             ]
-        )
+        ),
+        search_guidance=search_guidance
     )

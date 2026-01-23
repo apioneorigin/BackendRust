@@ -316,27 +316,82 @@ class InferenceEngine:
 
         # Build response with metadata
         targets = evidence.get('targets', [])
+        search_guidance = evidence.get('search_guidance', {})
+        high_priority_values = search_guidance.get('high_priority_values', [])
 
         # Filter out None values for target response
         non_null_state = {k: v for k, v in state.items() if v is not None}
 
-        # Filter to requested targets or return top values
-        if targets:
-            target_values = {
-                var: non_null_state.get(var)
-                for var in targets
-                if var in non_null_state and non_null_state.get(var) is not None
-            }
-            logger.debug(f"[TARGETS] Returning {len(target_values)} requested targets")
-        else:
-            # Return most significant values (furthest from 0.5)
-            sorted_vars = sorted(
-                non_null_state.items(),
-                key=lambda x: abs(x[1] - 0.5) if x[1] is not None else 0,
-                reverse=True
-            )
-            target_values = dict(sorted_vars[:50])
-            logger.debug(f"[TARGETS] Returning top 50 significant values")
+        # EXPANDED VALUE PASSING: Return 150 values with priority ordering
+        # Priority 1: User-requested targets
+        # Priority 2: High-priority values from search_guidance (for evidence grounding)
+        # Priority 3: Extreme values (furthest from 0.5)
+        # Priority 4: Matrix positions
+        # Priority 5: Core operators
+        # Priority 6: Remaining significant values
+
+        target_values = {}
+        MAX_VALUES = 150
+
+        # Priority 1: User-requested targets
+        for var in targets:
+            if var in non_null_state and non_null_state.get(var) is not None:
+                target_values[var] = non_null_state[var]
+        logger.debug(f"[TARGETS] Added {len(target_values)} user-requested targets")
+
+        # Priority 2: High-priority values from search_guidance
+        for var in high_priority_values:
+            if len(target_values) >= MAX_VALUES:
+                break
+            # Try to match value names (may be descriptive like "Creation matrix")
+            matching_keys = [k for k in non_null_state.keys() if var.lower() in k.lower() or k.lower() in var.lower()]
+            for key in matching_keys:
+                if key not in target_values and non_null_state.get(key) is not None:
+                    target_values[key] = non_null_state[key]
+        logger.debug(f"[TARGETS] After high-priority: {len(target_values)} values")
+
+        # Priority 3: Extreme values (furthest from 0.5) - these are most significant
+        sorted_by_extremity = sorted(
+            [(k, v) for k, v in non_null_state.items() if isinstance(v, (int, float))],
+            key=lambda x: abs(x[1] - 0.5) if x[1] is not None else 0,
+            reverse=True
+        )
+        for var, val in sorted_by_extremity:
+            if len(target_values) >= MAX_VALUES:
+                break
+            if var not in target_values:
+                target_values[var] = val
+        logger.debug(f"[TARGETS] After extremes: {len(target_values)} values")
+
+        # Priority 4: Matrix positions (transformation matrices are critical)
+        matrix_keys = [k for k in non_null_state.keys() if 'matrix' in k.lower()]
+        for key in matrix_keys:
+            if len(target_values) >= MAX_VALUES:
+                break
+            if key not in target_values and non_null_state.get(key) is not None:
+                target_values[key] = non_null_state[key]
+        logger.debug(f"[TARGETS] After matrices: {len(target_values)} values")
+
+        # Priority 5: Core operators and key consciousness values
+        core_keywords = ['grace', 'karma', 'maya', 'witness', 'awareness', 'coherence',
+                        'breakthrough', 'cascade', 'death', 'quantum', 'network', 'realism',
+                        'emotion', 'dynamics', 'pipeline', 'transformation']
+        for keyword in core_keywords:
+            if len(target_values) >= MAX_VALUES:
+                break
+            matching = [k for k in non_null_state.keys() if keyword in k.lower()]
+            for key in matching:
+                if key not in target_values and non_null_state.get(key) is not None:
+                    target_values[key] = non_null_state[key]
+
+        # Priority 6: Fill remaining slots with any remaining values
+        for var, val in non_null_state.items():
+            if len(target_values) >= MAX_VALUES:
+                break
+            if var not in target_values and val is not None:
+                target_values[var] = val
+
+        logger.debug(f"[TARGETS] Final: {len(target_values)} values (max {MAX_VALUES})")
 
         # Log top 10 most significant results
         logger.info("[TOP RESULTS]")
