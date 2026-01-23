@@ -108,6 +108,7 @@ ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 
 # Model configurations with pricing (per million tokens, Jan 2026)
 # Sources: OpenAI API Pricing, Anthropic Claude Pricing
+# Anthropic prompt caching: cache_write = 1.25x input, cache_read = 0.1x input (90% savings)
 MODEL_CONFIGS = {
     "gpt-5.2": {
         "provider": "openai",
@@ -128,21 +129,36 @@ MODEL_CONFIGS = {
         "api_key": ANTHROPIC_API_KEY,
         "endpoint": "https://api.anthropic.com/v1/messages",
         "streaming_endpoint": "https://api.anthropic.com/v1/messages",
-        "pricing": {"input": 0.25, "output": 1.25},  # $/million tokens
+        "pricing": {
+            "input": 0.25,
+            "output": 1.25,
+            "cache_write": 0.3125,  # 1.25x input price
+            "cache_read": 0.025,    # 0.1x input price (90% savings)
+        },
     },
     "claude-sonnet-4-5-20250929": {
         "provider": "anthropic",
         "api_key": ANTHROPIC_API_KEY,
         "endpoint": "https://api.anthropic.com/v1/messages",
         "streaming_endpoint": "https://api.anthropic.com/v1/messages",
-        "pricing": {"input": 3.00, "output": 15.00},  # $/million tokens
+        "pricing": {
+            "input": 3.00,
+            "output": 15.00,
+            "cache_write": 3.75,    # 1.25x input price
+            "cache_read": 0.30,     # 0.1x input price (90% savings)
+        },
     },
     "claude-opus-4-5-20251101": {
         "provider": "anthropic",
         "api_key": ANTHROPIC_API_KEY,
         "endpoint": "https://api.anthropic.com/v1/messages",
         "streaming_endpoint": "https://api.anthropic.com/v1/messages",
-        "pricing": {"input": 5.00, "output": 25.00},  # $/million tokens
+        "pricing": {
+            "input": 15.00,         # Updated: Opus 4.5 is $15/M input
+            "output": 75.00,        # Updated: Opus 4.5 is $75/M output
+            "cache_write": 18.75,   # 1.25x input price
+            "cache_read": 1.50,     # 0.1x input price (90% savings)
+        },
     },
 }
 
@@ -717,15 +733,106 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
         try:
             async with httpx.AsyncClient(timeout=120.0) as client:
                 if provider == "anthropic":
-                    # Anthropic Claude API with optional web search
+                    # Anthropic Claude API with optional web search and prompt caching
                     user_content = f"User query:\n{prompt}"
                     if use_web_search:
                         user_content += "\n\nIMPORTANT: Use the web_search tool to gather real data before responding."
 
+                    # Build system prompt with cache_control for prompt caching
+                    # The large OOF_FRAMEWORK is static and cacheable across requests
+                    # Structure: [cached OOF framework block] + [dynamic instructions block]
+                    static_system_content = f"""You are the Reality Transformer consciousness analysis engine.
+You have complete knowledge of the One Origin Framework (OOF) - a consciousness physics system.
+
+=== OOF FRAMEWORK KNOWLEDGE ===
+{OOF_FRAMEWORK}
+=== END OOF FRAMEWORK ===
+
+{query_pattern_instructions}"""
+
+                    dynamic_system_content = f"""
+YOUR TASK:
+1. IDENTITY ASSUMPTION (CRITICAL):
+   - Assume the MOST FAMOUS/LIKELY interpretation of any name or entity
+   - "Nirma" → Nirma Ltd (Indian FMCG company, famous detergent brand, founded by Karsanbhai Patel)
+   - "Apple" → Apple Inc (technology company)
+   - "Tesla" → Tesla Inc (EV company)
+   - DO NOT ask for clarification - assume and proceed
+   - Focus on applying consciousness physics, NOT on identification
+   - The user's job is to correct if assumption is wrong
+{web_search_instructions}
+
+The 25 core operators (all must be calculated 0.0-1.0):
+Ψ (Consciousness), K (Karma), M (Maya), G (Grace), W (Witness),
+A (Awareness), P (Prana), E (Entropy), V (Void), L (Love), R (Resonance),
+At (Attachment), Av (Aversion), Se (Seva), Ce (Cleaning), Su (Surrender),
+As (Aspiration), Fe (Fear), De (Desire), Re (Resistance), Hf (Habit Force),
+Sa (Samskara), Bu (Buddhi), Ma (Manas), Ch (Chitta)
+
+CRITICAL: Return ONLY valid JSON. You MUST include ALL 25 operators in observations array.
+
+The observations array MUST contain EXACTLY these 25 operators (use these exact var names):
+Ψ, K, M, G, W, A, P, E, V, L, R, At, Av, Se, Ce, Su, As, Fe, De, Re, Hf, Sa, Bu, Ma, Ch
+
+JSON structure:
+{{
+  "user_identity": "detailed description based on query + research",
+  "goal": "their goal informed by research context",
+  "s_level": "S1-S8 estimated consciousness level",
+  "query_pattern": "primary pattern detected (innovation/transformation/purpose/relationship/performance/blockage/strategy)",
+  "web_research_summary": "key insights from web research that informed calculations",
+  "search_queries_used": ["query1", "query2", ...],
+  "key_facts": [
+    {{"fact": "specific fact from research", "source": "source name", "relevance": "how it affects operators"}}
+  ],
+  "search_guidance": {{
+    "high_priority_values": ["value1", "value2", "value3", "value4", "value5"],
+    "evidence_search_queries": [
+      {{"target_value": "Creation matrix", "search_query": "industry disruption case studies [domain]", "proof_type": "transformation_example"}},
+      {{"target_value": "Breakthrough probability", "search_query": "[entity] recent innovations breakthroughs", "proof_type": "observable_signal"}},
+      {{"target_value": "Maya barriers", "search_query": "[entity] blind spots market perception vs reality", "proof_type": "gap_evidence"}}
+    ],
+    "consciousness_to_reality_mappings": [
+      {{"consciousness_value": "High Attachment (0.75+)", "observable_reality": "resistance to change, sunk cost behavior", "proof_search": "[entity] legacy systems migration challenges"}}
+    ]
+  }},
+  "observations": [
+    {{"var": "Ψ", "value": 0.65, "confidence": 0.8, "reasoning": "based on web research data"}},
+    {{"var": "K", "value": 0.45, "confidence": 0.7, "reasoning": "..."}},
+    ... (all 25 operators)
+  ],
+  "targets": ["At_attachment", "Fe_fear", "Re_resistance", ...],
+  "relevant_oof_components": ["Sacred Chain", "Cascade", "UCB", "Seven Matrices", "Death Architecture"]
+}}
+
+CRITICAL REQUIREMENTS FOR TARGET SELECTION:
+- 'targets' must be QUERY-SPECIFIC based on query pattern analysis (not the generic example)
+- Analyze the query pattern and populate 20-50 relevant targets
+- Include: direct query needs + bottlenecks + leverage + matrices + evidence-grounding values
+- 'search_guidance' must map high-priority targets to specific proof-finding search terms
+- Never use generic placeholders - deeply analyze what the specific query needs
+- For INNOVATION queries: focus on breakthrough_probability, creation_matrix, maya_barriers, transformation_vectors
+- For BLOCKAGE queries: focus on bottlenecks, resistance, attachment, fear, habit_force
+- For TRANSFORMATION queries: focus on death_architecture, s_level_transition, grace_mechanics, leverage_points"""
+
+                    # Use array-based system prompt for prompt caching
+                    # First block (static OOF framework) gets cache_control for 5-min caching
+                    system_content = [
+                        {
+                            "type": "text",
+                            "text": static_system_content,
+                            "cache_control": {"type": "ephemeral"}  # Cache the large static framework
+                        },
+                        {
+                            "type": "text",
+                            "text": dynamic_system_content
+                        }
+                    ]
+
                     request_body = {
                         "model": model,
                         "max_tokens": 8192,
-                        "system": instructions,
+                        "system": system_content,
                         "messages": [{
                             "role": "user",
                             "content": user_content
@@ -745,13 +852,15 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
                         "anthropic-version": "2023-06-01",
                         "Content-Type": "application/json"
                     }
-                    # Add beta header only if web search is enabled
+                    # Build beta headers: always include prompt-caching, add web-search if enabled
+                    beta_features = ["prompt-caching-2024-07-31"]
                     if use_web_search:
-                        headers["anthropic-beta"] = "web-search-2025-03-05"
+                        beta_features.append("web-search-2025-03-05")
+                    headers["anthropic-beta"] = ",".join(beta_features)
 
                     endpoint = model_config.get("endpoint")
 
-                    api_logger.info(f"[PARSE] Calling Anthropic {model} (web_search={use_web_search})")
+                    api_logger.info(f"[PARSE] Calling Anthropic {model} (web_search={use_web_search}, prompt_caching=enabled)")
                     response = await client.post(endpoint, headers=headers, json=request_body)
 
                     if response.status_code != 200:
@@ -760,6 +869,18 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
                         raise Exception(f"Anthropic API error: {response.status_code}: {error_text}")
 
                     data = response.json()
+
+                    # Log prompt cache usage for Anthropic
+                    usage = data.get("usage", {})
+                    cache_creation = usage.get("cache_creation_input_tokens", 0)
+                    cache_read = usage.get("cache_read_input_tokens", 0)
+                    input_tokens = usage.get("input_tokens", 0)
+                    if cache_read > 0:
+                        api_logger.info(f"[PARSE CACHE] Cache HIT: {cache_read} tokens read from cache (saved ~90% on {cache_read} tokens)")
+                    elif cache_creation > 0:
+                        api_logger.info(f"[PARSE CACHE] Cache WRITE: {cache_creation} tokens written to cache (will be reused for ~5 min)")
+                    else:
+                        api_logger.info(f"[PARSE CACHE] No cache activity (input_tokens={input_tokens})")
 
                     # Log web search tool uses
                     content = data.get("content", [])
@@ -1326,11 +1447,188 @@ SECTION 5: FIRST STEPS
         try:
             async with httpx.AsyncClient(timeout=180.0) as client:
                 if provider == "anthropic":
-                    # Anthropic Claude streaming API
+                    # Anthropic Claude streaming API with prompt caching
+                    # Build system prompt with cache_control for the static OOF framework
+                    # The OOF_FRAMEWORK is large and static - perfect for caching
+                    static_system_content = f"""You are Reality Transformer, a consciousness-based transformation engine.
+
+CRITICAL - READ FIRST:
+- Generate ONE single response only
+- Do NOT repeat or duplicate any content
+- Do NOT regenerate previous sections
+- Each paragraph must contain NEW information
+- If you notice you're repeating, STOP and continue with new content
+
+You are receiving a STRUCTURED ANALYSIS from the One Origin Framework (OOF).
+Your task is to ARTICULATE these insights in NATURAL, DOMAIN-APPROPRIATE language.
+
+=== RESPONSE MODE: {response_mode} ===
+
+=== OOF FRAMEWORK KNOWLEDGE ===
+{OOF_FRAMEWORK}
+=== END OOF FRAMEWORK ==="""
+
+                    # Dynamic portion varies based on web_search and reverse_mapping
+                    # Build conditional sections separately to avoid f-string nesting issues
+                    operator_interpretation_section = """
+=== OPERATOR INTERPRETATION FOR EVIDENCE SEARCH ===
+Use calculated operator values to guide your evidence gathering:
+
+HIGH ATTACHMENT (0.75+):
+- Indicates: Clinging to past patterns, sunk cost fallacy, resistance to necessary change
+- Search for: Legacy system risks, migration delay consequences, competitor advantages from early adoption
+- Evidence type: Industry-specific examples of attachment costs
+
+HIGH MAYA (0.70+):
+- Indicates: Perception gaps, blind spots, beliefs contradicting reality
+- Search for: Objective market data, third-party assessments, competitive positioning reports
+- Evidence type: Reality validators that expose gaps between stated and actual position
+
+SEPARATION MATRIX POSITION:
+- Indicates: Competitive vs collaborative orientation, protective boundaries
+- Search for: Competitive dynamics AND collaborative counterexamples showing integration advantage
+- Evidence type: Both current pattern validation and alternative pathway proof
+
+S-LEVEL 3 (Achievement):
+- Search framing: Use competitive benchmarks, performance metrics, ranking data
+- Evidence that resonates: "Your competitors achieved X, here's the gap"
+
+S-LEVEL 5 (Service):
+- Search framing: Use impact examples, integration cases, ecosystem dynamics
+- Evidence that resonates: "Leaders found success through collaboration"
+
+GRACE ACTIVATION LEVERAGE:
+- Search for: Partnership announcements, collaboration trends, synchronicity indicators
+- Evidence type: Recent alignments, unexpected opportunities, ecosystem formation
+
+HIGH BREAKTHROUGH PROBABILITY (0.70+):
+- Search for: Near-term catalysts, immediate opportunities, emerging possibilities
+- Evidence use: Confirm favorable conditions or identify hidden resistances
+=== END OPERATOR INTERPRETATION ===""" if use_web_search else ""
+
+                    evidence_enrichment_section = """6. EVIDENCE ENRICHMENT:
+   - You have web_search tool available
+   - Use it strategically when calculated patterns need grounding in industry reality
+   - Search for: competitor examples, market data, transformation cases, timeline validation
+   - High maya scores → search for objective third-party data
+   - Bottlenecks → search for consequence evidence (what happens when this pattern persists)
+   - Leverage points → search for opportunity evidence (partnerships, trends, alignments)
+   - Integrate findings naturally into narrative flow - no "according to search" phrasing
+   - Quality over quantity - search when evidence strengthens insight, not exhaustively
+
+7. CITATIONS - MANDATORY:
+   - At the END of your response, include a "Sources:" section
+   - List all web sources used with format: [Title](URL)
+   - This helps user verify and explore further
+   - Example:
+     Sources:
+     - [Nirma Ltd Annual Report 2024](https://example.com/nirma-report)
+     - [Indian FMCG Market Analysis](https://example.com/fmcg)
+
+""" if use_web_search else ""
+
+                    section1_web = """- USE web_search to ground insights in observable evidence when it strengthens the point
+- High maya? Search for perception vs reality gaps in their domain
+- High attachment? Search for real-world clinging consequences""" if use_web_search else ""
+
+                    section3_web = "- May search for pattern manifestation examples" if use_web_search else ""
+
+                    section4_content = """- Articulate from the REVERSE CAUSALITY MAPPING data provided
+- Describe the recommended pathway in natural terms
+- Explain MVT (what changes matter most) without technical labels
+- Address death processes as "what needs to be released"
+- Frame grace dependency as "what support is available\"""" if reverse_mapping else """- Suggest general direction based on leverage points
+- Focus on highest-impact shifts available"""
+
+                    section5_web = "- May search for implementation specifics, tools, or examples" if use_web_search else ""
+
+                    section4_title = "SECTION 4: TRANSFORMATION PATH" if reverse_mapping else "SECTION 4: DIRECTION"
+
+                    dynamic_system_content = f"""
+{operator_interpretation_section}
+
+=== CRITICAL ARTICULATION RULES ===
+1. NEVER use framework terminology in your response:
+   - Do NOT say "Maya operator", "S-level", "Karma", "Grace flow"
+   - Instead translate: "You're seeing success as external rather than internal"
+
+2. NATURAL CADENCE:
+   - Write as a wise advisor, not a report generator
+   - Use metaphor, rhythm, rhetorical questions
+   - Vary sentence length
+   - Create moments of insight
+
+3. DOMAIN LANGUAGE:
+   - Match your vocabulary to the user's context
+   - Business queries get business language
+   - Personal queries get personal language
+
+4. GROUNDED INSIGHTS:
+   - Every claim connects to calculated values (internally)
+   - But expressed naturally (externally)
+
+5. ACTIONABLE:
+   - End with concrete next steps
+   - Respect current capacity
+   - Don't overwhelm
+
+{evidence_enrichment_section}8. NO DUPLICATION - CRITICAL:
+   - NEVER repeat content - each section must be unique
+   - Do NOT copy-paste or restate previous sections
+   - If you find yourself repeating, stop and move forward
+   - The response should be ONE continuous narrative, not repeated blocks
+
+9. IDENTITY ASSUMPTION:
+   - Assume the most likely/famous interpretation of names
+   - "Nirma" → Nirma Ltd (Indian FMCG company, detergent brand)
+   - "Apple" → Apple Inc
+   - Focus on applying consciousness physics, NOT on identification
+   - It's the user's job to clarify if the assumption is wrong
+=== END ARTICULATION RULES ===
+
+=== RESPONSE STRUCTURE ===
+SECTION 1: WHERE YOU ARE NOW
+- Articulate current consciousness patterns using calculated values
+{section1_web}
+- Make the invisible visible with concrete proof
+
+SECTION 2: THE GAP
+- Articulate distance between current state and goal
+- Use CALCULATED values
+- Express in terms they can feel, not abstract metrics
+
+SECTION 3: ROOT CAUSE
+- Explain WHY bottlenecks create their current situation
+{section3_web}
+- Connect causes to observable effects
+
+{section4_title}
+{section4_content}
+
+SECTION 5: FIRST STEPS
+- Concrete actions from analysis
+{section5_web}
+- Respect current capacity - don't overwhelm
+=== END RESPONSE STRUCTURE ==="""
+
+                    # Use array-based system prompt for prompt caching
+                    # First block (static OOF framework) gets cache_control for 5-min caching
+                    system_content = [
+                        {
+                            "type": "text",
+                            "text": static_system_content,
+                            "cache_control": {"type": "ephemeral"}  # Cache the large static framework
+                        },
+                        {
+                            "type": "text",
+                            "text": dynamic_system_content
+                        }
+                    ]
+
                     request_body = {
                         "model": model,
                         "max_tokens": 4096,
-                        "system": instructions,
+                        "system": system_content,
                         "messages": [{
                             "role": "user",
                             "content": articulation_prompt
@@ -1340,9 +1638,12 @@ SECTION 5: FIRST STEPS
                     headers = {
                         "x-api-key": api_key,
                         "anthropic-version": "2023-06-01",
+                        "anthropic-beta": "prompt-caching-2024-07-31",
                         "Content-Type": "application/json"
                     }
                     endpoint = model_config.get("streaming_endpoint")
+
+                    api_logger.info(f"[ARTICULATION] Calling Anthropic {model} streaming (prompt_caching=enabled)")
 
                     async with client.stream("POST", endpoint, headers=headers, json=request_body) as response:
                         if response.status_code != 200:
@@ -1350,9 +1651,11 @@ SECTION 5: FIRST STEPS
                             api_logger.error(f"Anthropic streaming error: {response.status_code} - {error_text}")
                             raise Exception(f"Anthropic API error: {response.status_code}")
 
-                        # Track token usage for Anthropic
+                        # Track token usage and cache metrics for Anthropic
                         input_tokens = 0
                         output_tokens = 0
+                        cache_creation_tokens = 0
+                        cache_read_tokens = 0
 
                         async for line in response.aiter_lines():
                             if line.startswith("data: "):
@@ -1365,9 +1668,16 @@ SECTION 5: FIRST STEPS
                                         event_type = data.get("type", "")
                                         # Handle Anthropic streaming events
                                         if event_type == "message_start":
-                                            # Input tokens come in message_start
+                                            # Input tokens and cache metrics come in message_start
                                             usage = data.get("message", {}).get("usage", {})
                                             input_tokens = usage.get("input_tokens", 0)
+                                            cache_creation_tokens = usage.get("cache_creation_input_tokens", 0)
+                                            cache_read_tokens = usage.get("cache_read_input_tokens", 0)
+                                            # Log cache activity
+                                            if cache_read_tokens > 0:
+                                                api_logger.info(f"[ARTICULATION CACHE] Cache HIT: {cache_read_tokens} tokens read from cache")
+                                            elif cache_creation_tokens > 0:
+                                                api_logger.info(f"[ARTICULATION CACHE] Cache WRITE: {cache_creation_tokens} tokens written to cache")
                                         elif event_type == "content_block_delta":
                                             delta = data.get("delta", {})
                                             if delta.get("type") == "text_delta":
@@ -1384,9 +1694,16 @@ SECTION 5: FIRST STEPS
                                     continue
 
                         # Stream completed successfully
-                        api_logger.info(f"[ARTICULATION] Streamed {tokens_streamed} tokens")
+                        api_logger.info(f"[ARTICULATION] Streamed {tokens_streamed} tokens (cache_read={cache_read_tokens}, cache_write={cache_creation_tokens})")
                         tokens_yielded = True
-                        yield {"__token_usage__": True, "input_tokens": input_tokens, "output_tokens": output_tokens, "total_tokens": input_tokens + output_tokens}
+                        yield {
+                            "__token_usage__": True,
+                            "input_tokens": input_tokens,
+                            "output_tokens": output_tokens,
+                            "total_tokens": input_tokens + output_tokens,
+                            "cache_creation_input_tokens": cache_creation_tokens,
+                            "cache_read_input_tokens": cache_read_tokens
+                        }
                         return  # Success - exit the retry loop
 
                 else:
