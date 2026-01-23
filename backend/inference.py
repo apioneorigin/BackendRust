@@ -727,14 +727,24 @@ class InferenceEngine:
         confidence['quantum_collapse_readiness'] = 0.7
         logger.info(f"[ADVANCED] Quantum: coherence_time={quantum.coherence_time:.3f}, tunneling={quantum.tunneling_probability:.3f}")
 
-        # Realism Engine (60 types) - returns RealismProfile
+        # Realism Engine (68 types) - returns RealismProfile
         logger.debug("[ADVANCED] Running RealismEngine...")
         realism = self.realism_engine.calculate_realism_profile(operators, s_level)
+        values['realism_dominant'] = realism.dominant_realism
         values['realism_dominant_weight'] = realism.dominant_weight
         values['realism_coherence'] = realism.coherence
+        values['realism_active_types'] = list(realism.active_realisms) if realism.active_realisms else []
+        values['realism_blend'] = realism.realism_blend
+        values['realism_evolution_direction'] = realism.evolution_direction
+        confidence['realism_dominant'] = 0.8
         confidence['realism_dominant_weight'] = 0.8
         confidence['realism_coherence'] = 0.75
         logger.info(f"[ADVANCED] Realism: type={realism.dominant_realism}, weight={realism.dominant_weight:.3f}, coherence={realism.coherence:.3f}")
+        # Log top 5 active realisms for debugging
+        if realism.realism_blend:
+            sorted_realisms = sorted(realism.realism_blend.items(), key=lambda x: x[1], reverse=True)[:5]
+            for name, weight in sorted_realisms:
+                logger.debug(f"  [REALISM] {name}: {weight:.3f}")
 
         logger.info(f"[ADVANCED] All modules complete: {len(values)} values computed")
 

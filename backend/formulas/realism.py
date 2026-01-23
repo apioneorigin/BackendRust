@@ -135,6 +135,26 @@ class RealismEngine:
             limitations=['Surface-level perception'],
             possibilities=['Rich sensory experience', 'Aesthetic appreciation']
         ),
+        'materialistic': RealismType(
+            name='Materialistic Realism',
+            category='biological',
+            s_level_range=(1.0, 2.5),
+            description='Reality as physical matter only, rejecting non-physical',
+            operator_signature={'M_maya': 0.7, 'At_attachment': 0.7, 'Psi_quality': 0.2},
+            manifestation_style='concrete, physical-only, measurable',
+            limitations=['Misses spiritual dimensions', 'Reductionist worldview'],
+            possibilities=['Practical accomplishment', 'Material mastery']
+        ),
+        'cynical': RealismType(
+            name='Cynical Realism',
+            category='biological',
+            s_level_range=(1.5, 3.0),
+            description='Reality filtered through distrust and negative expectations',
+            operator_signature={'F_fear': 0.6, 'R_resistance': 0.7, 'O_openness': 0.2},
+            manifestation_style='skeptical, defensive, self-protective',
+            limitations=['Cannot trust', 'Misses opportunities'],
+            possibilities=['Protection from exploitation', 'Realistic assessment']
+        ),
 
         # ============ S2-S3: SEEKING/EMOTIONAL ============
         'emotional': RealismType(
@@ -249,6 +269,36 @@ class RealismEngine:
             limitations=['May miss spontaneous opportunities'],
             possibilities=['Effective planning', 'Vision realization']
         ),
+        'status': RealismType(
+            name='Status Realism',
+            category='achievement',
+            s_level_range=(2.5, 4.0),
+            description='Reality as hierarchy and rank',
+            operator_signature={'At_attachment': 0.7, 'I_intention': 0.6, 'Co_coherence': 0.5},
+            manifestation_style='hierarchical, position-aware, status-seeking',
+            limitations=['Constant comparison', 'Never satisfied'],
+            possibilities=['Social intelligence', 'Strategic positioning']
+        ),
+        'pragmatic': RealismType(
+            name='Pragmatic Realism',
+            category='achievement',
+            s_level_range=(2.5, 4.5),
+            description='Reality as what works in practice',
+            operator_signature={'I_intention': 0.6, 'A_aware': 0.5, 'M_manifest': 0.6},
+            manifestation_style='practical, results-focused, adaptive',
+            limitations=['May miss deeper meaning', 'Short-term focus'],
+            possibilities=['Effective problem-solving', 'Practical wisdom']
+        ),
+        'merit': RealismType(
+            name='Merit Realism',
+            category='achievement',
+            s_level_range=(3.0, 4.5),
+            description='Reality as earned through skill and effort',
+            operator_signature={'I_intention': 0.7, 'Sh_shakti': 0.6, 'D_dharma': 0.5},
+            manifestation_style='achievement-based, fair, earned',
+            limitations=['Ignores systemic factors', 'Judgmental'],
+            possibilities=['Strong work ethic', 'Self-improvement']
+        ),
 
         # ============ S4-S5: SERVICE/TRANSITION ============
         'service': RealismType(
@@ -290,6 +340,96 @@ class RealismEngine:
             manifestation_style='holistic, connected, patterned',
             limitations=['Can be overwhelming'],
             possibilities=['Systems thinking', 'Leverage points']
+        ),
+        'interpersonal': RealismType(
+            name='Interpersonal Realism',
+            category='service',
+            s_level_range=(3.5, 5.0),
+            description='Reality through one-on-one human connection',
+            operator_signature={'Se_service': 0.6, 'Co_coherence': 0.6, 'O_openness': 0.6},
+            manifestation_style='relational, personal, connecting',
+            limitations=['May neglect larger systems', 'Boundary challenges'],
+            possibilities=['Deep connection', 'Trust building']
+        ),
+        'community': RealismType(
+            name='Community Realism',
+            category='service',
+            s_level_range=(3.5, 5.0),
+            description='Reality as collective wellbeing and shared resources',
+            operator_signature={'Se_service': 0.7, 'Co_coherence': 0.7, 'At_attachment': 0.4},
+            manifestation_style='communal, collaborative, supportive',
+            limitations=['Groupthink risk', 'May suppress individuality'],
+            possibilities=['Mutual support', 'Collective strength']
+        ),
+        'cultural': RealismType(
+            name='Cultural Realism',
+            category='service',
+            s_level_range=(3.5, 5.5),
+            description='Reality as shared values and traditions',
+            operator_signature={'Co_coherence': 0.7, 'D_dharma': 0.5, 'A_aware': 0.5},
+            manifestation_style='traditional, values-based, identity-forming',
+            limitations=['May resist change', 'In-group bias'],
+            possibilities=['Cultural continuity', 'Shared meaning']
+        ),
+        'empathic': RealismType(
+            name='Empathic Realism',
+            category='service',
+            s_level_range=(4.0, 5.5),
+            description='Reality through feeling others emotions and perspectives',
+            operator_signature={'A_aware': 0.7, 'O_openness': 0.7, 'At_attachment': 0.3},
+            manifestation_style='compassionate, resonant, understanding',
+            limitations=['Emotional overwhelm', 'Boundary confusion'],
+            possibilities=['Deep understanding', 'Compassionate action']
+        ),
+        'developmental': RealismType(
+            name='Developmental Realism',
+            category='service',
+            s_level_range=(4.0, 5.5),
+            description='Reality as continuous growth and evolution',
+            operator_signature={'I_intention': 0.6, 'A_aware': 0.6, 'O_openness': 0.7},
+            manifestation_style='growth-oriented, learning-focused, evolving',
+            limitations=['Never arrived', 'Process addiction'],
+            possibilities=['Continuous improvement', 'Self-actualization']
+        ),
+        'therapeutic': RealismType(
+            name='Therapeutic Realism',
+            category='service',
+            s_level_range=(4.0, 5.5),
+            description='Reality as healing journey and integration process',
+            operator_signature={'A_aware': 0.7, 'W_witness': 0.5, 'O_openness': 0.6},
+            manifestation_style='healing-oriented, integrative, compassionate',
+            limitations=['Pathology focus', 'Never fully healed'],
+            possibilities=['Deep healing', 'Shadow integration']
+        ),
+        'educational': RealismType(
+            name='Educational Realism',
+            category='service',
+            s_level_range=(3.5, 5.0),
+            description='Reality as learning opportunity and knowledge acquisition',
+            operator_signature={'A_aware': 0.6, 'I_intention': 0.6, 'O_openness': 0.7},
+            manifestation_style='curious, learning-focused, knowledge-seeking',
+            limitations=['Endless seeking', 'Knowledge over wisdom'],
+            possibilities=['Continuous learning', 'Skill mastery']
+        ),
+        'transformational': RealismType(
+            name='Transformational Realism',
+            category='service',
+            s_level_range=(4.5, 6.0),
+            description='Reality as metamorphosis and identity shift',
+            operator_signature={'S_surrender': 0.6, 'A_aware': 0.7, 'O_openness': 0.7},
+            manifestation_style='breakthrough-focused, metamorphic, evolving',
+            limitations=['Destabilizing', 'Identity confusion'],
+            possibilities=['Profound transformation', 'New becoming']
+        ),
+        'existential': RealismType(
+            name='Existential Realism',
+            category='service',
+            s_level_range=(4.0, 6.0),
+            description='Reality as meaning-seeking and authentic living',
+            operator_signature={'D_dharma': 0.6, 'A_aware': 0.7, 'W_witness': 0.5},
+            manifestation_style='meaning-seeking, authentic, questioning',
+            limitations=['Existential anxiety', 'Meaning crisis'],
+            possibilities=['Authentic existence', 'Purpose clarity']
         ),
 
         # ============ S5-S6: FLOW/INTEGRATED ============
@@ -343,6 +483,36 @@ class RealismEngine:
             limitations=['May lose grounding'],
             possibilities=['Creation', 'Innovation', 'Art']
         ),
+        'dharmic': RealismType(
+            name='Dharmic Realism',
+            category='integrated',
+            s_level_range=(4.5, 6.0),
+            description='Reality as aligned natural path and right action',
+            operator_signature={'D_dharma': 0.8, 'A_aware': 0.6, 'S_surrender': 0.5},
+            manifestation_style='aligned, purposeful, harmonious',
+            limitations=['May become rigid', 'Attachment to path'],
+            possibilities=['Natural alignment', 'Right livelihood']
+        ),
+        'spiritual': RealismType(
+            name='Spiritual Realism',
+            category='integrated',
+            s_level_range=(5.0, 7.0),
+            description='Reality as non-physical consciousness and inner truth',
+            operator_signature={'Psi_quality': 0.7, 'A_aware': 0.7, 'W_witness': 0.6},
+            manifestation_style='inner-focused, transcendent, sacred',
+            limitations=['May reject material world'],
+            possibilities=['Spiritual awakening', 'Inner peace']
+        ),
+        'mystical': RealismType(
+            name='Mystical Realism',
+            category='integrated',
+            s_level_range=(5.5, 8.0),
+            description='Reality as direct ineffable experience beyond rational mind',
+            operator_signature={'Psi_quality': 0.8, 'V_void': 0.6, 'W_witness': 0.7},
+            manifestation_style='transcendent, ineffable, visionary',
+            limitations=['Hard to communicate', 'May seem irrational'],
+            possibilities=['Direct knowing', 'Mystical union']
+        ),
 
         # ============ S6-S7: WITNESS/WISDOM ============
         'witness': RealismType(
@@ -374,6 +544,46 @@ class RealismEngine:
             manifestation_style='beyond, unlimited, free',
             limitations=['Hard to communicate'],
             possibilities=['Transcendence', 'Liberation']
+        ),
+        'ecological': RealismType(
+            name='Ecological Realism',
+            category='wisdom',
+            s_level_range=(5.0, 7.0),
+            description='Reality as interconnected natural systems and sustainability',
+            operator_signature={'Co_coherence': 0.7, 'A_aware': 0.7, 'O_openness': 0.6},
+            manifestation_style='interconnected, sustainable, nature-aware',
+            limitations=['Overwhelmed by complexity'],
+            possibilities=['Environmental harmony', 'Systems understanding']
+        ),
+        'non_dual': RealismType(
+            name='Non-Dual Realism',
+            category='wisdom',
+            s_level_range=(6.5, 8.0),
+            description='Reality as unity of subject and object',
+            operator_signature={'W_witness': 0.9, 'V_void': 0.7, 'M_maya': 0.2},
+            manifestation_style='unified, non-separate, advaitic',
+            limitations=['Functioning in duality', 'Communication'],
+            possibilities=['Non-dual awareness', 'Liberation']
+        ),
+        'eternal': RealismType(
+            name='Eternal Realism',
+            category='wisdom',
+            s_level_range=(6.5, 8.0),
+            description='Reality as timeless unchanging truth',
+            operator_signature={'W_witness': 0.8, 'V_void': 0.7, 'Psi_quality': 0.8},
+            manifestation_style='timeless, unchanging, eternal',
+            limitations=['May deny change', 'Difficult to relate'],
+            possibilities=['Eternal perspective', 'Peace beyond time']
+        ),
+        'void': RealismType(
+            name='Void Realism',
+            category='wisdom',
+            s_level_range=(6.5, 8.0),
+            description='Reality as emptiness and pure potential',
+            operator_signature={'V_void': 0.9, 'W_witness': 0.8, 'At_attachment': 0.1},
+            manifestation_style='empty, spacious, potential-filled',
+            limitations=['May seem nihilistic', 'Hard to function'],
+            possibilities=['Spacious freedom', 'Creative potential']
         ),
 
         # ============ S7-S8: UNITY/ABSOLUTE ============
@@ -416,18 +626,257 @@ class RealismEngine:
             manifestation_style='absolute, unchanging, eternal',
             limitations=['Communication'],
             possibilities=['Absolute realization', 'Complete freedom']
+        ),
+        'cosmic': RealismType(
+            name='Cosmic Realism',
+            category='absolute',
+            s_level_range=(6.5, 8.0),
+            description='Reality at universal/galactic scale and perspective',
+            operator_signature={'Psi_quality': 0.8, 'W_witness': 0.8, 'Co_coherence': 0.8},
+            manifestation_style='vast, cosmic, universal-scale',
+            limitations=['Distant from everyday', 'Impersonal'],
+            possibilities=['Cosmic perspective', 'Universal identity']
+        ),
+        'divine': RealismType(
+            name='Divine Realism',
+            category='absolute',
+            s_level_range=(6.5, 8.0),
+            description='Reality as sacred consciousness and holy perception',
+            operator_signature={'G_grace': 0.9, 'Psi_quality': 0.8, 'S_surrender': 0.7},
+            manifestation_style='sacred, holy, blessed',
+            limitations=['May seem disconnected'],
+            possibilities=['Divine connection', 'Sacred perception']
+        ),
+        'universal_love': RealismType(
+            name='Universal Love Realism',
+            category='absolute',
+            s_level_range=(6.5, 8.0),
+            description='Reality as unconditional love underlying all existence',
+            operator_signature={'G_grace': 0.8, 'O_openness': 0.9, 'At_attachment': 0.1},
+            manifestation_style='loving, unconditional, heart-centered',
+            limitations=['May seem naive'],
+            possibilities=['Unconditional love', 'Heart-based living']
+        ),
+
+        # ============ CROSS-DOMAIN REALISMS ============
+        'scientific': RealismType(
+            name='Scientific Realism',
+            category='cross_domain',
+            s_level_range=(2.0, 6.0),
+            description='Reality as empirical evidence and reproducible observation',
+            operator_signature={'A_aware': 0.7, 'W_witness': 0.5, 'M_maya': 0.3},
+            manifestation_style='empirical, data-driven, methodical',
+            limitations=['May miss subjective truth', 'Reductionist'],
+            possibilities=['Objective understanding', 'Reliable knowledge']
+        ),
+        'probabilistic': RealismType(
+            name='Probabilistic Realism',
+            category='cross_domain',
+            s_level_range=(3.0, 6.0),
+            description='Reality as uncertainty, ranges, and statistical thinking',
+            operator_signature={'A_aware': 0.6, 'O_openness': 0.6, 'W_witness': 0.5},
+            manifestation_style='uncertain, range-based, statistical',
+            limitations=['Paralysis by analysis', 'Never certain'],
+            possibilities=['Risk awareness', 'Nuanced thinking']
+        ),
+        'technological': RealismType(
+            name='Technological Realism',
+            category='cross_domain',
+            s_level_range=(2.0, 5.0),
+            description='Reality mediated through technology and digital systems',
+            operator_signature={'I_intention': 0.6, 'M_manifest': 0.6, 'A_aware': 0.5},
+            manifestation_style='tech-mediated, digital, systemic',
+            limitations=['Disconnection from nature', 'Tool dependency'],
+            possibilities=['Leverage technology', 'Systematic solutions']
+        ),
+        'game_theoretic': RealismType(
+            name='Game Theoretic Realism',
+            category='cross_domain',
+            s_level_range=(3.0, 5.5),
+            description='Reality as strategic interaction and payoff optimization',
+            operator_signature={'I_intention': 0.7, 'A_aware': 0.6, 'W_witness': 0.4},
+            manifestation_style='strategic, game-like, equilibrium-seeking',
+            limitations=['Overly calculated', 'Misses cooperation'],
+            possibilities=['Strategic clarity', 'Optimal decisions']
+        ),
+        'systems': RealismType(
+            name='Systems Realism',
+            category='cross_domain',
+            s_level_range=(4.0, 6.5),
+            description='Reality as feedback loops and emergent complexity',
+            operator_signature={'Co_coherence': 0.7, 'A_aware': 0.7, 'O_openness': 0.6},
+            manifestation_style='systemic, interconnected, emergent',
+            limitations=['Overwhelm by complexity'],
+            possibilities=['Systems leverage', 'Pattern recognition']
+        ),
+        'historical': RealismType(
+            name='Historical Realism',
+            category='cross_domain',
+            s_level_range=(3.0, 5.5),
+            description='Reality shaped by past patterns and legacy forces',
+            operator_signature={'A_aware': 0.6, 'Co_coherence': 0.5, 'At_attachment': 0.5},
+            manifestation_style='past-aware, pattern-seeing, contextual',
+            limitations=['Trapped in past', 'Fatalistic'],
+            possibilities=['Historical wisdom', 'Pattern learning']
+        ),
+        'futures': RealismType(
+            name='Futures Realism',
+            category='cross_domain',
+            s_level_range=(4.0, 6.0),
+            description='Reality as multiple possible futures and scenario space',
+            operator_signature={'I_intention': 0.7, 'A_aware': 0.6, 'O_openness': 0.7},
+            manifestation_style='future-oriented, possibility-aware, visionary',
+            limitations=['Detached from present', 'Speculation'],
+            possibilities=['Strategic foresight', 'Visionary planning']
+        ),
+
+        # ============ SPECIALIZED REALISMS ============
+        'poetic': RealismType(
+            name='Poetic Realism',
+            category='specialized',
+            s_level_range=(4.0, 7.0),
+            description='Reality as metaphoric truth and aesthetic expression',
+            operator_signature={'A_aware': 0.6, 'O_openness': 0.8, 'Psi_quality': 0.6},
+            manifestation_style='metaphoric, beautiful, expressive',
+            limitations=['Impractical', 'Subjective'],
+            possibilities=['Beauty perception', 'Artistic truth']
+        ),
+        'mythic': RealismType(
+            name='Mythic Realism',
+            category='specialized',
+            s_level_range=(4.0, 7.0),
+            description='Reality as archetypal patterns and hero journey',
+            operator_signature={'A_aware': 0.6, 'D_dharma': 0.6, 'Psi_quality': 0.6},
+            manifestation_style='archetypal, story-based, meaningful',
+            limitations=['May impose narrative', 'Romantic'],
+            possibilities=['Deep meaning', 'Archetypal guidance']
+        ),
+        'shamanic': RealismType(
+            name='Shamanic Realism',
+            category='specialized',
+            s_level_range=(5.0, 8.0),
+            description='Reality includes spirit world and energy dimensions',
+            operator_signature={'Psi_quality': 0.7, 'Sh_shakti': 0.7, 'A_aware': 0.6},
+            manifestation_style='spirit-connected, energy-aware, journeying',
+            limitations=['May seem irrational', 'Cultural context needed'],
+            possibilities=['Spirit guidance', 'Energy perception']
+        ),
+        'dream': RealismType(
+            name='Dream Realism',
+            category='specialized',
+            s_level_range=(4.0, 7.0),
+            description='Reality includes dream states and symbolic truth',
+            operator_signature={'A_aware': 0.6, 'Psi_quality': 0.6, 'O_openness': 0.6},
+            manifestation_style='symbolic, dreamlike, unconscious-aware',
+            limitations=['Interpretation challenges', 'Subjective'],
+            possibilities=['Unconscious wisdom', 'Symbol reading']
+        ),
+        'somatic': RealismType(
+            name='Somatic Realism',
+            category='specialized',
+            s_level_range=(3.0, 6.0),
+            description='Reality as felt sense and embodied wisdom',
+            operator_signature={'P_presence': 0.7, 'A_aware': 0.6, 'Sh_shakti': 0.5},
+            manifestation_style='body-based, felt-sense, embodied',
+            limitations=['Hard to articulate', 'Culture-resistant'],
+            possibilities=['Body wisdom', 'Embodied knowing']
+        ),
+        'trauma': RealismType(
+            name='Trauma Realism',
+            category='specialized',
+            s_level_range=(1.5, 5.0),
+            description='Reality filtered through past wounds and healing needs',
+            operator_signature={'F_fear': 0.7, 'At_attachment': 0.6, 'R_resistance': 0.6},
+            manifestation_style='wound-aware, protective, healing-focused',
+            limitations=['Trigger sensitivity', 'Past-focused'],
+            possibilities=['Trauma wisdom', 'Healing path clarity']
+        ),
+        'shadow': RealismType(
+            name='Shadow Realism',
+            category='specialized',
+            s_level_range=(4.0, 6.5),
+            description='Reality includes hidden forces and unconscious drivers',
+            operator_signature={'A_aware': 0.7, 'W_witness': 0.6, 'O_openness': 0.5},
+            manifestation_style='depth-aware, shadow-seeing, integrative',
+            limitations=['Dark focus', 'May become cynical'],
+            possibilities=['Shadow integration', 'Depth understanding']
+        ),
+        'paradoxical': RealismType(
+            name='Paradoxical Realism',
+            category='specialized',
+            s_level_range=(5.5, 8.0),
+            description='Reality embraces both/and and transcends contradiction',
+            operator_signature={'A_aware': 0.7, 'W_witness': 0.7, 'Psi_quality': 0.7},
+            manifestation_style='both-and, koan-like, transcendent',
+            limitations=['Confusing', 'Hard to communicate'],
+            possibilities=['Paradox resolution', 'Higher integration']
+        ),
+        'quantum': RealismType(
+            name='Quantum Realism',
+            category='specialized',
+            s_level_range=(5.0, 8.0),
+            description='Reality as observer-dependent probability collapse',
+            operator_signature={'W_witness': 0.7, 'Psi_quality': 0.7, 'A_aware': 0.6},
+            manifestation_style='probabilistic, observer-influenced, superposed',
+            limitations=['Misapplication risk', 'Pseudoscience adjacent'],
+            possibilities=['Creative reality shaping', 'Multiple possibility awareness']
+        ),
+        'chaos': RealismType(
+            name='Chaos Realism',
+            category='specialized',
+            s_level_range=(4.0, 7.0),
+            description='Reality as sensitive dependence and butterfly effects',
+            operator_signature={'A_aware': 0.6, 'O_openness': 0.7, 'Co_coherence': 0.5},
+            manifestation_style='complexity-aware, sensitive, adaptive',
+            limitations=['Unpredictability anxiety', 'Hard to plan'],
+            possibilities=['Leverage small actions', 'Embrace uncertainty']
+        ),
+        'fractal': RealismType(
+            name='Fractal Realism',
+            category='specialized',
+            s_level_range=(5.0, 7.5),
+            description='Reality as self-similar patterns across scales',
+            operator_signature={'A_aware': 0.7, 'Co_coherence': 0.7, 'W_witness': 0.6},
+            manifestation_style='pattern-seeing, scale-aware, recursive',
+            limitations=['Pattern imposition', 'Over-abstraction'],
+            possibilities=['Scale-independent wisdom', 'Pattern recognition']
         )
     }
 
     # Category groupings
+    # Category groupings - Updated with all 68 realism types
     CATEGORIES = {
-        'biological': ['dirty', 'naturalistic', 'biological', 'survival', 'scarcity', 'material', 'physical', 'sensory'],
+        'biological': [
+            'dirty', 'naturalistic', 'biological', 'survival', 'scarcity',
+            'material', 'physical', 'sensory', 'materialistic', 'cynical'
+        ],
         'seeking': ['emotional', 'romantic', 'psychological', 'relational'],
-        'achievement': ['social', 'economic', 'political', 'achievement', 'professional', 'competitive', 'strategic'],
-        'service': ['service', 'purposeful', 'ethical', 'systemic'],
-        'integrated': ['flow', 'integrated', 'holistic', 'intuitive', 'creative'],
-        'wisdom': ['witness', 'wisdom', 'transcendent'],
-        'absolute': ['unity', 'grace', 'universal', 'absolute']
+        'achievement': [
+            'social', 'economic', 'political', 'achievement', 'professional',
+            'competitive', 'strategic', 'status', 'pragmatic', 'merit'
+        ],
+        'service': [
+            'service', 'purposeful', 'ethical', 'systemic', 'interpersonal',
+            'community', 'cultural', 'empathic', 'developmental', 'therapeutic',
+            'educational', 'transformational', 'existential'
+        ],
+        'integrated': [
+            'flow', 'integrated', 'holistic', 'intuitive', 'creative',
+            'dharmic', 'spiritual', 'mystical'
+        ],
+        'wisdom': [
+            'witness', 'wisdom', 'transcendent', 'ecological',
+            'non_dual', 'eternal', 'void'
+        ],
+        'absolute': ['unity', 'grace', 'universal', 'absolute', 'cosmic', 'divine', 'universal_love'],
+        'cross_domain': [
+            'scientific', 'probabilistic', 'technological', 'game_theoretic',
+            'systems', 'historical', 'futures'
+        ],
+        'specialized': [
+            'poetic', 'mythic', 'shamanic', 'dream', 'somatic', 'trauma',
+            'shadow', 'paradoxical', 'quantum', 'chaos', 'fractal'
+        ]
     }
 
     def calculate_realism_profile(
@@ -465,13 +914,13 @@ class RealismEngine:
             dominant_weight = dominant[1]
         else:
             # ZERO-FALLBACK: Cannot determine dominant if no weights calculable
-            dominant_name = None
-            dominant_weight = None
+            dominant_name = "unknown"
+            dominant_weight = 0.0
             realism_weights = {}
             active = []
 
         # Calculate coherence (how well realisms integrate)
-        coherence = self._calculate_realism_coherence(active) if active else None
+        coherence = self._calculate_realism_coherence(active) if active else 0.0
 
         # Determine evolution direction
         evolution_direction = self._determine_evolution_direction(s_level, dominant_name) if dominant_name else "Cannot determine - insufficient data"
@@ -553,7 +1002,7 @@ class RealismEngine:
 
         # More categories = potentially less coherence
         # But adjacent categories are more coherent
-        category_order = ['biological', 'seeking', 'achievement', 'service', 'integrated', 'wisdom', 'absolute']
+        category_order = ['biological', 'seeking', 'achievement', 'service', 'integrated', 'wisdom', 'absolute', 'cross_domain', 'specialized']
 
         if len(categories) == 1:
             return 1.0
@@ -610,7 +1059,7 @@ class RealismEngine:
                     current_cats.add(cat)
 
         # Suggest next level realisms
-        category_order = ['biological', 'seeking', 'achievement', 'service', 'integrated', 'wisdom', 'absolute']
+        category_order = ['biological', 'seeking', 'achievement', 'service', 'integrated', 'wisdom', 'absolute', 'cross_domain', 'specialized']
 
         for cat in current_cats:
             idx = category_order.index(cat) if cat in category_order else 0
@@ -675,3 +1124,446 @@ class RealismEngine:
             blend += weight * depth_factor
 
         return blend ** creator_coefficient
+
+    def get_semantic_description(self, realism_name: str, weight: float, context: str = 'general') -> str:
+        """
+        Get natural language description of a realism type for articulation.
+
+        Args:
+            realism_name: The key name of the realism type
+            weight: The weight/activation level (0.0-1.0)
+            context: Context type ('business', 'personal', 'spiritual', 'general')
+
+        Returns:
+            Human-readable description of how this realism manifests
+        """
+        if realism_name not in REALISM_SEMANTIC_DESCRIPTIONS:
+            return f"{realism_name.replace('_', ' ').title()} is active"
+
+        desc = REALISM_SEMANTIC_DESCRIPTIONS[realism_name]
+
+        # Select context-appropriate description
+        if context in desc:
+            base = desc[context]
+        else:
+            base = desc.get('general', desc.get('personal', ''))
+
+        # Intensity modifiers based on weight
+        if weight >= 0.8:
+            intensity = "strongly"
+        elif weight >= 0.6:
+            intensity = "significantly"
+        elif weight >= 0.4:
+            intensity = "moderately"
+        else:
+            intensity = "somewhat"
+
+        return f"{intensity} {base}"
+
+
+# Semantic descriptions for natural language articulation
+# Each realism has context-specific descriptions for different domains
+REALISM_SEMANTIC_DESCRIPTIONS = {
+    # S1-S2 BIOLOGICAL
+    'dirty': {
+        'general': 'seeing reality through raw, unfiltered survival needs',
+        'business': 'operating from basic survival instincts, focused on immediate threats',
+        'personal': 'experiencing life as raw physical struggle'
+    },
+    'naturalistic': {
+        'general': 'perceiving reality through natural cycles and organic processes',
+        'business': 'understanding market rhythms and natural growth patterns',
+        'personal': 'living in harmony with natural rhythms'
+    },
+    'biological': {
+        'general': 'experiencing reality through body and instinct',
+        'business': 'trusting gut reactions and physical intuition',
+        'personal': 'living from embodied wisdom'
+    },
+    'survival': {
+        'general': 'filtering everything through threat/safety assessment',
+        'business': 'every decision framed as survival-critical',
+        'personal': 'living in constant vigilance mode'
+    },
+    'scarcity': {
+        'general': 'seeing resources as fundamentally limited',
+        'business': 'zero-sum thinking about markets and opportunities',
+        'personal': 'hoarding mindset, fear of not having enough'
+    },
+    'material': {
+        'general': 'valuing what is tangible and measurable',
+        'business': 'focusing on concrete assets and bottom-line results',
+        'personal': 'defining success by possessions'
+    },
+    'physical': {
+        'general': 'trusting sensory experience above all',
+        'business': 'demanding physical proof and tangible evidence',
+        'personal': 'grounded in body and sensory world'
+    },
+    'sensory': {
+        'general': 'experiencing reality through rich sensory perception',
+        'business': 'attention to aesthetic and experiential quality',
+        'personal': 'living through taste, touch, sight, sound'
+    },
+    'materialistic': {
+        'general': 'seeing only physical matter as real',
+        'business': 'dismissing intangibles, focusing only on measurable assets',
+        'personal': 'meaning found through acquisition and possession'
+    },
+    'cynical': {
+        'general': 'expecting the worst from people and situations',
+        'business': 'assuming hidden agendas behind every deal',
+        'personal': 'protective distrust as default orientation'
+    },
+
+    # S2-S3 SEEKING
+    'emotional': {
+        'general': 'reality colored by emotional states',
+        'business': 'decisions driven by feelings about people and situations',
+        'personal': 'life experienced through emotional lens'
+    },
+    'romantic': {
+        'general': 'idealizing reality through longing and passion',
+        'business': 'vision-driven, inspired by what could be',
+        'personal': 'seeking perfect love and ideal connections'
+    },
+    'psychological': {
+        'general': 'understanding reality through mental patterns',
+        'business': 'analyzing motivations and psychological dynamics',
+        'personal': 'self-aware, working with inner patterns'
+    },
+    'relational': {
+        'general': 'reality defined through relationships',
+        'business': 'success measured by relationship quality',
+        'personal': 'identity formed through connections'
+    },
+
+    # S3-S4 ACHIEVEMENT
+    'social': {
+        'general': 'reality as social structures and roles',
+        'business': 'navigating organizational hierarchies',
+        'personal': 'identity defined by social position'
+    },
+    'economic': {
+        'general': 'seeing reality through exchange and value',
+        'business': 'everything has a price, optimizing transactions',
+        'personal': 'measuring life in terms of economic value'
+    },
+    'political': {
+        'general': 'perceiving power dynamics and influence',
+        'business': 'aware of office politics and power plays',
+        'personal': 'navigating social power structures'
+    },
+    'achievement': {
+        'general': 'reality as goals to accomplish',
+        'business': 'driven by targets, metrics, and milestones',
+        'personal': 'self-worth tied to accomplishments'
+    },
+    'professional': {
+        'general': 'identity through career and expertise',
+        'business': 'credentialing and competence as currency',
+        'personal': 'defining self through work role'
+    },
+    'competitive': {
+        'general': 'framing everything as competition',
+        'business': 'market share battles, winning against rivals',
+        'personal': 'constantly comparing and competing'
+    },
+    'strategic': {
+        'general': 'seeing reality as chess board to navigate',
+        'business': 'long-term planning and positioning',
+        'personal': 'life as strategy game'
+    },
+    'status': {
+        'general': 'reality filtered through hierarchy and rank',
+        'business': 'focused on position, title, prestige',
+        'personal': 'worth measured by social standing'
+    },
+    'pragmatic': {
+        'general': 'focused on what works in practice',
+        'business': 'results over theory, practical solutions',
+        'personal': 'no-nonsense approach to life'
+    },
+    'merit': {
+        'general': 'believing outcomes reflect effort and skill',
+        'business': 'meritocracy mindset, earned success',
+        'personal': 'taking responsibility for results'
+    },
+
+    # S4-S5 SERVICE
+    'service': {
+        'general': 'reality as opportunity to contribute',
+        'business': 'customer service as core value',
+        'personal': 'fulfillment through helping others'
+    },
+    'purposeful': {
+        'general': 'driven by sense of purpose',
+        'business': 'mission-driven organization',
+        'personal': 'life organized around meaningful purpose'
+    },
+    'ethical': {
+        'general': 'reality through moral framework',
+        'business': 'ethical business practices as priority',
+        'personal': 'living by principles and values'
+    },
+    'systemic': {
+        'general': 'seeing interconnected systems everywhere',
+        'business': 'understanding organizational dynamics',
+        'personal': 'aware of how everything connects'
+    },
+    'interpersonal': {
+        'general': 'reality through one-on-one connection',
+        'business': 'building individual relationships',
+        'personal': 'depth in personal connections'
+    },
+    'community': {
+        'general': 'reality as collective wellbeing',
+        'business': 'community-building and shared resources',
+        'personal': 'belonging to something larger'
+    },
+    'cultural': {
+        'general': 'reality shaped by shared values and traditions',
+        'business': 'organizational culture as key asset',
+        'personal': 'identity through cultural participation'
+    },
+    'empathic': {
+        'general': 'feeling others emotions and perspectives',
+        'business': 'deep customer and employee understanding',
+        'personal': 'living with compassionate awareness'
+    },
+    'developmental': {
+        'general': 'seeing everything as growth opportunity',
+        'business': 'continuous improvement mindset',
+        'personal': 'life as learning journey'
+    },
+    'therapeutic': {
+        'general': 'reality as healing journey',
+        'business': 'organizational healing and culture repair',
+        'personal': 'committed to inner work and integration'
+    },
+    'educational': {
+        'general': 'reality as learning opportunity',
+        'business': 'learning organization, knowledge management',
+        'personal': 'curious, always studying'
+    },
+    'transformational': {
+        'general': 'reality as metamorphosis and change',
+        'business': 'leading organizational transformation',
+        'personal': 'embracing identity shifts'
+    },
+    'existential': {
+        'general': 'seeking authentic meaning in existence',
+        'business': 'questioning purpose and authenticity',
+        'personal': 'confronting life\'s big questions'
+    },
+
+    # S5-S6 INTEGRATED
+    'flow': {
+        'general': 'reality as effortless flowing process',
+        'business': 'operating in flow states, effortless performance',
+        'personal': 'living in the zone'
+    },
+    'integrated': {
+        'general': 'reality as unified whole',
+        'business': 'whole-systems approach, integration',
+        'personal': 'living from wholeness'
+    },
+    'holistic': {
+        'general': 'seeing the whole in every part',
+        'business': 'holistic business approach',
+        'personal': 'mind-body-spirit integration'
+    },
+    'intuitive': {
+        'general': 'reality through direct knowing',
+        'business': 'trusting intuitive business decisions',
+        'personal': 'guided by inner knowing'
+    },
+    'creative': {
+        'general': 'reality as creative canvas',
+        'business': 'innovation and creative problem-solving',
+        'personal': 'life as artistic expression'
+    },
+    'dharmic': {
+        'general': 'living in alignment with natural path',
+        'business': 'right livelihood, aligned business',
+        'personal': 'following life purpose'
+    },
+    'spiritual': {
+        'general': 'perceiving non-physical dimensions',
+        'business': 'spiritual values in business',
+        'personal': 'inner life as primary reality'
+    },
+    'mystical': {
+        'general': 'experiencing reality beyond rational mind',
+        'business': 'visionary leadership, inspired guidance',
+        'personal': 'direct mystical experience'
+    },
+
+    # S6-S7 WISDOM
+    'witness': {
+        'general': 'observing reality without identification',
+        'business': 'detached awareness of business dynamics',
+        'personal': 'pure awareness, not caught in drama'
+    },
+    'wisdom': {
+        'general': 'reality through wisdom lens',
+        'business': 'wise leadership and decision-making',
+        'personal': 'living from accumulated wisdom'
+    },
+    'transcendent': {
+        'general': 'reality beyond ordinary limits',
+        'business': 'transcending conventional business thinking',
+        'personal': 'touching dimensions beyond ordinary'
+    },
+    'ecological': {
+        'general': 'seeing reality as interconnected ecosystem',
+        'business': 'sustainable, environmentally-conscious business',
+        'personal': 'living in harmony with nature'
+    },
+    'non_dual': {
+        'general': 'experiencing unity of subject and object',
+        'business': 'dissolving us/them boundaries',
+        'personal': 'living from non-separation'
+    },
+    'eternal': {
+        'general': 'perceiving timeless unchanging truth',
+        'business': 'building for eternity, timeless values',
+        'personal': 'resting in what never changes'
+    },
+    'void': {
+        'general': 'knowing emptiness as creative potential',
+        'business': 'comfort with uncertainty and emptiness',
+        'personal': 'spacious freedom beyond form'
+    },
+
+    # S7-S8 ABSOLUTE
+    'unity': {
+        'general': 'reality as undivided consciousness',
+        'business': 'seeing oneness in all stakeholders',
+        'personal': 'living from unity consciousness'
+    },
+    'grace': {
+        'general': 'reality as divine grace flowing',
+        'business': 'business as vessel for grace',
+        'personal': 'living in gratitude and grace'
+    },
+    'universal': {
+        'general': 'reality as universal consciousness',
+        'business': 'global perspective, universal values',
+        'personal': 'identity as universal self'
+    },
+    'absolute': {
+        'general': 'touching absolute truth',
+        'business': 'alignment with absolute principles',
+        'personal': 'resting in the absolute'
+    },
+    'cosmic': {
+        'general': 'reality at galactic/universal scale',
+        'business': 'cosmic perspective on earthly affairs',
+        'personal': 'awareness of cosmic context'
+    },
+    'divine': {
+        'general': 'perceiving sacredness in everything',
+        'business': 'business as sacred activity',
+        'personal': 'seeing God in all'
+    },
+    'universal_love': {
+        'general': 'reality as unconditional love',
+        'business': 'love as business foundation',
+        'personal': 'loving without conditions'
+    },
+
+    # CROSS-DOMAIN
+    'scientific': {
+        'general': 'relying on empirical evidence',
+        'business': 'data-driven decision making',
+        'personal': 'scientific approach to life'
+    },
+    'probabilistic': {
+        'general': 'thinking in probabilities and ranges',
+        'business': 'risk assessment and scenario planning',
+        'personal': 'comfortable with uncertainty'
+    },
+    'technological': {
+        'general': 'reality mediated through technology',
+        'business': 'tech-first approach to solutions',
+        'personal': 'digital native worldview'
+    },
+    'game_theoretic': {
+        'general': 'seeing reality as strategic game',
+        'business': 'game theory in negotiations',
+        'personal': 'strategic interaction awareness'
+    },
+    'systems': {
+        'general': 'perceiving feedback loops and emergence',
+        'business': 'systems thinking in organizations',
+        'personal': 'seeing how everything connects'
+    },
+    'historical': {
+        'general': 'reality shaped by past patterns',
+        'business': 'learning from business history',
+        'personal': 'aware of historical forces'
+    },
+    'futures': {
+        'general': 'seeing multiple possible futures',
+        'business': 'scenario planning and foresight',
+        'personal': 'future-oriented thinking'
+    },
+
+    # SPECIALIZED
+    'poetic': {
+        'general': 'perceiving metaphoric truth and beauty',
+        'business': 'storytelling and narrative leadership',
+        'personal': 'life as poetry'
+    },
+    'mythic': {
+        'general': 'living archetypal patterns',
+        'business': 'brand mythology and meaning',
+        'personal': 'hero\'s journey awareness'
+    },
+    'shamanic': {
+        'general': 'perceiving spirit world and energy',
+        'business': 'energy awareness in organizations',
+        'personal': 'spirit-connected living'
+    },
+    'dream': {
+        'general': 'honoring dream reality and symbols',
+        'business': 'vision and dream-inspired innovation',
+        'personal': 'working with dreams'
+    },
+    'somatic': {
+        'general': 'trusting body wisdom and felt sense',
+        'business': 'embodied leadership',
+        'personal': 'living from body knowing'
+    },
+    'trauma': {
+        'general': 'reality filtered through past wounds',
+        'business': 'trauma-informed organizational practices',
+        'personal': 'healing-focused living'
+    },
+    'shadow': {
+        'general': 'aware of hidden forces and projections',
+        'business': 'shadow work in organizations',
+        'personal': 'integrating rejected parts'
+    },
+    'paradoxical': {
+        'general': 'embracing both/and over either/or',
+        'business': 'holding paradox in leadership',
+        'personal': 'comfort with contradiction'
+    },
+    'quantum': {
+        'general': 'reality as observer-influenced probability',
+        'business': 'quantum leadership principles',
+        'personal': 'creating through observation'
+    },
+    'chaos': {
+        'general': 'aware of sensitive dependence and emergence',
+        'business': 'thriving in chaos and complexity',
+        'personal': 'embracing unpredictability'
+    },
+    'fractal': {
+        'general': 'seeing self-similar patterns across scales',
+        'business': 'fractal organization design',
+        'personal': 'pattern recognition mastery'
+    }
+}
