@@ -2,6 +2,18 @@
 Emotion Component Formulas
 20+ emotions with component breakdowns and 9 Rasas
 
+MASTER EMOTION FORMULA:
+Any_Emotion = Pure_Love ×
+              Ego_Config ×
+              Memory_Activation ×
+              Intellect_Interpretation ×
+              Mind_Proliferation ×
+              Breath_Pattern ×
+              Body_Expression ×
+              Temporal_Focus ×
+              Chakra_Activation ×
+              Environmental_Field
+
 Rasas (aesthetic emotions):
 1. Shringara - Love/beauty/romance
 2. Hasya - Joy/humor/laughter
@@ -13,7 +25,14 @@ Rasas (aesthetic emotions):
 8. Shanta - Peace/tranquility
 9. Bibhatsa - Disgust/aversion
 
-Each emotion is derived from operator combinations.
+SPECIFIC EMOTION FORMULAS:
+Joy = Love × (1 - Ego_Sep) × Pos_Memory × Present_Focus × Heart_Open × Grace_Flow
+Anger = Love × Ego_Sep × Past_Hurt × Boundary_Violation × Solar_Plexus_Fire
+Fear = Love × Separation × Future_Proj × (1 - Presence) × Survival_Threat
+Sadness = Love × Sep_from_Loved × Past_Focus × Loss_Recognition
+Compassion = Love × Softened_Boundaries × Unity_Exp × Heart_Open
+
+Each emotion is derived from operator combinations and cascade configurations.
 """
 
 from typing import Dict, Any, List, Tuple, Optional, Set
@@ -615,3 +634,238 @@ class EmotionAnalyzer:
             result['note'] = 'Some operators missing - analysis may be incomplete'
 
         return result
+
+
+# =============================================================================
+# EXPANDED CASCADE-BASED EMOTION ENGINE
+# =============================================================================
+
+@dataclass
+class CascadeEmotionConfig:
+    """
+    Cascade configuration for emotion derivation.
+
+    Each emotion arises from a specific cascade configuration:
+    - Self (Pure Consciousness) contribution
+    - Ego involvement and separation
+    - Memory/samskara activation
+    - Intellect interpretation
+    - Mind proliferation
+    - Breath pattern
+    - Body expression
+    """
+    self_level: float = 0.5       # Pure consciousness contribution
+    ego_config: float = 0.5       # Ego involvement
+    memory_activation: float = 0.5  # Past pattern activation
+    intellect_interpretation: float = 0.5  # How mind interprets
+    mind_proliferation: float = 0.5  # Thought multiplication
+    breath_pattern: float = 0.5   # Breathing state
+    body_expression: float = 0.5  # Physical manifestation
+
+
+class ExpandedEmotionEngine:
+    """
+    Expanded engine using cascade-based emotion derivation.
+
+    Implements the master emotion formula from OOF_Math.txt.
+    """
+
+    def _calculate_ego_separation(self, ops: Dict[str, float]) -> float:
+        """
+        Calculate ego separation factor.
+
+        Formula: Ego_Sep = At × (1 - Se) × Asmita × (1 - W)
+        """
+        at = ops.get("At_attachment", 0.5)
+        se = ops.get("Se_service", 0.3)
+        as_ = ops.get("As_asmita", ops.get("At_attachment", 0.5))
+        w = ops.get("W_witness", 0.3)
+        return at * (1 - se) * as_ * (1 - w)
+
+    def _get_cascade_config(self, ops: Dict[str, float]) -> CascadeEmotionConfig:
+        """Build cascade configuration from operators."""
+        return CascadeEmotionConfig(
+            self_level=ops.get("Psi_quality", 0.5) * ops.get("W_witness", 0.3),
+            ego_config=self._calculate_ego_separation(ops),
+            memory_activation=ops.get("Sa_samskara", 0.5),
+            intellect_interpretation=(1 - ops.get("M_maya", 0.5)) * ops.get("W_witness", 0.3),
+            mind_proliferation=(1 - ops.get("P_presence", 0.5)) * (1 - ops.get("W_witness", 0.3)),
+            breath_pattern=ops.get("P_presence", 0.5) * (1 - ops.get("F_fear", ops.get("Ab_abhinivesha", 0.5))),
+            body_expression=ops.get("V_vitality", ops.get("Sh_shakti", 0.5)) * ops.get("E_equanimity", 0.5),
+        )
+
+    def calculate_joy_cascade(self, ops: Dict[str, float]) -> Dict[str, float]:
+        """
+        Joy = Love × (1 - Ego_Sep) × Pos_Memory × Present_Focus × Heart_Open × Grace_Flow
+        """
+        ego_sep = self._calculate_ego_separation(ops)
+        love_base = 1.0
+        pos_memory = 1 - ops.get("Sa_samskara", 0.5) * 0.5
+        present_focus = ops.get("P_presence", 0.5)
+        heart_open = (1 - ego_sep) * ops.get("E_equanimity", 0.5)
+        grace_flow = ops.get("G_grace", 0.3)
+
+        intensity = love_base * (1 - ego_sep) * pos_memory * present_focus * heart_open * grace_flow
+        intensity = max(0.0, min(1.0, intensity * 2))
+
+        return {
+            "name": "joy",
+            "intensity": intensity,
+            "ego_separation": ego_sep,
+            "present_focus": present_focus,
+            "heart_open": heart_open,
+            "grace_flow": grace_flow,
+            "temporal_focus": "present",
+        }
+
+    def calculate_fear_cascade(self, ops: Dict[str, float]) -> Dict[str, float]:
+        """
+        Fear = Love × Separation × Future_Proj × (1 - Presence) × Survival_Threat
+        """
+        ego_sep = self._calculate_ego_separation(ops)
+        future_proj = (1 - ops.get("P_presence", 0.5)) * 0.7
+        no_presence = 1 - ops.get("P_presence", 0.5)
+        survival_threat = ops.get("F_fear", ops.get("Ab_abhinivesha", 0.5))
+
+        intensity = ego_sep * future_proj * no_presence * survival_threat
+        intensity = max(0.0, min(1.0, intensity * 2.5))
+
+        return {
+            "name": "fear",
+            "intensity": intensity,
+            "ego_separation": ego_sep,
+            "future_projection": future_proj,
+            "no_presence": no_presence,
+            "survival_threat": survival_threat,
+            "temporal_focus": "future",
+        }
+
+    def calculate_anger_cascade(self, ops: Dict[str, float]) -> Dict[str, float]:
+        """
+        Anger = Love × Ego_Sep × Past_Hurt × Boundary_Violation × Solar_Plexus_Fire
+        """
+        ego_sep = self._calculate_ego_separation(ops)
+        past_hurt = ops.get("Sa_samskara", 0.5)
+        boundary_violation = ops.get("At_attachment", 0.5) * (1 - ops.get("Se_service", 0.3))
+        solar_fire = ops.get("Sh_shakti", ops.get("V_vitality", 0.5)) * (1 - ops.get("P_presence", 0.5))
+
+        intensity = ego_sep * past_hurt * boundary_violation * solar_fire
+        intensity = max(0.0, min(1.0, intensity * 2.5))
+
+        return {
+            "name": "anger",
+            "intensity": intensity,
+            "ego_separation": ego_sep,
+            "past_hurt": past_hurt,
+            "boundary_violation": boundary_violation,
+            "solar_fire": solar_fire,
+            "temporal_focus": "past",
+        }
+
+    def calculate_sadness_cascade(self, ops: Dict[str, float]) -> Dict[str, float]:
+        """
+        Sadness = Love × Sep_from_Loved × Past_Focus × Loss_Recognition
+        """
+        ego_sep = self._calculate_ego_separation(ops)
+        past_focus = 1 - ops.get("P_presence", 0.5)
+        loss_recognition = ops.get("At_attachment", 0.5) * ops.get("Sa_samskara", 0.5)
+
+        intensity = ego_sep * past_focus * loss_recognition
+        intensity = max(0.0, min(1.0, intensity * 2))
+
+        return {
+            "name": "sadness",
+            "intensity": intensity,
+            "ego_separation": ego_sep,
+            "past_focus": past_focus,
+            "loss_recognition": loss_recognition,
+            "temporal_focus": "past",
+        }
+
+    def calculate_compassion_cascade(self, ops: Dict[str, float]) -> Dict[str, float]:
+        """
+        Compassion = Love × Softened_Boundaries × Unity_Exp × Heart_Open
+        """
+        ego_sep = self._calculate_ego_separation(ops)
+        softened_boundaries = 1 - ego_sep
+        unity_exp = ops.get("Se_service", 0.3) * (1 - ops.get("At_attachment", 0.5))
+        heart_open = ops.get("E_equanimity", 0.5) * (1 - ego_sep)
+
+        intensity = softened_boundaries * unity_exp * heart_open
+        intensity = max(0.0, min(1.0, intensity * 2))
+
+        return {
+            "name": "compassion",
+            "intensity": intensity,
+            "softened_boundaries": softened_boundaries,
+            "unity_experience": unity_exp,
+            "heart_open": heart_open,
+            "temporal_focus": "present",
+        }
+
+    def calculate_peace_cascade(self, ops: Dict[str, float]) -> Dict[str, float]:
+        """
+        Peace = Low_Desire + Present + Acceptance × Low_Agitation
+        """
+        low_desire = 1 - ops.get("At_attachment", 0.5) * 0.5
+        present = ops.get("P_presence", 0.5)
+        acceptance = (1 - ops.get("R_resistance", 0.5)) * ops.get("W_witness", 0.3)
+        low_agitation = 1 - (1 - ops.get("P_presence", 0.5)) * (1 - ops.get("W_witness", 0.3))
+
+        intensity = low_desire * present * acceptance * low_agitation
+        intensity = max(0.0, min(1.0, intensity * 1.5))
+
+        return {
+            "name": "peace",
+            "intensity": intensity,
+            "low_desire": low_desire,
+            "present": present,
+            "acceptance": acceptance,
+            "low_agitation": low_agitation,
+            "temporal_focus": "present",
+        }
+
+    def calculate_all_cascade_emotions(self, ops: Dict[str, float]) -> Dict[str, Dict[str, float]]:
+        """Calculate all cascade-based emotions."""
+        return {
+            "joy": self.calculate_joy_cascade(ops),
+            "fear": self.calculate_fear_cascade(ops),
+            "anger": self.calculate_anger_cascade(ops),
+            "sadness": self.calculate_sadness_cascade(ops),
+            "compassion": self.calculate_compassion_cascade(ops),
+            "peace": self.calculate_peace_cascade(ops),
+        }
+
+    def get_emotion_summary(self, ops: Dict[str, float]) -> Dict[str, Any]:
+        """Get summary of emotional state including cascade analysis."""
+        emotions = self.calculate_all_cascade_emotions(ops)
+        cascade = self._get_cascade_config(ops)
+
+        # Find dominant
+        dominant = max(emotions.keys(), key=lambda k: emotions[k]["intensity"])
+
+        # Calculate overall emotional health
+        positive_intensity = sum(
+            e["intensity"] for name, e in emotions.items()
+            if name in ["joy", "compassion", "peace"]
+        ) / 3
+        negative_intensity = sum(
+            e["intensity"] for name, e in emotions.items()
+            if name in ["fear", "anger", "sadness"]
+        ) / 3
+
+        health_score = positive_intensity - negative_intensity * 0.5
+
+        return {
+            "emotions": emotions,
+            "dominant_emotion": dominant,
+            "cascade_config": {
+                "self_level": cascade.self_level,
+                "ego_config": cascade.ego_config,
+                "memory_activation": cascade.memory_activation,
+                "mind_proliferation": cascade.mind_proliferation,
+            },
+            "positive_intensity": positive_intensity,
+            "negative_intensity": negative_intensity,
+            "emotional_health": max(0.0, min(1.0, health_score + 0.5)),
+        }

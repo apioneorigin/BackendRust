@@ -11,12 +11,75 @@ The Heartfulness Cascade represents cleanliness at each level:
 6. Breath (Prana) - Life force
 7. Body (Annamaya) - Physical form
 
+Cleanliness Zones:
+- Liberation Zone (0.9+): Near-pure state, minimal distortion
+- Dharmic Zone (0.7-0.9): Aligned with dharma, clear perception
+- Growth Zone (0.5-0.7): Active development, moderate blockages
+- Struggle Zone (0.3-0.5): Significant challenges, heavy impressions
+- Darkness Zone (0.0-0.3): Severe blockage, maya dominant
+
+Demultiplexer Mechanics:
+- Each level has choice points where consciousness selects paths
+- Cleanliness affects probability of higher vs lower path selection
+- Grace can override normal selection probability
+
 ZERO-FALLBACK MODE: No default 0.5 values. Missing operators result in None calculations.
 """
 
 from typing import Dict, Any, List, Tuple, Optional, Set, Union
 from dataclasses import dataclass, field
+from enum import Enum
 import math
+
+
+class CleanlinessZone(Enum):
+    """Cleanliness zones representing consciousness state."""
+    LIBERATION = "liberation"    # 0.9+
+    DHARMIC = "dharmic"         # 0.7-0.9
+    GROWTH = "growth"           # 0.5-0.7
+    STRUGGLE = "struggle"       # 0.3-0.5
+    DARKNESS = "darkness"       # 0.0-0.3
+
+
+# Zone thresholds
+ZONE_THRESHOLDS = {
+    CleanlinessZone.LIBERATION: (0.9, 1.0),
+    CleanlinessZone.DHARMIC: (0.7, 0.9),
+    CleanlinessZone.GROWTH: (0.5, 0.7),
+    CleanlinessZone.STRUGGLE: (0.3, 0.5),
+    CleanlinessZone.DARKNESS: (0.0, 0.3),
+}
+
+
+def get_cleanliness_zone(cleanliness: Optional[float]) -> Optional[CleanlinessZone]:
+    """Determine cleanliness zone from score."""
+    if cleanliness is None:
+        return None
+    for zone, (low, high) in ZONE_THRESHOLDS.items():
+        if low <= cleanliness < high or (zone == CleanlinessZone.LIBERATION and cleanliness >= 0.9):
+            return zone
+    return CleanlinessZone.DARKNESS
+
+
+@dataclass
+class DemuxChoice:
+    """
+    Demultiplexer choice at a cascade level.
+
+    At each level, consciousness faces choice points:
+    - Which thought to follow (Mind)
+    - Which memory to activate (Memory)
+    - Which emotion to express (through all levels)
+
+    Cleaner levels lead to higher path selection probability.
+    """
+    level: int
+    choice_name: str
+    higher_path_prob: float  # Probability of choosing higher/cleaner path
+    lower_path_prob: float   # Probability of choosing lower/reactive path
+    grace_override_prob: float  # Probability grace intervenes
+    karma_weight: float  # How much karma influences this choice
+    description: str = ""
 
 
 @dataclass
@@ -29,7 +92,22 @@ class CascadeLevel:
     blockage: Optional[float]     # 0.0-1.0 or None
     flow_rate: Optional[float]    # How well energy flows through
     description: str
+    zone: Optional[CleanlinessZone] = None
+    demux_choices: List[DemuxChoice] = field(default_factory=list)
+    cleaning_rate: Optional[float] = None  # How fast this level cleans
+    contamination_rate: Optional[float] = None  # How fast it gets blocked
     missing_operators: List[str] = field(default_factory=list)
+
+
+@dataclass
+class CleanlinessDynamics:
+    """Dynamics of cleanliness change over time."""
+    net_change_rate: float  # dCleanliness/dt
+    cleaning_effort_effect: float
+    grace_effect: float
+    contamination_rate: float
+    time_to_next_zone: Optional[float]  # Hours to reach next zone
+    equilibrium_level: float  # Where it naturally settles
 
 
 @dataclass
@@ -37,9 +115,12 @@ class CascadeState:
     """Complete cascade state"""
     levels: List[CascadeLevel]
     overall_cleanliness: Optional[float]
+    overall_zone: Optional[CleanlinessZone]
     primary_blockage: str
     flow_efficiency: Optional[float]
     cleaning_priority: str
+    dynamics: Optional[CleanlinessDynamics] = None
+    demux_summary: Dict[str, float] = field(default_factory=dict)
     missing_operators: Set[str] = field(default_factory=set)
     calculable_levels: int = 0
 
@@ -82,6 +163,15 @@ class CascadeCalculator:
             if cleanliness is not None:
                 calculable_count += 1
 
+            # Calculate zone
+            zone = get_cleanliness_zone(cleanliness)
+
+            # Calculate demux choices
+            demux_choices = self._calculate_demux_choices(level_num, cleanliness, operators)
+
+            # Calculate cleaning and contamination rates
+            cleaning_rate, contamination_rate = self._calculate_level_rates(level_num, cleanliness, operators)
+
             levels.append(CascadeLevel(
                 level=level_num,
                 name=level_def['name'],
@@ -90,6 +180,10 @@ class CascadeCalculator:
                 blockage=blockage,
                 flow_rate=flow_rate,
                 description=self._get_level_description(level_num, cleanliness),
+                zone=zone,
+                demux_choices=demux_choices,
+                cleaning_rate=cleaning_rate,
+                contamination_rate=contamination_rate,
                 missing_operators=cleanliness_missing + flow_missing
             ))
 
@@ -113,12 +207,31 @@ class CascadeCalculator:
         # Determine cleaning priority
         cleaning_priority = self._determine_cleaning_priority(levels)
 
+        # Calculate dynamics
+        dynamics = self._calculate_dynamics(levels, operators)
+
+        # Calculate overall zone
+        overall_zone = get_cleanliness_zone(overall)
+
+        # Create demux summary (average higher path probability)
+        demux_probs = []
+        for level in levels:
+            for choice in level.demux_choices:
+                demux_probs.append(choice.higher_path_prob)
+        demux_summary = {
+            "avg_higher_path_prob": sum(demux_probs) / len(demux_probs) if demux_probs else 0.0,
+            "total_choices": len(demux_probs),
+        }
+
         return CascadeState(
             levels=levels,
             overall_cleanliness=overall,
+            overall_zone=overall_zone,
             primary_blockage=primary_blockage,
             flow_efficiency=flow_efficiency,
             cleaning_priority=cleaning_priority,
+            dynamics=dynamics,
+            demux_summary=demux_summary,
             missing_operators=all_missing_operators,
             calculable_levels=calculable_count
         )
@@ -473,3 +586,188 @@ class CascadeCalculator:
             result['abhinivesha'] = None
 
         return result
+
+    def _calculate_demux_choices(
+        self,
+        level: int,
+        cleanliness: Optional[float],
+        operators: Dict[str, float]
+    ) -> List[DemuxChoice]:
+        """
+        Calculate demultiplexer choices at a cascade level.
+
+        At each level, consciousness faces choice points. Cleanliness
+        determines the probability of choosing higher vs lower paths.
+
+        Formula: Choice_Probability = cleanliness × consciousness × karma_modifier
+        """
+        if cleanliness is None:
+            return []
+
+        k = operators.get('K_karma', 0.5)
+        g = operators.get('G_grace', 0.3)
+        w = operators.get('W_witness', 0.3)
+
+        # Base probability from cleanliness
+        higher_path_base = cleanliness
+
+        # Karma can pull toward habitual (lower) paths
+        karma_pull = k * 0.4
+
+        # Witness awareness increases higher path probability
+        witness_boost = w * 0.2
+
+        # Grace can override karma
+        grace_override = g * 0.3
+
+        # Calculate final probabilities
+        higher_prob = min(1.0, higher_path_base + witness_boost - karma_pull * 0.5 + grace_override)
+        lower_prob = 1.0 - higher_prob
+
+        # Define level-specific choices
+        choice_definitions = {
+            1: [("self_recognition", "Recognize true self vs identify with ego")],
+            2: [("ego_softening", "Soften ego boundaries vs defensive reaction")],
+            3: [("memory_selection", "Access clean memory vs samskara activation")],
+            4: [("discrimination", "Clear discernment vs confused judgment")],
+            5: [("thought_selection", "Follow peaceful thought vs reactive pattern")],
+            6: [("breath_regulation", "Smooth breath vs agitated breathing")],
+            7: [("body_response", "Relaxed embodiment vs tension holding")],
+        }
+
+        choices = []
+        for choice_name, description in choice_definitions.get(level, []):
+            choices.append(DemuxChoice(
+                level=level,
+                choice_name=choice_name,
+                higher_path_prob=higher_prob,
+                lower_path_prob=lower_prob,
+                grace_override_prob=grace_override,
+                karma_weight=karma_pull,
+                description=description,
+            ))
+
+        return choices
+
+    def _calculate_dynamics(
+        self,
+        levels: List[CascadeLevel],
+        operators: Dict[str, float]
+    ) -> Optional[CleanlinessDynamics]:
+        """
+        Calculate cleanliness dynamics (change over time).
+
+        Formula: dCleanliness/dt = Cleaning_Effort × Grace - Contamination_Rate
+
+        Contamination sources:
+        - Environment (external)
+        - Habits (internal)
+        - Unconsciousness (maya)
+        """
+        ce = operators.get('Ce_cleaning', 0.3)
+        g = operators.get('G_grace', 0.3)
+        hf = operators.get('Hf_habit', 0.5)
+        m = operators.get('M_maya', 0.5)
+        w = operators.get('W_witness', 0.3)
+
+        # Calculate cleaning effect
+        cleaning_effect = ce * (1 + g * 0.5)  # Grace amplifies cleaning
+
+        # Calculate contamination from multiple sources
+        environment_contamination = 0.1  # Base external contamination
+        habit_contamination = hf * 0.3  # Habits create new impressions
+        unconsciousness_contamination = m * (1 - w) * 0.2  # Maya in absence of witness
+
+        total_contamination = (
+            environment_contamination +
+            habit_contamination +
+            unconsciousness_contamination
+        )
+
+        # Net change rate
+        net_change = cleaning_effect - total_contamination
+
+        # Calculate equilibrium level (where cleaning = contamination)
+        if cleaning_effect > 0:
+            equilibrium = min(1.0, cleaning_effect / (cleaning_effect + total_contamination))
+        else:
+            equilibrium = 0.0
+
+        # Estimate time to next zone (simplified)
+        calculable = [l for l in levels if l.cleanliness is not None]
+        if calculable:
+            current = sum(l.cleanliness for l in calculable) / len(calculable)
+            current_zone = get_cleanliness_zone(current)
+
+            if current_zone and net_change > 0:
+                # Find next higher zone threshold
+                zone_order = [
+                    CleanlinessZone.DARKNESS,
+                    CleanlinessZone.STRUGGLE,
+                    CleanlinessZone.GROWTH,
+                    CleanlinessZone.DHARMIC,
+                    CleanlinessZone.LIBERATION,
+                ]
+                current_idx = zone_order.index(current_zone)
+                if current_idx < len(zone_order) - 1:
+                    next_zone = zone_order[current_idx + 1]
+                    next_threshold = ZONE_THRESHOLDS[next_zone][0]
+                    distance = next_threshold - current
+                    # Time in hours (assuming rate is per day)
+                    time_to_next = distance / (net_change * 24) if net_change > 0 else None
+                else:
+                    time_to_next = None
+            else:
+                time_to_next = None
+        else:
+            time_to_next = None
+
+        return CleanlinessDynamics(
+            net_change_rate=net_change,
+            cleaning_effort_effect=cleaning_effect,
+            grace_effect=g * 0.5,
+            contamination_rate=total_contamination,
+            time_to_next_zone=time_to_next,
+            equilibrium_level=equilibrium,
+        )
+
+    def _calculate_level_rates(
+        self,
+        level: int,
+        cleanliness: Optional[float],
+        operators: Dict[str, float]
+    ) -> Tuple[Optional[float], Optional[float]]:
+        """
+        Calculate cleaning and contamination rates for a specific level.
+
+        Returns: (cleaning_rate, contamination_rate)
+        """
+        if cleanliness is None:
+            return None, None
+
+        ce = operators.get('Ce_cleaning', 0.3)
+        g = operators.get('G_grace', 0.3)
+        hf = operators.get('Hf_habit', 0.5)
+        m = operators.get('M_maya', 0.5)
+
+        # Cleaning is easier at grosser levels, harder at subtle levels
+        difficulty_factor = 1.0 - (level - 1) * 0.08
+
+        # Cleaning rate
+        cleaning_rate = ce * difficulty_factor * (1 + g * 0.3)
+
+        # Contamination varies by level
+        level_contamination_weights = {
+            1: 0.05,  # Self - hardest to contaminate
+            2: 0.15,  # Ego - easily contaminated by identification
+            3: 0.25,  # Memory - samskaras accumulate
+            4: 0.12,  # Intellect - conditioning affects
+            5: 0.30,  # Mind - most easily agitated
+            6: 0.18,  # Breath - responds to stress
+            7: 0.20,  # Body - physical environment
+        }
+
+        base_contamination = level_contamination_weights.get(level, 0.15)
+        contamination_rate = base_contamination * (hf * 0.5 + m * 0.3 + 0.2)
+
+        return cleaning_rate, contamination_rate
