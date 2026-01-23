@@ -267,7 +267,33 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
         if web_summary:
             api_logger.info(f"[EVIDENCE] Research summary: {web_summary[:200]}...")
 
-        pipeline_logger.log_step("Evidence Extraction", {"observations": obs_count, "search_queries": len(search_queries), "key_facts": len(key_facts)})
+        # Log search guidance for evidence grounding (Phase 6 metrics)
+        query_pattern = evidence.get('query_pattern', 'general')
+        search_guidance = evidence.get('search_guidance', {})
+        high_priority_values = search_guidance.get('high_priority_values', [])
+        evidence_search_queries = search_guidance.get('evidence_search_queries', [])
+        consciousness_mappings = search_guidance.get('consciousness_to_reality_mappings', [])
+
+        api_logger.info(f"[EVIDENCE GROUNDING] Query pattern: {query_pattern}")
+        api_logger.info(f"[EVIDENCE GROUNDING] High-priority values: {len(high_priority_values)}")
+        api_logger.info(f"[EVIDENCE GROUNDING] Evidence search queries: {len(evidence_search_queries)}")
+        api_logger.info(f"[EVIDENCE GROUNDING] Consciousness→reality mappings: {len(consciousness_mappings)}")
+
+        if high_priority_values:
+            api_logger.debug(f"[EVIDENCE GROUNDING] Priority values: {', '.join(high_priority_values[:5])}")
+        if evidence_search_queries:
+            for esq in evidence_search_queries[:3]:
+                api_logger.debug(f"[EVIDENCE GROUNDING]   - Target: {esq.get('target_value', 'N/A')} | Query: {esq.get('search_query', 'N/A')[:50]}")
+
+        pipeline_logger.log_step("Evidence Extraction", {
+            "observations": obs_count,
+            "search_queries": len(search_queries),
+            "key_facts": len(key_facts),
+            "query_pattern": query_pattern,
+            "high_priority_values": len(high_priority_values),
+            "evidence_search_queries": len(evidence_search_queries),
+            "consciousness_mappings": len(consciousness_mappings)
+        })
 
         yield {
             "event": "status",
@@ -488,8 +514,9 @@ async def parse_query_with_web_research(prompt: str, model_config: dict, use_web
     Use LLM API with optional web_search tool to:
     1. Research relevant context about user's query (if web search enabled)
     2. Calculate optimal tier-1 operator values using OOF Framework
+    3. INTELLIGENT TARGET SELECTION: Analyze query patterns and identify high-priority values for evidence grounding
 
-    Returns structured evidence for inference engine.
+    Returns structured evidence for inference engine with search_guidance for Call 2.
     Supports both OpenAI and Anthropic providers with optional web search.
     """
     provider = model_config.get("provider", "openai")
@@ -521,12 +548,57 @@ For example:
 
 3. Use your best judgment to estimate operator values based on available information"""
 
+    # Query pattern recognition for intelligent target selection
+    query_pattern_instructions = """
+=== QUERY ANALYSIS & TARGET IDENTIFICATION ===
+Analyze the query to identify what type of transformation insight is being requested.
+This determines which calculated values need evidence grounding in Call 2.
+
+QUERY PATTERNS TO RECOGNIZE:
+
+1. INNOVATION QUERIES ("disrupt", "innovate", "breakthrough", "new market", "transform industry")
+   → High-priority targets: Creation matrix position, Breakthrough probability, Maya (illusion barriers)
+   → Search guidance: Innovation case studies, disruption patterns, market transformation examples
+
+2. TRANSFORMATION QUERIES ("change", "evolve", "grow", "become", "shift")
+   → High-priority targets: Death architecture (what must die), S-level transition rate, Transformation vectors
+   → Search guidance: Transformation journeys, before/after cases, evolution timelines
+
+3. PURPOSE QUERIES ("meaning", "why", "purpose", "calling", "mission")
+   → High-priority targets: Dharma alignment, Aspiration strength, Void tolerance
+   → Search guidance: Purpose discovery stories, mission-driven success cases
+
+4. RELATIONSHIP QUERIES ("team", "culture", "partnership", "connection", "trust")
+   → High-priority targets: Love matrix, Coherence metrics, Network effects
+   → Search guidance: Team dynamics research, culture transformation cases, trust-building examples
+
+5. PERFORMANCE QUERIES ("results", "achieve", "execute", "deliver", "compete")
+   → High-priority targets: Power matrix, Pipeline flow, Karma burn rate
+   → Search guidance: Performance benchmarks, execution frameworks, competitive analysis
+
+6. BLOCKAGE QUERIES ("stuck", "blocked", "can't", "obstacle", "struggle")
+   → High-priority targets: Bottlenecks (critical), Resistance, Attachment, Fear
+   → Search guidance: Unblocking case studies, obstacle navigation examples
+
+7. STRATEGY QUERIES ("plan", "approach", "how to", "path", "roadmap")
+   → High-priority targets: Transformation pathway, MVT (minimum viable transformation), Grace mechanics
+   → Search guidance: Strategic frameworks, implementation roadmaps, transformation sequences
+
+For each query, you must:
+1. Identify the PRIMARY query pattern (may be hybrid)
+2. List 5-8 high-priority consciousness values that need evidence grounding
+3. Generate specific search queries for Call 2 to find proof for these values
+=== END QUERY ANALYSIS ===
+"""
+
     instructions = f"""You are the Reality Transformer consciousness analysis engine.
 You have complete knowledge of the One Origin Framework (OOF) - a consciousness physics system.
 
 === OOF FRAMEWORK KNOWLEDGE ===
 {OOF_FRAMEWORK}
 === END OOF FRAMEWORK ===
+
+{query_pattern_instructions}
 
 YOUR TASK:
 1. IDENTITY ASSUMPTION (CRITICAL):
@@ -556,11 +628,23 @@ JSON structure:
   "user_identity": "detailed description based on query + research",
   "goal": "their goal informed by research context",
   "s_level": "S1-S8 estimated consciousness level",
+  "query_pattern": "primary pattern detected (innovation/transformation/purpose/relationship/performance/blockage/strategy)",
   "web_research_summary": "key insights from web research that informed calculations",
   "search_queries_used": ["query1", "query2", ...],
   "key_facts": [
     {{"fact": "specific fact from research", "source": "source name", "relevance": "how it affects operators"}}
   ],
+  "search_guidance": {{
+    "high_priority_values": ["value1", "value2", "value3", "value4", "value5"],
+    "evidence_search_queries": [
+      {{"target_value": "Creation matrix", "search_query": "industry disruption case studies [domain]", "proof_type": "transformation_example"}},
+      {{"target_value": "Breakthrough probability", "search_query": "[entity] recent innovations breakthroughs", "proof_type": "observable_signal"}},
+      {{"target_value": "Maya barriers", "search_query": "[entity] blind spots market perception vs reality", "proof_type": "gap_evidence"}}
+    ],
+    "consciousness_to_reality_mappings": [
+      {{"consciousness_value": "High Attachment (0.75+)", "observable_reality": "resistance to change, sunk cost behavior", "proof_search": "[entity] legacy systems migration challenges"}}
+    ]
+  }},
   "observations": [
     {{"var": "Ψ", "value": 0.65, "confidence": 0.8, "reasoning": "based on web research data"}},
     {{"var": "K", "value": 0.45, "confidence": 0.7, "reasoning": "..."}},
@@ -683,6 +767,7 @@ JSON structure:
                                         "user_identity": {"type": "string"},
                                         "goal": {"type": "string"},
                                         "s_level": {"type": "string"},
+                                        "query_pattern": {"type": "string"},
                                         "web_research_summary": {"type": "string"},
                                         "search_queries_used": {"type": "array", "items": {"type": "string"}},
                                         "key_facts": {
@@ -697,6 +782,40 @@ JSON structure:
                                                 "required": ["fact", "source", "relevance"],
                                                 "additionalProperties": False
                                             }
+                                        },
+                                        "search_guidance": {
+                                            "type": "object",
+                                            "properties": {
+                                                "high_priority_values": {"type": "array", "items": {"type": "string"}},
+                                                "evidence_search_queries": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "target_value": {"type": "string"},
+                                                            "search_query": {"type": "string"},
+                                                            "proof_type": {"type": "string"}
+                                                        },
+                                                        "required": ["target_value", "search_query", "proof_type"],
+                                                        "additionalProperties": False
+                                                    }
+                                                },
+                                                "consciousness_to_reality_mappings": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "consciousness_value": {"type": "string"},
+                                                            "observable_reality": {"type": "string"},
+                                                            "proof_search": {"type": "string"}
+                                                        },
+                                                        "required": ["consciousness_value", "observable_reality", "proof_search"],
+                                                        "additionalProperties": False
+                                                    }
+                                                }
+                                            },
+                                            "required": ["high_priority_values", "evidence_search_queries", "consciousness_to_reality_mappings"],
+                                            "additionalProperties": False
                                         },
                                         "observations": {
                                             "type": "array",
@@ -715,7 +834,7 @@ JSON structure:
                                         "targets": {"type": "array", "items": {"type": "string"}},
                                         "relevant_oof_components": {"type": "array", "items": {"type": "string"}}
                                     },
-                                    "required": ["user_identity", "goal", "s_level", "web_research_summary", "search_queries_used", "key_facts", "observations", "targets", "relevant_oof_components"],
+                                    "required": ["user_identity", "goal", "s_level", "query_pattern", "web_research_summary", "search_queries_used", "key_facts", "search_guidance", "observations", "targets", "relevant_oof_components"],
                                     "additionalProperties": False
                                 },
                                 "strict": True
@@ -942,6 +1061,14 @@ async def format_results_streaming_bridge(
 
     # Build articulation context using the bridge
     articulation_logger.debug("[ARTICULATION BRIDGE] Building articulation context")
+
+    # Extract search_guidance from evidence (from Call 1)
+    search_guidance_data = evidence.get('search_guidance', {})
+    query_pattern = evidence.get('query_pattern', 'general')
+    if search_guidance_data:
+        search_guidance_data['query_pattern'] = query_pattern
+        articulation_logger.info(f"[ARTICULATION BRIDGE] Search guidance: {len(search_guidance_data.get('high_priority_values', []))} high-priority values, pattern={query_pattern}")
+
     articulation_context = build_articulation_context(
         user_identity=evidence.get('user_identity', 'User'),
         domain=evidence.get('domain', 'general'),
@@ -951,12 +1078,26 @@ async def format_results_streaming_bridge(
         web_research_summary=evidence.get('web_research_summary', ''),
         key_facts=evidence.get('key_facts', []),
         framework_concealment=True,  # Hide OOF terminology in output
-        domain_language=True  # Use natural domain language
+        domain_language=True,  # Use natural domain language
+        search_guidance_data=search_guidance_data  # Pass search guidance for evidence grounding
     )
 
     # Build the structured articulation prompt
     articulation_prompt = prompt_builder.build_prompt(articulation_context)
     articulation_logger.info(f"[ARTICULATION BRIDGE] Built prompt: {len(articulation_prompt)} characters")
+
+    # Log evidence grounding configuration for Call 2
+    if search_guidance_data:
+        articulation_logger.info(f"[ARTICULATION BRIDGE] Evidence grounding enabled:")
+        articulation_logger.info(f"  - Query pattern: {query_pattern}")
+        articulation_logger.info(f"  - High-priority values: {len(search_guidance_data.get('high_priority_values', []))}")
+        articulation_logger.info(f"  - Evidence search queries: {len(search_guidance_data.get('evidence_search_queries', []))}")
+        articulation_logger.info(f"  - Consciousness→reality mappings: {len(search_guidance_data.get('consciousness_to_reality_mappings', []))}")
+        if search_guidance_data.get('evidence_search_queries'):
+            for esq in search_guidance_data['evidence_search_queries'][:3]:
+                articulation_logger.debug(f"  [SEARCH QUERY] {esq.get('target_value', 'N/A')}: {esq.get('search_query', 'N/A')}")
+    else:
+        articulation_logger.info("[ARTICULATION BRIDGE] No search guidance provided - basic articulation mode")
 
     # Add reverse mapping data if available
     if reverse_mapping:
