@@ -27,6 +27,8 @@ COMPONENT_LEVELS = {
     'question_generator': logging.DEBUG,
     'answer_mapper': logging.DEBUG,
     'context_assembler': logging.DEBUG,
+    # Evidence-grounding components
+    'evidence_grounding': logging.INFO,
 }
 
 
@@ -219,3 +221,6 @@ priority_logger = get_logger('priority_detector')
 question_logger = get_logger('question_generator')
 answer_mapper_logger = get_logger('answer_mapper')
 context_logger = get_logger('context_assembler')
+
+# Evidence-grounding logger
+evidence_grounding_logger = get_logger('evidence_grounding')
