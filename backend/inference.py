@@ -38,7 +38,8 @@ try:
         GraceKarmaDynamics,
         NetworkEmergenceCalculator,
         QuantumMechanics,
-        RealismEngine
+        RealismEngine,
+        OOFInferenceEngine
     )
 except ImportError:
     from formulas import (
@@ -49,7 +50,8 @@ except ImportError:
         GraceKarmaDynamics,
         NetworkEmergenceCalculator,
         QuantumMechanics,
-        RealismEngine
+        RealismEngine,
+        OOFInferenceEngine
     )
 
 
@@ -87,6 +89,7 @@ class InferenceEngine:
 
     # Additional formula counts from Python modules
     ADVANCED_FORMULA_COUNTS = {
+        # Original 8 modules
         'matrix_detection': 7,      # 7 transformation matrices
         'cascade': 7,               # 7 cascade levels
         'emotions': 29,             # 9 rasas + 20 secondary emotions
@@ -95,6 +98,18 @@ class InferenceEngine:
         'network': 8,               # Network emergence formulas
         'quantum': 15,              # Quantum mechanics formulas
         'realism': 60,              # 60 realism types
+        # New integrated modules (via OOFInferenceEngine)
+        'operators': 15,            # Operator derived calculations
+        'drives': 18,               # Five sacred drives
+        'matrices': 13,             # Seven transformation matrices (full)
+        'pathways': 13,             # Three perfection pathways
+        'death': 14,                # Death processes (full)
+        'collective': 4,            # Collective consciousness
+        'circles': 2,               # Five circles of being
+        'kosha': 3,                 # Five koshas
+        'osafc': 4,                 # OSAFC eight layers
+        'distortions': 5,           # Maya & Kleshas
+        'panchakritya': 4,          # Five cosmic acts
     }
 
     def __init__(self, registry_path: str):
@@ -118,6 +133,9 @@ class InferenceEngine:
         self.network_calculator = NetworkEmergenceCalculator()
         self.quantum_calculator = QuantumMechanics()
         self.realism_engine = RealismEngine()
+
+        # Initialize master OOF inference engine (integrates 13 additional modules)
+        self.oof_engine = OOFInferenceEngine()
 
         self._load_registry()
 
@@ -330,13 +348,18 @@ class InferenceEngine:
             logger.debug(f"[TARGETS] Returning {len(target_values)} requested targets")
         else:
             # Return most significant values (furthest from 0.5)
+            # Only sort numeric values
             sorted_vars = sorted(
-                non_null_state.items(),
+                [(k, v) for k, v in non_null_state.items() if isinstance(v, (int, float))],
                 key=lambda x: abs(x[1] - 0.5) if x[1] is not None else 0,
                 reverse=True
             )
             target_values = dict(sorted_vars[:50])
-            logger.debug(f"[TARGETS] Returning top 50 significant values")
+            # Also include non-numeric values (strings, lists, etc.)
+            for k, v in non_null_state.items():
+                if not isinstance(v, (int, float)) and v is not None:
+                    target_values[k] = v
+            logger.debug(f"[TARGETS] Returning top 50 significant values + non-numeric")
 
         # Log top 10 most significant results
         logger.info("[TOP RESULTS]")
@@ -632,6 +655,8 @@ class InferenceEngine:
         logger.debug("[ADVANCED] Running MatrixDetector...")
         matrices = self.matrix_detector.detect_all(operators)
         for name, position in matrices.items():
+            if position is None or position.score is None:
+                continue
             key = f"matrix_{name}"
             values[key] = position.score  # MatrixPosition.score is the numeric value
             values[f"matrix_{name}_stage"] = position.stage
@@ -641,110 +666,221 @@ class InferenceEngine:
 
         # Cascade Cleanliness (7 levels) - returns CascadeState
         logger.debug("[ADVANCED] Running CascadeCalculator...")
-        cascade = self.cascade_calculator.calculate_cascade(operators)
-        values['cascade_overall'] = cascade.overall_cleanliness
-        values['cascade_flow'] = cascade.flow_efficiency
-        confidence['cascade_overall'] = 0.85
-        confidence['cascade_flow'] = 0.85
-        logger.info(f"[ADVANCED] Cascade: overall={cascade.overall_cleanliness:.3f}, flow={cascade.flow_efficiency:.3f}")
-        for level in cascade.levels:
-            key = f"cascade_{level.name.lower()}"
-            values[key] = level.cleanliness
-            confidence[key] = 0.8
-            logger.debug(f"  [CASCADE] {level.name}: cleanliness={level.cleanliness:.3f}")
+        try:
+            cascade = self.cascade_calculator.calculate_cascade(operators)
+            if cascade and cascade.overall_cleanliness is not None:
+                values['cascade_overall'] = cascade.overall_cleanliness
+                values['cascade_flow'] = cascade.flow_efficiency
+                confidence['cascade_overall'] = 0.85
+                confidence['cascade_flow'] = 0.85
+                logger.info(f"[ADVANCED] Cascade: overall={cascade.overall_cleanliness:.3f}, flow={cascade.flow_efficiency:.3f}")
+                for level in cascade.levels:
+                    if level and level.cleanliness is not None:
+                        key = f"cascade_{level.name.lower()}"
+                        values[key] = level.cleanliness
+                        confidence[key] = 0.8
+                        logger.debug(f"  [CASCADE] {level.name}: cleanliness={level.cleanliness:.3f}")
+        except Exception as e:
+            logger.warning(f"[ADVANCED] CascadeCalculator error: {e}")
 
         # Emotion Analysis (29 emotions) - returns EmotionalProfile
         logger.debug("[ADVANCED] Running EmotionAnalyzer...")
-        emotions = self.emotion_analyzer.analyze(operators)
-        dominant_rasa = emotions.dominant_rasa
-        dominant_intensity = emotions.rasas[dominant_rasa].intensity
-        values['emotion_dominant'] = dominant_intensity
-        values['emotion_coherence'] = emotions.emotional_coherence
-        confidence['emotion_dominant'] = 0.75
-        confidence['emotion_coherence'] = 0.75
-        logger.info(f"[ADVANCED] Emotions: dominant={dominant_rasa}, intensity={dominant_intensity:.3f}, coherence={emotions.emotional_coherence:.3f}")
+        try:
+            emotions = self.emotion_analyzer.analyze(operators)
+            dominant_rasa = emotions.dominant_rasa
+            if dominant_rasa and dominant_rasa in emotions.rasas:
+                dominant_intensity = emotions.rasas[dominant_rasa].intensity
+                values['emotion_dominant'] = dominant_intensity
+                values['emotion_coherence'] = emotions.emotional_coherence
+                confidence['emotion_dominant'] = 0.75
+                confidence['emotion_coherence'] = 0.75
+                logger.info(f"[ADVANCED] Emotions: dominant={dominant_rasa}, intensity={dominant_intensity:.3f}, coherence={emotions.emotional_coherence:.3f}")
+        except Exception as e:
+            logger.warning(f"[ADVANCED] EmotionAnalyzer error: {e}")
 
         # Death Architecture Detection (7 types) - returns DeathArchitectureState
         logger.debug("[ADVANCED] Running DeathArchitectureDetector...")
-        death = self.death_detector.detect_all(operators)
-        death_is_active = len(death.active_deaths) > 0
-        values['death_active'] = 1.0 if death_is_active else 0.0
-        values['death_integration'] = death.overall_transformation_depth
-        values['void_tolerance'] = death.void_tolerance
-        values['rebirth_readiness'] = death.rebirth_readiness
-        confidence['death_active'] = 0.9
-        confidence['death_integration'] = 0.8
-        confidence['void_tolerance'] = 0.8
-        confidence['rebirth_readiness'] = 0.8
-        active_type = death.primary_death if death.primary_death else 'none'
-        logger.info(f"[ADVANCED] Death: active={death_is_active}, type={active_type}, integration={death.overall_transformation_depth:.3f}")
+        try:
+            death = self.death_detector.detect_all(operators)
+            if death:
+                death_is_active = len(death.active_deaths) > 0 if death.active_deaths else False
+                values['death_active'] = 1.0 if death_is_active else 0.0
+                if death.overall_transformation_depth is not None:
+                    values['death_integration'] = death.overall_transformation_depth
+                    values['void_tolerance'] = death.void_tolerance
+                    values['rebirth_readiness'] = death.rebirth_readiness
+                    confidence['death_active'] = 0.9
+                    confidence['death_integration'] = 0.8
+                    confidence['void_tolerance'] = 0.8
+                    confidence['rebirth_readiness'] = 0.8
+                    active_type = death.primary_death if death.primary_death else 'none'
+                    logger.info(f"[ADVANCED] Death: active={death_is_active}, type={active_type}, integration={death.overall_transformation_depth:.3f}")
+        except Exception as e:
+            logger.warning(f"[ADVANCED] DeathArchitectureDetector error: {e}")
 
         # Grace/Karma Dynamics (12 formulas) - returns DynamicsState
         logger.debug("[ADVANCED] Running GraceKarmaDynamics...")
-        dynamics = self.dynamics_calculator.calculate_all(operators)
-        values['grace_availability'] = dynamics.grace.availability
-        values['grace_effectiveness'] = dynamics.grace.effectiveness
-        values['karma_burn_rate'] = dynamics.karma.burn_rate
-        values['karma_net_change'] = dynamics.karma.net_change
-        values['grace_karma_ratio'] = dynamics.grace_karma_ratio
-        values['transformation_momentum'] = dynamics.transformation_momentum
-        confidence['grace_availability'] = 0.8
-        confidence['grace_effectiveness'] = 0.8
-        confidence['karma_burn_rate'] = 0.8
-        confidence['karma_net_change'] = 0.8
-        confidence['grace_karma_ratio'] = 0.85
-        confidence['transformation_momentum'] = 0.85
-        logger.info(f"[ADVANCED] Dynamics: grace={dynamics.grace.availability:.3f}, karma_burn={dynamics.karma.burn_rate:.3f}, ratio={dynamics.grace_karma_ratio:.3f}")
+        try:
+            dynamics = self.dynamics_calculator.calculate_all(operators)
+            if dynamics and dynamics.grace and dynamics.karma:
+                values['grace_availability'] = dynamics.grace.availability
+                values['grace_effectiveness'] = dynamics.grace.effectiveness
+                values['karma_burn_rate'] = dynamics.karma.burn_rate
+                values['karma_net_change'] = dynamics.karma.net_change
+                values['grace_karma_ratio'] = dynamics.grace_karma_ratio
+                values['transformation_momentum'] = dynamics.transformation_momentum
+                confidence['grace_availability'] = 0.8
+                confidence['grace_effectiveness'] = 0.8
+                confidence['karma_burn_rate'] = 0.8
+                confidence['karma_net_change'] = 0.8
+                confidence['grace_karma_ratio'] = 0.85
+                confidence['transformation_momentum'] = 0.85
+                logger.info(f"[ADVANCED] Dynamics: grace={dynamics.grace.availability:.3f}, karma_burn={dynamics.karma.burn_rate:.3f}, ratio={dynamics.grace_karma_ratio:.3f}")
+        except Exception as e:
+            logger.warning(f"[ADVANCED] GraceKarmaDynamics error: {e}")
 
         # Network Emergence (8 formulas) - returns NetworkState
         logger.debug("[ADVANCED] Running NetworkEmergenceCalculator...")
-        coherence_val = operators.get('Co_coherence', operators.get('Coherence', 0.5))
-        network = self.network_calculator.calculate_network_state(
-            individual_coherence=coherence_val,
-            individual_s_level=s_level,
-            connected_nodes=1
-        )
-        values['network_emergence'] = network.collective_breakthrough_prob
-        values['network_field_strength'] = network.morphic_field_strength
-        values['network_coherence_multiplier'] = network.coherence_multiplier
-        values['network_critical_mass'] = network.critical_mass_proximity
-        confidence['network_emergence'] = 0.7
-        confidence['network_field_strength'] = 0.7
-        confidence['network_coherence_multiplier'] = 0.7
-        confidence['network_critical_mass'] = 0.7
-        logger.info(f"[ADVANCED] Network: emergence={network.collective_breakthrough_prob:.3f}, field={network.morphic_field_strength:.3f}")
+        try:
+            coherence_val = operators.get('Co_coherence', operators.get('Coherence', 0.5))
+            network = self.network_calculator.calculate_network_state(
+                individual_coherence=coherence_val,
+                individual_s_level=s_level,
+                connected_nodes=1
+            )
+            if network:
+                values['network_emergence'] = network.collective_breakthrough_prob
+                values['network_field_strength'] = network.morphic_field_strength
+                values['network_coherence_multiplier'] = network.coherence_multiplier
+                values['network_critical_mass'] = network.critical_mass_proximity
+                confidence['network_emergence'] = 0.7
+                confidence['network_field_strength'] = 0.7
+                confidence['network_coherence_multiplier'] = 0.7
+                confidence['network_critical_mass'] = 0.7
+                logger.info(f"[ADVANCED] Network: emergence={network.collective_breakthrough_prob:.3f}, field={network.morphic_field_strength:.3f}")
+        except Exception as e:
+            logger.warning(f"[ADVANCED] NetworkEmergenceCalculator error: {e}")
 
         # Quantum Mechanics (15 formulas) - returns QuantumState
         logger.debug("[ADVANCED] Running QuantumMechanics...")
-        quantum = self.quantum_calculator.calculate_quantum_state(operators, s_level)
-        values['quantum_coherence_time'] = quantum.coherence_time
-        values['quantum_tunneling'] = quantum.tunneling_probability
-        values['quantum_entanglement'] = quantum.entanglement_strength
-        values['quantum_collapse_readiness'] = quantum.collapse_readiness
-        confidence['quantum_coherence_time'] = 0.7
-        confidence['quantum_tunneling'] = 0.7
-        confidence['quantum_entanglement'] = 0.7
-        confidence['quantum_collapse_readiness'] = 0.7
-        logger.info(f"[ADVANCED] Quantum: coherence_time={quantum.coherence_time:.3f}, tunneling={quantum.tunneling_probability:.3f}")
+        try:
+            quantum = self.quantum_calculator.calculate_quantum_state(operators, s_level)
+            if quantum:
+                values['quantum_coherence_time'] = quantum.coherence_time
+                values['quantum_tunneling'] = quantum.tunneling_probability
+                values['quantum_entanglement'] = quantum.entanglement_strength
+                values['quantum_collapse_readiness'] = quantum.collapse_readiness
+                confidence['quantum_coherence_time'] = 0.7
+                confidence['quantum_tunneling'] = 0.7
+                confidence['quantum_entanglement'] = 0.7
+                confidence['quantum_collapse_readiness'] = 0.7
+                logger.info(f"[ADVANCED] Quantum: coherence_time={quantum.coherence_time:.3f}, tunneling={quantum.tunneling_probability:.3f}")
+        except Exception as e:
+            logger.warning(f"[ADVANCED] QuantumMechanics error: {e}")
 
         # Realism Engine (68 types) - returns RealismProfile
         logger.debug("[ADVANCED] Running RealismEngine...")
-        realism = self.realism_engine.calculate_realism_profile(operators, s_level)
-        values['realism_dominant'] = realism.dominant_realism
-        values['realism_dominant_weight'] = realism.dominant_weight
-        values['realism_coherence'] = realism.coherence
-        values['realism_active_types'] = list(realism.active_realisms) if realism.active_realisms else []
-        values['realism_blend'] = realism.realism_blend
-        values['realism_evolution_direction'] = realism.evolution_direction
-        confidence['realism_dominant'] = 0.8
-        confidence['realism_dominant_weight'] = 0.8
-        confidence['realism_coherence'] = 0.75
-        logger.info(f"[ADVANCED] Realism: type={realism.dominant_realism}, weight={realism.dominant_weight:.3f}, coherence={realism.coherence:.3f}")
+        try:
+            realism = self.realism_engine.calculate_realism_profile(operators, s_level)
+            if realism:
+                values['realism_dominant'] = realism.dominant_realism
+                values['realism_dominant_weight'] = realism.dominant_weight
+                values['realism_coherence'] = realism.coherence
+                values['realism_active_types'] = list(realism.active_realisms) if realism.active_realisms else []
+                values['realism_blend'] = realism.realism_blend
+                values['realism_evolution_direction'] = realism.evolution_direction
+                confidence['realism_dominant'] = 0.8
+                confidence['realism_dominant_weight'] = 0.8
+                confidence['realism_coherence'] = 0.75
+                logger.info(f"[ADVANCED] Realism: type={realism.dominant_realism}, weight={realism.dominant_weight:.3f}, coherence={realism.coherence:.3f}")
+        except Exception as e:
+            logger.warning(f"[ADVANCED] RealismEngine error: {e}")
         # Log top 5 active realisms for debugging
         if realism.realism_blend:
             sorted_realisms = sorted(realism.realism_blend.items(), key=lambda x: x[1], reverse=True)[:5]
             for name, weight in sorted_realisms:
                 logger.debug(f"  [REALISM] {name}: {weight:.3f}")
+
+        # OOF Inference Engine (13 integrated modules: operators, drives, matrices, pathways,
+        # cascade, emotions, death, collective, circles, kosha, osafc, distortions, panchakritya)
+        logger.debug("[ADVANCED] Running OOFInferenceEngine (13 modules)...")
+        try:
+            oof_profile = self.oof_engine.calculate_full_profile(operators, s_level)
+
+            # Extract values from IntegratedProfile
+            if oof_profile.operator_scores:
+                # Handle both dict and object with __dict__
+                if isinstance(oof_profile.operator_scores, dict):
+                    scores_dict = oof_profile.operator_scores
+                elif hasattr(oof_profile.operator_scores, '__dict__'):
+                    scores_dict = vars(oof_profile.operator_scores)
+                else:
+                    scores_dict = {}
+                for key, val in scores_dict.items():
+                    if isinstance(val, (int, float)) and not key.startswith('_'):
+                        values[f"oof_op_{key}"] = val
+                        confidence[f"oof_op_{key}"] = 0.8
+
+            if oof_profile.drives_profile:
+                if hasattr(oof_profile.drives_profile, 'overall_fulfillment'):
+                    values['oof_drives_fulfillment'] = oof_profile.drives_profile.overall_fulfillment
+                    confidence['oof_drives_fulfillment'] = 0.8
+                if hasattr(oof_profile.drives_profile, 'internal_ratio'):
+                    values['oof_drives_internal_ratio'] = oof_profile.drives_profile.internal_ratio
+                    confidence['oof_drives_internal_ratio'] = 0.8
+
+            if oof_profile.matrices_profile:
+                if hasattr(oof_profile.matrices_profile, 'overall_progress'):
+                    values['oof_matrices_progress'] = oof_profile.matrices_profile.overall_progress
+                    confidence['oof_matrices_progress'] = 0.8
+
+            if oof_profile.pathways_profile:
+                if hasattr(oof_profile.pathways_profile, 'dominant_pathway'):
+                    values['oof_pathways_dominant'] = str(oof_profile.pathways_profile.dominant_pathway)
+                if hasattr(oof_profile.pathways_profile, 'overall_integration'):
+                    values['oof_pathways_integration'] = oof_profile.pathways_profile.overall_integration
+                    confidence['oof_pathways_integration'] = 0.8
+
+            if oof_profile.circles_profile:
+                if hasattr(oof_profile.circles_profile, 'overall_health'):
+                    values['oof_circles_health'] = oof_profile.circles_profile.overall_health
+                    confidence['oof_circles_health'] = 0.8
+
+            if oof_profile.kosha_profile:
+                if hasattr(oof_profile.kosha_profile, 'overall_integration'):
+                    values['oof_kosha_integration'] = oof_profile.kosha_profile.overall_integration
+                    confidence['oof_kosha_integration'] = 0.8
+
+            if oof_profile.osafc_profile:
+                if hasattr(oof_profile.osafc_profile, 'overall_flow'):
+                    values['oof_osafc_flow'] = oof_profile.osafc_profile.overall_flow
+                    confidence['oof_osafc_flow'] = 0.8
+
+            if oof_profile.distortion_profile:
+                if hasattr(oof_profile.distortion_profile, 'total_distortion'):
+                    values['oof_distortion_total'] = oof_profile.distortion_profile.total_distortion
+                    confidence['oof_distortion_total'] = 0.8
+
+            if oof_profile.panchakritya_profile:
+                if hasattr(oof_profile.panchakritya_profile, 'dominant_act'):
+                    values['oof_panchakritya_dominant'] = str(oof_profile.panchakritya_profile.dominant_act)
+                if hasattr(oof_profile.panchakritya_profile, 'balance'):
+                    values['oof_panchakritya_balance'] = oof_profile.panchakritya_profile.balance
+                    confidence['oof_panchakritya_balance'] = 0.8
+
+            # Summary metrics from OOF engine
+            values['oof_overall_health'] = oof_profile.overall_health
+            values['oof_liberation_index'] = oof_profile.liberation_index
+            values['oof_integration_score'] = oof_profile.integration_score
+            values['oof_transformation_potential'] = oof_profile.transformation_potential
+            confidence['oof_overall_health'] = 0.85
+            confidence['oof_liberation_index'] = 0.85
+            confidence['oof_integration_score'] = 0.85
+            confidence['oof_transformation_potential'] = 0.85
+
+            logger.info(f"[ADVANCED] OOFEngine: health={oof_profile.overall_health:.3f}, liberation={oof_profile.liberation_index:.3f}, integration={oof_profile.integration_score:.3f}")
+        except Exception as e:
+            logger.warning(f"[ADVANCED] OOFInferenceEngine error (non-fatal): {e}")
 
         logger.info(f"[ADVANCED] All modules complete: {len(values)} values computed")
 
