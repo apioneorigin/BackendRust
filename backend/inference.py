@@ -90,26 +90,26 @@ class InferenceEngine:
     # Additional formula counts from Python modules
     ADVANCED_FORMULA_COUNTS = {
         # Original 8 modules
-        'matrix_detection': 7,      # 7 transformation matrices
+        'matrix_detection': 7,      # 7 transformation matrices (MatrixType enum)
         'cascade': 7,               # 7 cascade levels
         'emotions': 29,             # 9 rasas + 20 secondary emotions
-        'death_detection': 7,       # D1-D7 death architecture
+        'death_detection': 7,       # D1-D7 death architecture (DeathType enum)
         'dynamics': 12,             # Grace + Karma + Dharmic formulas
         'network': 8,               # Network emergence formulas
         'quantum': 15,              # Quantum mechanics formulas
-        'realism': 60,              # 60 realism types
+        'realism': 77,              # 77 realism types (REALISM_TYPES dict)
         # New integrated modules (via OOFInferenceEngine)
         'operators': 15,            # Operator derived calculations
-        'drives': 18,               # Five sacred drives
-        'matrices': 13,             # Seven transformation matrices (full)
-        'pathways': 13,             # Three perfection pathways
-        'death': 14,                # Death processes (full)
+        'drives': 30,               # 5 DriveType + 25 DriveComponents (5 per drive)
+        'matrices': 7,              # 7 MatrixType (TRUTH, LOVE, POWER, FREEDOM, CREATION, TIME, DEATH)
+        'pathways': 3,              # 3 PathwayType (WITNESSING, CREATING, EMBODYING)
+        'death': 7,                 # 7 DeathType (D1-D7)
         'collective': 4,            # Collective consciousness
-        'circles': 2,               # Five circles of being
-        'kosha': 3,                 # Five koshas
-        'osafc': 4,                 # OSAFC eight layers
+        'circles': 5,               # 5 CircleType (PERSONAL, FAMILY, SOCIAL, PROFESSIONAL, UNIVERSAL)
+        'kosha': 5,                 # 5 KoshaType (ANNAMAYA, PRANAMAYA, MANOMAYA, VIJNANAMAYA, ANANDAMAYA)
+        'osafc': 8,                 # 8 OSAFCLayer (PHYSICAL, ENERGETIC, EMOTIONAL, MENTAL, INTELLECT, EGO, WITNESS, SOURCE)
         'distortions': 5,           # Maya & Kleshas
-        'panchakritya': 4,          # Five cosmic acts
+        'panchakritya': 5,          # 5 KrityaType (SRISHTI, STHITI, SAMHARA, TIROBHAVA, ANUGRAHA)
     }
 
     def __init__(self, registry_path: str):

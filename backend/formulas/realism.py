@@ -1,5 +1,5 @@
 """
-Realism Engine - 60 Reality Types
+Realism Engine - 77 Reality Types
 Different reality frameworks experienced at different consciousness levels
 
 Reality types organize by S-level clusters:
@@ -52,7 +52,7 @@ class RealismEngine:
     Models how consciousness constructs reality at different levels.
     """
 
-    # 60 Realism Types organized by S-level clusters
+    # 77 Realism Types organized by S-level clusters
     REALISM_TYPES = {
         # ============ S1-S2: SURVIVAL/BIOLOGICAL ============
         'dirty': RealismType(
@@ -844,7 +844,7 @@ class RealismEngine:
     }
 
     # Category groupings
-    # Category groupings - Updated with all 68 realism types
+    # Category groupings - Updated with all 77 realism types
     CATEGORIES = {
         'biological': [
             'dirty', 'naturalistic', 'biological', 'survival', 'scarcity',
