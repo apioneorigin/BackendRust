@@ -14,8 +14,8 @@ D7 - Ego Death: False self must dissolve into true self
 Each death process is necessary for certain transformations.
 """
 
-from typing import Dict, Any, List, Optional, Tuple
-from dataclasses import dataclass
+from typing import Dict, Any, List, Optional, Tuple, Set
+from dataclasses import dataclass, field
 import math
 
 
@@ -24,12 +24,13 @@ class DeathProcess:
     """A single death process"""
     type: str           # D1-D7
     name: str
-    active: bool
-    depth: float        # 0.0-1.0 how deep into the process
-    phase: str          # initiation, dissolution, void, rebirth
-    resistance: float   # 0.0-1.0 resistance to this death
-    grace_support: float  # 0.0-1.0 grace supporting this death
+    active: Optional[bool]  # None if cannot determine
+    depth: Optional[float]  # 0.0-1.0 how deep into the process
+    phase: str          # initiation, dissolution, void, rebirth, or 'indeterminate'
+    resistance: Optional[float]   # 0.0-1.0 resistance to this death
+    grace_support: Optional[float]  # 0.0-1.0 grace supporting this death
     description: str
+    missing_operators: List[str] = field(default_factory=list)
 
 
 @dataclass
@@ -38,9 +39,11 @@ class DeathArchitectureState:
     processes: Dict[str, DeathProcess]
     active_deaths: List[str]
     primary_death: Optional[str]
-    void_tolerance: float
-    rebirth_readiness: float
-    overall_transformation_depth: float
+    void_tolerance: Optional[float]
+    rebirth_readiness: Optional[float]
+    overall_transformation_depth: Optional[float]
+    missing_operators: Set[str] = field(default_factory=set)
+    calculable_processes: int = 0
 
 
 class DeathArchitectureDetector:
@@ -149,27 +152,42 @@ class DeathArchitectureDetector:
     }
 
     def detect_all(self, operators: Dict[str, float]) -> DeathArchitectureState:
-        """Detect complete death architecture state"""
+        """
+        Detect complete death architecture state.
+
+        ZERO-FALLBACK: Tracks all missing operators and handles None values.
+        """
         processes = {}
         active_deaths = []
+        all_missing: Set[str] = set()
+        calculable_count = 0
 
         for death_type, death_def in self.DEATH_TYPES.items():
             process = self._detect_death_process(death_type, death_def, operators)
             processes[death_type] = process
-            if process.active:
-                active_deaths.append(death_type)
+            all_missing.update(process.missing_operators)
 
-        # Determine primary active death
+            # ZERO-FALLBACK: Only count as active if determinable
+            if process.active is True:
+                active_deaths.append(death_type)
+            if process.active is not None:
+                calculable_count += 1
+
+        # Determine primary active death - ZERO-FALLBACK
         primary = None
         if active_deaths:
-            # Primary is the deepest active death
-            primary = max(active_deaths, key=lambda d: processes[d].depth)
+            # Primary is the deepest active death (only those with known depth)
+            valid_active = [d for d in active_deaths if processes[d].depth is not None]
+            if valid_active:
+                primary = max(valid_active, key=lambda d: processes[d].depth)
 
         # Calculate void tolerance
-        void_tolerance = self._calculate_void_tolerance(operators)
+        void_tolerance, void_missing = self._calculate_void_tolerance(operators)
+        all_missing.update(void_missing)
 
         # Calculate rebirth readiness
-        rebirth_readiness = self._calculate_rebirth_readiness(operators, processes)
+        rebirth_readiness, rebirth_missing = self._calculate_rebirth_readiness(operators, processes)
+        all_missing.update(rebirth_missing)
 
         # Overall transformation depth
         overall_depth = self._calculate_overall_depth(processes)
@@ -180,7 +198,9 @@ class DeathArchitectureDetector:
             primary_death=primary,
             void_tolerance=void_tolerance,
             rebirth_readiness=rebirth_readiness,
-            overall_transformation_depth=overall_depth
+            overall_transformation_depth=overall_depth,
+            missing_operators=all_missing,
+            calculable_processes=calculable_count
         )
 
     def _detect_death_process(
@@ -189,9 +209,38 @@ class DeathArchitectureDetector:
         death_def: Dict[str, Any],
         operators: Dict[str, float]
     ) -> DeathProcess:
-        """Detect a single death process"""
+        """
+        Detect a single death process.
+
+        ZERO-FALLBACK: Returns None for calculable fields if operators missing.
+        """
+        all_missing = []
+
         # Calculate activation level
-        activation = self._calculate_activation(operators, death_def['indicators'])
+        activation, activation_missing = self._calculate_activation(operators, death_def['indicators'])
+        all_missing.extend(activation_missing)
+
+        # Calculate resistance
+        resistance, resistance_missing = self._calculate_resistance(operators, death_def['resistance_ops'])
+        all_missing.extend(resistance_missing)
+
+        # Calculate grace support
+        grace_support, support_missing = self._calculate_support(operators, death_def['support_ops'])
+        all_missing.extend(support_missing)
+
+        # ZERO-FALLBACK: Handle missing activation
+        if activation is None:
+            return DeathProcess(
+                type=death_type,
+                name=death_def['name'],
+                active=None,
+                depth=None,
+                phase='indeterminate',
+                resistance=resistance,
+                grace_support=grace_support,
+                description=f"Cannot assess {death_type} - missing: {', '.join(set(all_missing))}",
+                missing_operators=list(set(all_missing))
+            )
 
         # Death is active if activation > 0.4
         active = activation > 0.4
@@ -201,12 +250,6 @@ class DeathArchitectureDetector:
 
         # Determine phase
         phase = self._determine_phase(depth) if active else 'dormant'
-
-        # Calculate resistance
-        resistance = self._calculate_resistance(operators, death_def['resistance_ops'])
-
-        # Calculate grace support
-        grace_support = self._calculate_support(operators, death_def['support_ops'])
 
         # Generate description
         description = self._get_description(death_type, death_def['name'], phase, depth)
@@ -219,20 +262,32 @@ class DeathArchitectureDetector:
             phase=phase,
             resistance=resistance,
             grace_support=grace_support,
-            description=description
+            description=description,
+            missing_operators=list(set(all_missing)) if all_missing else []
         )
 
     def _calculate_activation(
         self,
         operators: Dict[str, float],
         indicators: Dict[str, float]
-    ) -> float:
-        """Calculate how activated a death process is"""
+    ) -> Tuple[Optional[float], List[str]]:
+        """
+        Calculate how activated a death process is.
+
+        ZERO-FALLBACK: Returns (None, missing_ops) if required operators are missing.
+        """
         total_weight = 0.0
         weighted_sum = 0.0
+        missing_ops = []
 
         for op_name, weight in indicators.items():
-            value = operators.get(op_name, 0.5)
+            value = operators.get(op_name)
+
+            # ZERO-FALLBACK: Track missing operators
+            if value is None:
+                missing_ops.append(op_name)
+                continue
+
             abs_weight = abs(weight)
 
             # Negative weights mean low values indicate activation
@@ -244,7 +299,11 @@ class DeathArchitectureDetector:
             weighted_sum += contribution
             total_weight += abs_weight
 
-        return weighted_sum / total_weight if total_weight > 0 else 0.0
+        # ZERO-FALLBACK: Return None if any required operators missing
+        if missing_ops:
+            return None, missing_ops
+
+        return (weighted_sum / total_weight if total_weight > 0 else 0.0), []
 
     def _calculate_depth(self, activation: float) -> float:
         """Convert activation to depth (non-linear)"""
@@ -270,78 +329,136 @@ class DeathArchitectureDetector:
         self,
         operators: Dict[str, float],
         resistance_ops: List[str]
-    ) -> float:
-        """Calculate resistance to this death"""
-        if not resistance_ops:
-            return 0.0
+    ) -> Tuple[Optional[float], List[str]]:
+        """
+        Calculate resistance to this death.
 
-        total = sum(operators.get(op, 0.5) for op in resistance_ops)
-        return total / len(resistance_ops)
+        ZERO-FALLBACK: Returns (None, missing_ops) if operators missing.
+        """
+        if not resistance_ops:
+            return 0.0, []
+
+        missing = []
+        values = []
+        for op in resistance_ops:
+            val = operators.get(op)
+            if val is None:
+                missing.append(op)
+            else:
+                values.append(val)
+
+        if missing:
+            return None, missing
+
+        return sum(values) / len(values), []
 
     def _calculate_support(
         self,
         operators: Dict[str, float],
         support_ops: List[str]
-    ) -> float:
-        """Calculate grace/support for this death"""
+    ) -> Tuple[Optional[float], List[str]]:
+        """
+        Calculate grace/support for this death.
+
+        ZERO-FALLBACK: Returns (None, missing_ops) if operators missing.
+        """
         if not support_ops:
-            return 0.0
+            return 0.0, []
 
-        total = sum(operators.get(op, 0.5) for op in support_ops)
-        return total / len(support_ops)
+        missing = []
+        values = []
+        for op in support_ops:
+            val = operators.get(op)
+            if val is None:
+                missing.append(op)
+            else:
+                values.append(val)
 
-    def _calculate_void_tolerance(self, operators: Dict[str, float]) -> float:
+        if missing:
+            return None, missing
+
+        return sum(values) / len(values), []
+
+    def _calculate_void_tolerance(self, operators: Dict[str, float]) -> Tuple[Optional[float], List[str]]:
         """
         Calculate capacity to tolerate void states.
         High void tolerance enables deeper deaths.
+
+        ZERO-FALLBACK: Returns (None, missing_ops) if required operators missing.
         """
-        V = operators.get('V_void', 0.5)
-        W = operators.get('W_witness', 0.5)
-        S = operators.get('S_surrender', 0.5)
-        F = operators.get('F_fear', 0.5)
-        Tr = operators.get('Tr_trust', 0.5)
+        required = ['V_void', 'W_witness', 'S_surrender', 'F_fear', 'Tr_trust']
+        missing = [op for op in required if op not in operators or operators.get(op) is None]
+
+        if missing:
+            return None, missing
+
+        V = operators.get('V_void')
+        W = operators.get('W_witness')
+        S = operators.get('S_surrender')
+        F = operators.get('F_fear')
+        Tr = operators.get('Tr_trust')
 
         # Void tolerance formula
         tolerance = (V * 0.3 + W * 0.25 + S * 0.2 + Tr * 0.15) * (1 - F * 0.4)
-        return min(1.0, tolerance)
+        return min(1.0, tolerance), []
 
     def _calculate_rebirth_readiness(
         self,
         operators: Dict[str, float],
         processes: Dict[str, DeathProcess]
-    ) -> float:
-        """Calculate readiness for rebirth after deaths"""
-        G = operators.get('G_grace', 0.5)
-        I = operators.get('I_intention', 0.5)
-        O = operators.get('O_openness', 0.5)
-        Sh = operators.get('Sh_shakti', 0.5)
+    ) -> Tuple[Optional[float], List[str]]:
+        """
+        Calculate readiness for rebirth after deaths.
+
+        ZERO-FALLBACK: Returns (None, missing_ops) if required operators missing.
+        """
+        required = ['G_grace', 'I_intention', 'O_openness', 'Sh_shakti']
+        missing = [op for op in required if op not in operators or operators.get(op) is None]
+
+        if missing:
+            return None, missing
+
+        G = operators.get('G_grace')
+        I = operators.get('I_intention')
+        O = operators.get('O_openness')
+        Sh = operators.get('Sh_shakti')
 
         # Base readiness
         base_readiness = (G * 0.3 + I * 0.25 + O * 0.25 + Sh * 0.2)
 
-        # Bonus for completed deaths
+        # Bonus for completed deaths (only count those with known phase)
         completed_deaths = sum(1 for p in processes.values()
                                if p.phase == 'rebirth')
         completion_bonus = completed_deaths * 0.05
 
-        return min(1.0, base_readiness + completion_bonus)
+        return min(1.0, base_readiness + completion_bonus), []
 
     def _calculate_overall_depth(
         self,
         processes: Dict[str, DeathProcess]
-    ) -> float:
-        """Calculate overall transformation depth"""
+    ) -> Optional[float]:
+        """
+        Calculate overall transformation depth.
+
+        ZERO-FALLBACK: Returns None if no processes have calculable depth.
+        """
         if not processes:
-            return 0.0
+            return None
 
         # Weighted by death importance (D7 > D1)
         weights = {'D1': 1, 'D2': 1.5, 'D3': 1.5, 'D4': 2, 'D5': 2, 'D6': 2.5, 'D7': 3}
 
-        weighted_sum = sum(
-            processes[d].depth * weights.get(d, 1)
-            for d in processes
-        )
-        total_weight = sum(weights.values())
+        weighted_sum = 0.0
+        total_weight = 0.0
+
+        for d, process in processes.items():
+            if process.depth is not None:
+                weighted_sum += process.depth * weights.get(d, 1)
+                total_weight += weights.get(d, 1)
+
+        # ZERO-FALLBACK: Return None if no depths calculable
+        if total_weight == 0:
+            return None
 
         return weighted_sum / total_weight
 

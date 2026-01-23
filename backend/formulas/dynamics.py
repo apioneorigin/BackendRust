@@ -15,34 +15,36 @@ Karma Mechanics:
 - Burning: How fast karma is being released
 """
 
-from typing import Dict, Any, List, Tuple, Optional
-from dataclasses import dataclass
+from typing import Dict, Any, List, Tuple, Optional, Set
+from dataclasses import dataclass, field
 import math
 
 
 @dataclass
 class GraceState:
     """Current state of grace mechanics"""
-    availability: float          # 0.0-1.0
-    effectiveness: float         # 0.0-1.0
-    multiplication_factor: float # 1.0+
-    timing_probability: float    # 0.0-1.0 probability of intervention
+    availability: Optional[float]          # 0.0-1.0 or None
+    effectiveness: Optional[float]         # 0.0-1.0 or None
+    multiplication_factor: Optional[float] # 1.0+ or None
+    timing_probability: Optional[float]    # 0.0-1.0 or None
     channels_open: List[str]     # Which grace channels are open
     blockers: List[str]          # What's blocking grace
     description: str
+    missing_operators: List[str] = field(default_factory=list)
 
 
 @dataclass
 class KarmaState:
     """Current state of karma dynamics"""
-    sanchita: float             # Stored karma intensity
-    prarabdha: float            # Active karma intensity
-    kriyamana_rate: float       # Rate of new karma creation
-    burn_rate: float            # Rate of karma release
-    net_change: float           # Net karma change (+ = accumulating)
-    allowance_factor: float     # Grace-based karma allowance
-    karma_type: str             # Dominant karma type
+    sanchita: Optional[float]             # Stored karma intensity
+    prarabdha: Optional[float]            # Active karma intensity
+    kriyamana_rate: Optional[float]       # Rate of new karma creation
+    burn_rate: Optional[float]            # Rate of karma release
+    net_change: Optional[float]           # Net karma change (+ = accumulating)
+    allowance_factor: Optional[float]     # Grace-based karma allowance
+    karma_type: Optional[str]             # Dominant karma type
     description: str
+    missing_operators: List[str] = field(default_factory=list)
 
 
 @dataclass
@@ -50,9 +52,10 @@ class DynamicsState:
     """Complete dynamics state"""
     grace: GraceState
     karma: KarmaState
-    grace_karma_ratio: float    # Balance between grace and karma
-    transformation_momentum: float  # Overall momentum
-    timeline_acceleration: float    # How accelerated is timeline
+    grace_karma_ratio: Optional[float]    # Balance between grace and karma
+    transformation_momentum: Optional[float]  # Overall momentum
+    timeline_acceleration: Optional[float]    # How accelerated is timeline
+    missing_operators: Set[str] = field(default_factory=set)
 
 
 class GraceKarmaDynamics:
@@ -81,11 +84,19 @@ class GraceKarmaDynamics:
     }
 
     def calculate_all(self, operators: Dict[str, float]) -> DynamicsState:
-        """Calculate complete dynamics state"""
+        """
+        Calculate complete dynamics state.
+
+        ZERO-FALLBACK: Tracks all missing operators.
+        """
         grace = self._calculate_grace(operators)
         karma = self._calculate_karma(operators)
 
-        # Calculate ratios and momentum
+        all_missing: Set[str] = set()
+        all_missing.update(grace.missing_operators)
+        all_missing.update(karma.missing_operators)
+
+        # Calculate ratios and momentum - ZERO-FALLBACK: handle None values
         grace_karma_ratio = self._calculate_grace_karma_ratio(grace, karma)
         momentum = self._calculate_momentum(operators, grace, karma)
         acceleration = self._calculate_acceleration(grace, momentum)
@@ -95,19 +106,53 @@ class GraceKarmaDynamics:
             karma=karma,
             grace_karma_ratio=grace_karma_ratio,
             transformation_momentum=momentum,
-            timeline_acceleration=acceleration
+            timeline_acceleration=acceleration,
+            missing_operators=all_missing
         )
 
     def _calculate_grace(self, operators: Dict[str, float]) -> GraceState:
-        """Calculate grace state"""
-        G = operators.get('G_grace', 0.5)
-        S = operators.get('S_surrender', 0.5)
-        Ce = operators.get('Ce_celebration', 0.5)
-        At = operators.get('At_attachment', 0.5)
-        R = operators.get('R_resistance', 0.5)
-        Se = operators.get('Se_service', 0.5)
-        D = operators.get('D_dharma', 0.5)
-        P = operators.get('P_presence', 0.5)
+        """
+        Calculate grace state.
+
+        ZERO-FALLBACK: Returns None for calculable fields if operators missing.
+        """
+        required_ops = ['G_grace', 'S_surrender', 'Ce_celebration', 'At_attachment',
+                        'R_resistance', 'Se_service', 'D_dharma', 'P_presence']
+        missing = [op for op in required_ops if op not in operators or operators.get(op) is None]
+
+        if missing:
+            # Cannot calculate - identify open channels/blockers from available data only
+            channels_open = []
+            for channel, config in self.GRACE_CHANNELS.items():
+                val = operators.get(config['op'])
+                if val is not None and val >= config['threshold']:
+                    channels_open.append(channel)
+
+            blockers = []
+            for blocker, config in self.GRACE_BLOCKERS.items():
+                val = operators.get(config['op'])
+                if val is not None and val >= config['threshold']:
+                    blockers.append(blocker)
+
+            return GraceState(
+                availability=None,
+                effectiveness=None,
+                multiplication_factor=None,
+                timing_probability=None,
+                channels_open=channels_open,
+                blockers=blockers,
+                description=f"Cannot calculate grace - missing: {', '.join(missing)}",
+                missing_operators=missing
+            )
+
+        G = operators.get('G_grace')
+        S = operators.get('S_surrender')
+        Ce = operators.get('Ce_celebration')
+        At = operators.get('At_attachment')
+        R = operators.get('R_resistance')
+        Se = operators.get('Se_service')
+        D = operators.get('D_dharma')
+        P = operators.get('P_presence')
 
         # Grace Availability Formula:
         # Availability = G × S × (1 - At × 0.5) × Readiness
@@ -131,13 +176,15 @@ class GraceKarmaDynamics:
         # Identify open channels
         channels_open = []
         for channel, config in self.GRACE_CHANNELS.items():
-            if operators.get(config['op'], 0) >= config['threshold']:
+            val = operators.get(config['op'])
+            if val is not None and val >= config['threshold']:
                 channels_open.append(channel)
 
         # Identify blockers
         blockers = []
         for blocker, config in self.GRACE_BLOCKERS.items():
-            if operators.get(config['op'], 0) >= config['threshold']:
+            val = operators.get(config['op'])
+            if val is not None and val >= config['threshold']:
                 blockers.append(blocker)
 
         # Generate description
@@ -152,18 +199,40 @@ class GraceKarmaDynamics:
             timing_probability=min(1.0, timing_probability),
             channels_open=channels_open,
             blockers=blockers,
-            description=description
+            description=description,
+            missing_operators=[]
         )
 
     def _calculate_karma(self, operators: Dict[str, float]) -> KarmaState:
-        """Calculate karma state"""
-        K = operators.get('K_karma', 0.5)
-        At = operators.get('At_attachment', 0.5)
-        A = operators.get('A_aware', 0.5)
-        Ce = operators.get('Ce_celebration', 0.5)
-        G = operators.get('G_grace', 0.5)
-        Hf = operators.get('Hf_habit', 0.5)
-        I = operators.get('I_intention', 0.5)
+        """
+        Calculate karma state.
+
+        ZERO-FALLBACK: Returns None for calculable fields if operators missing.
+        """
+        required_ops = ['K_karma', 'At_attachment', 'A_aware', 'Ce_celebration',
+                        'G_grace', 'Hf_habit', 'I_intention']
+        missing = [op for op in required_ops if op not in operators or operators.get(op) is None]
+
+        if missing:
+            return KarmaState(
+                sanchita=None,
+                prarabdha=None,
+                kriyamana_rate=None,
+                burn_rate=None,
+                net_change=None,
+                allowance_factor=None,
+                karma_type=None,
+                description=f"Cannot calculate karma - missing: {', '.join(missing)}",
+                missing_operators=missing
+            )
+
+        K = operators.get('K_karma')
+        At = operators.get('At_attachment')
+        A = operators.get('A_aware')
+        Ce = operators.get('Ce_celebration')
+        G = operators.get('G_grace')
+        Hf = operators.get('Hf_habit')
+        I = operators.get('I_intention')
 
         # Sanchita (stored karma) - approximated from K and habit patterns
         # Formula: Sanchita = K × (1 + Hf × 0.5)
@@ -207,15 +276,24 @@ class GraceKarmaDynamics:
             net_change=net_change,
             allowance_factor=min(1.0, allowance),
             karma_type=karma_type,
-            description=description
+            description=description,
+            missing_operators=[]
         )
 
-    def _determine_karma_type(self, operators: Dict[str, float]) -> str:
-        """Determine dominant karma type"""
-        At = operators.get('At_attachment', 0.5)
-        Se = operators.get('Se_service', 0.5)
-        A = operators.get('A_aware', 0.5)
-        I = operators.get('I_intention', 0.5)
+    def _determine_karma_type(self, operators: Dict[str, float]) -> Optional[str]:
+        """
+        Determine dominant karma type.
+
+        ZERO-FALLBACK: Returns None if required operators missing.
+        """
+        At = operators.get('At_attachment')
+        Se = operators.get('Se_service')
+        A = operators.get('A_aware')
+        I = operators.get('I_intention')
+
+        # Check if we have enough data
+        if At is None or Se is None or A is None or I is None:
+            return None
 
         # Types:
         # - Binding: High attachment, low awareness
@@ -236,11 +314,19 @@ class GraceKarmaDynamics:
         self,
         grace: GraceState,
         karma: KarmaState
-    ) -> float:
+    ) -> Optional[float]:
         """
         Calculate ratio between grace support and karma burden.
         >1.0 = Grace dominant, <1.0 = Karma dominant
+
+        ZERO-FALLBACK: Returns None if required values missing.
         """
+        # Check for required values
+        if grace.availability is None or grace.multiplication_factor is None:
+            return None
+        if karma.prarabdha is None or karma.allowance_factor is None:
+            return None
+
         grace_factor = grace.availability * grace.multiplication_factor
         karma_factor = karma.prarabdha * (1 - karma.allowance_factor)
 
@@ -254,11 +340,25 @@ class GraceKarmaDynamics:
         operators: Dict[str, float],
         grace: GraceState,
         karma: KarmaState
-    ) -> float:
-        """Calculate transformation momentum"""
-        I = operators.get('I_intention', 0.5)
-        Sh = operators.get('Sh_shakti', 0.5)
-        Co = operators.get('Co_coherence', 0.5)
+    ) -> Optional[float]:
+        """
+        Calculate transformation momentum.
+
+        ZERO-FALLBACK: Returns None if required values missing.
+        """
+        I = operators.get('I_intention')
+        Sh = operators.get('Sh_shakti')
+        Co = operators.get('Co_coherence')
+
+        # Check for required operators
+        if I is None or Sh is None or Co is None:
+            return None
+
+        # Check for required grace/karma values
+        if grace.multiplication_factor is None:
+            return None
+        if karma.prarabdha is None or karma.allowance_factor is None:
+            return None
 
         # Base momentum from intention and energy
         base = I * Sh * Co
@@ -276,12 +376,17 @@ class GraceKarmaDynamics:
     def _calculate_acceleration(
         self,
         grace: GraceState,
-        momentum: float
-    ) -> float:
+        momentum: Optional[float]
+    ) -> Optional[float]:
         """
         Calculate timeline acceleration.
         >1.0 = Faster than normal, <1.0 = Slower
+
+        ZERO-FALLBACK: Returns None if required values missing.
         """
+        if grace.multiplication_factor is None or momentum is None:
+            return None
+
         # Grace can accelerate timeline
         grace_acceleration = grace.multiplication_factor * 0.5
 
@@ -292,12 +397,19 @@ class GraceKarmaDynamics:
 
     def _get_grace_description(
         self,
-        availability: float,
-        effectiveness: float,
+        availability: Optional[float],
+        effectiveness: Optional[float],
         channels: int,
         blockers: int
     ) -> str:
-        """Generate grace description"""
+        """
+        Generate grace description.
+
+        ZERO-FALLBACK: Returns appropriate message if values are None.
+        """
+        if availability is None or effectiveness is None:
+            return "Cannot fully assess grace state - insufficient operator data"
+
         if availability > 0.7 and effectiveness > 0.7:
             return f"Grace flowing strongly through {channels} channels"
         elif availability > 0.5:
@@ -309,20 +421,29 @@ class GraceKarmaDynamics:
 
     def _get_karma_description(
         self,
-        sanchita: float,
-        net_change: float,
-        burn_rate: float,
-        karma_type: str
+        sanchita: Optional[float],
+        net_change: Optional[float],
+        burn_rate: Optional[float],
+        karma_type: Optional[str]
     ) -> str:
-        """Generate karma description"""
+        """
+        Generate karma description.
+
+        ZERO-FALLBACK: Returns appropriate message if values are None.
+        """
+        if sanchita is None or net_change is None or burn_rate is None:
+            return "Cannot fully assess karma state - insufficient operator data"
+
+        type_str = karma_type if karma_type else "unknown"
+
         if net_change < -0.1 and burn_rate > 0.5:
-            return f"Rapid karma burning ({karma_type}) - transformation accelerating"
+            return f"Rapid karma burning ({type_str}) - transformation accelerating"
         elif net_change < 0:
-            return f"Net karma release ({karma_type}) - gradual lightening"
+            return f"Net karma release ({type_str}) - gradual lightening"
         elif net_change > 0.1:
-            return f"Karma accumulating ({karma_type}) - increase awareness in action"
+            return f"Karma accumulating ({type_str}) - increase awareness in action"
         else:
-            return f"Karma in balance ({karma_type}) - maintaining equilibrium"
+            return f"Karma in balance ({type_str}) - maintaining equilibrium"
 
     def calculate_grace_intervention_probability(
         self,

@@ -12,8 +12,8 @@ Key Concepts:
 Based on quantum consciousness theories and OOF framework physics.
 """
 
-from typing import Dict, Any, List, Optional, Tuple
-from dataclasses import dataclass
+from typing import Dict, Any, List, Optional, Tuple, Set
+from dataclasses import dataclass, field
 import math
 import random
 
@@ -22,11 +22,12 @@ import random
 class QuantumState:
     """Quantum state of consciousness"""
     superposition_states: Dict[str, float]  # State -> probability amplitude
-    coherence_time: float                    # How long quantum effects persist
-    entanglement_strength: float             # Non-local connection strength
-    tunneling_probability: float             # Probability of barrier bypass
-    collapse_readiness: float                # Ready to collapse to specific outcome
+    coherence_time: Optional[float]          # How long quantum effects persist
+    entanglement_strength: Optional[float]   # Non-local connection strength
+    tunneling_probability: Optional[float]   # Probability of barrier bypass
+    collapse_readiness: Optional[float]      # Ready to collapse to specific outcome
     dominant_state: str                      # Most probable state if measured
+    missing_operators: List[str] = field(default_factory=list)
 
 
 @dataclass
@@ -81,22 +82,24 @@ class QuantumMechanics:
         """
         Calculate quantum state from operator values.
 
+        ZERO-FALLBACK: Returns None for fields with missing operators.
+
         Higher S-levels maintain quantum properties longer.
         """
-        # Calculate superposition states
+        # Calculate superposition states (uses s_level, minimal operator dependency)
         superposition = self._calculate_superposition(operators, s_level)
 
         # Coherence time (how long quantum effects last)
-        coherence_time = self._calculate_coherence_time(operators, s_level)
+        coherence_time, _ = self._calculate_coherence_time(operators, s_level)
 
         # Entanglement strength (non-local connections)
-        entanglement = self._calculate_entanglement(operators)
+        entanglement, _ = self._calculate_entanglement(operators)
 
         # General tunneling probability
-        tunneling = self._calculate_base_tunneling(operators)
+        tunneling, _ = self._calculate_base_tunneling(operators)
 
         # Collapse readiness
-        collapse_readiness = self._calculate_collapse_readiness(operators)
+        collapse_readiness, _ = self._calculate_collapse_readiness(operators)
 
         # Dominant state
         dominant = max(superposition.items(), key=lambda x: x[1])[0]
@@ -152,22 +155,31 @@ class QuantumMechanics:
         self,
         operators: Dict[str, float],
         s_level: float
-    ) -> float:
+    ) -> Tuple[Optional[float], List[str]]:
         """
         Calculate how long quantum coherence is maintained.
         In seconds, but represents relative stability.
 
+        ZERO-FALLBACK: Returns (None, missing_ops) if required operators missing.
+
         Higher S-levels and certain operators extend coherence.
         """
-        W = operators.get('W_witness', 0.5)
-        P = operators.get('P_presence', 0.5)
-        Co = operators.get('Co_coherence', 0.5)
-        A = operators.get('A_aware', 0.5)
+        required = ['W_witness', 'P_presence', 'Co_coherence', 'A_aware',
+                    'At_attachment', 'F_fear', 'Hf_habit']
+        missing = [op for op in required if op not in operators or operators.get(op) is None]
+
+        if missing:
+            return None, missing
+
+        W = operators.get('W_witness')
+        P = operators.get('P_presence')
+        Co = operators.get('Co_coherence')
+        A = operators.get('A_aware')
 
         # Decoherence factors
-        At = operators.get('At_attachment', 0.5)
-        F = operators.get('F_fear', 0.5)
-        Hf = operators.get('Hf_habit', 0.5)
+        At = operators.get('At_attachment')
+        F = operators.get('F_fear')
+        Hf = operators.get('Hf_habit')
 
         # Base coherence time (in relative units)
         base_time = 1.0
@@ -181,59 +193,97 @@ class QuantumMechanics:
         # S-level bonus (higher S-levels maintain coherence longer)
         s_level_factor = 1 + (s_level - 3) * 0.2
 
-        return base_time * (1 + enhancement) * decoherence_factor * s_level_factor
+        return base_time * (1 + enhancement) * decoherence_factor * s_level_factor, []
 
-    def _calculate_entanglement(self, operators: Dict[str, float]) -> float:
+    def _calculate_entanglement(self, operators: Dict[str, float]) -> Tuple[Optional[float], List[str]]:
         """
         Calculate entanglement strength (non-local connections).
+
+        ZERO-FALLBACK: Returns (None, missing_ops) if required operators missing.
 
         High entanglement enables:
         - Synchronicity
         - Telepathic-like communication
         - Collective consciousness access
         """
-        Co = operators.get('Co_coherence', 0.5)
-        Se = operators.get('Se_service', 0.5)
-        G = operators.get('G_grace', 0.5)
-        O = operators.get('O_openness', 0.5)
+        required = ['Co_coherence', 'Se_service', 'G_grace', 'O_openness', 'At_attachment']
+        missing = [op for op in required if op not in operators or operators.get(op) is None]
+
+        if missing:
+            return None, missing
+
+        Co = operators.get('Co_coherence')
+        Se = operators.get('Se_service')
+        G = operators.get('G_grace')
+        O = operators.get('O_openness')
 
         # Entanglement formula
         entanglement = (Co * 0.35 + Se * 0.25 + G * 0.25 + O * 0.15)
 
         # Separation reduces entanglement
-        At = operators.get('At_attachment', 0.5)
+        At = operators.get('At_attachment')
         separation_factor = 1 - At * 0.3
 
-        return entanglement * separation_factor
+        return entanglement * separation_factor, []
 
-    def _calculate_base_tunneling(self, operators: Dict[str, float]) -> float:
-        """Calculate base tunneling probability"""
+    def _calculate_base_tunneling(self, operators: Dict[str, float]) -> Tuple[Optional[float], List[str]]:
+        """
+        Calculate base tunneling probability.
+
+        ZERO-FALLBACK: Returns (None, missing_ops) if required operators missing.
+        """
+        missing = []
+
         # Enhancers
-        enhance_sum = sum(operators.get(op, 0.5) for op in self.TUNNELING_ENHANCERS)
-        enhance_avg = enhance_sum / len(self.TUNNELING_ENHANCERS)
+        enhance_values = []
+        for op in self.TUNNELING_ENHANCERS:
+            val = operators.get(op)
+            if val is not None:
+                enhance_values.append(val)
+            else:
+                missing.append(op)
 
         # Inhibitors
-        inhibit_sum = sum(operators.get(op, 0.5) for op in self.TUNNELING_INHIBITORS)
-        inhibit_avg = inhibit_sum / len(self.TUNNELING_INHIBITORS)
+        inhibit_values = []
+        for op in self.TUNNELING_INHIBITORS:
+            val = operators.get(op)
+            if val is not None:
+                inhibit_values.append(val)
+            else:
+                missing.append(op)
+
+        if missing:
+            return None, missing
+
+        enhance_avg = sum(enhance_values) / len(enhance_values) if enhance_values else 0.5
+        inhibit_avg = sum(inhibit_values) / len(inhibit_values) if inhibit_values else 0.5
 
         # Base probability
-        return enhance_avg * (1 - inhibit_avg * 0.5)
+        return enhance_avg * (1 - inhibit_avg * 0.5), []
 
-    def _calculate_collapse_readiness(self, operators: Dict[str, float]) -> float:
+    def _calculate_collapse_readiness(self, operators: Dict[str, float]) -> Tuple[Optional[float], List[str]]:
         """
         Calculate readiness for wave function collapse.
+
+        ZERO-FALLBACK: Returns (None, missing_ops) if required operators missing.
 
         Collapse happens when:
         - Strong intention present
         - Observer state active (witness)
         - Sufficient energy (shakti)
         """
-        I = operators.get('I_intention', 0.5)
-        W = operators.get('W_witness', 0.5)
-        Sh = operators.get('Sh_shakti', 0.5)
-        P = operators.get('P_presence', 0.5)
+        required = ['I_intention', 'W_witness', 'Sh_shakti', 'P_presence']
+        missing = [op for op in required if op not in operators or operators.get(op) is None]
 
-        return (I * 0.35 + W * 0.3 + Sh * 0.2 + P * 0.15)
+        if missing:
+            return None, missing
+
+        I = operators.get('I_intention')
+        W = operators.get('W_witness')
+        Sh = operators.get('Sh_shakti')
+        P = operators.get('P_presence')
+
+        return (I * 0.35 + W * 0.3 + Sh * 0.2 + P * 0.15), []
 
     def analyze_tunneling(
         self,

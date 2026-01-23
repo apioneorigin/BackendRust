@@ -2,15 +2,18 @@
 Validation Layer for OOF Calculations
 Ensures data quality at each stage of the pipeline
 
+ZERO-FALLBACK MODE: Does NOT add default values for missing operators.
+Missing operators are tracked and reported, not auto-filled.
+
 Validation Types:
-1. Extraction Validation: All 25 operators present with valid ranges
-2. Calculation Validation: All computed values within valid bounds
-3. Coherence Validation: Internal consistency across values
+1. Extraction Validation: Tracks which operators are present/missing
+2. Calculation Validation: All computed values within valid bounds (handles None)
+3. Coherence Validation: Internal consistency across available values
 4. Semantic Validation: Values make sense in context
 """
 
-from typing import Dict, Any, List, Tuple, Optional
-from dataclasses import dataclass
+from typing import Dict, Any, List, Tuple, Optional, Set
+from dataclasses import dataclass, field
 import math
 
 
@@ -21,6 +24,8 @@ class ValidationResult:
     errors: List[str]
     warnings: List[str]
     corrections_made: Dict[str, Any]
+    missing_operators: List[str] = field(default_factory=list)
+    populated_operators: List[str] = field(default_factory=list)
 
 
 @dataclass
@@ -35,6 +40,10 @@ class ComprehensiveValidation:
     all_errors: List[str]
     all_warnings: List[str]
     corrections: Dict[str, Any]
+    # Zero-fallback additions
+    missing_operators: Set[str] = field(default_factory=set)
+    populated_operators: Set[str] = field(default_factory=set)
+    operator_coverage: float = 0.0  # Percentage of operators populated
 
 
 class Validator:
@@ -134,29 +143,45 @@ class Validator:
     def validate_extraction(
         self,
         tier1_values: Dict[str, Any],
-        auto_correct: bool = True
+        auto_correct: bool = False,  # Changed default to False for zero-fallback
+        zero_fallback_mode: bool = True  # New flag for zero-fallback behavior
     ) -> ValidationResult:
         """
         Validate tier-1 extraction from LLM Call 1.
 
+        ZERO-FALLBACK MODE (default):
+        - Does NOT add default values for missing operators
+        - Tracks which operators are missing
+        - Does NOT treat missing operators as errors
+
         Checks:
-        - All 25 operators present
+        - Tracks which operators are present vs missing
         - Values within 0.0-1.0 range
         - Confidence values present and valid
         """
         errors = []
         warnings = []
         corrections = {}
+        missing_operators = []
+        populated_operators = []
 
         # Extract observations
         observations = tier1_values.get('observations', [])
+
+        # Also check for unable_to_determine list (from evidence extraction)
+        unable_to_determine = tier1_values.get('unable_to_determine', [])
+
         obs_dict = {}
 
         for obs in observations:
             if isinstance(obs, dict) and 'var' in obs:
                 var_name = obs['var']
-                value = obs.get('value', 0.5)
+                value = obs.get('value')
                 confidence = obs.get('confidence', 0.5)
+
+                # Skip if value is explicitly None or marked as unable
+                if value is None or var_name == 'UNABLE':
+                    continue
 
                 # Normalize variable name
                 normalized = self.OPERATOR_ALIASES.get(var_name, var_name)
@@ -164,22 +189,32 @@ class Validator:
                     'value': value,
                     'confidence': confidence
                 }
+                populated_operators.append(normalized)
 
-        # Check for required operators
+        # Check for required operators - track missing, don't auto-fill
         for op in self.REQUIRED_OPERATORS:
             if op not in obs_dict:
-                if auto_correct:
-                    # Add default value
+                missing_operators.append(op)
+
+                if zero_fallback_mode:
+                    # In zero-fallback mode, missing is not an error, just tracked
+                    warnings.append(f"Operator {op} not extracted - will be collected")
+                elif auto_correct:
+                    # Legacy behavior (deprecated)
                     obs_dict[op] = {'value': 0.5, 'confidence': 0.3}
                     corrections[op] = 'Added with default value 0.5'
-                    warnings.append(f"Missing operator {op} - defaulted to 0.5")
+                    warnings.append(f"Missing operator {op} - defaulted to 0.5 (DEPRECATED)")
                 else:
                     errors.append(f"Missing required operator: {op}")
 
-        # Validate value ranges
+        # Validate value ranges for populated operators
         for op, data in obs_dict.items():
-            value = data.get('value', 0.5)
+            value = data.get('value')
             confidence = data.get('confidence', 0.5)
+
+            # Skip None values
+            if value is None:
+                continue
 
             # Check value range
             if not 0.0 <= value <= 1.0:
@@ -192,7 +227,7 @@ class Validator:
                     errors.append(f"{op} value {value} out of valid range [0.0, 1.0]")
 
             # Check confidence range
-            if not 0.0 <= confidence <= 1.0:
+            if confidence is not None and not 0.0 <= confidence <= 1.0:
                 if auto_correct:
                     corrected = max(0.0, min(1.0, confidence))
                     obs_dict[op]['confidence'] = corrected
@@ -200,48 +235,78 @@ class Validator:
                 else:
                     warnings.append(f"{op} confidence {confidence} out of range")
 
-        # Update tier1_values with corrections
+        # Update tier1_values with corrections (only if corrections made)
         if auto_correct and corrections:
             tier1_values['observations'] = [
                 {'var': k, 'value': v['value'], 'confidence': v['confidence']}
                 for k, v in obs_dict.items()
+                if v.get('value') is not None
             ]
 
+        # In zero-fallback mode, validation is valid even with missing operators
+        # as long as no actual errors (invalid values) exist
+        is_valid = len(errors) == 0
+
         return ValidationResult(
-            valid=len(errors) == 0,
+            valid=is_valid,
             errors=errors,
             warnings=warnings,
-            corrections_made=corrections
+            corrections_made=corrections,
+            missing_operators=missing_operators,
+            populated_operators=populated_operators
         )
 
     def validate_calculation(
         self,
         posteriors: Dict[str, Any],
-        auto_correct: bool = True
+        auto_correct: bool = False,  # Changed default for zero-fallback
+        zero_fallback_mode: bool = True
     ) -> ValidationResult:
         """
         Validate backend calculation results.
 
+        ZERO-FALLBACK MODE (default):
+        - None values are valid (indicate missing input operators)
+        - Does NOT replace None with defaults
+        - Tracks which calculations were blocked
+
         Checks:
-        - All values within valid ranges
+        - Valid values within ranges (None is valid)
         - No NaN or infinity values
-        - Reasonable value distributions
+        - Reasonable value distributions for populated values
         """
         errors = []
         warnings = []
         corrections = {}
+        populated = []
+        blocked = []
 
         values = posteriors.get('values', {})
 
         for var_name, value in values.items():
+            # None is valid in zero-fallback mode (blocked calculation)
+            if value is None:
+                blocked.append(var_name)
+                continue
+
             # Check for invalid numeric types
             if not isinstance(value, (int, float)):
-                errors.append(f"{var_name} has non-numeric value: {type(value)}")
+                if zero_fallback_mode:
+                    # Treat as blocked rather than error
+                    blocked.append(var_name)
+                    warnings.append(f"{var_name} has non-numeric value: {type(value)} - treated as blocked")
+                else:
+                    errors.append(f"{var_name} has non-numeric value: {type(value)}")
                 continue
 
             # Check for NaN or infinity
             if math.isnan(value):
-                if auto_correct:
+                if zero_fallback_mode:
+                    # Convert NaN to None (blocked)
+                    values[var_name] = None
+                    blocked.append(var_name)
+                    corrections[var_name] = "NaN replaced with None (blocked)"
+                elif auto_correct:
                     values[var_name] = 0.5
                     corrections[var_name] = "NaN replaced with 0.5"
                 else:
@@ -249,12 +314,19 @@ class Validator:
                 continue
 
             if math.isinf(value):
-                if auto_correct:
+                if zero_fallback_mode:
+                    values[var_name] = None
+                    blocked.append(var_name)
+                    corrections[var_name] = "Infinity replaced with None (blocked)"
+                elif auto_correct:
                     values[var_name] = 1.0 if value > 0 else 0.0
                     corrections[var_name] = f"Infinity replaced with {values[var_name]}"
                 else:
                     errors.append(f"{var_name} is infinite")
                 continue
+
+            # Value is valid - track as populated
+            populated.append(var_name)
 
             # Check typical operator ranges (0.0-1.0)
             # Some values like multipliers can exceed 1.0
@@ -270,41 +342,63 @@ class Validator:
                     else:
                         warnings.append(f"{var_name} = {value} outside [0.0, 1.0]")
 
-        # Check for reasonable distribution
-        if values:
-            avg_value = sum(v for v in values.values() if isinstance(v, (int, float))) / len(values)
+        # Check for reasonable distribution (only for populated values)
+        numeric_values = [v for v in values.values() if isinstance(v, (int, float)) and v is not None]
+        if numeric_values:
+            avg_value = sum(numeric_values) / len(numeric_values)
             if avg_value < 0.1:
                 warnings.append("Average value unusually low - check input data")
             elif avg_value > 0.9:
                 warnings.append("Average value unusually high - check input data")
 
+        # Report blocked calculations
+        if blocked:
+            warnings.append(f"{len(blocked)} calculations blocked due to missing inputs")
+
         return ValidationResult(
             valid=len(errors) == 0,
             errors=errors,
             warnings=warnings,
-            corrections_made=corrections
+            corrections_made=corrections,
+            populated_operators=populated,
+            missing_operators=blocked
         )
 
     def validate_coherence(
         self,
-        operators: Dict[str, float]
+        operators: Dict[str, Optional[float]]
     ) -> ValidationResult:
         """
         Validate internal consistency of values.
 
+        ZERO-FALLBACK MODE:
+        - Only checks coherence for operators that have values
+        - Skips checks if one or both operators in a pair are None
+
         Checks:
-        - Inverse pairs have expected relationships
-        - Complementary pairs are aligned
-        - No impossible combinations
+        - Inverse pairs have expected relationships (when both present)
+        - Complementary pairs are aligned (when both present)
+        - No impossible combinations (when all involved operators present)
         """
         errors = []
         warnings = []
         corrections = {}
 
-        # Check inverse pairs
+        def _get_value(op: str) -> Optional[float]:
+            """Get operator value, returning None if missing."""
+            val = operators.get(op)
+            if val is None:
+                return None
+            return val
+
+        # Check inverse pairs (only when both values present)
         for op1, op2 in self.INVERSE_PAIRS:
-            val1 = operators.get(op1, 0.5)
-            val2 = operators.get(op2, 0.5)
+            val1 = _get_value(op1)
+            val2 = _get_value(op2)
+
+            # Skip if either is missing
+            if val1 is None or val2 is None:
+                continue
 
             # Inverse pairs should generally sum to ~1.0 (with tolerance)
             total = val1 + val2
@@ -318,10 +412,14 @@ class Validator:
                     f"Contradiction: {op1}={val1:.2f} and inverse {op2}={val2:.2f} both very high"
                 )
 
-        # Check complementary pairs
+        # Check complementary pairs (only when both values present)
         for op1, op2 in self.COMPLEMENTARY_PAIRS:
-            val1 = operators.get(op1, 0.5)
-            val2 = operators.get(op2, 0.5)
+            val1 = _get_value(op1)
+            val2 = _get_value(op2)
+
+            # Skip if either is missing
+            if val1 is None or val2 is None:
+                continue
 
             # Large divergence in complementary pairs is unusual
             if abs(val1 - val2) > 0.5:
@@ -329,27 +427,28 @@ class Validator:
                     f"Unusual divergence: complementary {op1}={val1:.2f} vs {op2}={val2:.2f}"
                 )
 
-        # Check for impossible combinations
-        # Example: High grace (G) with high resistance (R) and high attachment (At)
-        G = operators.get('G_grace', 0.5)
-        R = operators.get('R_resistance', 0.5)
-        At = operators.get('At_attachment', 0.5)
-        S = operators.get('S_surrender', 0.5)
+        # Check for impossible combinations (only when all operators present)
+        G = _get_value('G_grace')
+        R = _get_value('R_resistance')
+        At = _get_value('At_attachment')
+        S = _get_value('S_surrender')
 
-        if G > 0.7 and R > 0.7 and At > 0.7:
-            warnings.append(
-                "Unusual pattern: High grace with high resistance and attachment - "
-                "may indicate measurement error or transitional state"
-            )
+        if G is not None and R is not None and At is not None:
+            if G > 0.7 and R > 0.7 and At > 0.7:
+                warnings.append(
+                    "Unusual pattern: High grace with high resistance and attachment - "
+                    "may indicate measurement error or transitional state"
+                )
 
-        if S > 0.8 and R > 0.8:
-            warnings.append(
-                "Contradiction: High surrender with high resistance is unusual"
-            )
+        if S is not None and R is not None:
+            if S > 0.8 and R > 0.8:
+                warnings.append(
+                    "Contradiction: High surrender with high resistance is unusual"
+                )
 
         # Calculate overall coherence score
         coherence_score = self._calculate_coherence_score(operators)
-        if coherence_score < 0.5:
+        if coherence_score is not None and coherence_score < 0.5:
             warnings.append(f"Low overall coherence ({coherence_score:.2f}) - values may be inconsistent")
 
         return ValidationResult(
@@ -359,59 +458,85 @@ class Validator:
             corrections_made=corrections
         )
 
-    def _calculate_coherence_score(self, operators: Dict[str, float]) -> float:
-        """Calculate overall coherence score"""
+    def _calculate_coherence_score(self, operators: Dict[str, Optional[float]]) -> Optional[float]:
+        """Calculate overall coherence score (None if insufficient data)."""
         if not operators:
-            return 0.5
+            return None
 
-        # Check inverse pair alignment
+        def _get_value(op: str) -> Optional[float]:
+            val = operators.get(op)
+            return val if val is not None else None
+
+        # Check inverse pair alignment (only pairs with both values)
         inverse_coherence = 0.0
         inverse_count = 0
         for op1, op2 in self.INVERSE_PAIRS:
-            val1 = operators.get(op1, 0.5)
-            val2 = operators.get(op2, 0.5)
-            # Good if sum is around 1.0
-            inverse_coherence += 1 - abs((val1 + val2) - 1.0)
-            inverse_count += 1
+            val1 = _get_value(op1)
+            val2 = _get_value(op2)
+            if val1 is not None and val2 is not None:
+                # Good if sum is around 1.0
+                inverse_coherence += 1 - abs((val1 + val2) - 1.0)
+                inverse_count += 1
 
-        # Check complementary pair alignment
+        # Check complementary pair alignment (only pairs with both values)
         comp_coherence = 0.0
         comp_count = 0
         for op1, op2 in self.COMPLEMENTARY_PAIRS:
-            val1 = operators.get(op1, 0.5)
-            val2 = operators.get(op2, 0.5)
-            # Good if values are similar
-            comp_coherence += 1 - abs(val1 - val2)
-            comp_count += 1
+            val1 = _get_value(op1)
+            val2 = _get_value(op2)
+            if val1 is not None and val2 is not None:
+                # Good if values are similar
+                comp_coherence += 1 - abs(val1 - val2)
+                comp_count += 1
 
-        if inverse_count + comp_count == 0:
-            return 0.5
+        total_count = inverse_count + comp_count
+        if total_count == 0:
+            return None  # Insufficient data for coherence check
 
-        total_coherence = (inverse_coherence + comp_coherence) / (inverse_count + comp_count)
+        total_coherence = (inverse_coherence + comp_coherence) / total_count
         return max(0.0, min(1.0, total_coherence))
 
     def validate_semantic(
         self,
-        operators: Dict[str, float],
-        s_level: float,
+        operators: Dict[str, Optional[float]],
+        s_level: Optional[float],
         context: Optional[str] = None
     ) -> ValidationResult:
         """
         Validate that values make sense semantically.
 
+        ZERO-FALLBACK MODE:
+        - Only validates operators that have values
+        - Skips S-level checks if S-level is None
+        - Does NOT assume defaults for missing operators
+
         Checks:
-        - S-level consistent with operator patterns
+        - S-level consistent with operator patterns (when both present)
         - Patterns appropriate for stated context
         """
         errors = []
         warnings = []
         corrections = {}
 
+        # Skip S-level validation if S-level is None
+        if s_level is None:
+            warnings.append("S-level not calculated - semantic validation limited")
+            return ValidationResult(
+                valid=True,
+                errors=errors,
+                warnings=warnings,
+                corrections_made=corrections
+            )
+
         # Check S-level consistency
         s_level_patterns = self._get_expected_patterns_for_s_level(s_level)
 
         for op, expected_range in s_level_patterns.items():
-            actual = operators.get(op, 0.5)
+            actual = operators.get(op)
+            # Skip if operator is missing
+            if actual is None:
+                continue
+
             min_exp, max_exp = expected_range
 
             if actual < min_exp - 0.2:
@@ -425,18 +550,18 @@ class Validator:
                     f"(expected {min_exp:.2f}-{max_exp:.2f})"
                 )
 
-        # Check for S-level / operator alignment
-        W = operators.get('W_witness', 0.5)
-        G = operators.get('G_grace', 0.5)
-        At = operators.get('At_attachment', 0.5)
+        # Check for S-level / operator alignment (only if operators present)
+        W = operators.get('W_witness')
+        G = operators.get('G_grace')
+        At = operators.get('At_attachment')
 
-        if s_level >= 6 and W < 0.5:
+        if W is not None and s_level >= 6 and W < 0.5:
             warnings.append(f"S{s_level:.0f} typically has higher witness ({W:.2f} is low)")
 
-        if s_level >= 7 and G < 0.5:
+        if G is not None and s_level >= 7 and G < 0.5:
             warnings.append(f"S{s_level:.0f} typically has higher grace ({G:.2f} is low)")
 
-        if s_level >= 5 and At > 0.7:
+        if At is not None and s_level >= 5 and At > 0.7:
             warnings.append(f"S{s_level:.0f} typically has lower attachment ({At:.2f} is high)")
 
         return ValidationResult(
@@ -490,15 +615,25 @@ class Validator:
         self,
         tier1_values: Dict[str, Any],
         posteriors: Dict[str, Any],
-        operators: Dict[str, float],
-        s_level: float,
-        auto_correct: bool = True
+        operators: Dict[str, Optional[float]],
+        s_level: Optional[float],
+        auto_correct: bool = False,  # Changed default for zero-fallback
+        zero_fallback_mode: bool = True
     ) -> ComprehensiveValidation:
         """
         Run all validations and return comprehensive result.
+
+        ZERO-FALLBACK MODE (default):
+        - Tracks missing operators and blocked calculations
+        - Does not auto-correct with defaults
+        - Computes operator coverage percentage
         """
-        extraction_result = self.validate_extraction(tier1_values, auto_correct)
-        calculation_result = self.validate_calculation(posteriors, auto_correct)
+        extraction_result = self.validate_extraction(
+            tier1_values, auto_correct, zero_fallback_mode
+        )
+        calculation_result = self.validate_calculation(
+            posteriors, auto_correct, zero_fallback_mode
+        )
         coherence_result = self.validate_coherence(operators)
         semantic_result = self.validate_semantic(operators, s_level)
 
@@ -530,10 +665,21 @@ class Validator:
             semantic_result.valid
         )
 
-        # Calculate quality score
+        # Collect all missing and populated operators
+        all_missing = set(extraction_result.missing_operators + calculation_result.missing_operators)
+        all_populated = set(extraction_result.populated_operators + calculation_result.populated_operators)
+
+        # Calculate operator coverage
+        total_required = len(self.REQUIRED_OPERATORS)
+        populated_count = len([op for op in all_populated if op in self.REQUIRED_OPERATORS])
+        operator_coverage = populated_count / total_required if total_required > 0 else 0.0
+
+        # Calculate quality score (adjusted for zero-fallback)
         error_penalty = len(all_errors) * 0.1
         warning_penalty = len(all_warnings) * 0.02
-        quality_score = max(0.0, 1.0 - error_penalty - warning_penalty)
+        # In zero-fallback mode, low coverage is a warning, not an error
+        coverage_penalty = (1 - operator_coverage) * 0.3 if zero_fallback_mode else 0
+        quality_score = max(0.0, 1.0 - error_penalty - warning_penalty - coverage_penalty)
 
         return ComprehensiveValidation(
             extraction_valid=extraction_result.valid,
@@ -544,7 +690,10 @@ class Validator:
             quality_score=quality_score,
             all_errors=all_errors,
             all_warnings=all_warnings,
-            corrections=all_corrections
+            corrections=all_corrections,
+            missing_operators=all_missing,
+            populated_operators=all_populated,
+            operator_coverage=operator_coverage
         )
 
 
@@ -552,26 +701,39 @@ class Validator:
 validator = Validator()
 
 
-def validate_tier1(values: Dict[str, Any], auto_correct: bool = True) -> ValidationResult:
-    """Convenience function for tier-1 validation"""
-    return validator.validate_extraction(values, auto_correct)
+def validate_tier1(
+    values: Dict[str, Any],
+    auto_correct: bool = False,
+    zero_fallback_mode: bool = True
+) -> ValidationResult:
+    """Convenience function for tier-1 validation (zero-fallback by default)"""
+    return validator.validate_extraction(values, auto_correct, zero_fallback_mode)
 
 
-def validate_posteriors(posteriors: Dict[str, Any], auto_correct: bool = True) -> ValidationResult:
-    """Convenience function for posteriors validation"""
-    return validator.validate_calculation(posteriors, auto_correct)
+def validate_posteriors(
+    posteriors: Dict[str, Any],
+    auto_correct: bool = False,
+    zero_fallback_mode: bool = True
+) -> ValidationResult:
+    """Convenience function for posteriors validation (zero-fallback by default)"""
+    return validator.validate_calculation(posteriors, auto_correct, zero_fallback_mode)
 
 
-def validate_coherence(operators: Dict[str, float]) -> ValidationResult:
-    """Convenience function for coherence validation"""
+def validate_coherence(operators: Dict[str, Optional[float]]) -> ValidationResult:
+    """Convenience function for coherence validation (handles None values)"""
     return validator.validate_coherence(operators)
 
 
 def validate_all(
     tier1: Dict[str, Any],
     posteriors: Dict[str, Any],
-    operators: Dict[str, float],
-    s_level: float
+    operators: Dict[str, Optional[float]],
+    s_level: Optional[float],
+    zero_fallback_mode: bool = True
 ) -> ComprehensiveValidation:
-    """Convenience function for comprehensive validation"""
-    return validator.validate_all(tier1, posteriors, operators, s_level)
+    """Convenience function for comprehensive validation (zero-fallback by default)"""
+    return validator.validate_all(
+        tier1, posteriors, operators, s_level,
+        auto_correct=False,
+        zero_fallback_mode=zero_fallback_mode
+    )

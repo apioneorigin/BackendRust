@@ -12,8 +12,8 @@ Each matrix represents a dimension of consciousness transformation:
 - Death: Clinging → Acceptance → Surrender → Rebirth
 """
 
-from typing import Dict, Tuple, Any
-from dataclasses import dataclass
+from typing import Dict, Tuple, Any, Optional, List, Set
+from dataclasses import dataclass, field
 
 
 @dataclass
@@ -21,9 +21,10 @@ class MatrixPosition:
     """A position on a transformation matrix"""
     matrix: str
     position: str
-    score: float  # 0.0-1.0
-    stage: int  # 1-4
+    score: Optional[float]  # 0.0-1.0 or None if cannot calculate
+    stage: Optional[int]  # 1-4 or None
     description: str
+    missing_operators: List[str] = field(default_factory=list)
 
 
 class MatrixDetector:
@@ -121,18 +122,35 @@ class MatrixDetector:
         return positions
 
     def detect_matrix(self, matrix_name: str, operators: Dict[str, float]) -> MatrixPosition:
-        """Detect position on a single matrix"""
+        """
+        Detect position on a single matrix.
+
+        ZERO-FALLBACK: Returns None score/stage if required operators are missing.
+        """
         if matrix_name not in self.MATRICES:
             return MatrixPosition(
                 matrix=matrix_name,
                 position='unknown',
-                score=0.5,
-                stage=2,
-                description=f"Unknown matrix: {matrix_name}"
+                score=None,
+                stage=None,
+                description=f"Unknown matrix: {matrix_name}",
+                missing_operators=['unknown_matrix']
             )
 
         matrix_def = self.MATRICES[matrix_name]
-        score = self._calculate_score(operators, matrix_def['operators'])
+        score, missing_ops = self._calculate_score(operators, matrix_def['operators'])
+
+        # ZERO-FALLBACK: Handle missing operators
+        if score is None:
+            return MatrixPosition(
+                matrix=matrix_name,
+                position='indeterminate',
+                score=None,
+                stage=None,
+                description=f"Cannot calculate - missing: {', '.join(missing_ops)}",
+                missing_operators=missing_ops
+            )
+
         stage = self._score_to_stage(score, matrix_def['thresholds'])
         position = matrix_def['stages'][stage - 1]
 
@@ -141,20 +159,32 @@ class MatrixDetector:
             position=position,
             score=score,
             stage=stage,
-            description=self._get_description(matrix_name, position, score)
+            description=self._get_description(matrix_name, position, score),
+            missing_operators=[]
         )
 
     def _calculate_score(
         self,
         operators: Dict[str, float],
         weights: Dict[str, float]
-    ) -> float:
-        """Calculate weighted score from operators"""
+    ) -> Tuple[Optional[float], List[str]]:
+        """
+        Calculate weighted score from operators.
+
+        ZERO-FALLBACK: Returns (None, missing_ops) if required operators are missing.
+        """
         total_weight = 0.0
         weighted_sum = 0.0
+        missing_ops = []
 
         for op_name, weight in weights.items():
-            value = operators.get(op_name, 0.5)
+            value = operators.get(op_name)
+
+            # ZERO-FALLBACK: Track missing operators
+            if value is None:
+                missing_ops.append(op_name)
+                continue
+
             abs_weight = abs(weight)
 
             # Negative weights invert the value
@@ -164,10 +194,14 @@ class MatrixDetector:
             weighted_sum += value * abs_weight
             total_weight += abs_weight
 
-        if total_weight == 0:
-            return 0.5
+        # ZERO-FALLBACK: Return None if any required operators missing
+        if missing_ops:
+            return None, missing_ops
 
-        return max(0.0, min(1.0, weighted_sum / total_weight))
+        if total_weight == 0:
+            return None, ['no_weights_defined']
+
+        return max(0.0, min(1.0, weighted_sum / total_weight)), []
 
     def _score_to_stage(self, score: float, thresholds: list) -> int:
         """Convert score to stage number (1-4)"""
@@ -279,31 +313,47 @@ class MatrixDetector:
         """
         Check if matrix positions are coherent with each other.
         Incoherent positions indicate internal conflict.
+
+        ZERO-FALLBACK: Only considers positions with calculable stages.
         """
-        stages = [pos.stage for pos in positions.values()]
+        # ZERO-FALLBACK: Filter to positions with calculable stages
+        stages = [pos.stage for pos in positions.values() if pos.stage is not None]
         if not stages:
-            return {'coherent': True, 'variance': 0.0, 'conflicts': []}
+            return {
+                'coherent': None,
+                'variance': None,
+                'conflicts': [],
+                'note': 'Cannot assess coherence - insufficient operator data'
+            }
 
         avg_stage = sum(stages) / len(stages)
         variance = sum((s - avg_stage) ** 2 for s in stages) / len(stages)
 
         conflicts = []
-        # Check specific conflict patterns
-        if positions.get('power', MatrixPosition('', '', 0, 1, '')).stage <= 1:
-            if positions.get('creation', MatrixPosition('', '', 0, 1, '')).stage >= 3:
+
+        # Check specific conflict patterns - ZERO-FALLBACK: check for None
+        power_pos = positions.get('power')
+        creation_pos = positions.get('creation')
+        if power_pos and power_pos.stage is not None and creation_pos and creation_pos.stage is not None:
+            if power_pos.stage <= 1 and creation_pos.stage >= 3:
                 conflicts.append("Victim stance conflicts with creator role")
 
-        if positions.get('truth', MatrixPosition('', '', 0, 1, '')).stage <= 1:
-            if positions.get('love', MatrixPosition('', '', 0, 1, '')).stage >= 3:
+        truth_pos = positions.get('truth')
+        love_pos = positions.get('love')
+        if truth_pos and truth_pos.stage is not None and love_pos and love_pos.stage is not None:
+            if truth_pos.stage <= 1 and love_pos.stage >= 3:
                 conflicts.append("Illusion-based love may not be sustainable")
 
-        if positions.get('freedom', MatrixPosition('', '', 0, 1, '')).stage <= 1:
-            if positions.get('death', MatrixPosition('', '', 0, 1, '')).stage >= 3:
+        freedom_pos = positions.get('freedom')
+        death_pos = positions.get('death')
+        if freedom_pos and freedom_pos.stage is not None and death_pos and death_pos.stage is not None:
+            if freedom_pos.stage <= 1 and death_pos.stage >= 3:
                 conflicts.append("Cannot surrender while in bondage consciousness")
 
         return {
             'coherent': variance < 1.0 and len(conflicts) == 0,
             'variance': variance,
             'average_stage': avg_stage,
-            'conflicts': conflicts
+            'conflicts': conflicts,
+            'calculable_matrices': len(stages)
         }

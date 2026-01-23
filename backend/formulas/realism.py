@@ -15,8 +15,8 @@ Each realism type has:
 - Transformation requirements
 """
 
-from typing import Dict, Any, List, Optional, Tuple
-from dataclasses import dataclass
+from typing import Dict, Any, List, Optional, Tuple, Set
+from dataclasses import dataclass, field
 import math
 
 
@@ -37,12 +37,13 @@ class RealismType:
 class RealismProfile:
     """Individual's realism profile"""
     active_realisms: List[str]
-    dominant_realism: str
-    dominant_weight: float
+    dominant_realism: Optional[str]
+    dominant_weight: Optional[float]
     realism_blend: Dict[str, float]
-    coherence: float  # How well realisms integrate
+    coherence: Optional[float]  # How well realisms integrate
     evolution_direction: str
     recommended_expansion: List[str]
+    missing_operators: Set[str] = field(default_factory=set)
 
 
 class RealismEngine:
@@ -436,13 +437,17 @@ class RealismEngine:
     ) -> RealismProfile:
         """
         Calculate which realism types are active and their weights.
+
+        ZERO-FALLBACK: Tracks missing operators, allows partial calculations.
         """
         # Calculate weight for each realism type
         realism_weights = {}
+        all_missing: Set[str] = set()
 
         for name, realism in self.REALISM_TYPES.items():
-            weight = self._calculate_realism_weight(operators, s_level, realism)
-            if weight > 0.1:  # Only include significant activations
+            weight, missing = self._calculate_realism_weight(operators, s_level, realism)
+            all_missing.update(missing)
+            if weight is not None and weight > 0.1:  # Only include significant activations
                 realism_weights[name] = weight
 
         # Normalize weights
@@ -459,16 +464,17 @@ class RealismEngine:
             dominant_name = dominant[0]
             dominant_weight = dominant[1]
         else:
-            dominant_name = 'material'
-            dominant_weight = 1.0
-            realism_weights = {'material': 1.0}
-            active = ['material']
+            # ZERO-FALLBACK: Cannot determine dominant if no weights calculable
+            dominant_name = None
+            dominant_weight = None
+            realism_weights = {}
+            active = []
 
         # Calculate coherence (how well realisms integrate)
-        coherence = self._calculate_realism_coherence(active)
+        coherence = self._calculate_realism_coherence(active) if active else None
 
         # Determine evolution direction
-        evolution_direction = self._determine_evolution_direction(s_level, dominant_name)
+        evolution_direction = self._determine_evolution_direction(s_level, dominant_name) if dominant_name else "Cannot determine - insufficient data"
 
         # Recommend expansions
         recommended = self._recommend_realism_expansion(s_level, active)
@@ -488,8 +494,12 @@ class RealismEngine:
         operators: Dict[str, float],
         s_level: float,
         realism: RealismType
-    ) -> float:
-        """Calculate how much a specific realism type is active"""
+    ) -> Tuple[Optional[float], List[str]]:
+        """
+        Calculate how much a specific realism type is active.
+
+        ZERO-FALLBACK: Returns (None, missing_ops) if required operators missing.
+        """
         # S-level fit
         min_s, max_s = realism.s_level_range
         if s_level < min_s - 0.5 or s_level > max_s + 0.5:
@@ -503,18 +513,30 @@ class RealismEngine:
             else:
                 s_fit = 0.5 + 0.5 * ((max_s + 0.5) - s_level) / 0.5
 
-        # Operator signature match
+        # Operator signature match - ZERO-FALLBACK
         signature_match = 0.0
+        matched_ops = 0
+        missing_ops = []
+
         for op, expected in realism.operator_signature.items():
-            actual = operators.get(op, 0.5)
+            actual = operators.get(op)
+            if actual is None:
+                missing_ops.append(op)
+                continue
             # Closer to expected = higher match
             match = 1 - abs(actual - expected)
             signature_match += match
+            matched_ops += 1
 
-        signature_match /= len(realism.operator_signature)
+        # If all operators missing, return None
+        if matched_ops == 0:
+            return None, missing_ops
+
+        # Allow partial calculation if some operators present
+        signature_match /= matched_ops
 
         # Combined weight
-        return s_fit * signature_match
+        return s_fit * signature_match, missing_ops
 
     def _calculate_realism_coherence(self, active_realisms: List[str]) -> float:
         """Calculate how well active realisms integrate"""

@@ -1,197 +1,303 @@
 """
 Consciousness State Data Classes for Articulation Bridge
 Semantic organization of 450+ values into meaningful categories
+
+ZERO-FALLBACK MODE: All values are Optional with None defaults.
+No default 0.5 values - missing data propagates as None.
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Set
 from datetime import datetime
 
 
 @dataclass
+class DataQualityMetadata:
+    """Metadata about data quality and coverage"""
+    populated_count: int = 0
+    total_fields: int = 0
+    coverage_percent: float = 0.0
+    missing_fields: List[str] = field(default_factory=list)
+    source_breakdown: Dict[str, int] = field(default_factory=dict)
+    average_confidence: float = 0.0
+
+
+@dataclass
 class CoreOperators:
-    """25 core consciousness operators"""
-    P_presence: float = 0.5
-    A_aware: float = 0.5
-    E_equanimity: float = 0.5
-    Psi_quality: float = 0.5
-    M_maya: float = 0.5
-    M_manifest: float = 0.5
-    W_witness: float = 0.5
-    I_intention: float = 0.5
-    At_attachment: float = 0.5
-    Se_service: float = 0.5
-    Sh_shakti: float = 0.5
-    G_grace: float = 0.5
-    S_surrender: float = 0.5
-    D_dharma: float = 0.5
-    K_karma: float = 0.5
-    Hf_habit: float = 0.5
-    V_void: float = 0.5
-    T_time_past: float = 0.33
-    T_time_present: float = 0.34
-    T_time_future: float = 0.33
-    Ce_celebration: float = 0.5
-    Co_coherence: float = 0.5
-    R_resistance: float = 0.5
-    F_fear: float = 0.5
-    J_joy: float = 0.5
-    Tr_trust: float = 0.5
-    O_openness: float = 0.5
+    """
+    25 core consciousness operators.
+
+    ZERO-FALLBACK: All values are Optional[float] with None default.
+    """
+    P_presence: Optional[float] = None
+    A_aware: Optional[float] = None
+    E_equanimity: Optional[float] = None
+    Psi_quality: Optional[float] = None
+    M_maya: Optional[float] = None
+    M_manifest: Optional[float] = None
+    W_witness: Optional[float] = None
+    I_intention: Optional[float] = None
+    At_attachment: Optional[float] = None
+    Se_service: Optional[float] = None
+    Sh_shakti: Optional[float] = None
+    G_grace: Optional[float] = None
+    S_surrender: Optional[float] = None
+    D_dharma: Optional[float] = None
+    K_karma: Optional[float] = None
+    Hf_habit: Optional[float] = None
+    V_void: Optional[float] = None
+    T_time_past: Optional[float] = None
+    T_time_present: Optional[float] = None
+    T_time_future: Optional[float] = None
+    Ce_celebration: Optional[float] = None
+    Co_coherence: Optional[float] = None
+    R_resistance: Optional[float] = None
+    F_fear: Optional[float] = None
+    J_joy: Optional[float] = None
+    Tr_trust: Optional[float] = None
+    O_openness: Optional[float] = None
+
+    # Extended operators
+    L_love: Optional[float] = None
+    Av_aversion: Optional[float] = None
+    Su_suffering: Optional[float] = None
+    As_aspiration: Optional[float] = None
+    Fe_faith: Optional[float] = None
+    De_devotion: Optional[float] = None
+    Re_receptivity: Optional[float] = None
+    Sa_samskara: Optional[float] = None
+    Bu_buddhi: Optional[float] = None
+    Ma_manas: Optional[float] = None
+    Ch_chitta: Optional[float] = None
+
+    # Metadata
+    missing_operators: Set[str] = field(default_factory=set)
+    populated_count: int = 0
 
 
 @dataclass
 class SLevel:
-    """Sacred Chain S-Level"""
-    current: float = 3.0  # 1.0-8.0
-    label: str = "S3: Achievement"
-    transition_rate: float = 0.0  # dS/dt
+    """
+    Sacred Chain S-Level.
+
+    ZERO-FALLBACK: Values are Optional - None if cannot calculate.
+    """
+    current: Optional[float] = None  # 1.0-8.0 or None
+    label: Optional[str] = None
+    transition_rate: Optional[float] = None  # dS/dt
+    calculable: bool = False
+    missing_for_calculation: List[str] = field(default_factory=list)
 
 
 @dataclass
 class Drives:
-    """Five fundamental drives"""
-    love_strength: float = 0.5
-    peace_strength: float = 0.5
-    bliss_strength: float = 0.5
-    satisfaction_strength: float = 0.5
-    freedom_strength: float = 0.5
+    """
+    Five fundamental drives.
+
+    ZERO-FALLBACK: All values Optional with None default.
+    """
+    love_strength: Optional[float] = None
+    peace_strength: Optional[float] = None
+    bliss_strength: Optional[float] = None
+    satisfaction_strength: Optional[float] = None
+    freedom_strength: Optional[float] = None
+    calculable_count: int = 0
 
 
 @dataclass
 class Tier1:
-    """Tier 1: Extracted by LLM Call 1"""
+    """
+    Tier 1: Extracted by LLM Call 1.
+
+    ZERO-FALLBACK: Contains metadata about data quality.
+    """
     core_operators: CoreOperators = field(default_factory=CoreOperators)
     s_level: SLevel = field(default_factory=SLevel)
     drives: Drives = field(default_factory=Drives)
+    data_quality: DataQualityMetadata = field(default_factory=DataQualityMetadata)
 
 
 @dataclass
 class Distortions:
-    """Klesha-based distortions"""
-    avarana_shakti: float = 0.5  # Veiling power
-    vikshepa_shakti: float = 0.5  # Projection power
-    maya_vrittis: float = 0.5  # Illusion patterns
-    asmita: float = 0.5  # Ego-identification
-    raga: float = 0.5  # Attachment patterns
-    dvesha: float = 0.5  # Aversion patterns
-    abhinivesha: float = 0.5  # Fear of death
-    avidya_total: float = 0.5  # Root ignorance
+    """
+    Klesha-based distortions.
+
+    ZERO-FALLBACK: All values Optional.
+    """
+    avarana_shakti: Optional[float] = None  # Veiling power
+    vikshepa_shakti: Optional[float] = None  # Projection power
+    maya_vrittis: Optional[float] = None  # Illusion patterns
+    asmita: Optional[float] = None  # Ego-identification
+    raga: Optional[float] = None  # Attachment patterns
+    dvesha: Optional[float] = None  # Aversion patterns
+    abhinivesha: Optional[float] = None  # Fear of death
+    avidya_total: Optional[float] = None  # Root ignorance
+    calculable: bool = False
 
 
 @dataclass
 class Chakras:
-    """Seven chakra activations"""
-    muladhara: float = 0.5  # Root
-    svadhisthana: float = 0.5  # Sacral
-    manipura: float = 0.5  # Solar plexus
-    anahata: float = 0.5  # Heart
-    vishuddha: float = 0.5  # Throat
-    ajna: float = 0.5  # Third eye
-    sahasrara: float = 0.5  # Crown
+    """
+    Seven chakra activations.
+
+    ZERO-FALLBACK: All values Optional.
+    """
+    muladhara: Optional[float] = None  # Root
+    svadhisthana: Optional[float] = None  # Sacral
+    manipura: Optional[float] = None  # Solar plexus
+    anahata: Optional[float] = None  # Heart
+    vishuddha: Optional[float] = None  # Throat
+    ajna: Optional[float] = None  # Third eye
+    sahasrara: Optional[float] = None  # Crown
+    calculable_count: int = 0
 
 
 @dataclass
 class UCBComponents:
-    """Unified Consciousness Baseline components"""
-    P_t: float = 0.5
-    A_t: float = 0.5
-    E_t: float = 0.5
-    Psi_t: float = 0.5
-    M_t: float = 0.5
-    L_fg: float = 0.5
-    G_t: float = 0.5
-    S_t: float = 0.5
+    """
+    Unified Consciousness Baseline components.
+
+    ZERO-FALLBACK: All values Optional.
+    """
+    P_t: Optional[float] = None
+    A_t: Optional[float] = None
+    E_t: Optional[float] = None
+    Psi_t: Optional[float] = None
+    M_t: Optional[float] = None
+    L_fg: Optional[float] = None
+    G_t: Optional[float] = None
+    S_t: Optional[float] = None
+    calculable: bool = False
 
 
 @dataclass
 class Gunas:
-    """Three gunas"""
-    sattva: float = 0.33  # Purity/clarity
-    rajas: float = 0.34  # Activity/passion
-    tamas: float = 0.33  # Inertia/darkness
-    dominant: str = "rajas"
+    """
+    Three gunas.
+
+    ZERO-FALLBACK: All values Optional.
+    """
+    sattva: Optional[float] = None  # Purity/clarity
+    rajas: Optional[float] = None  # Activity/passion
+    tamas: Optional[float] = None  # Inertia/darkness
+    dominant: Optional[str] = None
+    calculable: bool = False
 
 
 @dataclass
 class CascadeCleanliness:
-    """Seven-level cascade cleanliness"""
-    self: float = 0.5  # Level 1
-    ego: float = 0.5  # Level 2
-    memory: float = 0.5  # Level 3
-    intellect: float = 0.5  # Level 4
-    mind: float = 0.5  # Level 5
-    breath: float = 0.5  # Level 6
-    body: float = 0.5  # Level 7
-    average: float = 0.5
+    """
+    Seven-level cascade cleanliness.
+
+    ZERO-FALLBACK: All values Optional.
+    """
+    self_level: Optional[float] = None  # Level 1 (renamed from 'self' to avoid Python keyword)
+    ego: Optional[float] = None  # Level 2
+    memory: Optional[float] = None  # Level 3
+    intellect: Optional[float] = None  # Level 4
+    mind: Optional[float] = None  # Level 5
+    breath: Optional[float] = None  # Level 6
+    body: Optional[float] = None  # Level 7
+    average: Optional[float] = None
+    calculable_levels: int = 0
+    missing_operators: List[str] = field(default_factory=list)
 
 
 @dataclass
 class Emotions:
-    """Nine rasas (emotional essences)"""
-    shringara: float = 0.5  # Love/beauty
-    hasya: float = 0.5  # Joy/humor
-    karuna: float = 0.5  # Compassion
-    raudra: float = 0.5  # Anger/fury
-    veera: float = 0.5  # Courage
-    bhayanaka: float = 0.5  # Fear
-    adbhuta: float = 0.5  # Wonder
-    shanta: float = 0.5  # Peace
-    bibhatsa: float = 0.5  # Disgust
-    dominant: str = "shanta"
+    """
+    Nine rasas (emotional essences).
+
+    ZERO-FALLBACK: All values Optional.
+    """
+    shringara: Optional[float] = None  # Love/beauty
+    hasya: Optional[float] = None  # Joy/humor
+    karuna: Optional[float] = None  # Compassion
+    raudra: Optional[float] = None  # Anger/fury
+    veera: Optional[float] = None  # Courage
+    bhayanaka: Optional[float] = None  # Fear
+    adbhuta: Optional[float] = None  # Wonder
+    shanta: Optional[float] = None  # Peace
+    bibhatsa: Optional[float] = None  # Disgust
+    dominant: Optional[str] = None
+    calculable_count: int = 0
 
 
 @dataclass
 class Koshas:
-    """Five sheaths/bodies"""
-    annamaya: float = 0.5  # Physical
-    pranamaya: float = 0.5  # Energy
-    manomaya: float = 0.5  # Mental
-    vijnanamaya: float = 0.5  # Wisdom
-    anandamaya: float = 0.5  # Bliss
+    """
+    Five sheaths/bodies.
+
+    ZERO-FALLBACK: All values Optional.
+    """
+    annamaya: Optional[float] = None  # Physical
+    pranamaya: Optional[float] = None  # Energy
+    manomaya: Optional[float] = None  # Mental
+    vijnanamaya: Optional[float] = None  # Wisdom
+    anandamaya: Optional[float] = None  # Bliss
+    calculable_count: int = 0
 
 
 @dataclass
 class CirclesQuality:
-    """Five life circles"""
-    personal: float = 0.5
-    family: float = 0.5
-    social: float = 0.5
-    professional: float = 0.5
-    universal: float = 0.5
-    dominant: str = "personal"
+    """
+    Five life circles.
+
+    ZERO-FALLBACK: All values Optional.
+    """
+    personal: Optional[float] = None
+    family: Optional[float] = None
+    social: Optional[float] = None
+    professional: Optional[float] = None
+    universal: Optional[float] = None
+    dominant: Optional[str] = None
+    calculable_count: int = 0
 
 
 @dataclass
 class FiveActs:
-    """Panchakritya - Five cosmic acts"""
-    srishti_creation: float = 0.5
-    sthiti_maintenance: float = 0.5
-    samhara_dissolution: float = 0.5
-    tirodhana_concealment: float = 0.5
-    anugraha_grace: float = 0.5
-    balance: float = 0.5
-    dominant: str = "sthiti_maintenance"
+    """
+    Panchakritya - Five cosmic acts.
+
+    ZERO-FALLBACK: All values Optional.
+    """
+    srishti_creation: Optional[float] = None
+    sthiti_maintenance: Optional[float] = None
+    samhara_dissolution: Optional[float] = None
+    tirodhana_concealment: Optional[float] = None
+    anugraha_grace: Optional[float] = None
+    balance: Optional[float] = None
+    dominant: Optional[str] = None
+    calculable: bool = False
 
 
 @dataclass
 class DrivesInternalization:
-    """Internal vs external drive fulfillment"""
-    love_internal_pct: float = 50.0
-    love_external_pct: float = 50.0
-    peace_internal_pct: float = 50.0
-    peace_external_pct: float = 50.0
-    bliss_internal_pct: float = 50.0
-    bliss_external_pct: float = 50.0
-    satisfaction_internal_pct: float = 50.0
-    satisfaction_external_pct: float = 50.0
-    freedom_internal_pct: float = 50.0
-    freedom_external_pct: float = 50.0
+    """
+    Internal vs external drive fulfillment.
+
+    ZERO-FALLBACK: All values Optional.
+    """
+    love_internal_pct: Optional[float] = None
+    love_external_pct: Optional[float] = None
+    peace_internal_pct: Optional[float] = None
+    peace_external_pct: Optional[float] = None
+    bliss_internal_pct: Optional[float] = None
+    bliss_external_pct: Optional[float] = None
+    satisfaction_internal_pct: Optional[float] = None
+    satisfaction_external_pct: Optional[float] = None
+    freedom_internal_pct: Optional[float] = None
+    freedom_external_pct: Optional[float] = None
+    calculable_count: int = 0
 
 
 @dataclass
 class Tier2:
-    """Tier 2: Simple derivations calculated by backend"""
+    """
+    Tier 2: Simple derivations calculated by backend.
+
+    ZERO-FALLBACK: Contains metadata about calculation status.
+    """
     distortions: Distortions = field(default_factory=Distortions)
     chakras: Chakras = field(default_factory=Chakras)
     ucb_components: UCBComponents = field(default_factory=UCBComponents)
@@ -202,6 +308,11 @@ class Tier2:
     circles_quality: CirclesQuality = field(default_factory=CirclesQuality)
     five_acts: FiveActs = field(default_factory=FiveActs)
     drives_internalization: DrivesInternalization = field(default_factory=DrivesInternalization)
+
+    # Metadata
+    calculations_attempted: int = 0
+    calculations_succeeded: int = 0
+    blocked_due_to_missing: List[str] = field(default_factory=list)
 
 
 @dataclass
@@ -458,8 +569,31 @@ class LeveragePoint:
 
 
 @dataclass
+class InferenceMetadataState:
+    """
+    Metadata about the inference that produced this state.
+
+    ZERO-FALLBACK: Tracks what was calculable and what was blocked.
+    """
+    populated_operators: int = 0
+    total_core_operators: int = 25
+    coverage_percent: float = 0.0
+    missing_operators: List[str] = field(default_factory=list)
+    calculated_formulas: int = 0
+    blocked_formulas: int = 0
+    blocked_formula_details: List[Dict[str, Any]] = field(default_factory=list)
+    average_confidence: float = 0.0
+    data_sources: Dict[str, int] = field(default_factory=dict)
+
+
+@dataclass
 class ConsciousnessState:
-    """Complete consciousness state across all tiers"""
+    """
+    Complete consciousness state across all tiers.
+
+    ZERO-FALLBACK MODE: Values are Optional with None defaults.
+    Includes metadata about data quality and calculation coverage.
+    """
     timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
     user_id: str = ""
     session_id: str = ""
@@ -474,6 +608,14 @@ class ConsciousnessState:
     # Derived insights
     bottlenecks: List[Bottleneck] = field(default_factory=list)
     leverage_points: List[LeveragePoint] = field(default_factory=list)
+
+    # ZERO-FALLBACK: Metadata about data quality
+    inference_metadata: InferenceMetadataState = field(default_factory=InferenceMetadataState)
+
+    # Flags indicating calculation completeness
+    s_level_calculable: bool = False
+    consciousness_assessable: bool = False
+    recommendations_available: bool = False
 
 
 @dataclass

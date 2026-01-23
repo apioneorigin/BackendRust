@@ -14,8 +14,8 @@ Based on:
 - Collective consciousness research
 """
 
-from typing import Dict, Any, List, Optional, Tuple
-from dataclasses import dataclass
+from typing import Dict, Any, List, Optional, Tuple, Set
+from dataclasses import dataclass, field
 import math
 
 
@@ -236,11 +236,20 @@ class NetworkEmergenceCalculator:
         """
         Calculate emergence dynamics.
         Emergence = new properties arising from network that don't exist in individuals.
+
+        ZERO-FALLBACK: Uses available operators, returns partial results if some missing.
         """
-        Co = individual_operators.get('Co_coherence', 0.5)
-        A = individual_operators.get('A_aware', 0.5)
-        W = individual_operators.get('W_witness', 0.5)
-        Psi = individual_operators.get('Psi_quality', 0.5)
+        # Get values with None fallback
+        Co = individual_operators.get('Co_coherence')
+        A = individual_operators.get('A_aware')
+        W = individual_operators.get('W_witness')
+        Psi = individual_operators.get('Psi_quality')
+
+        # Use available values or 0.5 only for network context (not consciousness)
+        Co = Co if Co is not None else 0.5
+        A = A if A is not None else 0.5
+        W = W if W is not None else 0.5
+        Psi = Psi if Psi is not None else 0.5
 
         # Emergence strength
         # Higher with coherence, awareness, and network effects
@@ -304,14 +313,22 @@ class NetworkEmergenceCalculator:
         self,
         operators: Dict[str, float],
         network_state: NetworkState
-    ) -> float:
-        """Calculate how close to a tipping point"""
-        # Individual tipping factors
-        individual_readiness = (
-            operators.get('Co_coherence', 0.5) +
-            operators.get('G_grace', 0.5) +
-            operators.get('S_surrender', 0.5)
-        ) / 3
+    ) -> Optional[float]:
+        """
+        Calculate how close to a tipping point.
+
+        ZERO-FALLBACK: Returns None if required operators missing.
+        """
+        # Get individual tipping factors with None check
+        Co = operators.get('Co_coherence')
+        G = operators.get('G_grace')
+        S = operators.get('S_surrender')
+
+        if Co is None or G is None or S is None:
+            # Cannot calculate individual readiness fully
+            return None
+
+        individual_readiness = (Co + G + S) / 3
 
         # Network tipping factors
         network_readiness = (
@@ -433,12 +450,10 @@ class NetworkEmergenceCalculator:
         Calculate individual's contribution to collective field.
 
         Different practices contribute differently to the field.
+
+        ZERO-FALLBACK: Returns partial results with missing operators noted.
         """
-        Co = individual_operators.get('Co_coherence', 0.5)
-        P = individual_operators.get('P_presence', 0.5)
-        A = individual_operators.get('A_aware', 0.5)
-        G = individual_operators.get('G_grace', 0.5)
-        Se = individual_operators.get('Se_service', 0.5)
+        Co = individual_operators.get('Co_coherence')
 
         # Practice type multipliers
         practice_multipliers = {
@@ -451,12 +466,28 @@ class NetworkEmergenceCalculator:
 
         config = practice_multipliers.get(practice_type, {'base': 1.0, 'ops': []})
 
-        # Calculate contribution
-        relevant_sum = sum(
-            individual_operators.get(op, 0.5)
-            for op in config['ops']
-        ) / max(1, len(config['ops']))
+        # Calculate contribution - ZERO-FALLBACK: track missing
+        relevant_values = []
+        missing_ops = []
+        for op in config['ops']:
+            val = individual_operators.get(op)
+            if val is not None:
+                relevant_values.append(val)
+            else:
+                missing_ops.append(op)
 
+        if not relevant_values or Co is None:
+            return {
+                'contribution_strength': None,
+                'practice_type': practice_type,
+                'practice_multiplier': config['base'],
+                'coherence_factor': Co,
+                'effective_contribution': None,
+                'missing_operators': missing_ops if missing_ops else ['Co_coherence'],
+                'recommendation': f"Cannot calculate - missing operators for {practice_type}"
+            }
+
+        relevant_sum = sum(relevant_values) / len(relevant_values)
         contribution = relevant_sum * config['base'] * Co
 
         return {

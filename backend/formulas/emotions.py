@@ -16,8 +16,8 @@ Rasas (aesthetic emotions):
 Each emotion is derived from operator combinations.
 """
 
-from typing import Dict, Any, List, Tuple
-from dataclasses import dataclass
+from typing import Dict, Any, List, Tuple, Optional, Set
+from dataclasses import dataclass, field
 import math
 
 
@@ -26,10 +26,11 @@ class EmotionState:
     """A single emotion's state"""
     name: str
     sanskrit: str
-    intensity: float  # 0.0-1.0
+    intensity: Optional[float]  # 0.0-1.0 or None if cannot calculate
     valence: str      # positive, negative, neutral
-    components: Dict[str, float]
+    components: Dict[str, Optional[float]]
     description: str
+    missing_operators: List[str] = field(default_factory=list)
 
 
 @dataclass
@@ -37,9 +38,11 @@ class EmotionalProfile:
     """Complete emotional profile"""
     rasas: Dict[str, EmotionState]
     secondary_emotions: Dict[str, EmotionState]
-    dominant_rasa: str
-    emotional_coherence: float
-    guna_influence: Dict[str, float]
+    dominant_rasa: Optional[str]
+    emotional_coherence: Optional[float]
+    guna_influence: Dict[str, Optional[float]]
+    missing_operators: Set[str] = field(default_factory=set)
+    calculable_rasas: int = 0
 
 
 class EmotionAnalyzer:
@@ -245,29 +248,46 @@ class EmotionAnalyzer:
     }
 
     def analyze(self, operators: Dict[str, float]) -> EmotionalProfile:
-        """Analyze complete emotional profile from operators"""
+        """
+        Analyze complete emotional profile from operators.
+
+        ZERO-FALLBACK: Tracks missing operators and handles None intensities.
+        """
+        all_missing: Set[str] = set()
+
         # Calculate all rasas
         rasas = {}
+        calculable_rasas = 0
         for rasa_name, rasa_def in self.RASAS.items():
-            rasas[rasa_name] = self._calculate_emotion(
+            rasa = self._calculate_emotion(
                 rasa_name,
                 rasa_def,
                 operators
             )
+            rasas[rasa_name] = rasa
+            all_missing.update(rasa.missing_operators)
+            if rasa.intensity is not None:
+                calculable_rasas += 1
 
         # Calculate secondary emotions
         secondary = {}
         for emotion_name, emotion_def in self.SECONDARY_EMOTIONS.items():
-            secondary[emotion_name] = self._calculate_emotion(
+            emotion = self._calculate_emotion(
                 emotion_name,
                 emotion_def,
                 operators,
                 is_rasa=False
             )
+            secondary[emotion_name] = emotion
+            all_missing.update(emotion.missing_operators)
 
-        # Find dominant rasa
-        dominant = max(rasas.items(), key=lambda x: x[1].intensity)
-        dominant_rasa = dominant[0]
+        # Find dominant rasa - ZERO-FALLBACK: only from calculable rasas
+        calculable_rasa_items = [(k, v) for k, v in rasas.items() if v.intensity is not None]
+        if calculable_rasa_items:
+            dominant = max(calculable_rasa_items, key=lambda x: x[1].intensity)
+            dominant_rasa = dominant[0]
+        else:
+            dominant_rasa = None
 
         # Calculate emotional coherence
         coherence = self._calculate_coherence(rasas, secondary)
@@ -280,7 +300,9 @@ class EmotionAnalyzer:
             secondary_emotions=secondary,
             dominant_rasa=dominant_rasa,
             emotional_coherence=coherence,
-            guna_influence=guna_influence
+            guna_influence=guna_influence,
+            missing_operators=all_missing,
+            calculable_rasas=calculable_rasas
         )
 
     def _calculate_emotion(
@@ -290,36 +312,60 @@ class EmotionAnalyzer:
         operators: Dict[str, float],
         is_rasa: bool = True
     ) -> EmotionState:
-        """Calculate a single emotion's intensity"""
+        """
+        Calculate a single emotion's intensity.
+
+        ZERO-FALLBACK: Returns None intensity if required operators are missing.
+        """
         op_weights = definition.get('operators', {})
+        missing_ops = []
+        components = {}
 
         total_weight = 0.0
         weighted_sum = 0.0
-        components = {}
+        has_all_required = True
 
         for op_name, weight in op_weights.items():
-            # Handle aversion specially
+            # ZERO-FALLBACK: Check if operator exists
             if op_name == 'Av_aversion' and op_name not in operators:
-                value = operators.get('F_fear', 0.5) * 0.7 + operators.get('R_resistance', 0.5) * 0.3
+                # Aversion can be derived from fear + resistance if both present
+                f_val = operators.get('F_fear')
+                r_val = operators.get('R_resistance')
+                if f_val is not None and r_val is not None:
+                    value = f_val * 0.7 + r_val * 0.3
+                else:
+                    missing_ops.append(op_name)
+                    has_all_required = False
+                    value = None
+            elif op_name not in operators or operators.get(op_name) is None:
+                missing_ops.append(op_name)
+                has_all_required = False
+                value = None
             else:
-                value = operators.get(op_name, 0.5)
+                value = operators.get(op_name)
 
             abs_weight = abs(weight)
 
-            # Negative weights invert contribution
-            if weight < 0:
-                contribution = (1.0 - value) * abs_weight
+            if value is not None:
+                # Negative weights invert contribution
+                if weight < 0:
+                    contribution = (1.0 - value) * abs_weight
+                else:
+                    contribution = value * abs_weight
+
+                weighted_sum += contribution
+                total_weight += abs_weight
+                components[op_name] = contribution / abs_weight if abs_weight > 0 else None
             else:
-                contribution = value * abs_weight
+                components[op_name] = None
 
-            weighted_sum += contribution
-            total_weight += abs_weight
-            components[op_name] = contribution / abs_weight if abs_weight > 0 else 0.5
-
-        intensity = weighted_sum / total_weight if total_weight > 0 else 0.5
-
-        # Get description based on intensity
-        description = self._get_emotion_description(name, intensity, is_rasa)
+        # ZERO-FALLBACK: Only calculate intensity if all operators present
+        if has_all_required and total_weight > 0:
+            intensity = weighted_sum / total_weight
+            description = self._get_emotion_description(name, intensity, is_rasa)
+        else:
+            intensity = None
+            description = f"Cannot calculate - missing: {', '.join(missing_ops)}"
 
         return EmotionState(
             name=name,
@@ -327,72 +373,107 @@ class EmotionAnalyzer:
             intensity=intensity,
             valence=definition.get('valence', 'neutral'),
             components=components,
-            description=description
+            description=description,
+            missing_operators=missing_ops
         )
 
     def _calculate_coherence(
         self,
         rasas: Dict[str, EmotionState],
         secondary: Dict[str, EmotionState]
-    ) -> float:
+    ) -> Optional[float]:
         """
         Calculate emotional coherence.
         High coherence = emotions aligned, low internal conflict.
+
+        ZERO-FALLBACK: Returns None if insufficient data to calculate conflicts.
         """
         # Check for conflicting emotions
         conflicts = 0.0
+        conflict_pairs_checked = 0
 
         # Joy vs Fear conflict
         if 'hasya' in rasas and 'bhayanaka' in rasas:
-            conflicts += rasas['hasya'].intensity * rasas['bhayanaka'].intensity
+            h_int = rasas['hasya'].intensity
+            b_int = rasas['bhayanaka'].intensity
+            if h_int is not None and b_int is not None:
+                conflicts += h_int * b_int
+                conflict_pairs_checked += 1
 
         # Peace vs Anger conflict
         if 'shanta' in rasas and 'raudra' in rasas:
-            conflicts += rasas['shanta'].intensity * rasas['raudra'].intensity
+            s_int = rasas['shanta'].intensity
+            r_int = rasas['raudra'].intensity
+            if s_int is not None and r_int is not None:
+                conflicts += s_int * r_int
+                conflict_pairs_checked += 1
 
         # Love vs Disgust conflict
         if 'shringara' in rasas and 'bibhatsa' in rasas:
-            conflicts += rasas['shringara'].intensity * rasas['bibhatsa'].intensity
+            sh_int = rasas['shringara'].intensity
+            bi_int = rasas['bibhatsa'].intensity
+            if sh_int is not None and bi_int is not None:
+                conflicts += sh_int * bi_int
+                conflict_pairs_checked += 1
 
         # Hope vs Despair conflict
         if 'hope' in secondary and 'despair' in secondary:
-            conflicts += secondary['hope'].intensity * secondary['despair'].intensity
+            hp_int = secondary['hope'].intensity
+            dp_int = secondary['despair'].intensity
+            if hp_int is not None and dp_int is not None:
+                conflicts += hp_int * dp_int
+                conflict_pairs_checked += 1
+
+        # ZERO-FALLBACK: Return None if no conflict pairs could be checked
+        if conflict_pairs_checked == 0:
+            return None
 
         # Coherence is inverse of conflicts
         coherence = max(0.0, 1.0 - conflicts)
 
         return coherence
 
-    def _calculate_guna_influence(self, operators: Dict[str, float]) -> Dict[str, float]:
-        """Calculate how gunas influence emotional state"""
-        # Approximate guna from operators
-        sattva = (
-            operators.get('E_equanimity', 0.5) * 0.3 +
-            operators.get('A_aware', 0.5) * 0.3 +
-            operators.get('W_witness', 0.5) * 0.2 +
-            operators.get('Co_coherence', 0.5) * 0.2
-        )
+    def _calculate_guna_influence(self, operators: Dict[str, float]) -> Dict[str, Optional[float]]:
+        """
+        Calculate how gunas influence emotional state.
 
-        rajas = (
-            operators.get('I_intention', 0.5) * 0.3 +
-            operators.get('At_attachment', 0.5) * 0.3 +
-            operators.get('Sh_shakti', 0.5) * 0.2 +
-            operators.get('R_resistance', 0.5) * 0.2
-        )
+        ZERO-FALLBACK: Returns None for each guna if required operators are missing.
+        """
+        # Required operators for each guna
+        sattva_ops = ['E_equanimity', 'A_aware', 'W_witness', 'Co_coherence']
+        rajas_ops = ['I_intention', 'At_attachment', 'Sh_shakti', 'R_resistance']
+        tamas_ops = ['F_fear', 'Hf_habit', 'M_maya', 'A_aware']
 
-        tamas = (
-            operators.get('F_fear', 0.5) * 0.3 +
-            operators.get('Hf_habit', 0.5) * 0.3 +
-            operators.get('M_maya', 0.5) * 0.2 +
-            (1.0 - operators.get('A_aware', 0.5)) * 0.2
-        )
+        def calc_guna(op_list: List[str], weights: List[float]) -> Optional[float]:
+            total = 0.0
+            for op, w in zip(op_list, weights):
+                val = operators.get(op)
+                if val is None:
+                    return None
+                total += val * w
+            return total
 
-        # Normalize
-        total = sattva + rajas + tamas
-        if total > 0:
-            sattva /= total
-            rajas /= total
-            tamas /= total
+        sattva = calc_guna(sattva_ops, [0.3, 0.3, 0.2, 0.2])
+        rajas = calc_guna(rajas_ops, [0.3, 0.3, 0.2, 0.2])
+
+        # Tamas has a special calculation with inverted A_aware
+        tamas_base_ops = ['F_fear', 'Hf_habit', 'M_maya']
+        tamas_weights = [0.3, 0.3, 0.2]
+        tamas_base = calc_guna(tamas_base_ops, tamas_weights)
+        a_val = operators.get('A_aware')
+
+        if tamas_base is not None and a_val is not None:
+            tamas = tamas_base + (1.0 - a_val) * 0.2
+        else:
+            tamas = None
+
+        # Normalize only if all gunas are calculable
+        if sattva is not None and rajas is not None and tamas is not None:
+            total = sattva + rajas + tamas
+            if total > 0:
+                sattva /= total
+                rajas /= total
+                tamas /= total
 
         return {
             'sattva': sattva,
@@ -403,10 +484,17 @@ class EmotionAnalyzer:
     def _get_emotion_description(
         self,
         name: str,
-        intensity: float,
+        intensity: Optional[float],
         is_rasa: bool
     ) -> str:
-        """Generate description based on emotion and intensity"""
+        """
+        Generate description based on emotion and intensity.
+
+        ZERO-FALLBACK: Returns appropriate message if intensity is None.
+        """
+        if intensity is None:
+            return f"Cannot assess {name} - insufficient data"
+
         pct = intensity * 100
 
         if pct < 30:
@@ -427,32 +515,46 @@ class EmotionAnalyzer:
         self,
         profile: EmotionalProfile
     ) -> List[str]:
-        """Generate recommendations based on emotional profile"""
+        """
+        Generate recommendations based on emotional profile.
+
+        ZERO-FALLBACK: Handles None values gracefully.
+        """
         recommendations = []
 
         # Check for negative dominant states
-        dominant = profile.rasas.get(profile.dominant_rasa)
-        if dominant and dominant.valence == 'negative' and dominant.intensity > 0.6:
-            if profile.dominant_rasa == 'bhayanaka':
-                recommendations.append("Practice grounding and safety-building exercises")
-            elif profile.dominant_rasa == 'raudra':
-                recommendations.append("Channel energy through physical activity or creative expression")
-            elif profile.dominant_rasa == 'bibhatsa':
-                recommendations.append("Examine what you're rejecting - it may hold wisdom")
+        if profile.dominant_rasa:
+            dominant = profile.rasas.get(profile.dominant_rasa)
+            if dominant and dominant.intensity is not None:
+                if dominant.valence == 'negative' and dominant.intensity > 0.6:
+                    if profile.dominant_rasa == 'bhayanaka':
+                        recommendations.append("Practice grounding and safety-building exercises")
+                    elif profile.dominant_rasa == 'raudra':
+                        recommendations.append("Channel energy through physical activity or creative expression")
+                    elif profile.dominant_rasa == 'bibhatsa':
+                        recommendations.append("Examine what you're rejecting - it may hold wisdom")
 
-        # Check coherence
-        if profile.emotional_coherence < 0.5:
+        # Check coherence - ZERO-FALLBACK: only if calculable
+        if profile.emotional_coherence is not None and profile.emotional_coherence < 0.5:
             recommendations.append("Internal conflict detected - integration practices recommended")
 
-        # Check guna balance
-        if profile.guna_influence.get('tamas', 0) > 0.5:
+        # Check guna balance - ZERO-FALLBACK: only if calculable
+        tamas_val = profile.guna_influence.get('tamas')
+        rajas_val = profile.guna_influence.get('rajas')
+
+        if tamas_val is not None and tamas_val > 0.5:
             recommendations.append("Increase activity and engagement to reduce tamasic influence")
-        if profile.guna_influence.get('rajas', 0) > 0.5:
+        if rajas_val is not None and rajas_val > 0.5:
             recommendations.append("Balance activity with stillness practices")
 
-        # Positive reinforcement
-        if profile.rasas.get('shanta', EmotionState('', '', 0, '', {}, '')).intensity > 0.6:
+        # Positive reinforcement - ZERO-FALLBACK: check intensity exists
+        shanta = profile.rasas.get('shanta')
+        if shanta and shanta.intensity is not None and shanta.intensity > 0.6:
             recommendations.append("Peace is well-established - maintain through regular practice")
+
+        # Add recommendation if insufficient data
+        if profile.missing_operators:
+            recommendations.append(f"Note: {len(profile.missing_operators)} operators missing for complete analysis")
 
         return recommendations
 
@@ -465,18 +567,32 @@ class EmotionAnalyzer:
         """
         Calculate path from current emotional state to target rasa.
 
+        ZERO-FALLBACK: Returns error if insufficient data for calculation.
+
         Returns operator changes needed to shift emotional dominant.
         """
         if target_rasa not in self.RASAS:
             return {'error': f'Unknown target rasa: {target_rasa}'}
 
         current_dominant = current.dominant_rasa
-        target_def = self.RASAS[target_rasa]
+        if current_dominant is None:
+            return {'error': 'Cannot determine current dominant rasa - insufficient operator data'}
 
-        # Calculate which operators need to change
+        target_def = self.RASAS[target_rasa]
+        current_rasa = current.rasas.get(current_dominant)
+        if not current_rasa:
+            return {'error': f'Current dominant rasa {current_dominant} not found'}
+
+        # Calculate which operators need to change - ZERO-FALLBACK
         required_changes = {}
+        missing_for_analysis = []
+
         for op_name, target_weight in target_def['operators'].items():
-            current_contribution = current.rasas[current_dominant].components.get(op_name, 0.5)
+            current_contribution = current_rasa.components.get(op_name)
+
+            if current_contribution is None:
+                missing_for_analysis.append(op_name)
+                continue
 
             if target_weight > 0:
                 # Need higher value
@@ -487,13 +603,15 @@ class EmotionAnalyzer:
                 if current_contribution > 0.4:
                     required_changes[op_name] = f"Decrease (current: {current_contribution:.0%})"
 
-        # Estimate timeline based on S-level
-        base_weeks = 4 + (8 - s_level)  # Higher S-level = faster change
-
-        return {
+        result = {
             'current_dominant': current_dominant,
             'target_rasa': target_rasa,
             'required_changes': required_changes,
-            'estimated_weeks': base_weeks,
             's_level_factor': f"S{s_level:.0f} - {'accelerated' if s_level > 5 else 'gradual'} emotional evolution"
         }
+
+        if missing_for_analysis:
+            result['missing_operators'] = missing_for_analysis
+            result['note'] = 'Some operators missing - analysis may be incomplete'
+
+        return result

@@ -2,14 +2,17 @@
 Inference Engine for Reality Transformer
 Executes OOF formulas in tier order with uncertainty propagation
 Integrates advanced Python formula modules for enhanced calculations
+
+ZERO-FALLBACK MODE: No default 0.5 values. Missing operators propagate as None.
 """
 
 import json
 import math
 import re
 from pathlib import Path
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Set, Tuple
 from collections import defaultdict
+from dataclasses import dataclass, field
 
 # Import logging (handle both relative and absolute imports)
 try:
@@ -48,6 +51,35 @@ except ImportError:
         QuantumMechanics,
         RealismEngine
     )
+
+
+@dataclass
+class InferenceMetadata:
+    """Metadata about inference execution for transparency"""
+    populated_operators: Set[str] = field(default_factory=set)
+    missing_operators: Set[str] = field(default_factory=set)
+    calculated_formulas: int = 0
+    blocked_formulas: int = 0
+    blocked_formula_details: List[Dict[str, Any]] = field(default_factory=list)
+    tier_stats: Dict[int, Dict[str, int]] = field(default_factory=dict)
+
+
+# The 25 core Tier 0 operators that must come from LLM observations
+CORE_TIER0_OPERATORS = {
+    'Ψ', 'K', 'M', 'G', 'W', 'A', 'P', 'E', 'V', 'L', 'R',
+    'At', 'Av', 'Se', 'Ce', 'Su', 'As', 'Fe', 'De', 'Re', 'Hf', 'Sa', 'Bu', 'Ma', 'Ch',
+    # Full name aliases
+    'Consciousness', 'Karma', 'Maya', 'Grace', 'Witness', 'Awareness', 'Prana', 'Entropy',
+    'Void', 'Love', 'Resonance', 'Attachment', 'Aversion', 'Seva', 'Cleaning', 'Surrender',
+    'Aspiration', 'Fear', 'Desire', 'Resistance', 'HabitForce', 'Habit Force',
+    'Samskara', 'Buddhi', 'Manas', 'Chitta',
+    # Internal canonical names
+    'Psi_consciousness', 'K_karma', 'M_maya', 'G_grace', 'W_witness',
+    'A_aware', 'P_prana', 'E_entropy', 'V_void', 'L_love', 'R_resonance',
+    'At_attachment', 'Av_aversion', 'Se_seva', 'Ce_celebration', 'Su_surrender',
+    'As_aspiration', 'Fe_fear', 'De_desire', 'Re_resistance', 'Hf_habit',
+    'Sa_samskara', 'Bu_buddhi', 'Ma_manas', 'Ch_chitta'
+}
 
 
 class InferenceEngine:
@@ -135,7 +167,10 @@ class InferenceEngine:
 
     def run_inference(self, evidence: dict) -> dict:
         """
-        Run inference given evidence observations
+        Run inference given evidence observations.
+
+        ZERO-FALLBACK MODE: Only operators explicitly provided in observations
+        are populated. Missing operators remain None and block dependent formulas.
 
         Args:
             evidence: {
@@ -144,70 +179,122 @@ class InferenceEngine:
             }
 
         Returns:
-            posteriors: computed values for all variables
+            posteriors: computed values with metadata about missing/blocked calculations
         """
         logger.info("=" * 60)
         logger.info("[INFERENCE START]")
 
         if not self.is_loaded:
             logger.error("Registry not loaded - aborting inference")
-            return {"error": "Registry not loaded", "values": {}}
+            return {"error": "Registry not loaded", "values": {}, "metadata": None}
 
-        # Initialize state with priors (default 0.5)
-        state: Dict[str, float] = {}
+        # ZERO-FALLBACK: Initialize state as EMPTY - no default 0.5 values
+        state: Dict[str, Optional[float]] = {}
         confidence: Dict[str, float] = {}
 
-        # Set default priors for all variables
-        for var_name in self.variables:
-            state[var_name] = 0.5
-            confidence[var_name] = 0.3  # Low default confidence
+        # Track metadata for transparency
+        metadata = InferenceMetadata()
 
-        logger.debug(f"Initialized {len(self.variables)} variables with default priors")
+        # DO NOT set default priors - state starts empty
+        logger.debug(f"Initialized empty state (zero-fallback mode) - {len(self.variables)} variables registered")
 
-        # Apply evidence
+        # Apply evidence - ONLY these operators will have values
         observations = evidence.get('observations', [])
-        logger.info(f"[EVIDENCE] Applying {len(observations)} observations")
+        logger.info(f"[EVIDENCE] Applying {len(observations)} observations (zero-fallback mode)")
+
         for obs in observations:
             var_name = obs.get('var', '')
-            value = obs.get('value', 0.5)
+            value = obs.get('value')
             conf = obs.get('confidence', 0.8)
 
-            if var_name:
-                state[var_name] = value
-                confidence[var_name] = conf
-                logger.debug(f"  [OBS] {var_name} = {value:.3f} (conf: {conf:.2f})")
+            # Skip if no var name or value is None/missing
+            if not var_name or value is None:
+                continue
 
-        # Execute formulas tier by tier
+            # Validate value is numeric and in range
+            if not isinstance(value, (int, float)):
+                logger.warning(f"  [OBS] Skipping {var_name} - non-numeric value: {value}")
+                continue
+
+            state[var_name] = float(value)
+            confidence[var_name] = float(conf) if conf is not None else 0.8
+            metadata.populated_operators.add(var_name)
+            logger.debug(f"  [OBS] {var_name} = {value:.3f} (conf: {conf:.2f})")
+
+        # Identify missing core operators
+        for op in CORE_TIER0_OPERATORS:
+            if op not in state:
+                metadata.missing_operators.add(op)
+
+        # Log populated vs missing
+        logger.info(f"[EVIDENCE] Populated operators: {len(metadata.populated_operators)}")
+        logger.info(f"[EVIDENCE] Missing core operators: {len(metadata.missing_operators)}")
+
+        # Execute formulas tier by tier with NULL PROPAGATION
         sorted_tiers = sorted([t for t in self.tiers.keys() if t >= 0])
-        logger.info(f"[FORMULA EXECUTION] Processing {len(sorted_tiers)} tiers")
+        logger.info(f"[FORMULA EXECUTION] Processing {len(sorted_tiers)} tiers (null propagation enabled)")
 
         total_success = 0
+        total_blocked = 0
         total_failed = 0
 
         for tier in sorted_tiers:
             tier_formulas = self.tiers[tier]
             tier_success = 0
+            tier_blocked = 0
             tier_failed = 0
 
             for formula in tier_formulas:
                 try:
-                    result = self._execute_formula(formula, state, confidence)
-                    if result is not None:
+                    # Check dependencies BEFORE execution
+                    result = self._execute_formula_with_null_check(formula, state, confidence)
+
+                    if result is None:
+                        # Formula blocked due to missing dependencies
+                        tier_blocked += 1
+                        metadata.blocked_formulas += 1
+                        metadata.blocked_formula_details.append({
+                            'name': formula['name'],
+                            'tier': tier,
+                            'missing_inputs': result.get('missing_inputs', []) if isinstance(result, dict) else []
+                        })
+                    elif result.get('blocked'):
+                        # Explicitly blocked
+                        tier_blocked += 1
+                        metadata.blocked_formulas += 1
+                        metadata.blocked_formula_details.append({
+                            'name': formula['name'],
+                            'tier': tier,
+                            'missing_inputs': result.get('missing_inputs', [])
+                        })
+                        # Store None to propagate null through chain
+                        state[formula['name']] = None
+                    else:
+                        # Successfully calculated
                         state[formula['name']] = result['value']
                         confidence[formula['name']] = result['confidence']
                         tier_success += 1
-                        # Log significant results (not near 0.5)
-                        if abs(result['value'] - 0.5) > 0.2:
+                        metadata.calculated_formulas += 1
+                        # Log significant results
+                        if result['value'] is not None and abs(result['value'] - 0.5) > 0.2:
                             logger.debug(f"    [T{tier}] {formula['name']} = {result['value']:.3f}")
                 except Exception as e:
                     tier_failed += 1
                     logger.debug(f"    [T{tier}] FAILED: {formula['name']} - {e}")
 
             total_success += tier_success
+            total_blocked += tier_blocked
             total_failed += tier_failed
+
+            metadata.tier_stats[tier] = {
+                'success': tier_success,
+                'blocked': tier_blocked,
+                'failed': tier_failed,
+                'total': len(tier_formulas)
+            }
             formula_logger.log_tier(tier, len(tier_formulas), tier_success)
 
-        logger.info(f"[TIER SUMMARY] Success: {total_success}, Failed: {total_failed}")
+        logger.info(f"[TIER SUMMARY] Calculated: {total_success}, Blocked (null deps): {total_blocked}, Failed: {total_failed}")
 
         # Handle circular dependencies (tier -1) with iterative solving
         if -1 in self.tiers:
@@ -217,30 +304,35 @@ class InferenceEngine:
                 circular_formulas, state, confidence, max_iterations=50
             )
 
-        # Run advanced Python formula modules
-        logger.info("[ADVANCED FORMULAS] Running Python formula modules")
-        advanced_results = self._run_advanced_formulas(state)
+        # Run advanced Python formula modules with null-aware operators
+        logger.info("[ADVANCED FORMULAS] Running Python formula modules (null-aware)")
+        # Filter out None values for advanced modules - they need clean operator dict
+        non_null_state = {k: v for k, v in state.items() if v is not None}
+        advanced_results = self._run_advanced_formulas(non_null_state, metadata)
         advanced_count = len(advanced_results.get('values', {}))
         state.update(advanced_results.get('values', {}))
         confidence.update(advanced_results.get('confidence', {}))
         logger.info(f"[ADVANCED FORMULAS] Computed {advanced_count} values")
 
-        # Build response
+        # Build response with metadata
         targets = evidence.get('targets', [])
+
+        # Filter out None values for target response
+        non_null_state = {k: v for k, v in state.items() if v is not None}
 
         # Filter to requested targets or return top values
         if targets:
             target_values = {
-                var: state.get(var, 0.5)
+                var: non_null_state.get(var)
                 for var in targets
-                if var in state
+                if var in non_null_state and non_null_state.get(var) is not None
             }
             logger.debug(f"[TARGETS] Returning {len(target_values)} requested targets")
         else:
             # Return most significant values (furthest from 0.5)
             sorted_vars = sorted(
-                state.items(),
-                key=lambda x: abs(x[1] - 0.5),
+                non_null_state.items(),
+                key=lambda x: abs(x[1] - 0.5) if x[1] is not None else 0,
                 reverse=True
             )
             target_values = dict(sorted_vars[:50])
@@ -249,23 +341,70 @@ class InferenceEngine:
         # Log top 10 most significant results
         logger.info("[TOP RESULTS]")
         for i, (var, val) in enumerate(list(target_values.items())[:10]):
-            conf = confidence.get(var, 0.5)
-            logger.info(f"  {i+1}. {var} = {val:.4f} (conf: {conf:.2f})")
+            if val is not None:
+                conf = confidence.get(var, 0.0)
+                logger.info(f"  {i+1}. {var} = {val:.4f} (conf: {conf:.2f})")
 
-        logger.info(f"[INFERENCE COMPLETE] Total state variables: {len(state)}")
+        # Log metadata summary
+        logger.info(f"[METADATA] Populated operators: {len(metadata.populated_operators)}")
+        logger.info(f"[METADATA] Missing operators: {len(metadata.missing_operators)}")
+        logger.info(f"[METADATA] Calculated formulas: {metadata.calculated_formulas}")
+        logger.info(f"[METADATA] Blocked formulas: {metadata.blocked_formulas}")
+
+        logger.info(f"[INFERENCE COMPLETE] Total state variables: {len(non_null_state)} (non-null)")
         logger.info("=" * 60)
 
         return {
             "values": target_values,
-            "confidence": {k: confidence.get(k, 0.5) for k in target_values},
+            "confidence": {k: confidence.get(k, 0.0) for k in target_values},
             "formula_count": self.formula_count,
-            "tiers_executed": len(sorted_tiers)
+            "tiers_executed": len(sorted_tiers),
+            "metadata": {
+                "populated_operators": list(metadata.populated_operators),
+                "missing_operators": list(metadata.missing_operators),
+                "calculated_formulas": metadata.calculated_formulas,
+                "blocked_formulas": metadata.blocked_formulas,
+                "blocked_formula_details": metadata.blocked_formula_details[:20],  # Limit for response size
+                "tier_stats": metadata.tier_stats
+            }
         }
+
+    def _execute_formula_with_null_check(
+        self,
+        formula: dict,
+        state: Dict[str, Optional[float]],
+        confidence: Dict[str, float]
+    ) -> Optional[dict]:
+        """
+        Execute a formula with NULL DEPENDENCY CHECKING.
+
+        If ANY required input is None (missing), the formula is BLOCKED
+        and returns None to propagate null through the dependency chain.
+        """
+        variables_used = formula.get('variables_used', [])
+
+        # Check for missing dependencies BEFORE attempting calculation
+        missing_inputs = []
+        for var in variables_used:
+            if var not in state or state.get(var) is None:
+                missing_inputs.append(var)
+
+        # If any input is missing, BLOCK this formula
+        if missing_inputs:
+            return {
+                'blocked': True,
+                'missing_inputs': missing_inputs,
+                'value': None,
+                'confidence': 0.0
+            }
+
+        # All inputs present - proceed with calculation
+        return self._execute_formula(formula, state, confidence)
 
     def _execute_formula(
         self,
         formula: dict,
-        state: Dict[str, float],
+        state: Dict[str, Optional[float]],
         confidence: Dict[str, float]
     ) -> Optional[dict]:
         """Execute a single formula and return result with confidence"""
@@ -273,13 +412,17 @@ class InferenceEngine:
         expression = formula.get('expression', '')
         variables_used = formula.get('variables_used', [])
 
-        # Get input values
+        # Get input values - NO DEFAULT 0.5, use actual values
         inputs = {}
         input_confidences = []
 
         for var in variables_used:
-            inputs[var] = state.get(var, 0.5)
-            input_confidences.append(confidence.get(var, 0.5))
+            val = state.get(var)
+            if val is None:
+                # Should not reach here if _execute_formula_with_null_check is used
+                return {'blocked': True, 'missing_inputs': [var], 'value': None, 'confidence': 0.0}
+            inputs[var] = val
+            input_confidences.append(confidence.get(var, 0.0))
 
         # Compute result based on operators
         operators = formula.get('operators_used', [])
@@ -287,23 +430,26 @@ class InferenceEngine:
         if not operators:
             # No explicit operators - handle as implicit operations
             if len(variables_used) == 0:
-                # Constant/definition - return neutral value
+                # Constant/definition - return neutral value (only case where 0.5 is acceptable)
                 return {
                     'value': 0.5,
                     'confidence': 0.3
                 }
             elif len(variables_used) == 1:
                 # Simple assignment - passthrough
+                val = inputs.get(variables_used[0])
                 return {
-                    'value': inputs.get(variables_used[0], 0.5),
-                    'confidence': min(input_confidences) if input_confidences else 0.5
+                    'value': val,
+                    'confidence': min(input_confidences) if input_confidences else 0.0
                 }
             else:
                 # Multiple variables with no operator - implicit combination (mean)
-                values = list(inputs.values())
+                values = [v for v in inputs.values() if v is not None]
+                if not values:
+                    return {'blocked': True, 'missing_inputs': variables_used, 'value': None, 'confidence': 0.0}
                 return {
-                    'value': sum(values) / len(values) if values else 0.5,
-                    'confidence': min(input_confidences) if input_confidences else 0.4
+                    'value': sum(values) / len(values),
+                    'confidence': min(input_confidences) if input_confidences else 0.0
                 }
 
         # Compute based on dominant operator
@@ -311,11 +457,11 @@ class InferenceEngine:
 
         # Propagate confidence
         if '+' in operators or '-' in operators:
-            result_confidence = min(input_confidences) if input_confidences else 0.5
+            result_confidence = min(input_confidences) if input_confidences else 0.0
         elif '*' in operators or '×' in operators:
-            result_confidence = math.prod(input_confidences) if input_confidences else 0.5
+            result_confidence = math.prod(input_confidences) if input_confidences else 0.0
         else:
-            result_confidence = min(input_confidences) if input_confidences else 0.5
+            result_confidence = min(input_confidences) if input_confidences else 0.0
 
         # Clamp values
         result = max(0.0, min(1.0, result))
@@ -331,12 +477,12 @@ class InferenceEngine:
         expression: str,
         inputs: Dict[str, float],
         operators: List[str]
-    ) -> float:
+    ) -> Optional[float]:
         """Compute expression value based on inputs and operators"""
 
-        values = list(inputs.values())
+        values = [v for v in inputs.values() if v is not None]
         if not values:
-            return 0.5
+            return None  # Cannot compute with no inputs
 
         # Handle different operator types
         # Multiplication: ×, *, · (middle dot)
@@ -467,15 +613,20 @@ class InferenceEngine:
 
         return state, confidence
 
-    def _run_advanced_formulas(self, state: Dict[str, float]) -> Dict[str, Any]:
-        """Run advanced Python formula modules and return results"""
+    def _run_advanced_formulas(self, state: Dict[str, float], metadata: InferenceMetadata) -> Dict[str, Any]:
+        """Run advanced Python formula modules and return results.
+
+        ZERO-FALLBACK: Modules receive only non-null operators.
+        If critical operators are missing, modules should return partial results
+        with metadata about what couldn't be calculated.
+        """
         values = {}
         confidence = {}
 
-        # Extract operators from state for the formula modules
-        operators = {k: v for k, v in state.items() if v != 0.5}
+        # Extract operators from state - already filtered for non-null
+        operators = {k: v for k, v in state.items() if v is not None}
         s_level = operators.get('S_level', operators.get('s_level', 3.0))
-        logger.debug(f"[ADVANCED] Input operators: {len(operators)} non-default values")
+        logger.debug(f"[ADVANCED] Input operators: {len(operators)} non-null values")
 
         # Matrix Detection (7 matrices) - returns Dict[str, MatrixPosition]
         logger.debug("[ADVANCED] Running MatrixDetector...")

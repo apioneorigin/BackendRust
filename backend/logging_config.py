@@ -20,6 +20,13 @@ COMPONENT_LEVELS = {
     'bottleneck': logging.DEBUG,
     'leverage': logging.DEBUG,
     'api': logging.INFO,
+    # Zero-fallback components
+    'zero_fallback': logging.INFO,
+    'session_store': logging.DEBUG,
+    'priority_detector': logging.DEBUG,
+    'question_generator': logging.DEBUG,
+    'answer_mapper': logging.DEBUG,
+    'context_assembler': logging.DEBUG,
 }
 
 
@@ -204,3 +211,11 @@ validation_logger = get_logger('validation')
 consciousness_logger = get_logger('consciousness')
 api_logger = get_logger('api')
 pipeline_logger = PipelineLogger()
+
+# Zero-fallback component loggers
+zero_fallback_logger = get_logger('zero_fallback')
+session_store_logger = get_logger('session_store')
+priority_logger = get_logger('priority_detector')
+question_logger = get_logger('question_generator')
+answer_mapper_logger = get_logger('answer_mapper')
+context_logger = get_logger('context_assembler')

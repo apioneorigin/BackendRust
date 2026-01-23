@@ -1,13 +1,32 @@
 """
 Articulation Prompt Builder for Articulation Bridge
 Constructs the final LLM Call 2 prompt with organized values
+
+ZERO-FALLBACK MODE: Properly handles null/missing operator values.
+Shows "Not available" for blocked calculations instead of assuming defaults.
 """
 
-from typing import List, Optional
+from typing import List, Optional, Any
 from consciousness_state import (
     ArticulationContext, ConsciousnessState, Bottleneck, LeveragePoint,
-    UserContext, WebResearch, ArticulationInstructions
+    UserContext, WebResearch, ArticulationInstructions, InferenceMetadataState
 )
+
+
+def _fmt(value: Optional[float], as_percent: bool = True, decimals: int = 0) -> str:
+    """Format a nullable float value for display."""
+    if value is None:
+        return "N/A"
+    if as_percent:
+        return f"{value * 100:.{decimals}f}%"
+    return f"{value:.{decimals}f}"
+
+
+def _fmt_score(value: Optional[float]) -> str:
+    """Format a nullable score/level value."""
+    if value is None:
+        return "Not calculated"
+    return f"{value:.1f}"
 
 
 class ArticulationPromptBuilder:
@@ -130,7 +149,7 @@ Reference the framework internally but express insights naturally - as if speaki
         timeline = state.tier5.timeline_predictions
         transform = state.tier5.transformation_vectors
 
-        # Get dominant act properly
+        # Get dominant act properly (null-safe)
         act_values = {
             'srishti_creation': five_acts.srishti_creation,
             'sthiti_maintenance': five_acts.sthiti_maintenance,
@@ -138,100 +157,103 @@ Reference the framework internally but express insights naturally - as if speaki
             'tirodhana_concealment': five_acts.tirodhana_concealment,
             'anugraha_grace': five_acts.anugraha_grace
         }
-        dominant_act_value = act_values.get(five_acts.dominant, 0.5)
+        dominant_act_value = act_values.get(five_acts.dominant) if five_acts.dominant else None
 
-        # Get dominant guna value
+        # Get dominant guna value (null-safe)
         guna_values = {'sattva': gunas.sattva, 'rajas': gunas.rajas, 'tamas': gunas.tamas}
-        dominant_guna_value = guna_values.get(gunas.dominant, 0.33)
+        dominant_guna_value = guna_values.get(gunas.dominant) if gunas.dominant else None
+
+        # Build data quality section if we have metadata
+        data_quality_section = self._build_data_quality_section(state)
 
         return f"""## CALCULATED CONSCIOUSNESS STATE
-
+{data_quality_section}
 ### CORE CONFIGURATION
 
-**S-Level:** {s_level.current:.1f} ({s_level.label})
-- Evolution rate: {s_level.transition_rate * 100:.1f}% per month
+**S-Level:** {_fmt_score(s_level.current)} ({s_level.label or 'Unknown'})
+- Evolution rate: {_fmt(s_level.transition_rate, decimals=1)} per month
 
 **Primary Operating Mode:**
-- Dominant Act: {five_acts.dominant.replace('_', ' ').title()} ({dominant_act_value * 100:.0f}%)
-- Dominant Guna: {gunas.dominant.title()} ({dominant_guna_value * 100:.0f}%)
-- Temporal Focus: {ops.T_time_past * 100:.0f}% past, {ops.T_time_present * 100:.0f}% present, {ops.T_time_future * 100:.0f}% future
+- Dominant Act: {(five_acts.dominant or 'unknown').replace('_', ' ').title()} ({_fmt(dominant_act_value)})
+- Dominant Guna: {(gunas.dominant or 'unknown').title()} ({_fmt(dominant_guna_value)})
+- Temporal Focus: {_fmt(ops.T_time_past)} past, {_fmt(ops.T_time_present)} present, {_fmt(ops.T_time_future)} future
 
 **Key Operators:**
-- Presence (now-moment): {ops.P_presence * 100:.0f}%
-- Awareness: {ops.A_aware * 100:.0f}%
-- Maya (illusion): {ops.M_maya * 100:.0f}%
-- Attachment: {ops.At_attachment * 100:.0f}%
-- Grace flow: {ops.G_grace * 100:.0f}%
-- Witness: {ops.W_witness * 100:.0f}%
-- Surrender: {ops.S_surrender * 100:.0f}%
-- Coherence: {ops.Co_coherence * 100:.0f}%
-- Resistance: {ops.R_resistance * 100:.0f}%
-- Fear: {ops.F_fear * 100:.0f}%
+- Presence (now-moment): {_fmt(ops.P_presence)}
+- Awareness: {_fmt(ops.A_aware)}
+- Maya (illusion): {_fmt(ops.M_maya)}
+- Attachment: {_fmt(ops.At_attachment)}
+- Grace flow: {_fmt(ops.G_grace)}
+- Witness: {_fmt(ops.W_witness)}
+- Surrender: {_fmt(ops.S_surrender)}
+- Coherence: {_fmt(ops.Co_coherence)}
+- Resistance: {_fmt(ops.R_resistance)}
+- Fear: {_fmt(ops.F_fear)}
 
 ### TRANSFORMATION POSITION
 
 **Matrix Positions:**
-- Truth: {matrices.truth_position} ({matrices.truth_score * 100:.0f}%)
-- Love: {matrices.love_position} ({matrices.love_score * 100:.0f}%)
-- Power: {matrices.power_position} ({matrices.power_score * 100:.0f}%)
-- Freedom: {matrices.freedom_position} ({matrices.freedom_score * 100:.0f}%)
-- Creation: {matrices.creation_position} ({matrices.creation_score * 100:.0f}%)
-- Time: {matrices.time_position} ({matrices.time_score * 100:.0f}%)
-- Death: {matrices.death_position} ({matrices.death_score * 100:.0f}%)
+- Truth: {matrices.truth_position or 'Unknown'} ({_fmt(matrices.truth_score)})
+- Love: {matrices.love_position or 'Unknown'} ({_fmt(matrices.love_score)})
+- Power: {matrices.power_position or 'Unknown'} ({_fmt(matrices.power_score)})
+- Freedom: {matrices.freedom_position or 'Unknown'} ({_fmt(matrices.freedom_score)})
+- Creation: {matrices.creation_position or 'Unknown'} ({_fmt(matrices.creation_score)})
+- Time: {matrices.time_position or 'Unknown'} ({_fmt(matrices.time_score)})
+- Death: {matrices.death_position or 'Unknown'} ({_fmt(matrices.death_score)})
 
 **Active Death Processes:**
-{f"- {death.active_process} (depth: {death.depth * 100:.0f}%)" if death.active_process else "- None currently active"}
+{f"- {death.active_process} (depth: {_fmt(death.depth)})" if death.active_process else "- None currently active"}
 
 ### ENERGY DISTRIBUTION
 
 **Chakra Activation:**
-- Root (survival): {chakras.muladhara * 100:.0f}%
-- Sacral (creativity): {chakras.svadhisthana * 100:.0f}%
-- Solar Plexus (power): {chakras.manipura * 100:.0f}%
-- Heart (love): {chakras.anahata * 100:.0f}%
-- Throat (expression): {chakras.vishuddha * 100:.0f}%
-- Third Eye (intuition): {chakras.ajna * 100:.0f}%
-- Crown (connection): {chakras.sahasrara * 100:.0f}%
+- Root (survival): {_fmt(chakras.muladhara)}
+- Sacral (creativity): {_fmt(chakras.svadhisthana)}
+- Solar Plexus (power): {_fmt(chakras.manipura)}
+- Heart (love): {_fmt(chakras.anahata)}
+- Throat (expression): {_fmt(chakras.vishuddha)}
+- Third Eye (intuition): {_fmt(chakras.ajna)}
+- Crown (connection): {_fmt(chakras.sahasrara)}
 
 **Drive Fulfillment:**
-- Love: {drives_int.love_internal_pct:.0f}% internal, {drives_int.love_external_pct:.0f}% seeking externally
-- Peace: {drives_int.peace_internal_pct:.0f}% internal, {drives_int.peace_external_pct:.0f}% seeking externally
-- Freedom: {drives_int.freedom_internal_pct:.0f}% internal, {drives_int.freedom_external_pct:.0f}% seeking externally
+- Love: {_fmt(drives_int.love_internal_pct)} internal, {_fmt(drives_int.love_external_pct)} seeking externally
+- Peace: {_fmt(drives_int.peace_internal_pct)} internal, {_fmt(drives_int.peace_external_pct)} seeking externally
+- Freedom: {_fmt(drives_int.freedom_internal_pct)} internal, {_fmt(drives_int.freedom_external_pct)} seeking externally
 
 ### TRANSFORMATION READINESS
 
 **Breakthrough Dynamics:**
-- Breakthrough probability: {breakthrough.probability * 100:.0f}%
-- Distance to tipping point: {breakthrough.tipping_point_distance * 100:.0f}%
-- Quantum jump possibility: {breakthrough.quantum_jump_prob * 100:.0f}%
+- Breakthrough probability: {_fmt(breakthrough.probability)}
+- Distance to tipping point: {_fmt(breakthrough.tipping_point_distance)}
+- Quantum jump possibility: {_fmt(breakthrough.quantum_jump_prob)}
 {f"- Operators at breakthrough threshold: {', '.join(breakthrough.operators_at_threshold)}" if breakthrough.operators_at_threshold else ""}
 
 **Timeline Predictions:**
-- To stated goal: {timeline.to_goal}
-- To next S-level: {timeline.to_next_s_level}
-- Evolution rate: {timeline.evolution_rate * 100:.1f}% per month
+- To stated goal: {timeline.to_goal or 'Not calculated'}
+- To next S-level: {timeline.to_next_s_level or 'Not calculated'}
+- Evolution rate: {_fmt(timeline.evolution_rate, decimals=1)} per month
 
 **Manifestation Capacity:**
-- Pipeline flow rate: {pipeline.flow_rate * 100:.0f}%
-- Typical manifestation time: {pipeline.manifestation_time}
+- Pipeline flow rate: {_fmt(pipeline.flow_rate)}
+- Typical manifestation time: {pipeline.manifestation_time or 'Not calculated'}
 
 **Grace Mechanics:**
-- Availability: {grace_mech.availability * 100:.0f}%
-- Effectiveness: {grace_mech.effectiveness * 100:.0f}%
-- Multiplication factor: {grace_mech.multiplication_factor:.2f}x
+- Availability: {_fmt(grace_mech.availability)}
+- Effectiveness: {_fmt(grace_mech.effectiveness)}
+- Multiplication factor: {grace_mech.multiplication_factor:.2f}x if grace_mech.multiplication_factor else 'N/A'
 
 ### COHERENCE & GAPS
 
 **Coherence Metrics:**
-- Overall coherence: {coherence.overall * 100:.0f}%
-- Fundamental: {coherence.fundamental * 100:.0f}%
-- Specification: {coherence.specification * 100:.0f}%
+- Overall coherence: {_fmt(coherence.overall)}
+- Fundamental: {_fmt(coherence.fundamental)}
+- Specification: {_fmt(coherence.specification)}
 
 **POMDP Gaps (Reality Perception):**
-- Reality gap (what's real vs what you believe): {pomdp.reality_gap * 100:.0f}%
-- Observation gap (what's real vs what you see): {pomdp.observation_gap * 100:.0f}%
-- Belief gap (what you believe vs what you see): {pomdp.belief_gap * 100:.0f}%
-- Overall severity: {pomdp.severity * 100:.0f}%
+- Reality gap (what's real vs what you believe): {_fmt(pomdp.reality_gap)}
+- Observation gap (what's real vs what you see): {_fmt(pomdp.observation_gap)}
+- Belief gap (what you believe vs what you see): {_fmt(pomdp.belief_gap)}
+- Overall severity: {_fmt(pomdp.severity)}
 
 ### TRANSFORMATION VECTORS
 
@@ -241,6 +263,41 @@ Reference the framework internally but express insights naturally - as if speaki
 - Primary obstacle: {transform.primary_obstacle or "Not identified"}
 - Primary enabler: {transform.primary_enabler or "Not identified"}
 - Leverage point: {transform.leverage_point or "See leverage section"}"""
+
+    def _build_data_quality_section(self, state: ConsciousnessState) -> str:
+        """Build data quality/metadata section showing what's missing."""
+        # Check if we have inference metadata
+        if not hasattr(state, 'inference_metadata') or state.inference_metadata is None:
+            return ""
+
+        meta = state.inference_metadata
+
+        sections = ["\n### DATA QUALITY NOTICE\n"]
+
+        # Coverage info
+        if hasattr(meta, 'populated_operators') and hasattr(meta, 'missing_operators'):
+            populated = len(meta.populated_operators) if meta.populated_operators else 0
+            missing = len(meta.missing_operators) if meta.missing_operators else 0
+            total = populated + missing
+            coverage = (populated / total * 100) if total > 0 else 0
+
+            sections.append(f"**Operator Coverage:** {populated}/{total} ({coverage:.0f}%)")
+
+            if meta.missing_operators:
+                missing_list = ', '.join(list(meta.missing_operators)[:10])
+                if len(meta.missing_operators) > 10:
+                    missing_list += f" (and {len(meta.missing_operators) - 10} more)"
+                sections.append(f"**Missing Operators:** {missing_list}")
+
+        # Blocked formulas
+        if hasattr(meta, 'blocked_formulas') and meta.blocked_formulas:
+            blocked_list = ', '.join(list(meta.blocked_formulas)[:5])
+            if len(meta.blocked_formulas) > 5:
+                blocked_list += f" (and {len(meta.blocked_formulas) - 5} more)"
+            sections.append(f"**Blocked Calculations:** {blocked_list}")
+            sections.append("(Some calculations show N/A due to missing input operators)")
+
+        return '\n'.join(sections) + "\n"
 
     def _build_bottleneck_section(self, bottlenecks: List[Bottleneck]) -> str:
         """Build the bottleneck analysis section"""
