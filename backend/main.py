@@ -44,6 +44,7 @@ from logging_config import (
     reverse_logger,
     pipeline_logger,
     consciousness_logger,
+    evidence_grounding_logger,
     get_logger
 )
 
@@ -479,6 +480,28 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
         api_logger.info(f"[ARTICULATION] Streamed {token_count} tokens")
         pipeline_logger.log_step("Articulation", {"tokens": token_count})
 
+        # Log comprehensive evidence-grounding metrics
+        query_pattern = evidence.get('query_pattern', 'general')
+        search_guidance = evidence.get('search_guidance', {})
+        posteriors_values = posteriors.get('values', {})
+        extreme_values = sum(1 for v in posteriors_values.values()
+                           if isinstance(v, (int, float)) and (v > 0.7 or v < 0.3))
+
+        evidence_grounding_logger.info(f"""
+[EVIDENCE GROUNDING METRICS]
+Query: {prompt[:100]}...
+Query Pattern: {query_pattern}
+Targets Requested: {len(evidence.get('targets', []))}
+Search Guidance Entries: {len(search_guidance.get('high_priority_values', []))}
+Evidence Search Queries: {len(search_guidance.get('evidence_search_queries', []))}
+Consciousness→Reality Mappings: {len(search_guidance.get('consciousness_to_reality_mappings', []))}
+Values Sent to LLM: {len(posteriors_values)}
+Extreme Values (>0.7 or <0.3): {extreme_values}
+Web Searches in Call 1: {len(evidence.get('search_queries_used', []))}
+Web Search Enabled Call 2: {web_search_insights}
+Articulation Tokens: {token_count}
+""")
+
         # Send token usage event with cost
         yield {
             "event": "usage",
@@ -672,9 +695,19 @@ JSON structure:
     {{"var": "Ma", "value": 0.50, "confidence": 0.6, "reasoning": "..."}},
     {{"var": "Ch", "value": 0.45, "confidence": 0.5, "reasoning": "..."}}
   ],
-  "targets": ["Transformation", "Grace", "Karma"],
-  "relevant_oof_components": ["Sacred Chain", "Cascade", "UCB"]
-}}"""
+  "targets": ["At_attachment", "Fe_fear", "Re_resistance", "M_maya", "breakthrough_probability", "bottleneck_primary", "leverage_highest", "matrix_truth", "matrix_power", "cascade_cleanliness", "grace_availability", "karma_burn_rate", "death_d1_identity", "transformation_vector", "pipeline_flow_rate", "network_coherence", "quantum_tunneling_prob"],
+  "relevant_oof_components": ["Sacred Chain", "Cascade", "UCB", "Seven Matrices", "Death Architecture"]
+}}
+
+CRITICAL REQUIREMENTS FOR TARGET SELECTION:
+- 'targets' must be QUERY-SPECIFIC based on query pattern analysis (not the generic example)
+- Analyze the query pattern and populate 20-50 relevant targets
+- Include: direct query needs + bottlenecks + leverage + matrices + evidence-grounding values
+- 'search_guidance' must map high-priority targets to specific proof-finding search terms
+- Never use generic placeholders - deeply analyze what the specific query needs
+- For INNOVATION queries: focus on breakthrough_probability, creation_matrix, maya_barriers, transformation_vectors
+- For BLOCKAGE queries: focus on bottlenecks, resistance, attachment, fear, habit_force
+- For TRANSFORMATION queries: focus on death_architecture, s_level_transition, grace_mechanics, leverage_points"""
 
     last_error = None
     response_text = ""
