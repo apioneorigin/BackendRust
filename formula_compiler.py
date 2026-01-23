@@ -455,91 +455,168 @@ class FormulaCompiler:
     
     def _is_operator_name(self, name: str) -> bool:
         """Check if variable name matches known OOF operators"""
-        # The 25 core operators (approximate list - will refine)
+        # The 25 core non-derivable operators from OOF nomenclature
+        # Format: Symbol_fullname or just Symbol
         core_operators = {
-            'Consciousness', 'Ψ', 'Psi',
-            'Karma', 'K',
-            'Maya', 'M',
-            'Time', 'T',
-            'Space', 'S',
-            'Witness', 'W',
-            'Grace', 'G',
-            'Prana', 'P',
-            'Shakti',
-            'Void', 'V',
-            'Love', 'L',
-            'Awareness', 'A',
-            'Entropy', 'E',
-            'Resonance', 'R',
-            'Creator', 'C',
-            'Seva',
-            'Attachment',
-            'Cleaning',
-            'Surrender',
-            'Aspiration',
-            'Fear',
-            'Desire',
-            'Kama',
-            'Buddhi',
-            'Manas',
-            'Chitta'
+            # Primary operators with symbols
+            'Ψ', 'Ψ^Ψ', 'Psi', 'Psi_quality', 'Consciousness',
+            'K', 'K_karma', 'Karma',
+            'M', 'M_maya', 'Maya',
+            'T', 'T_time', 'Time',
+            'S', 'S_sacred', 'S_level',
+            'W', 'W_witness', 'Witness',
+            'G', 'G_grace', 'Grace',
+            'GC', 'GC_gracechannel', 'Grace_Channel',
+            'KL', 'KL_klesha', 'Klesha',
+            'I', 'I_intention', 'Intention',
+            'V', 'V_vasana', 'Vasana',
+            'R', 'R_resistance', 'Resistance',
+            'E', 'E_emotional', 'Emotional',
+            'D', 'D_dharma', 'Dharma',
+            'Sh', 'Sh_shakti', 'Shakti',
+            'BN', 'BN_bondsnew', 'Bonds_New',
+            'Ra', 'Ra_raga', 'Raga',
+            'Sa', 'Sa_samskara', 'Samskara',
+            'P', 'P_presence', 'Presence', 'Prana',
+            'Se', 'Se_service', 'Service', 'Seva',
+            'At', 'At_attachment', 'Attachment',
+            'Ce', 'Ce_center', 'Center', 'Centering',
+            'Lf', 'Lf_lifeforce', 'Lifeforce', 'Life_Force',
+            'CDM', 'CDM_cleanliness', 'Cascade_Demux',
+            'Hf', 'Hf_habit', 'Habit', 'Habit_Force',
+            # UCB (Unconscious Behavioral) operators
+            'UCB', 'UCB_a', 'UCB_b', 'UCB_c', 'UCB_d', 'UCB_e',
+            # Klesha operators
+            'Av', 'Av_avidya', 'Avidya',
+            'As', 'As_asmita', 'Asmita',
+            'Dv', 'Dv_dvesha', 'Dvesha',
+            'Ab', 'Ab_abhinivesha', 'Abhinivesha',
+            # Pattern operators
+            'Hp', 'Hp_habitpattern', 'Habit_Pattern',
+            'Sp', 'Sp_samskarapattern', 'Samskara_Pattern',
+            'Vp', 'Vp_vasanapattern', 'Vasana_Pattern',
+            # Action operators
+            'Ac', 'Ac_action', 'Action',
+            'Re', 'Re_reaction', 'Reaction',
+            'Pr', 'Pr_proaction', 'Proaction',
+            # Legacy/alternate forms
+            'A', 'Awareness', 'L', 'Love', 'C', 'Creator',
+            'Entropy', 'Resonance', 'Void',
+            'Kama', 'Buddhi', 'Manas', 'Chitta',
+            'Surrender', 'Aspiration', 'Fear', 'Desire', 'Cleaning'
         }
-        
+
         return name in core_operators
     
     def _extract_sanskrit_name(self, name: str) -> Optional[str]:
         """Map English name to Sanskrit if applicable"""
-        # Basic mapping (will expand)
+        # Complete OOF operator Sanskrit mappings
         sanskrit_map = {
-            'Consciousness': 'Chit',
-            'Witness': 'Sakshi',
-            'Grace': 'Anugraha',
-            'Desire': 'Kama',
-            'Intellect': 'Buddhi',
-            'Mind': 'Manas',
-            'Memory': 'Chitta',
-            'Love': 'Prema',
-            'Service': 'Seva',
-            'Energy': 'Prana',
+            # Core 25 operators
+            'Consciousness': 'Chit', 'Ψ': 'Chit', 'Psi_quality': 'Chit',
+            'Karma': 'Karma', 'K': 'Karma', 'K_karma': 'Karma',
+            'Maya': 'Maya', 'M': 'Maya', 'M_maya': 'Maya',
+            'Time': 'Kala', 'T': 'Kala', 'T_time': 'Kala',
+            'S_sacred': 'Shreni', 'S_level': 'Shreni',
+            'Witness': 'Sakshi', 'W': 'Sakshi', 'W_witness': 'Sakshi',
+            'Grace': 'Anugraha', 'G': 'Anugraha', 'G_grace': 'Anugraha',
+            'GC_gracechannel': 'Anugraha-Nadi',
+            'Klesha': 'Klesha', 'KL': 'Klesha', 'KL_klesha': 'Klesha',
+            'Intention': 'Sankalpa', 'I': 'Sankalpa', 'I_intention': 'Sankalpa',
+            'Vasana': 'Vasana', 'V': 'Vasana', 'V_vasana': 'Vasana',
+            'Resistance': 'Pratibandha', 'R': 'Pratibandha', 'R_resistance': 'Pratibandha',
+            'Emotional': 'Bhava', 'E': 'Bhava', 'E_emotional': 'Bhava',
+            'Dharma': 'Dharma', 'D': 'Dharma', 'D_dharma': 'Dharma',
+            'Shakti': 'Shakti', 'Sh': 'Shakti', 'Sh_shakti': 'Shakti',
+            'BN_bondsnew': 'Nava-Bandha',
+            'Raga': 'Raga', 'Ra': 'Raga', 'Ra_raga': 'Raga',
+            'Samskara': 'Samskara', 'Sa': 'Samskara', 'Sa_samskara': 'Samskara',
+            'Presence': 'Sthiti', 'P': 'Prana', 'P_presence': 'Sthiti',
+            'Service': 'Seva', 'Se': 'Seva', 'Se_service': 'Seva',
+            'Attachment': 'Asakti', 'At': 'Asakti', 'At_attachment': 'Asakti',
+            'Center': 'Kendra', 'Ce': 'Kendra', 'Ce_center': 'Kendra',
+            'Lifeforce': 'Prana', 'Lf': 'Prana', 'Lf_lifeforce': 'Prana',
+            'CDM_cleanliness': 'Shuddhi-Demux',
+            'Habit': 'Abhyasa', 'Hf': 'Abhyasa', 'Hf_habit': 'Abhyasa',
+            # Klesha operators
+            'Avidya': 'Avidya', 'Av_avidya': 'Avidya',
+            'Asmita': 'Asmita', 'As_asmita': 'Asmita',
+            'Dvesha': 'Dvesha', 'Dv_dvesha': 'Dvesha',
+            'Abhinivesha': 'Abhinivesha', 'Ab_abhinivesha': 'Abhinivesha',
+            # Legacy mappings
+            'Desire': 'Kama', 'Kama': 'Kama',
+            'Intellect': 'Buddhi', 'Buddhi': 'Buddhi',
+            'Mind': 'Manas', 'Manas': 'Manas',
+            'Memory': 'Chitta', 'Chitta': 'Chitta',
+            'Love': 'Prema', 'L': 'Prema',
+            'Energy': 'Prana', 'Prana': 'Prana',
             'Power': 'Shakti',
             'Illusion': 'Maya',
             'Action': 'Karma',
             'Void': 'Shunya'
         }
-        
+
         return sanskrit_map.get(name, None)
     
     def _translate_to_english(self, name: str) -> str:
         """Translate Sanskrit/technical terms to plain English"""
-        # Reverse mapping
+        # Complete OOF operator English mappings
         english_map = {
-            'Ψ': 'Consciousness',
-            'K': 'Karma',
-            'M': 'Maya',
-            'T': 'Time',
-            'S': 'Space',
-            'W': 'Witness',
-            'G': 'Grace',
-            'P': 'Prana',
-            'V': 'Void',
-            'L': 'Love',
-            'A': 'Awareness',
-            'E': 'Entropy',
-            'R': 'Resonance',
-            'C': 'Creator',
-            'Kama': 'Desire',
-            'Buddhi': 'Intellect',
-            'Manas': 'Mind',
-            'Chitta': 'Memory',
-            'Prema': 'Love',
-            'Seva': 'Service',
-            'Shakti': 'Power',
-            'Shunya': 'Void',
-            'Sakshi': 'Witness',
-            'Anugraha': 'Grace',
-            'Chit': 'Consciousness'
+            # Core 25 operators - symbols
+            'Ψ': 'Consciousness', 'Psi_quality': 'Consciousness_Quality',
+            'K': 'Karma', 'K_karma': 'Karma_Patterns',
+            'M': 'Maya', 'M_maya': 'Maya_Distortion',
+            'T': 'Time', 'T_time': 'Time_Perception',
+            'S': 'Sacred_Level', 'S_sacred': 'Sacred_Chain', 'S_level': 'S_Level',
+            'W': 'Witness', 'W_witness': 'Witness_Consciousness',
+            'G': 'Grace', 'G_grace': 'Grace_Factor',
+            'GC': 'Grace_Channel', 'GC_gracechannel': 'Grace_Channel',
+            'KL': 'Klesha', 'KL_klesha': 'Afflictions',
+            'I': 'Intention', 'I_intention': 'Intention',
+            'V': 'Vasana', 'V_vasana': 'Impressions',
+            'R': 'Resistance', 'R_resistance': 'Resistance',
+            'E': 'Emotional', 'E_emotional': 'Emotional_State',
+            'D': 'Dharma', 'D_dharma': 'Dharma',
+            'Sh': 'Shakti', 'Sh_shakti': 'Power',
+            'BN': 'Bonds_New', 'BN_bondsnew': 'New_Bonds',
+            'Ra': 'Raga', 'Ra_raga': 'Attachment_Craving',
+            'Sa': 'Samskara', 'Sa_samskara': 'Patterns',
+            'P': 'Presence', 'P_presence': 'Presence',
+            'Se': 'Service', 'Se_service': 'Service',
+            'At': 'Attachment', 'At_attachment': 'Attachment',
+            'Ce': 'Center', 'Ce_center': 'Centering',
+            'Lf': 'Lifeforce', 'Lf_lifeforce': 'Life_Force',
+            'CDM': 'Cascade_Demux', 'CDM_cleanliness': 'Cleanliness_Demux',
+            'Hf': 'Habit', 'Hf_habit': 'Habit_Force',
+            # UCB operators
+            'UCB': 'Unconscious_Behavioral', 'UCB_a': 'UCB_Awareness',
+            'UCB_b': 'UCB_Behavior', 'UCB_c': 'UCB_Cognition',
+            'UCB_d': 'UCB_Drive', 'UCB_e': 'UCB_Emotion',
+            # Klesha operators
+            'Av': 'Ignorance', 'Av_avidya': 'Ignorance',
+            'As': 'Egoism', 'As_asmita': 'Egoism',
+            'Dv': 'Aversion', 'Dv_dvesha': 'Aversion',
+            'Ab': 'Fear_of_Death', 'Ab_abhinivesha': 'Fear_of_Death',
+            # Pattern operators
+            'Hp': 'Habit_Pattern', 'Hp_habitpattern': 'Habit_Pattern',
+            'Sp': 'Samskara_Pattern', 'Sp_samskarapattern': 'Samskara_Pattern',
+            'Vp': 'Vasana_Pattern', 'Vp_vasanapattern': 'Vasana_Pattern',
+            # Action operators
+            'Ac': 'Action', 'Ac_action': 'Action',
+            'Re': 'Reaction', 'Re_reaction': 'Reaction',
+            'Pr': 'Proaction', 'Pr_proaction': 'Proaction',
+            # Sanskrit terms
+            'Kama': 'Desire', 'Buddhi': 'Intellect', 'Manas': 'Mind',
+            'Chitta': 'Memory', 'Prema': 'Love', 'Seva': 'Service',
+            'Shakti': 'Power', 'Shunya': 'Void', 'Sakshi': 'Witness',
+            'Anugraha': 'Grace', 'Chit': 'Consciousness', 'Prana': 'Life_Energy',
+            'Avidya': 'Ignorance', 'Asmita': 'Egoism', 'Raga': 'Attachment',
+            'Dvesha': 'Aversion', 'Abhinivesha': 'Fear_of_Death',
+            'Vasana': 'Impressions', 'Samskara': 'Patterns', 'Dharma': 'Righteousness',
+            # Legacy
+            'L': 'Love', 'A': 'Awareness', 'C': 'Creator'
         }
-        
+
         return english_map.get(name, name)
     
     def _identify_operators(self):
