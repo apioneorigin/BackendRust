@@ -90,26 +90,26 @@ class InferenceEngine:
     # Additional formula counts from Python modules
     ADVANCED_FORMULA_COUNTS = {
         # Original 8 modules
-        'matrix_detection': 7,      # 7 transformation matrices
+        'matrix_detection': 7,      # 7 transformation matrices (MatrixType enum)
         'cascade': 7,               # 7 cascade levels
         'emotions': 29,             # 9 rasas + 20 secondary emotions
-        'death_detection': 7,       # D1-D7 death architecture
+        'death_detection': 7,       # D1-D7 death architecture (DeathType enum)
         'dynamics': 12,             # Grace + Karma + Dharmic formulas
         'network': 8,               # Network emergence formulas
         'quantum': 15,              # Quantum mechanics formulas
-        'realism': 60,              # 60 realism types
+        'realism': 77,              # 77 realism types (REALISM_TYPES dict)
         # New integrated modules (via OOFInferenceEngine)
         'operators': 15,            # Operator derived calculations
-        'drives': 18,               # Five sacred drives
-        'matrices': 13,             # Seven transformation matrices (full)
-        'pathways': 13,             # Three perfection pathways
-        'death': 14,                # Death processes (full)
+        'drives': 30,               # 5 DriveType + 25 DriveComponents (5 per drive)
+        'matrices': 7,              # 7 MatrixType (TRUTH, LOVE, POWER, FREEDOM, CREATION, TIME, DEATH)
+        'pathways': 3,              # 3 PathwayType (WITNESSING, CREATING, EMBODYING)
+        'death': 7,                 # 7 DeathType (D1-D7)
         'collective': 4,            # Collective consciousness
-        'circles': 2,               # Five circles of being
-        'kosha': 3,                 # Five koshas
-        'osafc': 4,                 # OSAFC eight layers
+        'circles': 5,               # 5 CircleType (PERSONAL, FAMILY, SOCIAL, PROFESSIONAL, UNIVERSAL)
+        'kosha': 5,                 # 5 KoshaType (ANNAMAYA, PRANAMAYA, MANOMAYA, VIJNANAMAYA, ANANDAMAYA)
+        'osafc': 8,                 # 8 OSAFCLayer (PHYSICAL, ENERGETIC, EMOTIONAL, MENTAL, INTELLECT, EGO, WITNESS, SOURCE)
         'distortions': 5,           # Maya & Kleshas
-        'panchakritya': 4,          # Five cosmic acts
+        'panchakritya': 5,          # 5 KrityaType (SRISHTI, STHITI, SAMHARA, TIROBHAVA, ANUGRAHA)
     }
 
     def __init__(self, registry_path: str):
@@ -332,84 +332,26 @@ class InferenceEngine:
         confidence.update(advanced_results.get('confidence', {}))
         logger.info(f"[ADVANCED FORMULAS] Computed {advanced_count} values")
 
-        # Build response with metadata
+        # PURE ARCHITECTURE: Backend sends ALL values - LLM decides relevance
+        # Zero backend intelligence about context/relevance - pure mathematics only
         targets = evidence.get('targets', [])
         search_guidance = evidence.get('search_guidance', {})
-        high_priority_values = search_guidance.get('high_priority_values', [])
 
-        # Filter out None values for target response
+        # Filter out None values only - send EVERYTHING else
         non_null_state = {k: v for k, v in state.items() if v is not None}
 
-        # EXPANDED VALUE PASSING: Return 150 values with priority ordering
-        # Priority 1: User-requested targets
-        # Priority 2: High-priority values from search_guidance (for evidence grounding)
-        # Priority 3: Extreme values (furthest from 0.5)
-        # Priority 4: Matrix positions
-        # Priority 5: Core operators
-        # Priority 6: Remaining significant values
+        # SEND ALL VALUES - Zero backend intelligence
+        target_values = non_null_state.copy()
 
-        target_values = {}
-        MAX_VALUES = 150
+        logger.info(f"[PURE ARCHITECTURE] Sending ALL {len(target_values)} non-null values to LLM")
+        logger.info(f"[PURE ARCHITECTURE] Backend calculates, LLM decides relevance")
 
-        # Priority 1: User-requested targets
-        for var in targets:
-            if var in non_null_state and non_null_state.get(var) is not None:
-                target_values[var] = non_null_state[var]
-        logger.debug(f"[TARGETS] Added {len(target_values)} user-requested targets")
-
-        # Priority 2: High-priority values from search_guidance
-        for var in high_priority_values:
-            if len(target_values) >= MAX_VALUES:
-                break
-            # Try to match value names (may be descriptive like "Creation matrix")
-            matching_keys = [k for k in non_null_state.keys() if var.lower() in k.lower() or k.lower() in var.lower()]
-            for key in matching_keys:
-                if key not in target_values and non_null_state.get(key) is not None:
-                    target_values[key] = non_null_state[key]
-        logger.debug(f"[TARGETS] After high-priority: {len(target_values)} values")
-
-        # Priority 3: Extreme values (furthest from 0.5) - these are most significant
-        sorted_by_extremity = sorted(
-            [(k, v) for k, v in non_null_state.items() if isinstance(v, (int, float))],
-            key=lambda x: abs(x[1] - 0.5) if x[1] is not None else 0,
-            reverse=True
-        )
-        for var, val in sorted_by_extremity:
-            if len(target_values) >= MAX_VALUES:
-                break
-            if var not in target_values:
-                target_values[var] = val
-        logger.debug(f"[TARGETS] After extremes: {len(target_values)} values")
-
-        # Priority 4: Matrix positions (transformation matrices are critical)
-        matrix_keys = [k for k in non_null_state.keys() if 'matrix' in k.lower()]
-        for key in matrix_keys:
-            if len(target_values) >= MAX_VALUES:
-                break
-            if key not in target_values and non_null_state.get(key) is not None:
-                target_values[key] = non_null_state[key]
-        logger.debug(f"[TARGETS] After matrices: {len(target_values)} values")
-
-        # Priority 5: Core operators and key consciousness values
-        core_keywords = ['grace', 'karma', 'maya', 'witness', 'awareness', 'coherence',
-                        'breakthrough', 'cascade', 'death', 'quantum', 'network', 'realism',
-                        'emotion', 'dynamics', 'pipeline', 'transformation']
-        for keyword in core_keywords:
-            if len(target_values) >= MAX_VALUES:
-                break
-            matching = [k for k in non_null_state.keys() if keyword in k.lower()]
-            for key in matching:
-                if key not in target_values and non_null_state.get(key) is not None:
-                    target_values[key] = non_null_state[key]
-
-        # Priority 6: Fill remaining slots with any remaining values
-        for var, val in non_null_state.items():
-            if len(target_values) >= MAX_VALUES:
-                break
-            if var not in target_values and val is not None:
-                target_values[var] = val
-
-        logger.debug(f"[TARGETS] Final: {len(target_values)} values (max {MAX_VALUES})")
+        # Log what LLM Call 1 flagged as important (for debugging only)
+        if targets:
+            logger.debug(f"[LLM REQUESTED] {len(targets)} explicit targets from Call 1: {targets[:10]}...")
+        high_priority_values = search_guidance.get('high_priority_values', [])
+        if high_priority_values:
+            logger.debug(f"[LLM FLAGGED] {len(high_priority_values)} high-priority values for evidence grounding")
 
         # Log top 10 most significant results
         logger.info("[TOP RESULTS]")
