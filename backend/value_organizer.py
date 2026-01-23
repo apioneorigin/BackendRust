@@ -39,6 +39,8 @@ class ValueOrganizer:
     ) -> ConsciousnessState:
         """
         Transform flat backend output into organized consciousness state.
+
+        PURE ARCHITECTURE: Pass context from Call 1 to guide Call 2 value selection.
         """
         return ConsciousnessState(
             timestamp=datetime.now().isoformat(),
@@ -51,7 +53,10 @@ class ValueOrganizer:
             tier5=self._organize_tier5(raw_values),
             tier6=self._organize_tier6(raw_values),
             bottlenecks=[],  # Will be populated by BottleneckDetector
-            leverage_points=[]  # Will be populated by LeverageIdentifier
+            leverage_points=[],  # Will be populated by LeverageIdentifier
+            # PURE ARCHITECTURE: Pass Call 1 context to guide Call 2 value selection
+            targets=tier1_values.get('targets', []),
+            query_pattern=tier1_values.get('query_pattern', '')
         )
 
     def _get_value(self, values: Dict[str, Any], *keys, default: float = 0.5) -> float:

@@ -3,10 +3,47 @@ Reality Transformer Backend
 FastAPI server with OpenAI Responses API integration, web research, and SSE streaming
 Uses gpt-5.2 model exclusively
 
+================================================================================
+ARCHITECTURE PRINCIPLE: PURE SEPARATION OF CONCERNS
+================================================================================
+
+Backend (InferenceEngine):
+- Calculates ALL formulas (~2,350 formulas)
+- Returns ALL non-null values (~1,500-2,500 values)
+- ZERO intelligence about context/relevance
+- Pure mathematics only
+
+LLM Call 1 (parse_query_with_web_research):
+- Analyzes user query
+- Extracts 25 base operators
+- Identifies targets (what values matter for this query)
+- Determines query pattern
+- Generates search guidance
+
+LLM Call 2 (articulation):
+- Receives ALL calculated values (~2,000+ values)
+- Uses context from Call 1 (targets, query_pattern, search_guidance)
+- SELECTS which values to articulate based on query relevance
+- Grounds in evidence via web search
+- Synthesizes breakthrough insights
+
+Token Impact:
+- Sending ~2,000 values = ~8-10K tokens for values
+- But these are STRUCTURED data (JSON), compresses well
+- LLM has FULL picture to make intelligent selections
+- No arbitrary filtering by backend heuristics
+
+This is the CORRECT architecture:
+- Backend = Math calculator (no intelligence)
+- LLM = Intelligent interpreter (has context)
+
+================================================================================
+
 Articulation Bridge Integration:
-- Organizes 450+ backend values into semantic categories
+- Organizes 2,000+ backend values into semantic categories
 - Detects bottlenecks and leverage points algorithmically
 - Builds structured articulation prompts for natural language generation
+- Passes Call 1 context (targets, query_pattern) to guide Call 2 value selection
 
 Reverse Causality Mapping Integration:
 - Works backward from desired future state to required consciousness configuration
@@ -369,6 +406,13 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
             user_id="",
             session_id=""
         )
+
+        # PURE ARCHITECTURE: Log that ALL values are being sent to LLM
+        posteriors_values = posteriors.get('values', posteriors)
+        total_values = len([v for v in posteriors_values.values() if v is not None]) if isinstance(posteriors_values, dict) else 0
+        api_logger.info(f"[PURE ARCHITECTURE] Sending ALL {total_values} non-null values to LLM Call 2")
+        api_logger.info(f"[PURE ARCHITECTURE] Context provided: targets={len(evidence.get('targets', []))}, query_pattern={evidence.get('query_pattern', 'unknown')}")
+
         articulation_logger.info(f"[VALUE ORGANIZER] S-Level: {consciousness_state.tier1.s_level.current:.1f} ({consciousness_state.tier1.s_level.label})")
         articulation_logger.debug(f"[VALUE ORGANIZER] Tier1 operators: {len(vars(consciousness_state.tier1))} fields")
 

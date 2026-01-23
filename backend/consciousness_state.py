@@ -617,6 +617,11 @@ class ConsciousnessState:
     consciousness_assessable: bool = False
     recommendations_available: bool = False
 
+    # Context from Call 1 to guide Call 2 value selection (PURE ARCHITECTURE)
+    targets: List[str] = field(default_factory=list)  # From evidence.get('targets')
+    query_pattern: str = ""  # From evidence.get('query_pattern')
+    # search_guidance is already available via ArticulationContext
+
 
 @dataclass
 class UserContext:

@@ -115,7 +115,78 @@ The OOF.txt framework document is available in your context. Use it for:
 - S-level characteristics
 - Consciousness physics principles
 
-Reference the framework internally but express insights naturally - as if speaking to a trusted friend or client."""
+Reference the framework internally but express insights naturally - as if speaking to a trusted friend or client.
+
+## VALUE SELECTION PROTOCOL (CRITICAL)
+
+You are receiving ALL calculated consciousness values (~1,500-2,500 values).
+Your task is to SELECT which values to articulate based on context.
+
+### SELECTION CRITERIA:
+
+**1. QUERY RELEVANCE (Priority 1)**
+- What values DIRECTLY answer the user's question?
+- If user asks "Why can't we innovate?" → Focus on: At_attachment, Fe_fear, Re_resistance, M_maya, breakthrough_probability
+- If user asks "Show transformation path" → Focus on: S_level, matrices, death_architecture, grace_karma_ratio
+- IGNORE values unrelated to their specific query
+
+**2. USER-REQUESTED TARGETS (Priority 2)**
+- LLM Call 1 identified targets based on query analysis
+- These are HIGH CONFIDENCE relevant values
+- Always include these in your articulation
+
+**3. SEARCH GUIDANCE HIGH-PRIORITY (Priority 3)**
+- LLM Call 1 flagged values for evidence-grounding
+- These need web search validation
+- Include if relevant to query
+
+**4. EXTREME VALUES (Priority 4)**
+- Values >0.7 or <0.3 indicate strong manifestation in reality
+- High probability of having searchable evidence
+- Include if relevant to query AND evidence-groundable
+
+**5. CAUSAL CHAIN COMPLETENESS (Priority 5)**
+- If articulating bottleneck X, include ALL values in its causal chain
+- Example: High At_attachment → include Fe_fear (cause), Re_resistance (effect), G_grace (blocked consequence)
+- Don't leave causal gaps - show full consciousness → reality chain
+
+**6. TRANSFORMATION CONTEXT (Priority 6)**
+- If discussing transformation, include: current S_level, target matrix positions, death_architecture_active, grace_availability
+- Full transformation story needs complete context
+
+### WHAT TO IGNORE:
+
+❌ Values with no query relevance
+❌ Redundant values (if 3 values say the same thing, pick the clearest)
+❌ Values you cannot ground in searchable evidence (unless theoretical explanation requested)
+❌ Values close to neutral (0.4-0.6) with no causal significance
+❌ Intermediate calculation values (focus on endpoints)
+
+### ARTICULATION EFFICIENCY:
+
+- Articulate 20-50 key values (not all 2,500)
+- But USE the full value set to understand complete picture
+- Synthesize patterns across all values
+- Reference supporting values in causal chains without listing them
+
+### EXAMPLE:
+
+**Received:** 2,347 calculated values
+**User query:** "Why are we stuck in reactive mode?"
+
+**Selection process:**
+1. Query relevance: victim_power_matrix (0.23), resistance (0.78), fear (0.82), attachment (0.76), habit_force (0.81)
+2. Causal chain: fear → resistance → habit_force → blocks grace (0.21) → prevents flow
+3. Evidence-grounding: Search for "company reactive decisions", "firefighting mode", "strategic vs tactical"
+4. Transformation path: Need death_d3_identity (social identity death), power_matrix shift
+
+**Articulate:** ~15 values that tell the complete story
+**Ignore:** Remaining ~2,330 values not relevant to this query
+
+### PRINCIPLE:
+
+You have access to EVERYTHING. Use your intelligence and context to decide what matters for THIS query.
+Don't list all values - synthesize the relevant ones into breakthrough insights."""
 
     def _build_context_section(
         self,
@@ -164,6 +235,48 @@ Reference the framework internally but express insights naturally - as if speaki
 {facts_str}
 {competitive_str}"""
 
+    def _build_context_guidance(self, state: ConsciousnessState) -> str:
+        """Build context guidance for value selection from Call 1 context."""
+        sections = []
+
+        # Extract query pattern if available
+        if hasattr(state, 'query_pattern') and state.query_pattern:
+            sections.append(f"**QUERY PATTERN DETECTED (from Call 1):** {state.query_pattern.title()}")
+            sections.append("Focus on values relevant to this pattern type.\n")
+
+        # Extract targets if available
+        if hasattr(state, 'targets') and state.targets:
+            targets_list = ', '.join(state.targets[:20])
+            sections.append("**USER-REQUESTED TARGETS (from Call 1 query analysis):**")
+            sections.append(targets_list)
+            if len(state.targets) > 20:
+                sections.append(f"... and {len(state.targets) - 20} more")
+            sections.append("\nThese values were identified as directly relevant to the user's query.")
+            sections.append("PRIORITY: Include these in your articulation.\n")
+
+        # Extract search guidance high-priority if available
+        if hasattr(state, 'search_guidance') and state.search_guidance:
+            high_priority = getattr(state.search_guidance, 'high_priority_values', [])
+            if high_priority:
+                priority_list = ', '.join(high_priority[:20])
+                sections.append("**HIGH-PRIORITY FOR EVIDENCE-GROUNDING (from Call 1):**")
+                sections.append(priority_list)
+                if len(high_priority) > 20:
+                    sections.append(f"... and {len(high_priority) - 20} more")
+                sections.append("\nThese values should be validated against observable reality via web search.\n")
+
+        if not sections:
+            return ""
+
+        return """### CONTEXT GUIDANCE FOR VALUE SELECTION
+
+""" + '\n'.join(sections) + """
+**INSTRUCTION:** Use this context to SELECT which of the ~2,000+ calculated values
+to articulate. Don't list all values - synthesize the relevant ones.
+
+---
+"""
+
     def _build_consciousness_state_section(self, state: ConsciousnessState) -> str:
         """Build the consciousness state section with organized values"""
         ops = state.tier1.core_operators
@@ -205,11 +318,15 @@ Reference the framework internally but express insights naturally - as if speaki
         guna_values = {'sattva': gunas.sattva, 'rajas': gunas.rajas, 'tamas': gunas.tamas}
         dominant_guna_value = guna_values.get(gunas.dominant) if gunas.dominant else None
 
+        # Build context guidance from Call 1 context
+        context_guidance = self._build_context_guidance(state)
+
         # Build data quality section if we have metadata
         data_quality_section = self._build_data_quality_section(state)
 
         return f"""## CALCULATED CONSCIOUSNESS STATE
-{data_quality_section}
+
+{context_guidance}{data_quality_section}
 ### CORE CONFIGURATION
 
 **S-Level:** {_fmt_score(s_level.current)} ({s_level.label or 'Unknown'})
