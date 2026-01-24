@@ -1923,6 +1923,8 @@ SECTION 5: FIRST STEPS
                     # Anthropic Claude streaming API with prompt caching
                     # Build system prompt with cache_control for the static framework
                     # LLM_CALL2_CONTEXT (OOF Mathematical Semantics) is static - perfect for caching
+                    # Static content MUST be truly static (no variables that change per request)
+                    # This enables Anthropic prompt caching to work properly
                     static_system_content = f"""You are Reality Transformer, a consciousness-based transformation engine.
 
 CRITICAL - READ FIRST:
@@ -1934,8 +1936,6 @@ CRITICAL - READ FIRST:
 
 You are receiving a STRUCTURED ANALYSIS from the One Origin Framework (OOF).
 Your task is to ARTICULATE these insights in NATURAL, DOMAIN-APPROPRIATE language.
-
-=== RESPONSE MODE: {response_mode} ===
 
 === OOF FRAMEWORK KNOWLEDGE ===
 {LLM_CALL2_CONTEXT}
@@ -2018,6 +2018,8 @@ HIGH BREAKTHROUGH PROBABILITY (0.70+):
                     section4_title = "SECTION 4: TRANSFORMATION PATH" if reverse_mapping else "SECTION 4: DIRECTION"
 
                     dynamic_system_content = f"""
+=== RESPONSE MODE: {response_mode} ===
+
 {operator_interpretation_section}
 
 === CRITICAL ARTICULATION RULES ===
