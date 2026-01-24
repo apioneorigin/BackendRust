@@ -3082,3 +3082,1256 @@ in Section 9.2 above.
 Last Updated: January 24, 2026
 Verified Against: BackendRust-main/backend/formulas/* (complete codebase)
 Status: PRODUCTION READY
+
+
+================================================================================
+OOF NOMENCLATURE - ADDENDUM v2.1
+Unity Principle, Dual Pathways & Tier Architecture
+Date: January 24, 2026
+Updated: January 24, 2026 (Backend bug reports added)
+================================================================================
+
+CRITICAL ADDITIONS TO APPEND TO OOF_Nomenclature.txt
+
+This addendum adds THREE major missing sections that are implemented in the 
+latest backend but not documented in OOF_Nomenclature.txt:
+
+1. Unity Principle Metrics (Jeevatma-Paramatma analysis)
+2. Dual Pathway Calculator (Separation vs Unity pathways to goals)
+3. Tier Architecture (Tier1-Tier6 value organization system)
+
+Plus critical operator naming clarifications for Ce and Se.
+
+================================================================================
+SECTION 0: CORRECTIONS NEEDED IN ORIGINAL DOCUMENT
+================================================================================
+
+⚠️ CRITICAL: The following line in the original OOF_Nomenclature.txt must be updated:
+
+ORIGINAL LINE (INCORRECT):
+  Line ~76: Se                  Seeking, external validation dependency
+
+MUST BE CHANGED TO:
+  Line ~76: Se_service          Service orientation, seva coefficient
+
+This correction is documented in Section 1.1 below, but the original document
+line also needs updating for consistency with actual backend implementation.
+
+================================================================================
+SECTION 1: OPERATOR NAMING CORRECTIONS
+================================================================================
+
+1.1 Se OPERATOR - CRITICAL CORRECTION
+==================================================
+DOCUMENT CURRENTLY SAYS:
+  Se = Seeking, external validation dependency
+
+BACKEND ACTUALLY USES:
+  Se_service = Service orientation, seva coefficient
+
+CORRECTION:
+  Se is NOT "seeking" - it's SERVICE/SEVA
+  
+USAGE IN BACKEND:
+  - operators.py line 305: "Se_service": OperatorDefinition(...)
+  - unity_principle.py line 60: 'Se_service': +1.0  (toward unity)
+  - value_organizer.py line 97: Se_service=self._get_value(obs_dict, 'Se', 'Seva', 'Service')
+
+FORMULA IMPACT:
+  Se increases unity (not separation)
+  Se = Selflessness × Service_action × Non_attachment
+  Maya_effective = Maya × (1 - Se)
+  
+UNITY DIRECTION:
+  Se_service: +1.0 (moves TOWARD unity)
+  Se amplifies unity, not separation
+
+UPDATE NOMENCLATURE:
+  OLD: Se = Seeking, external validation dependency
+  NEW: Se_service = Service orientation, selfless action coefficient
+
+1.2 Ce OPERATOR - DUAL FORM CLARIFICATION
+==================================================
+ALREADY DOCUMENTED IN ADDENDUM v1.0 BUT WORTH REPEATING:
+
+BOTH FORMS ARE CORRECT AND INTENTIONAL:
+  Ce_celebration = Cleanliness/purity as STATE in cascade layers
+  Ce_cleaning = Active cleaning OPERATION coefficient
+
+UNITY DIRECTION:
+  Ce_celebration: +1.0 (toward unity)
+
+DO NOT consolidate - they serve different purposes.
+
+================================================================================
+SECTION 2: UNITY PRINCIPLE METRICS (NEW SECTION)
+================================================================================
+
+CRITICAL: This entire section was MISSING from original nomenclature but is
+core to the backend's Jeevatma-Paramatma consciousness analysis.
+
+Source: backend/formulas/unity_principle.py
+
+2.1 UNITY SEPARATION METRICS DATACLASS
+==================================================
+@dataclass class UnitySeparationMetrics contains:
+
+separation_distance           Optional[Float]    d(S) = d_initial × e^(-k×S)
+distortion_field             Optional[Float]    Delta(d) = 1 - e^(-d/d0)
+percolation_quality          Optional[Float]    (1-Delta) × (W×A×P) × (1-M)
+unity_realization_percent    Optional[Float]    100 × (1 - d(S))
+unity_vector                 Optional[Float]    -1.0 to +1.0 net direction
+dharmic_karma_net            Optional[Float]    Dharmic - Adharmic karma
+grace_multiplier             Optional[Float]    Unity-based grace amplification
+confidence                   Float 0.0-1.0      Based on available operators
+missing_operators            List[String]       Which operators were None
+operator_contributions       Dict[str, float]   Individual operator → unity contributions
+
+ZERO-FALLBACK PRINCIPLE:
+  All metrics return None if required operators missing
+  Frontend must handle None gracefully
+  Calculations only proceed with complete operator sets
+
+2.2 SEPARATION DISTANCE CALCULATION
+==================================================
+VARIABLE: separation_distance
+TYPE: Optional[Float]
+RANGE: 0.0 to 1.0 (1.0 = maximum separation, 0.0 = complete unity)
+FORMULA: d(S) = d_initial × e^(-k×S)
+
+PARAMETERS:
+  S = S-level (1.0 to 8.0)
+  d_initial = 0.92 (default, separation at S0)
+  k = 0.45 (default decay constant)
+
+MEANING:
+  Jeevatma-Paramatma distance as function of consciousness level
+  Higher S-level → exponentially lower separation
+  
+EXAMPLE VALUES:
+  S1: d = 0.92 × e^(-0.45×1) = 0.586 (high separation)
+  S4: d = 0.92 × e^(-0.45×4) = 0.152 (moderate separation)
+  S8: d = 0.92 × e^(-0.45×8) = 0.025 (near unity)
+
+BACKEND FUNCTION:
+  calculate_separation_distance(s_level, d_initial=0.92, k=0.45)
+  Location: unity_principle.py lines 158-183
+  Returns: Optional[float] or None if s_level is None
+
+2.3 DISTORTION FIELD CALCULATION
+==================================================
+VARIABLE: distortion_field
+TYPE: Optional[Float]
+RANGE: 0.0 to 1.0 (0.0 = no distortion, 1.0 = maximum distortion)
+FORMULA: Delta(d) = 1 - e^(-d/d0)
+
+PARAMETERS:
+  d = separation_distance (from above)
+  d0 = 0.35 (default characteristic distance)
+
+MEANING:
+  How much Paramatma signal is distorted/filtered as it percolates
+  through Jeevatma consciousness configuration
+  Represents Maya's veiling/distorting power
+  Higher separation → higher distortion
+
+BACKEND FUNCTION:
+  calculate_distortion_field(separation, d_zero=0.35)
+  Location: unity_principle.py lines 186-208
+  Returns: Optional[float] or None if separation is None
+
+2.4 PERCOLATION QUALITY CALCULATION
+==================================================
+VARIABLE: percolation_quality
+TYPE: Optional[Float]
+RANGE: 0.0 to 1.0
+FORMULA: Percolation = (1 - Delta) × (W × A × P) × (1 - M)
+
+REQUIRED OPERATORS:
+  W_witness = Witness capacity
+  A_aware = Awareness level
+  P_presence = Presence (NOT P_prana)
+  M_maya = Maya/illusion strength
+  Delta = distortion_field (from above)
+
+MEANING:
+  How clearly Paramatma wisdom flows through Jeevatma
+  Combination of:
+    - Reduced distortion: (1 - Delta)
+    - Witnessing triad clarity: (W × A × P)
+    - Maya reduction: (1 - M)
+
+INTERPRETATION RANGES:
+  0.0-0.3: Heavily filtered, wisdom garbled by conditioning
+  0.4-0.6: Partial clarity, some signal, some noise
+  0.7-0.9: High clarity, mostly clean channel
+  0.9-1.0: Crystal clarity, pure knowing
+
+BACKEND FUNCTION:
+  calculate_percolation_quality(operators, distortion)
+  Location: unity_principle.py lines 211-253
+  Returns: Tuple of (quality or None, list of missing operators)
+
+ZERO-FALLBACK:
+  If ANY required operator is None → returns None
+  If distortion is None → returns None
+
+2.5 UNITY VECTOR CALCULATION
+==================================================
+VARIABLE: unity_vector
+TYPE: Optional[Float]
+RANGE: -1.0 to +1.0
+  Positive: Moving toward unity
+  Negative: Moving toward separation
+  Zero: Oscillating or balanced
+
+FORMULA: unity_vector = sum(operator_value × unity_direction × impact_weight) / sum(weights)
+
+ALGORITHM:
+  1. For each operator with value:
+     contribution = value × UNITY_DIRECTION[op] × UNITY_IMPACT_WEIGHTS[op]
+  2. total_weighted = sum(all contributions)
+  3. total_weight = sum(all impact weights)
+  4. unity_vector = total_weighted / total_weight
+  5. Clamp to [-1.0, 1.0]
+
+BACKEND FUNCTION:
+  calculate_unity_vector(operators)
+  Location: unity_principle.py lines 256-300
+  Returns: Tuple of (unity_vector or None, operator_contributions dict)
+
+REQUIRES:
+  At least one operator with non-None value
+  Uses UNITY_DIRECTION and UNITY_IMPACT_WEIGHTS constants
+
+2.6 UNITY DIRECTION COEFFICIENTS (COMPLETE MAP)
+==================================================
+Every operator has a unity direction coefficient defining whether it
+amplifies unity (+1.0) or separation (-1.0).
+
+TOWARD UNITY (+1.0):
+  W_witness: +1.0              Pure witnessing increases unity
+  A_aware: +1.0                Awareness increases unity
+  P_presence: +1.0             Presence increases unity
+  G_grace: +1.0                Grace increases unity
+  S_surrender: +1.0            Surrender increases unity
+  E_equanimity: +1.0           Emotional balance increases unity
+  V_void: +1.0                 Void/emptiness increases unity
+  Ce_celebration: +1.0         Cleanliness increases unity
+  Se_service: +1.0             Service increases unity
+  L_love: +1.0                 Love increases unity
+  O_openness: +1.0             Openness increases unity
+  Tr_trust: +1.0               Trust increases unity
+  J_joy: +1.0                  Joy increases unity
+  Co_coherence: +1.0           Coherence increases unity
+  D_dharma: +1.0               Dharma increases unity
+  Sh_shakti: +0.8              Shakti generally toward unity
+
+TOWARD SEPARATION (-1.0):
+  At_attachment: -1.0          Attachment increases separation
+  F_fear: -1.0                 Fear increases separation
+  R_resistance: -1.0           Resistance increases separation
+  M_maya: -1.0                 Maya/illusion increases separation
+  Av_aversion: -1.0            Aversion increases separation
+  Su_suffering: -1.0           Suffering increases separation
+
+CONTEXT-DEPENDENT (0.0 or mixed):
+  K_karma: 0.0                 Dharmic (+) vs Adharmic (-)
+  Hf_habit: -0.5               Usually separation
+  I_intention: 0.0             Depends on purity
+  Psi_quality: +0.5            Generally toward unity but contextual
+
+SOURCE: unity_principle.py lines 50-82
+
+2.7 UNITY IMPACT WEIGHTS (COMPLETE MAP)
+==================================================
+Each operator has an impact weight representing how much it affects
+unity vector calculation (0.0 to 1.0).
+
+HIGHEST IMPACT (0.85-0.95):
+  G_grace: 0.95                Most powerful unity amplifier
+  S_surrender: 0.90            Extremely high impact
+  W_witness: 0.90              Critical for unity
+  At_attachment: 0.85          Strong separation amplifier
+  M_maya: 0.85                 Strong separation amplifier
+  A_aware: 0.85                Critical awareness component
+
+HIGH IMPACT (0.70-0.80):
+  F_fear: 0.80                 Strong separator
+  P_presence: 0.75             Core presence component
+  E_equanimity: 0.75           Emotional stability critical
+  V_void: 0.75                 Emptiness access
+  R_resistance: 0.75           Resistance blocks flow
+  L_love: 0.75                 Love opens unity
+  Tr_trust: 0.70               Trust enables surrender
+  O_openness: 0.70             Receptivity critical
+
+MODERATE IMPACT (0.55-0.65):
+  Co_coherence: 0.65           System coherence
+  Ce_celebration: 0.60         Cleanliness effect
+  Se_service: 0.60             Service orientation
+  J_joy: 0.60                  Joy indicator
+  D_dharma: 0.60               Righteous action
+  Av_aversion: 0.60            Aversion pushes away
+  Sh_shakti: 0.55              Energy/power
+  I_intention: 0.55            Intention quality
+  Su_suffering: 0.55           Suffering separator
+
+LOWER IMPACT (0.40-0.50):
+  K_karma: 0.50                Karmic influence
+  Psi_quality: 0.50            Consciousness quality
+  Hf_habit: 0.45               Habitual patterns
+
+SOURCE: unity_principle.py lines 85-119
+
+2.8 SEPARATION/UNITY AMPLIFYING OPERATORS
+==================================================
+SEPARATION AMPLIFYING OPERATORS (used by bottleneck_detector):
+  At_attachment: 0.90          Strongest separator
+  F_fear: 0.85                 Very strong separator
+  R_resistance: 0.80           Strong blocker
+  M_maya: 0.80                 Illusion amplifier
+  Av_aversion: 0.75            Pushes away
+  Su_suffering: 0.70           Suffering increases gap
+  Hf_habit: 0.50               Habits maintain separation
+  K_karma: 0.40                Only when adharmic
+
+UNITY AMPLIFYING OPERATORS (used by leverage_identifier):
+  G_grace: 0.95                Strongest unity amplifier
+  S_surrender: 0.90            Powerful unity catalyst
+  W_witness: 0.85              Essential witness
+  A_aware: 0.80                Awareness foundation
+  P_presence: 0.75             Presence grounds unity
+  E_equanimity: 0.75           Emotional balance
+  V_void: 0.75                 Emptiness access
+  L_love: 0.75                 Love unifies
+  O_openness: 0.70             Opens to unity
+  Tr_trust: 0.70               Trust enables
+  Co_coherence: 0.70           System coherence
+  Se_service: 0.65             Service bridges
+  Ce_celebration: 0.60         Cleanliness allows
+  J_joy: 0.60                  Joy indicator
+
+SOURCE: unity_principle.py lines 122-151
+
+2.9 ADDITIONAL UNITY METRICS
+==================================================
+unity_realization_percent
+  TYPE: Optional[Float]
+  RANGE: 0.0 to 100.0
+  FORMULA: 100 × (1 - separation_distance)
+  MEANING: Percentage of unity realized at current S-level
+
+dharmic_karma_net
+  TYPE: Optional[Float]
+  RANGE: -1.0 to +1.0
+  FORMULA: Dharmic_karma - Adharmic_karma
+  MEANING: Net karmic direction (+ = dharmic, - = adharmic)
+
+grace_multiplier
+  TYPE: Optional[Float]
+  RANGE: 1.0 to ∞
+  FORMULA: Based on unity alignment and surrender
+  MEANING: How much grace amplifies actions/results
+
+confidence
+  TYPE: Float
+  RANGE: 0.0 to 1.0
+  FORMULA: (operators_with_values / total_possible_operators)
+  MEANING: Confidence in unity metrics based on data completeness
+
+================================================================================
+SECTION 3: DUAL PATHWAY CALCULATOR (NEW SECTION)
+================================================================================
+
+CRITICAL: This entire section was MISSING from original nomenclature but is
+core to understanding separation vs unity approaches to goal achievement.
+
+Source: backend/formulas/dual_pathway_calculator.py
+
+3.1 CORE PRINCIPLE
+==================================================
+Every goal has TWO distinct pathways to achievement:
+
+SEPARATION-BASED PATHWAY:
+  Characteristics: Control, force, fear-driven, attachment, effortful
+  Initial Success: Higher short-term (can force outcomes)
+  Sustainability: Low - decays like S(t) = S0 × (1 - 0.05)^t
+  Fulfillment: Low - empty achievement
+  Cost: High energetic drain, creates future problems
+  Amplification: Increases separation, compounds difficulties
+
+UNITY-BASED PATHWAY:
+  Characteristics: Surrender, clarity, authentic action, flow, allowing
+  Initial Success: Moderate (requires trust, not force)
+  Sustainability: High - compounds like U(t) = U0 × e^(0.03×t)
+  Fulfillment: High - deep satisfaction, lasting peace
+  Cost: Low energetic requirement, creates future alignment
+  Amplification: Decreases separation, compounds grace
+
+3.2 PATHWAY METRICS DATACLASS
+==================================================
+@dataclass class PathwayMetrics (applies to BOTH pathways):
+
+initial_success_probability   Float 0.0-1.0     Immediate achievement likelihood
+sustainability_probability    Float 0.0-1.0     Long-term sustainability
+fulfillment_quality          Float 0.0-1.0     Satisfaction/peace quality
+energetic_cost               Float 0.0-1.0     Energy required (0=low, 1=high)
+time_cost_months            Float             Time to achieve (months)
+separation_amplification    Float             How much separation increases
+unity_alignment             Float -1.0 to +1.0 Unity direction
+total_weighted_success      Float             Composite success score
+
+⚠️ BACKEND BUG ALERT - FIELD MISMATCH:
+==================================================
+The value_organizer.py (lines 525-541) attempts to populate PathwayMetrics with 
+INCORRECT field names that don't exist in the dataclass definition:
+
+value_organizer.py INCORRECTLY uses:
+  - decay_rate (doesn't exist in PathwayMetrics)
+  - compound_rate (doesn't exist in PathwayMetrics)
+  - effort_required (doesn't exist in PathwayMetrics)
+  - grace_utilization (doesn't exist in PathwayMetrics)
+
+consciousness_state.py ACTUAL fields:
+  - energetic_cost (correct field)
+  - separation_amplification (correct field)
+  - unity_alignment (correct field)
+  - total_weighted_success (correct field)
+
+BACKEND CODE FIX REQUIRED:
+Update value_organizer.py lines 525-541 to use the correct field names from
+the PathwayMetrics dataclass definition in consciousness_state.py.
+
+CURRENT STATUS:
+This mismatch means PathwayMetrics objects created by value_organizer.py will
+fail at runtime due to unexpected keyword arguments. The backend code needs
+fixing before dual pathway functionality will work correctly.
+
+3.3 DUAL PATHWAY DATACLASS
+==================================================
+@dataclass class DualPathway:
+
+separation_based             PathwayMetrics    Separation pathway metrics
+unity_based                 PathwayMetrics    Unity pathway metrics
+recommended                 String            'unity'|'separation'|'intermediate'
+recommendation_reasoning    String            Why this recommendation
+projection_months           List[Tuple]       (month, sep_success, unity_success)
+crossover_month             Optional[Int]     When unity overtakes separation
+
+3.4 SEPARATION PATHWAY FORMULAS
+==================================================
+Source: dual_pathway_calculator.py lines 61-111
+
+REQUIRED OPERATORS:
+  At = At_attachment
+  F = F_fear
+  R = R_resistance
+  M = M_maya
+  S = S_surrender
+  W = W_witness
+
+SEPARATION PATHWAY CALCULATIONS:
+  initial_prob = 0.3 + (At × 0.35) + (F × 0.25)
+    Range: 0.3 to 0.9
+    Higher attachment/fear → higher initial success (forcing works short-term)
+
+  sustainability = 0.25 + (1.0 - At) × 0.25 + (1.0 - F) × 0.15
+    Range: 0.1 to 0.55
+    Higher attachment → lower sustainability (decay)
+
+  fulfillment = 0.2 + (1.0 - F) × 0.25 + (W × 0.1)
+    Range: 0.1 to 0.55
+    Fear-driven success feels empty
+
+  energetic_cost = 0.6 + (At × 0.25) + (R × 0.15)
+    Range: 0.6 to 1.0
+    Forcing requires high energy expenditure
+
+  time_cost = 6.0 + (At × 6.0)
+    Range: 6 to 12 months
+    High attachment → takes longer
+
+  separation_amplification = 0.3 + (At × 0.4) + (F × 0.3)
+    Range: 0.3 to 1.0
+    This pathway INCREASES separation
+
+  unity_alignment = -0.5 - (At × 0.3) - (F × 0.2)
+    Range: -1.0 to -0.5
+    Negative = moves away from unity
+
+TEMPORAL DECAY:
+  success(t) = initial_prob × (1 - 0.05)^t
+  Success decays ~5% per month due to unsustainability
+
+3.5 UNITY PATHWAY FORMULAS
+==================================================
+Source: dual_pathway_calculator.py lines 115-162
+
+REQUIRED OPERATORS:
+  S = S_surrender
+  W = W_witness
+  A = A_aware
+  P = P_presence
+  G = G_grace
+
+UNITY PATHWAY CALCULATIONS:
+  initial_prob = 0.4 + (S × 0.3) + (W × 0.2)
+    Range: 0.4 to 0.9
+    Moderate initial (requires trust)
+
+  sustainability = 0.6 + (S × 0.25) + (W × 0.15)
+    Range: 0.6 to 1.0
+    High sustainability (compounds over time)
+
+  fulfillment = 0.6 + (S × 0.25) + (W × 0.15)
+    Range: 0.6 to 1.0
+    Deep fulfillment from aligned action
+
+  energetic_cost = 0.3 - (S × 0.15) - (W × 0.1)
+    Range: 0.05 to 0.3
+    Effortless when aligned
+
+  time_cost = 8.0 - (S × 4.0) - (W × 2.0)
+    Range: 2 to 8 months
+    Higher surrender → faster manifestation
+
+  separation_amplification = 0.1 - (S × 0.05) - (W × 0.05)
+    Range: 0.0 to 0.1
+    This pathway DECREASES separation
+
+  unity_alignment = 0.6 + (S × 0.25) + (W × 0.15)
+    Range: 0.6 to 1.0
+    Positive = moves toward unity
+
+TEMPORAL GROWTH:
+  success(t) = initial_prob × e^(0.03×t)
+  Success compounds ~3% per month exponentially
+
+3.6 CROSSOVER MONTH CALCULATION
+==================================================
+VARIABLE: crossover_month
+TYPE: Optional[Int]
+RANGE: 0 to 24 (months) or None
+
+MEANING: The month when unity pathway success overtakes separation pathway
+
+ALGORITHM:
+  1. Project both pathways forward 24 months
+  2. For separation: success(t) = initial × (1 - 0.05)^t (decay)
+  3. For unity: success(t) = initial × e^(0.03×t) (growth)
+  4. Find first month where unity > separation
+  5. If never crosses over, return None
+
+INTERPRETATION:
+  None: Unity never overtakes (separation much stronger initially)
+  Month 0-6: Very strong unity configuration, overtakes quickly
+  Month 7-12: Moderate unity, overtakes mid-term
+  Month 13-24: Weak unity, takes time to compound
+
+SOURCE: dual_pathway_calculator.py lines 219-235
+
+3.7 PATHWAY RECOMMENDATION LOGIC
+==================================================
+RECOMMENDED: String = 'unity' | 'separation' | 'intermediate'
+
+DECISION ALGORITHM:
+  1. Calculate weighted success scores for both pathways
+  2. Unity weighted = sustainability × fulfillment × (1/energetic_cost)
+  3. Separation weighted = initial_prob only (short-term)
+  4. Compare total_weighted_success
+
+RECOMMENDATION RULES:
+  IF unity_weighted > separation_weighted × 1.2:
+    recommended = 'unity'
+    reasoning = "Higher long-term success, sustainability, and fulfillment"
+  
+  ELSE IF separation_weighted > unity_weighted × 1.5:
+    recommended = 'separation'
+    reasoning = "Urgency requires immediate forcing despite cost"
+  
+  ELSE:
+    recommended = 'intermediate'
+    reasoning = "Combine initial force with gradual surrender transition"
+
+TYPICAL RECOMMENDATIONS:
+  S1-S3 + urgent goal → 'separation' (survival mode)
+  S4-S5 + moderate urgency → 'intermediate' (transition)
+  S6-S8 + aligned goal → 'unity' (dharmic path)
+
+3.8 GOAL CONTEXT INTEGRATION
+==================================================
+@dataclass class GoalContext:
+  goal_category: String        'achievement'|'relationship'|'peace'|'transformation'
+  goal_description: String     User's stated goal
+  urgency_level: String        'low'|'moderate'|'high'|'critical'
+  current_resources: Float     Available resources 0.0-1.0
+  external_support: Float      Support system strength 0.0-1.0
+
+CATEGORY ADJUSTMENTS:
+  'achievement': Favor separation pathway if urgent
+  'relationship': Always favor unity pathway
+  'peace': Strongly favor unity pathway
+  'transformation': Unity pathway required (separation blocks)
+
+URGENCY MODIFIERS:
+  'critical': +30% to separation initial_prob
+  'high': +20% to separation initial_prob
+  'moderate': No modifier
+  'low': +20% to unity sustainability
+
+3.9 PROJECTION VISUALIZATION DATA
+==================================================
+VARIABLE: projection_months
+TYPE: List[Tuple[int, float, float]]
+FORMAT: [(month, sep_success, unity_success), ...]
+
+EXAMPLE:
+  [
+    (0, 0.75, 0.55),   # Month 0: Sep 75%, Unity 55%
+    (1, 0.71, 0.57),   # Month 1: Sep decaying, Unity growing
+    (2, 0.68, 0.58),
+    ...
+    (12, 0.42, 0.78),  # Month 12: Unity overtook separation
+    ...
+    (24, 0.22, 1.05)   # Month 24: Unity dominant
+  ]
+
+USAGE:
+  Frontend can plot this to show crossover visually
+  Helps user understand long-term vs short-term tradeoffs
+
+================================================================================
+SECTION 4: TIER ARCHITECTURE (NEW SECTION)
+================================================================================
+
+CRITICAL: The backend organizes all 450+ variables into a Tier1-Tier6
+architecture that was completely missing from original nomenclature.
+
+Source: backend/consciousness_state.py, backend/value_organizer.py
+
+4.1 TIER ARCHITECTURE OVERVIEW
+==================================================
+The backend transforms flat calculations into semantic hierarchy:
+
+TIER 1: Extracted by LLM Call 1 (Core Foundation)
+  - Core operators (25 operators)
+  - S-level
+  - Five sacred drives
+
+TIER 2: Simple derivations (Direct calculations from Tier 1)
+  - Distortions (kleshas)
+  - Chakras
+  - UCB components
+  - Gunas
+  - Cascade cleanliness
+  - Emotions
+  - Koshas
+  - Circles quality
+  - Five acts
+  - Drives internalization
+
+TIER 3: Complex combinations (Multi-operator formulas)
+  - Coherence metrics
+  - Transformation matrices
+  - Pattern detection
+  - Death architecture
+  - Pathways (witnessing/creating/embodying)
+
+TIER 4: Network & dynamics (Time-dependent, network effects)
+  - Pipeline flow
+  - Breakthrough dynamics
+  - Karma dynamics
+  - Grace mechanics
+  - Network effects
+  - POMDP gaps
+  - Morphogenetic fields
+
+TIER 5: Predictions & advanced (Future projections)
+  - Timeline predictions
+  - Transformation vectors
+  - Quantum mechanics
+  - Frequency analysis
+
+TIER 6: Quantum fields (Background quantum field calculations)
+  - Field charge density
+  - Field current density
+  - Consciousness curvature
+
+PURE ARCHITECTURE PRINCIPLE:
+  Backend calculates ALL tiers from base operators
+  No hardcoded business logic in application code
+  100% intelligence in Claude API calls only
+
+4.2 TIER 1 STRUCTURE (FOUNDATION)
+==================================================
+Source: consciousness_state.py lines 181-190
+
+@dataclass class Tier1:
+  core_operators: CoreOperators        25 base operators
+  s_level: SLevel                      Sacred Chain level S1-S8
+  drives: Drives                       Five sacred drives
+  data_quality: DataQualityMetadata    Completeness metrics
+
+EXTRACTED BY: LLM Call 1 (text analysis → operators)
+
+CORE OPERATORS (all Optional[Float] 0.0-1.0):
+  P_presence, A_aware, E_equanimity, Psi_quality,
+  M_maya, M_manifest, W_witness, I_intention,
+  At_attachment, Se_service, Sh_shakti, G_grace,
+  S_surrender, D_dharma, K_karma, Hf_habit,
+  V_void, T_time_past, T_time_present, T_time_future,
+  Ce_celebration, Co_coherence, R_resistance,
+  F_fear, J_joy, Tr_trust, O_openness
+
+S_LEVEL:
+  current: Float 1.0-8.0
+  label: String (S1: Survival, S2: Seeking, etc.)
+  transition_rate: Optional[Float] (dS/dt evolution rate)
+
+DRIVES:
+  love_strength: Optional[Float]
+  peace_strength: Optional[Float]
+  bliss_strength: Optional[Float]
+  satisfaction_strength: Optional[Float]
+  freedom_strength: Optional[Float]
+
+4.3 TIER 2 STRUCTURE (SIMPLE DERIVATIONS)
+==================================================
+Source: consciousness_state.py lines 368-389
+
+@dataclass class Tier2:
+  distortions: Distortions                 Klesha-based distortions
+  chakras: Chakras                         7 chakra activations
+  ucb_components: UCBComponents            UCB time-varying
+  gunas: Gunas                             3 gunas (sattva/rajas/tamas)
+  cascade_cleanliness: CascadeCleanliness  7 cascade layer cleanliness
+  emotions: Emotions                       Emotion derivation
+  koshas: Koshas                          5 kosha layers
+  circles_quality: CirclesQuality          5 circles quality
+  five_acts: FiveActs                     Panchakritya
+  drives_internalization: DrivesInternalization  Internal/external split
+
+METADATA:
+  calculations_attempted: Int
+  calculations_succeeded: Int
+  blocked_due_to_missing: List[String]
+
+DISTORTIONS (Kleshas):
+  avarana_shakti: Veiling power
+  vikshepa_shakti: Projection power
+  maya_vrittis: Illusion patterns
+  asmita: Ego-identification
+  raga: Attachment patterns
+  dvesha: Aversion patterns
+  abhinivesha: Fear of death
+  avidya_total: Root ignorance
+
+CHAKRAS (all Optional[Float] 0.0-1.0):
+  muladhara, svadhisthana, manipura, anahata,
+  vishuddha, ajna, sahasrara
+
+CASCADE CLEANLINESS (7 layers, all Optional[Float] 0.0-1.0):
+  ego_cleanliness, memory_cleanliness, intellect_cleanliness,
+  mind_cleanliness, breath_cleanliness, body_cleanliness, self_cleanliness
+
+4.4 TIER 3 STRUCTURE (COMPLEX COMBINATIONS)
+==================================================
+Source: consciousness_state.py lines 478-485
+
+@dataclass class Tier3:
+  coherence_metrics: CoherenceMetrics            Multi-dimensional coherence
+  transformation_matrices: TransformationMatrices 7 transformation matrices
+  pattern_detection: PatternDetection            Pattern scanning
+  death_architecture: DeathArchitecture          D1-D7 death processes
+  pathways: Pathways                             3 pathways (W/C/E)
+
+COHERENCE METRICS (all Float 0.0-1.0):
+  fundamental: Fundamental coherence
+  specification: Specification coherence
+  hierarchical: Hierarchical coherence
+  temporal: Temporal coherence
+  collective: Collective coherence
+  overall: Overall coherence
+
+TRANSFORMATION MATRICES (7 matrices):
+  truth_position/score: Truth matrix position
+  love_position/score: Love matrix position
+  power_position/score: Power matrix position
+  freedom_position/score: Freedom matrix position
+  creation_position/score: Creation matrix position
+  time_position/score: Time matrix position
+  death_position/score: Death matrix position
+
+DEATH ARCHITECTURE (D1-D7, all Float 0.0-1.0):
+  d1_identity, d2_belief, d3_emotion, d4_attachment,
+  d5_control, d6_separation, d7_ego
+  active_process: Optional[String]
+  depth: Float
+
+PATHWAYS (3 pathways × 3 components each):
+  witnessing: observation, perception, expression
+  creating: intention, attention, manifestation
+  embodying: thoughts, words, actions
+
+4.5 TIER 4 STRUCTURE (NETWORK & DYNAMICS)
+==================================================
+Source: consciousness_state.py lines 557-566
+
+@dataclass class Tier4:
+  pipeline_flow: PipelineFlow                    7-stage manifestation
+  breakthrough_dynamics: BreakthroughDynamics    Breakthrough probability
+  karma_dynamics: KarmaDynamics                  Karma accumulation/burn
+  grace_mechanics: GraceMechanics                Grace availability
+  network_effects: NetworkEffects                Collective effects
+  pomdp_gaps: POMDPGaps                         Reality perception gaps
+  morphogenetic_fields: MorphogeneticFields      Field access
+
+PIPELINE FLOW (7 stages):
+  stage_1_turiya through stage_7_external
+  flow_rate: Float
+  manifestation_time: String
+
+BREAKTHROUGH DYNAMICS:
+  probability: Float 0.0-1.0
+  tipping_point_distance: Float
+  quantum_jump_prob: Float
+  operators_at_threshold: List[String]
+
+KARMA DYNAMICS:
+  sanchita_stored: Float (accumulated karma)
+  prarabdha_active: Float (active this life)
+  kriyamana_creating: Float (creating now)
+  burn_rate: Float (karma burning rate)
+  allowance_factor: Float
+
+GRACE MECHANICS:
+  availability: Float
+  effectiveness: Float
+  multiplication_factor: Float
+  timing_probability: Float
+
+NETWORK EFFECTS:
+  coherence_multiplier: Float
+  acceleration_factor: Float
+  collective_breakthrough_prob: Float
+  resonance_amplification: Float
+  group_mind_iq: Optional[Float]
+
+POMDP GAPS:
+  reality_gap: Float (|Real - Believed|)
+  observation_gap: Float (|Real - Observed|)
+  belief_gap: Float (|Believed - Observed|)
+  severity: Float
+
+4.6 TIER 5 STRUCTURE (PREDICTIONS & ADVANCED)
+==================================================
+Source: consciousness_state.py lines 609-614
+
+@dataclass class Tier5:
+  timeline_predictions: TimelinePredictions      Future timelines
+  transformation_vectors: TransformationVectors  Direction/requirements
+  quantum_mechanics: QuantumMechanics           Quantum dynamics
+  frequency_analysis: FrequencyAnalysis         Frequency domain
+
+TIMELINE PREDICTIONS:
+  to_goal: String
+  to_next_s_level: String
+  evolution_rate: Float
+  acceleration_factor: Float
+
+TRANSFORMATION VECTORS:
+  current_state_summary: String
+  target_state_summary: String
+  core_shift_required: String
+  primary_obstacle: String
+  primary_enabler: String
+  leverage_point: String
+  evolution_direction: String
+
+QUANTUM MECHANICS:
+  wave_function_amplitude: Float
+  collapse_probability: Dict[str, float]
+  tunneling_probability: Float
+  interference_strength: Float
+
+FREQUENCY ANALYSIS:
+  dominant_frequency: Float (Hz)
+  harmonic_content: String
+  power_spectral_density: Float
+  resonance_strength: Float
+  decoherence_time: Float
+
+4.7 TIER 6 STRUCTURE (QUANTUM FIELDS)
+==================================================
+Source: consciousness_state.py lines 618-623
+
+@dataclass class Tier6:
+  field_charge_density: Float       Consciousness field charge
+  field_current_density: Float      Consciousness field current
+  consciousness_curvature: Float    Spacetime curvature from consciousness
+
+BACKGROUND CALCULATIONS:
+  Tier 6 represents quantum field theory calculations
+  Mostly background/theoretical
+  Not directly exposed to user in normal operation
+
+4.8 VALUE ORGANIZER SERVICE
+==================================================
+Source: backend/value_organizer.py
+
+CLASS: ValueOrganizer
+PURPOSE: Transform flat backend calculations → structured ConsciousnessState
+
+METHOD: organize(raw_values, tier1_values, user_id, session_id)
+  INPUT: Dictionary of 450+ flat calculation results
+  OUTPUT: ConsciousnessState object with Tier1-Tier6 organized
+
+ZERO-FALLBACK PRINCIPLE:
+  def _get_value(values, *keys, default=None)
+    Try multiple key names
+    Return None if not found (never assume)
+
+TIER ORGANIZATION METHODS:
+  _organize_tier1(values) → Tier1
+  _organize_tier2(values) → Tier2
+  _organize_tier3(values) → Tier3
+  _organize_tier4(values) → Tier4
+  _organize_tier5(values) → Tier5
+  _organize_tier6(values) → Tier6
+
+UNITY PRINCIPLE EXTRACTION:
+  _extract_unity_metrics(values) → UnitySeparationMetrics
+  _extract_dual_pathways(values) → List[DualPathway]
+  _extract_goal_context(values) → GoalContext
+
+4.9 TIER CALCULATION DEPENDENCIES
+==================================================
+DEPENDENCY FLOW:
+  Tier 1 (foundational)
+    ↓
+  Tier 2 (depends on Tier 1 operators)
+    ↓
+  Tier 3 (depends on Tier 1 + Tier 2)
+    ↓
+  Tier 4 (depends on Tier 1-3 + time/network)
+    ↓
+  Tier 5 (depends on all previous + projections)
+    ↓
+  Tier 6 (independent quantum field background)
+
+ZERO-FALLBACK CASCADING:
+  If Tier 1 operators missing → Tier 2-6 partial/None
+  If Tier 2 calculations fail → Tier 3-6 affected
+  Each tier marks what's calculable vs blocked
+
+METADATA TRACKING:
+  calculations_attempted: How many tried
+  calculations_succeeded: How many worked
+  blocked_due_to_missing: Which operators were None
+
+================================================================================
+SECTION 5: COMPLETE OPERATOR NAME REFERENCE
+================================================================================
+
+5.1 ALL 25 CORE OPERATORS (CANONICAL NAMES)
+==================================================
+This is the DEFINITIVE list from actual backend code:
+
+⚠️ NOTE: The original OOF_Nomenclature.txt line ~76 incorrectly lists "Se = Seeking"
+This must be corrected to "Se_service = Service orientation" as shown below.
+
+P_presence              Presence, now-moment awareness (NOT P_prana)
+A_aware                 Awareness, self-observation capacity
+E_equanimity            Emotional balance (NOT E_energy as primary)
+Psi_quality             Base consciousness quality (Ψ^Ψ)
+M_maya                  Maya, illusion, reality distortion
+M_manifest              Manifestation power, reality creation
+W_witness               Witness, objective seeing
+I_intention             Intention, directed will
+At_attachment           Attachment, ego identification
+Se_service              Service orientation, seva (⚠️ NOT Se_seeking - CORRECTED)
+Sh_shakti               Shakti, divine feminine energy
+G_grace                 Grace, divine flow, surrender receptivity
+S_surrender             Surrender, letting go, non-control
+D_dharma                Dharma, righteous action alignment
+K_karma                 Karma, stored action-consequence patterns
+Hf_habit                Habitual fixation, repetitive patterns
+V_void                  Void, emptiness, pre-manifestation space
+T_time_past             Past temporal focus
+T_time_present          Present moment focus
+T_time_future           Future temporal focus
+Ce_celebration          Cleanliness/purity (cascade layer state)
+Ce_cleaning             Active cleaning efficiency (operation)
+Co_coherence            Coherence, system alignment
+R_resistance            Resistance, opposition to flow
+F_fear                  Fear
+J_joy                   Joy
+Tr_trust                Trust
+O_openness              Openness, receptivity
+
+ADDITIONAL OPERATORS (used in specific contexts):
+L_love                  Love field strength
+Av_aversion             Aversion patterns
+Su_suffering            Suffering intensity
+Sa_samskara             Samskaras, deep impressions
+Shadow                  Unconscious rejected aspects
+C_base                  Consciousness^Consciousness (Ψ^Ψ)
+Choice                  Decision-making capacity
+Agency                  Self-directed action capability
+
+5.2 OPERATOR NAMING CONVENTIONS
+==================================================
+STANDARD FORMAT: OperatorCode_descriptiveName
+
+COLLISION RESOLUTION:
+  Single-letter codes that collide get descriptive suffixes
+  Example: M → M_maya vs M_manifest
+  Example: Ce → Ce_celebration vs Ce_cleaning
+
+TIME-VARYING FORMS:
+  Operator(t) represents time-dependent function
+  Example: P(t), A(t), E(t) in UCB calculations
+  Base form: P_presence (the operator value)
+  Function form: P(t) (time-varying in formulas)
+
+DERIVATIVE FORMS:
+  dOperator/dt represents rate of change
+  Example: dS/dt (S-level evolution rate)
+  Example: dCleanliness/dt (cleanliness change rate)
+
+================================================================================
+SECTION 6: IMPLEMENTATION NOTES
+================================================================================
+
+6.1 BACKEND ARCHITECTURE PRINCIPLES
+==================================================
+ZERO INTELLIGENCE FRONTEND:
+  All business logic resides in Claude API
+  Backend only orchestrates API calls and calculations
+  No hardcoded domain logic in application code
+
+100% CLAUDE API INTELLIGENCE:
+  LLM Call 1: Extract operators from text → Tier 1
+  Backend: Calculate Tier 2-6 from formulas
+  LLM Call 2: Articulate results for user
+
+ZERO-FALLBACK PRINCIPLE:
+  Every calculation returns None if inputs incomplete
+  No default assumptions
+  No partial calculations
+  Frontend handles None gracefully
+
+TIER ORGANIZATION:
+  Raw 450+ values → ConsciousnessState with Tier1-Tier6
+  Semantic organization for LLM consumption
+  Metadata tracks calculation success/failure
+
+6.2 DATABASE STORAGE IMPLICATIONS
+==================================================
+DATACLASS SERIALIZATION:
+  Backend uses @dataclass for structure
+  Database needs JSON serialization OR flattening
+
+OPTION 1: JSONB Columns (PostgreSQL)
+  Store entire Tier1-Tier6 as JSONB
+  Flexible but harder to query
+
+OPTION 2: Flattening
+  tier1_core_operators_P_presence
+  tier1_core_operators_A_aware
+  tier2_distortions_avarana_shakti
+  tier3_pathways_witnessing_observation
+  etc.
+
+OPTION 3: Hybrid
+  Core operators: Flat columns (queryable)
+  Complex structures: JSONB columns
+  Unity metrics: Separate table
+
+6.3 LLM PROMPT REQUIREMENTS
+==================================================
+MINIMUM CONTEXT FOR CALCULATIONS:
+  All 25 core operator values (or None)
+  Current S_sacred_level
+  Timestamp/context
+
+ENHANCED CONTEXT FOR UNITY ANALYSIS:
+  Unity metrics from previous calculation
+  Dual pathway analysis if goal-oriented
+  Tier1-Tier6 complete state
+
+OPERATOR NAMING IN PROMPTS:
+  Always use canonical names:
+    P_presence (not P or P_prana)
+    E_equanimity (not E or E_energy)
+    Se_service (not Se or Se_seeking)
+    Ce_celebration or Ce_cleaning (specify which)
+
+ZERO-FALLBACK HANDLING:
+  LLM should acknowledge when operators are None
+  Never assume default values
+  Explain calculation limitations
+
+6.4 FRONTEND DISPLAY REQUIREMENTS
+==================================================
+UNITY METRICS VISUALIZATION:
+  Display unity_vector as -1 to +1 gauge
+  Show percolation_quality as percentage
+  Highlight separation_distance decrease over time
+
+DUAL PATHWAY COMPARISON:
+  Plot projection_months as dual curves
+  Mark crossover_month clearly
+  Color-code separation (red) vs unity (green)
+
+TIER ORGANIZATION:
+  Progressive disclosure by tier
+  Tier 1: Always visible (foundation)
+  Tier 2-3: Expandable (details)
+  Tier 4-6: Advanced/optional
+
+MISSING DATA HANDLING:
+  Show None values as "Insufficient data"
+  Explain which operators needed
+  Suggest ways to provide missing context
+
+================================================================================
+SECTION 7: VERIFICATION CHECKLIST
+================================================================================
+
+UNITY PRINCIPLE COMPLETENESS:
+□ separation_distance formula documented
+□ distortion_field formula documented
+□ percolation_quality formula documented
+□ unity_vector calculation documented
+□ UNITY_DIRECTION map complete (all operators)
+□ UNITY_IMPACT_WEIGHTS map complete (all operators)
+□ Separation/Unity amplifying operators listed
+
+DUAL PATHWAY COMPLETENESS:
+□ PathwayMetrics dataclass documented
+□ DualPathway dataclass documented
+□ Separation pathway formulas documented
+□ Unity pathway formulas documented
+□ crossover_month calculation documented
+□ Recommendation logic documented
+□ GoalContext integration documented
+□ projection_months format documented
+⚠️ Backend bug documented (value_organizer.py field mismatch)
+
+TIER ARCHITECTURE COMPLETENESS:
+□ Tier 1 structure documented
+□ Tier 2 structure documented
+□ Tier 3 structure documented
+□ Tier 4 structure documented
+□ Tier 5 structure documented
+□ Tier 6 structure documented
+□ ValueOrganizer service documented
+□ Dependency flow documented
+
+OPERATOR NAMING COMPLETENESS:
+□ Se_service corrected (not Se_seeking)
+⚠️ Original document Se line needs updating (line ~76)
+□ Ce dual form explained (celebration + cleaning)
+□ P_presence confirmed (not P_prana)
+□ E_equanimity confirmed (not E_energy primary)
+□ All 25 core operators listed with canonical names
+
+================================================================================
+SECTION 8: BACKEND CODE FIXES REQUIRED
+================================================================================
+
+8.1 CRITICAL FIX: value_organizer.py PathwayMetrics Field Names
+==================================================
+FILE: backend/value_organizer.py
+LINES: 525-541
+
+PROBLEM:
+Code attempts to create PathwayMetrics objects with fields that don't exist
+in the dataclass definition (consciousness_state.py).
+
+CURRENT (WRONG):
+```python
+PathwayMetrics(
+    initial_success_probability=...,
+    sustainability_probability=...,
+    fulfillment_quality=...,
+    decay_rate=...,           # ❌ Field doesn't exist
+    compound_rate=...,        # ❌ Field doesn't exist
+    effort_required=...,      # ❌ Field doesn't exist
+    grace_utilization=...     # ❌ Field doesn't exist
+)
+```
+
+MUST BE CHANGED TO:
+```python
+PathwayMetrics(
+    initial_success_probability=...,
+    sustainability_probability=...,
+    fulfillment_quality=...,
+    energetic_cost=...,                # ✓ Correct field
+    time_cost_months=...,              # ✓ Correct field
+    separation_amplification=...,      # ✓ Correct field
+    unity_alignment=...,               # ✓ Correct field
+    total_weighted_success=...         # ✓ Correct field
+)
+```
+
+IMPACT:
+Without this fix, dual pathway functionality will fail at runtime with
+"unexpected keyword argument" errors.
+
+PRIORITY: HIGH - Breaks dual pathway calculator completely
+
+8.2 MINOR FIX: Original OOF_Nomenclature.txt Se Operator Name
+==================================================
+FILE: OOF_Nomenclature.txt (in project knowledge)
+LINE: ~76
+
+CURRENT (WRONG):
+```
+Se                  Seeking, external validation dependency
+```
+
+MUST BE CHANGED TO:
+```
+Se_service          Service orientation, seva coefficient
+```
+
+RATIONALE:
+Backend code uses Se_service throughout, not Se_seeking.
+Se increases unity, not separation (it's selfless service).
+
+PRIORITY: MEDIUM - Documentation accuracy for consistency
+
+================================================================================
+END OF ADDENDUM v2.0
+================================================================================
+
+This addendum should be appended to OOF_Nomenclature.txt after the existing
+content from Addendum v1.0.
+
+TOTAL NOMENCLATURE COVERAGE AFTER THIS ADDENDUM:
+- Original OOF_Nomenclature.txt: ~95% of backend
+- Addendum v1.0: Pathway/Death corrections
+- Addendum v2.0: Unity Principle + Dual Pathways + Tier Architecture
+- COMBINED: 100% of backend implementation documented
+
+BACKEND CODE FIXES REQUIRED BEFORE PRODUCTION:
+1. ⚠️ CRITICAL: Fix value_organizer.py lines 525-541 (PathwayMetrics field names)
+2. 🔧 MINOR: Update original OOF_Nomenclature.txt line ~76 (Se operator name)
+
+All formulas, calculations, and structures verified against latest backend:
+  BackendRust-main/backend/formulas/unity_principle.py
+  BackendRust-main/backend/formulas/dual_pathway_calculator.py
+  BackendRust-main/backend/consciousness_state.py
+  BackendRust-main/backend/value_organizer.py
+
+DISCREPANCIES IDENTIFIED:
+- value_organizer.py uses incorrect PathwayMetrics field names (documented in Section 8.1)
+- Original nomenclature has Se=Seeking instead of Se_service (documented in Section 8.2)
+
+Last Updated: January 24, 2026
+Status: DOCUMENTATION COMPLETE - BACKEND CODE FIXES REQUIRED
+Version: 2.1 (Updated with bug reports and fix requirements)
