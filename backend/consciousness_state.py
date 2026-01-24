@@ -22,6 +22,79 @@ class DataQualityMetadata:
     average_confidence: float = 0.0
 
 
+# =============================================================================
+# UNITY PRINCIPLE DATACLASSES (NEW)
+# =============================================================================
+
+@dataclass
+class UnitySeparationMetrics:
+    """
+    Unity-separation analysis metrics from unity_principle.py calculations.
+
+    Core metric for understanding Jeevatma-Paramatma relationship.
+    """
+    separation_distance: Optional[float] = None  # d(S) = d_initial * e^(-k*S)
+    distortion_field: Optional[float] = None     # Delta(d) = 1 - e^(-d/d0)
+    percolation_quality: Optional[float] = None  # (1-Delta) * (W*A*P) * (1-M)
+    unity_realization_percent: Optional[float] = None  # 100 * (1 - d(S))
+    unity_vector: Optional[float] = None         # Net direction: -1.0 to +1.0
+    dharmic_karma_net: Optional[float] = None    # Dharmic - Adharmic
+    grace_multiplier: Optional[float] = None     # Based on unity alignment (0.3x to 2.5x)
+    confidence: float = 0.0                      # 0-1 based on operator coverage
+    missing_operators: List[str] = field(default_factory=list)
+
+
+@dataclass
+class PathwayMetrics:
+    """Metrics for a single pathway (separation or unity)"""
+    initial_success_probability: float = 0.0
+    sustainability_probability: float = 0.0
+    fulfillment_quality: float = 0.0
+    energetic_cost: float = 0.0       # 0-1, lower is better
+    time_cost_months: float = 0.0
+    separation_amplification: float = 0.0  # How much this increases separation
+    unity_alignment: float = 0.0      # -1 to +1
+    total_weighted_success: float = 0.0  # Composite score
+
+
+@dataclass
+class DualPathway:
+    """
+    Comparison of separation vs unity pathways.
+
+    Every goal has TWO pathways:
+    - Separation: Control, force, fear-driven - decays over time
+    - Unity: Surrender, clarity, flow - compounds over time
+    """
+    separation_based: PathwayMetrics = field(default_factory=PathwayMetrics)
+    unity_based: PathwayMetrics = field(default_factory=PathwayMetrics)
+    recommended: str = "unity"  # 'unity', 'separation', 'intermediate'
+    recommendation_reasoning: str = ""
+    projection_months: List[tuple] = field(default_factory=list)  # List of (month, sep_success, unity_success)
+    crossover_month: Optional[int] = None  # When unity overtakes separation
+
+
+@dataclass
+class GoalContext:
+    """Context about user's stated goal from query parsing"""
+    goal_text: str = ""
+    goal_category: str = ""  # 'achievement', 'relationship', 'peace', 'transformation'
+    emotional_undertone: str = ""  # 'urgency', 'curiosity', 'desperation', 'openness', 'neutral'
+    domain: str = ""  # 'business', 'personal', 'health', 'spiritual'
+
+
+@dataclass
+class ConstellationMetadata:
+    """Metadata from selected constellation"""
+    pattern_name: str = ""
+    unity_vector: float = 0.0
+    s_level_range: tuple = (3.0, 5.0)
+    death_architecture: str = ""
+    why_category: str = ""
+    emotional_undertone: str = ""
+    operators_count: int = 0
+
+
 @dataclass
 class CoreOperators:
     """
@@ -551,21 +624,42 @@ class Tier6:
 
 @dataclass
 class Bottleneck:
-    """A detected bottleneck"""
+    """
+    A detected bottleneck.
+
+    ENHANCED with separation tracking for unity principle integration.
+    """
     variable: str
     value: float
     impact: str  # "high" | "medium" | "low"
     description: str
     category: str  # "attachment" | "resistance" | "maya" | "fear" | etc
 
+    # NEW: Unity principle enhancements
+    separation_amplification_score: float = 0.0  # 0-1, how much this amplifies separation
+    is_root_separation_pattern: bool = False     # True if this is root cause
+    unity_aligned_intervention: str = ""         # Intervention working WITH unity
+    separation_based_intervention: str = ""      # Intervention working AGAINST (for contrast)
+
 
 @dataclass
 class LeveragePoint:
-    """A detected leverage point"""
+    """
+    A detected leverage point.
+
+    ENHANCED with unity amplification for unity principle integration.
+    """
     description: str
-    multiplier: float
+    multiplier: float  # This is now nominal_impact
     activation_requirement: str
     operators_involved: List[str] = field(default_factory=list)
+
+    # NEW: Unity principle enhancements
+    unity_alignment: float = 0.0              # -1.0 to +1.0
+    amplification_multiplier: float = 1.0     # 1.5-3.0x for unity, 0.2-0.8x for separation
+    effective_impact: float = 0.0             # multiplier * amplification_multiplier
+    pathway_type: str = "neutral"             # 'unity_aligned', 'neutral', 'separation_based'
+    approach_description: str = ""            # How to approach this lever
 
 
 @dataclass
@@ -593,6 +687,8 @@ class ConsciousnessState:
 
     ZERO-FALLBACK MODE: Values are Optional with None defaults.
     Includes metadata about data quality and calculation coverage.
+
+    UNITY PRINCIPLE: Includes unity-separation metrics and dual pathway analysis.
     """
     timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
     user_id: str = ""
@@ -608,6 +704,12 @@ class ConsciousnessState:
     # Derived insights
     bottlenecks: List[Bottleneck] = field(default_factory=list)
     leverage_points: List[LeveragePoint] = field(default_factory=list)
+
+    # NEW: Unity principle metrics
+    unity_metrics: Optional[UnitySeparationMetrics] = None
+    dual_pathways: Optional[DualPathway] = None
+    goal_context: Optional[GoalContext] = None
+    constellation_metadata: Optional[ConstellationMetadata] = None
 
     # ZERO-FALLBACK: Metadata about data quality
     inference_metadata: InferenceMetadataState = field(default_factory=InferenceMetadataState)

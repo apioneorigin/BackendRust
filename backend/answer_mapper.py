@@ -416,6 +416,183 @@ class AnswerMapper:
         return result
 
 
+    # =========================================================================
+    # CONSTELLATION MAPPING (NEW)
+    # Maps constellation selection to multiple operator values
+    # =========================================================================
+
+    def map_constellation_to_operators(
+        self,
+        selected_constellation: 'OperatorConstellation',
+        session_id: str = ""
+    ) -> MappingResult:
+        """
+        Map constellation selection to multiple MappedValue objects.
+
+        A single constellation answer -> 8-12 operator values.
+        This is the primary mapping method for the new question architecture.
+
+        Args:
+            selected_constellation: The OperatorConstellation user selected
+            session_id: Session identifier for logging
+
+        Returns:
+            MappingResult with all operator values from constellation
+        """
+        mapped_values = []
+
+        for operator, (value, confidence_score) in selected_constellation.operators.items():
+            # Map confidence score (0.0-1.0) to MappingConfidence enum
+            if confidence_score >= 0.85:
+                confidence = MappingConfidence.HIGH
+            elif confidence_score >= 0.7:
+                confidence = MappingConfidence.MEDIUM
+            else:
+                confidence = MappingConfidence.LOW
+
+            mapped_values.append(MappedValue(
+                operator=operator,
+                value=value,
+                confidence=confidence,
+                source='constellation_selection',
+                question_id=None,
+                raw_response=selected_constellation.pattern_name
+            ))
+
+        return MappingResult(
+            success=True,
+            mapped_values=mapped_values,
+            unmapped_operators=[],
+            needs_clarification=False,
+            clarification_prompt=None,
+            warnings=[]
+        )
+
+    def validate_constellation_consistency(
+        self,
+        constellation: 'OperatorConstellation',
+        existing_operators: Dict[str, float]
+    ) -> Tuple[bool, List[str]]:
+        """
+        Check if constellation is consistent with existing operators.
+
+        If user already answered questions and has some operators,
+        check if the new constellation contradicts existing values.
+
+        Args:
+            constellation: The selected constellation
+            existing_operators: Dict of existing operator values
+
+        Returns:
+            Tuple of (is_valid, list_of_conflicts)
+        """
+        conflicts = []
+        CONFLICT_THRESHOLD = 0.4  # Values differing by more than this are conflicts
+
+        for operator, (new_value, _) in constellation.operators.items():
+            if operator in existing_operators:
+                existing_value = existing_operators[operator]
+
+                # Check if values are wildly inconsistent
+                if abs(new_value - existing_value) > CONFLICT_THRESHOLD:
+                    conflicts.append(
+                        f"{operator}: existing {existing_value:.2f} vs constellation {new_value:.2f}"
+                    )
+
+        is_valid = len(conflicts) == 0
+
+        return is_valid, conflicts
+
+    def merge_constellation_operators(
+        self,
+        existing_operators: Dict[str, float],
+        constellation_result: MappingResult,
+        merge_strategy: str = 'constellation_priority'
+    ) -> Dict[str, float]:
+        """
+        Merge constellation operators with existing operators.
+
+        Strategies:
+        - 'constellation_priority': New constellation values override existing
+        - 'weighted_average': Average based on confidence levels
+        - 'keep_existing': Only add new operators, don't update existing
+
+        Args:
+            existing_operators: Dict of existing operator values
+            constellation_result: MappingResult from map_constellation_to_operators
+            merge_strategy: One of the merge strategies
+
+        Returns:
+            Merged operator dict
+        """
+        merged = dict(existing_operators)
+
+        if merge_strategy == 'constellation_priority':
+            # Constellation values override
+            for mv in constellation_result.mapped_values:
+                merged[mv.operator] = mv.value
+
+        elif merge_strategy == 'weighted_average':
+            # Weight by confidence
+            for mv in constellation_result.mapped_values:
+                if mv.operator in merged:
+                    old_value = merged[mv.operator]
+                    old_confidence = 0.7  # Assume moderate confidence for existing
+
+                    new_confidence = self._confidence_to_weight(mv.confidence)
+
+                    # Weighted average
+                    total_confidence = old_confidence + new_confidence
+                    weighted_value = (
+                        (old_value * old_confidence) + (mv.value * new_confidence)
+                    ) / total_confidence
+
+                    merged[mv.operator] = weighted_value
+                else:
+                    merged[mv.operator] = mv.value
+
+        elif merge_strategy == 'keep_existing':
+            # Only add new, don't override
+            for mv in constellation_result.mapped_values:
+                if mv.operator not in merged:
+                    merged[mv.operator] = mv.value
+
+        return merged
+
+    def _confidence_to_weight(self, confidence: MappingConfidence) -> float:
+        """Convert confidence enum to numeric weight."""
+        weights = {
+            MappingConfidence.HIGH: 0.9,
+            MappingConfidence.MEDIUM: 0.7,
+            MappingConfidence.LOW: 0.5,
+            MappingConfidence.UNCERTAIN: 0.3
+        }
+        return weights.get(confidence, 0.5)
+
+    def extract_constellation_metadata(
+        self,
+        constellation: 'OperatorConstellation'
+    ) -> Dict[str, Any]:
+        """
+        Extract metadata from constellation for session tracking.
+
+        Args:
+            constellation: The selected constellation
+
+        Returns:
+            Dict with pattern info, unity_vector, s_level_range, etc.
+        """
+        return {
+            'pattern_name': constellation.pattern_name,
+            'unity_vector': constellation.unity_vector,
+            's_level_range': constellation.s_level_range,
+            'death_architecture': constellation.death_architecture,
+            'why_category': constellation.why_category,
+            'emotional_undertone': constellation.emotional_undertone,
+            'operators_count': len(constellation.operators),
+        }
+
+
 # Factory function
 def create_answer_mapper() -> AnswerMapper:
     """Create an answer mapper instance."""
