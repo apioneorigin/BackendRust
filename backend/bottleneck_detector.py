@@ -1,10 +1,24 @@
 """
 Bottleneck Detector for Articulation Bridge
 Identifies operators blocking progress based on value patterns
+
+UNITY PRINCIPLE ENHANCEMENT:
+- Tracks separation amplification for each bottleneck
+- Identifies root separation patterns in causal chains
+- Generates dual interventions (unity-aligned and separation-based)
 """
 
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Tuple, Optional
 from consciousness_state import ConsciousnessState, Bottleneck
+
+# Import unity principle constants and functions
+from formulas.unity_principle import (
+    SEPARATION_AMPLIFYING_OPERATORS,
+    UNITY_AMPLIFYING_OPERATORS,
+    calculate_separation_amplification,
+    generate_unity_intervention,
+    generate_separation_intervention,
+)
 
 
 class BottleneckDetector:
@@ -134,36 +148,63 @@ class BottleneckDetector:
             value = ops.get(var, 0.5)
             if value > self.HIGH_THRESHOLD:
                 impact = 'high' if value > 0.85 else 'medium'
+
+                # Calculate separation amplification
+                sep_amp = calculate_separation_amplification(var, value)
+                is_root = sep_amp > 0.6
+
+                # Generate interventions
+                unity_int = generate_unity_intervention(var)
+                sep_int = generate_separation_intervention(var)
+
                 bottlenecks.append(Bottleneck(
                     variable=var,
                     value=value,
                     impact=impact,
                     description=f"{name} at {value:.0%} is creating resistance to transformation",
-                    category=category
+                    category=category,
+                    separation_amplification_score=sep_amp,
+                    is_root_separation_pattern=is_root,
+                    unity_aligned_intervention=unity_int,
+                    separation_based_intervention=sep_int
                 ))
 
         return bottlenecks
 
     def _check_flow_operators(self, ops: Dict[str, float]) -> List[Bottleneck]:
-        """Check for low flow-type operators"""
+        """Check for low flow-type operators (unity-amplifying when high)"""
         bottlenecks = []
 
         for var, name, category in self.FLOW_OPERATORS:
             value = ops.get(var, 0.5)
             if value < self.LOW_THRESHOLD:
                 impact = 'high' if value < 0.15 else 'medium'
+
+                # Low flow operators indicate reduced unity capacity
+                # Separation amplification is inverse - low unity = high separation effect
+                sep_amp = (1.0 - value) * UNITY_AMPLIFYING_OPERATORS.get(var, 0.5)
+                is_root = sep_amp > 0.6
+
+                # Generate interventions for building unity capacity
+                unity_int = generate_unity_intervention(var)
+                sep_int = generate_separation_intervention(var)
+
                 bottlenecks.append(Bottleneck(
                     variable=var,
                     value=value,
                     impact=impact,
                     description=f"Low {name} ({value:.0%}) limits capacity for transformation",
-                    category=category
+                    category=category,
+                    separation_amplification_score=sep_amp,
+                    is_root_separation_pattern=is_root,
+                    unity_aligned_intervention=unity_int,
+                    separation_based_intervention=sep_int
                 ))
 
         return bottlenecks
 
     def _check_inverse_pairs(self, ops: Dict[str, float]) -> List[Bottleneck]:
-        """Check for inverse pair imbalances"""
+        """Check for inverse pair imbalances (separation vs unity dynamics)"""
         bottlenecks = []
 
         for high_var, low_var, description in self.INVERSE_PAIRS:
@@ -173,18 +214,33 @@ class BottleneckDetector:
             # Check if first is high AND second is low
             if high_val > 0.6 and low_val < 0.4 and (high_val - low_val) > self.INVERSE_PAIR_DIFF:
                 impact = 'high' if (high_val - low_val) > 0.5 else 'medium'
+
+                # Inverse pairs are root separation patterns by definition
+                # They represent the core Maya-Witness polarity
+                sep_amp_high = calculate_separation_amplification(high_var, high_val)
+                sep_amp_low = (1.0 - low_val) * UNITY_AMPLIFYING_OPERATORS.get(low_var, 0.5)
+                combined_sep_amp = (sep_amp_high + sep_amp_low) / 2.0
+
+                # Generate dual interventions
+                unity_int = f"Cultivate {low_var.split('_')[1]} while allowing {high_var.split('_')[1]} to naturally dissolve through awareness"
+                sep_int = f"Work on reducing {high_var.split('_')[1]} through effort while building {low_var.split('_')[1]}"
+
                 bottlenecks.append(Bottleneck(
                     variable=f"{high_var}|{low_var}",
                     value=(high_val - low_val),
                     impact=impact,
                     description=description,
-                    category='inverse_pair'
+                    category='inverse_pair',
+                    separation_amplification_score=combined_sep_amp,
+                    is_root_separation_pattern=True,  # Inverse pairs are always root patterns
+                    unity_aligned_intervention=unity_int,
+                    separation_based_intervention=sep_int
                 ))
 
         return bottlenecks
 
     def _check_matrix_positions(self, state: ConsciousnessState) -> List[Bottleneck]:
-        """Check for negative matrix positions"""
+        """Check for negative matrix positions (death architecture patterns)"""
         bottlenecks = []
         matrices = state.tier3.transformation_matrices
 
@@ -198,22 +254,52 @@ class BottleneckDetector:
             ('death', matrices.death_position, matrices.death_score, 'Death'),
         ]
 
+        # Unity interventions for each matrix type
+        matrix_unity_interventions = {
+            'truth': "Allow truth to reveal itself through stillness and witness consciousness",
+            'love': "Recognize the underlying unity beneath apparent separation",
+            'power': "Discover authentic power through surrender rather than control",
+            'freedom': "Find freedom by releasing attachment to outcomes",
+            'creation': "Align creative action with natural flow rather than forcing",
+            'time': "Rest in present moment awareness beyond past/future narratives",
+            'death': "Embrace impermanence as gateway to deeper aliveness",
+        }
+
+        matrix_separation_interventions = {
+            'truth': "Work to distinguish truth from illusion through analysis",
+            'love': "Practice connection exercises to overcome feelings of separation",
+            'power': "Build personal power through discipline and effort",
+            'freedom': "Identify and remove external constraints systematically",
+            'creation': "Focus creative effort and push through blocks",
+            'time': "Manage time better and stay focused on present tasks",
+            'death': "Address fear of death through understanding and preparation",
+        }
+
         for matrix_type, position, score, name in matrix_checks:
             negative_position = self.NEGATIVE_MATRIX_POSITIONS.get(matrix_type)
             if position == negative_position:
                 impact = 'high' if score < 0.2 else 'medium'
+
+                # Matrix positions at negative poles indicate deep separation patterns
+                sep_amp = 1.0 - score  # Lower score = higher separation
+                is_root = matrix_type in ['truth', 'death']  # Truth/illusion and death/clinging are root patterns
+
                 bottlenecks.append(Bottleneck(
                     variable=f"matrix_{matrix_type}",
                     value=score,
                     impact=impact,
                     description=f"{name} matrix at '{position}' position ({score:.0%}) indicates blocked transformation",
-                    category='matrix'
+                    category='matrix',
+                    separation_amplification_score=sep_amp,
+                    is_root_separation_pattern=is_root,
+                    unity_aligned_intervention=matrix_unity_interventions.get(matrix_type, ""),
+                    separation_based_intervention=matrix_separation_interventions.get(matrix_type, "")
                 ))
 
         return bottlenecks
 
     def _check_distortions(self, state: ConsciousnessState) -> List[Bottleneck]:
-        """Check Tier 2 distortions (kleshas)"""
+        """Check Tier 2 distortions (kleshas) - root separation patterns"""
         bottlenecks = []
         distortions = state.tier2.distortions
 
@@ -225,15 +311,41 @@ class BottleneckDetector:
             ('avidya_total', distortions.avidya_total, 'Root ignorance'),
         ]
 
+        # Kleshas are the root causes of separation in yogic philosophy
+        klesha_unity_interventions = {
+            'asmita': "Rest in awareness beyond the sense of separate self",
+            'raga': "Notice how attachment creates suffering; allow preferences without grasping",
+            'dvesha': "Recognize aversion as the flip side of attachment; find equanimity",
+            'abhinivesha': "Contemplate the deathless nature of awareness itself",
+            'avidya_total': "Cultivate viveka (discernment) through steady witness practice",
+        }
+
+        klesha_separation_interventions = {
+            'asmita': "Work on ego boundaries and healthy self-concept",
+            'raga': "Practice detachment exercises and reduce dependency",
+            'dvesha': "Address aversions through gradual exposure and desensitization",
+            'abhinivesha': "Confront mortality fears through philosophical study",
+            'avidya_total': "Study and learn to distinguish real from unreal",
+        }
+
         for var, value, name in distortion_checks:
             if value > 0.7:
                 impact = 'high' if value > 0.85 else 'medium'
+
+                # Kleshas directly amplify separation - avidya is the root
+                sep_amp = value  # Direct mapping: high klesha = high separation
+                is_root = var == 'avidya_total'  # Avidya is the root of all kleshas
+
                 bottlenecks.append(Bottleneck(
                     variable=f"distortion_{var}",
                     value=value,
                     impact=impact,
                     description=f"{name} at {value:.0%} is a deep-level obstruction",
-                    category='klesha'
+                    category='klesha',
+                    separation_amplification_score=sep_amp,
+                    is_root_separation_pattern=is_root,
+                    unity_aligned_intervention=klesha_unity_interventions.get(var, ""),
+                    separation_based_intervention=klesha_separation_interventions.get(var, "")
                 ))
 
         return bottlenecks
