@@ -564,7 +564,7 @@ QUANTUM CONSCIOUSNESS (0.0-1.0)
 DRIVES PROFILE (From DrivesEngine)
 ================================================================================
 
-Each drive has: internal, external, total, fulfillment
+The backend calculates FIVE drives, each with: internal, external, total, fulfillment
 
 **love_drive**
 - love_internal: Internal love drive (0.0-1.0)
@@ -578,8 +578,26 @@ Each drive has: internal, external, total, fulfillment
 - peace_total: Combined peace drive
 - peace_fulfillment: Degree of peace fulfillment (0.0-1.0)
 
+**bliss_drive**
+- bliss_internal: Internal bliss drive (0.0-1.0)
+- bliss_external: External bliss manifestation (0.0-1.0)
+- bliss_total: Combined bliss drive
+- bliss_fulfillment: Degree of bliss fulfillment (0.0-1.0)
+
+**satisfaction_drive**
+- satisfaction_internal: Internal satisfaction drive (0.0-1.0)
+- satisfaction_external: External satisfaction manifestation (0.0-1.0)
+- satisfaction_total: Combined satisfaction drive
+- satisfaction_fulfillment: Degree of satisfaction fulfillment (0.0-1.0)
+
+**freedom_drive**
+- freedom_internal: Internal freedom drive (0.0-1.0)
+- freedom_external: External freedom manifestation (0.0-1.0)
+- freedom_total: Combined freedom drive
+- freedom_fulfillment: Degree of freedom fulfillment (0.0-1.0)
+
 **overall_fulfillment**
-- Mathematical meaning: Overall drive fulfillment
+- Mathematical meaning: Overall drive fulfillment across all 5 drives
 - 0.0 = Complete unfulfillment
 - 0.5 = Partial fulfillment
 - 1.0 = Complete fulfillment
