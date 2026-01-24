@@ -200,6 +200,18 @@ def project_pathway_over_time(
     return projections, crossover_month
 
 
+def _calculate_weighted_success(pathway: PathwayMetrics) -> float:
+    """
+    Calculate weighted success score from pathway metrics.
+
+    Weights: 30% initial, 40% sustainability, 30% fulfillment
+    """
+    initial = pathway.initial_success_probability or 0.0
+    sustainability = pathway.sustainability_probability or 0.0
+    fulfillment = pathway.fulfillment_quality or 0.0
+    return (initial * 0.3) + (sustainability * 0.4) + (fulfillment * 0.3)
+
+
 def generate_recommendation_reasoning(
     sep_pathway: PathwayMetrics,
     unity_pathway: PathwayMetrics,
@@ -218,21 +230,25 @@ def generate_recommendation_reasoning(
     Returns:
         Tuple of (recommendation, reasoning)
     """
+    # Calculate weighted success scores
+    sep_weighted = _calculate_weighted_success(sep_pathway)
+    unity_weighted = _calculate_weighted_success(unity_pathway)
+
     # Decision logic
-    if unity_pathway.initial_success_probability < 0.3:
+    if (unity_pathway.initial_success_probability or 0.0) < 0.3:
         # Unity pathway not currently accessible
         recommendation = 'intermediate'
         reasoning = (
-            f"Unity pathway shows {unity_pathway.initial_success_probability:.0%} initial probability - "
+            f"Unity pathway shows {(unity_pathway.initial_success_probability or 0.0):.0%} initial probability - "
             f"not currently accessible. Build foundations first through surrender and witness development. "
             f"Consider hybrid approach: use awareness to soften separation patterns while building unity capacity."
         )
-    elif sep_pathway.total_weighted_success > unity_pathway.total_weighted_success * 1.25:
+    elif sep_weighted > unity_weighted * 1.25:
         # Separation significantly stronger short-term
         recommendation = 'intermediate'
         reasoning = (
-            f"Separation pathway ({sep_pathway.total_weighted_success:.0%}) significantly "
-            f"stronger than unity ({unity_pathway.total_weighted_success:.0%}) short-term. "
+            f"Separation pathway ({sep_weighted:.0%}) significantly "
+            f"stronger than unity ({unity_weighted:.0%}) short-term. "
             f"Consider hybrid: use controlled action while cultivating surrender. "
             f"Monitor for crossover opportunity."
         )
@@ -245,11 +261,11 @@ def generate_recommendation_reasoning(
             crossover_text = f" Unity overtakes separation at month {crossover_month}."
 
         reasoning = (
-            f"Unity pathway: {unity_pathway.total_weighted_success:.0%} weighted success "
-            f"vs separation {sep_pathway.total_weighted_success:.0%}. "
-            f"Superior sustainability ({unity_pathway.sustainability_probability:.0%} vs "
-            f"{sep_pathway.sustainability_probability:.0%}) and fulfillment "
-            f"({unity_pathway.fulfillment_quality:.0%} vs {sep_pathway.fulfillment_quality:.0%}).{crossover_text}"
+            f"Unity pathway: {unity_weighted:.0%} weighted success "
+            f"vs separation {sep_weighted:.0%}. "
+            f"Superior sustainability ({(unity_pathway.sustainability_probability or 0.0):.0%} vs "
+            f"{(sep_pathway.sustainability_probability or 0.0):.0%}) and fulfillment "
+            f"({(unity_pathway.fulfillment_quality or 0.0):.0%} vs {(sep_pathway.fulfillment_quality or 0.0):.0%}).{crossover_text}"
         )
 
     return recommendation, reasoning
