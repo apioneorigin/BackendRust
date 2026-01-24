@@ -74,6 +74,11 @@ from leverage_identifier import LeverageIdentifier
 from articulation_prompt_builder import ArticulationPromptBuilder, build_articulation_context
 from consciousness_state import ConsciousnessState, UserContext, WebResearch
 
+# Constellation Q&A imports for Unity Principle integration
+from constellation_question_generator import ConstellationQuestionGenerator, GoalContext, MultiDimensionalQuestion
+from question_archetypes import get_constellations_for_goal, OperatorConstellation
+from answer_mapper import AnswerMapper, MappingResult, MappedValue
+
 # Import logging
 from logging_config import (
     api_logger,
@@ -104,6 +109,59 @@ load_dotenv()
 
 # Initialize FastAPI app
 app = FastAPI(title="Reality Transformer", version="4.1.0")
+
+# =====================================================================
+# SESSION STORAGE FOR CONSTELLATION Q&A FLOW
+# =====================================================================
+
+import threading
+import uuid
+
+class SessionStore:
+    """
+    Thread-safe session storage for constellation Q&A flow.
+
+    In production, replace with Redis or database-backed storage.
+    """
+
+    def __init__(self):
+        self._sessions: Dict[str, Dict[str, Any]] = {}
+        self._lock = threading.Lock()
+
+    def create(self, session_id: str, data: Dict[str, Any]) -> None:
+        with self._lock:
+            self._sessions[session_id] = data
+
+    def get(self, session_id: str) -> Optional[Dict[str, Any]]:
+        with self._lock:
+            return self._sessions.get(session_id)
+
+    def update(self, session_id: str, data: Dict[str, Any]) -> None:
+        with self._lock:
+            self._sessions[session_id] = data
+
+    def delete(self, session_id: str) -> None:
+        with self._lock:
+            self._sessions.pop(session_id, None)
+
+    def cleanup_expired(self, max_age_seconds: int = 3600) -> int:
+        """Remove sessions older than max_age_seconds."""
+        now = time.time()
+        expired = []
+        with self._lock:
+            for sid, data in self._sessions.items():
+                if now - data.get('_created_at', 0) > max_age_seconds:
+                    expired.append(sid)
+            for sid in expired:
+                del self._sessions[sid]
+        return len(expired)
+
+# Global session store instance
+session_store = SessionStore()
+
+# =====================================================================
+# END SESSION STORAGE
+# =====================================================================
 
 # Streaming retry configuration
 STREAMING_MAX_RETRIES = 4
@@ -273,9 +331,269 @@ async def run_inference(
     )
 
 
+# =====================================================================
+# CONSTELLATION Q&A ENDPOINTS
+# =====================================================================
+
+@app.post("/api/answer")
+async def process_constellation_answer(
+    session_id: str = Query(..., description="Session ID from question event"),
+    selected_option: str = Query(..., description="Selected option (option_1, option_2, option_3, option_4)")
+):
+    """
+    Process user's constellation selection and continue inference pipeline.
+
+    This endpoint is called after the client receives a 'question' event from /api/run.
+    It maps the constellation selection to operators and triggers the rest of the pipeline.
+    """
+    # Retrieve pending session data
+    session_data = session_store.get(session_id)
+    if not session_data:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    pending_question = session_data.get('_pending_question')
+    if not pending_question:
+        raise HTTPException(status_code=400, detail="No pending question for this session")
+
+    if selected_option not in ['option_1', 'option_2', 'option_3', 'option_4']:
+        raise HTTPException(status_code=400, detail="Invalid option selected")
+
+    # Get the selected constellation
+    selected_constellation = pending_question.answer_options.get(selected_option)
+    if not selected_constellation:
+        raise HTTPException(status_code=400, detail="Selected option not found")
+
+    # Map constellation to operators
+    answer_mapper = AnswerMapper()
+    mapping_result = answer_mapper.map_constellation_to_operators(
+        selected_constellation=selected_constellation,
+        session_id=session_id
+    )
+
+    # Update evidence with constellation-derived operators
+    evidence = session_data.get('evidence', {})
+    for mapped_value in mapping_result.mapped_values:
+        # Add to observations list
+        evidence.setdefault('observations', []).append({
+            'var': mapped_value.operator,
+            'value': mapped_value.value,
+            'source': 'constellation_selection',
+            'confidence': mapped_value.confidence.value if hasattr(mapped_value.confidence, 'value') else mapped_value.confidence
+        })
+
+    # Store constellation metadata
+    evidence['constellation_metadata'] = {
+        'pattern_name': selected_constellation.pattern_name,
+        'unity_vector': selected_constellation.unity_vector,
+        's_level_range': selected_constellation.s_level_range,
+        'death_architecture': selected_constellation.death_architecture,
+        'why_category': selected_constellation.why_category,
+        'emotional_undertone': selected_constellation.emotional_undertone
+    }
+
+    # Clear pending question and update session
+    session_data['_pending_question'] = None
+    session_data['evidence'] = evidence
+    session_store.update(session_id, session_data)
+
+    api_logger.info(f"[CONSTELLATION] Answer processed: {selected_option} -> {selected_constellation.pattern_name}")
+    api_logger.info(f"[CONSTELLATION] Added {len(mapping_result.mapped_values)} operator values")
+
+    # Return success and redirect client to continue pipeline
+    return {
+        "status": "success",
+        "operators_added": len(mapping_result.mapped_values),
+        "pattern_name": selected_constellation.pattern_name,
+        "continue_url": f"/api/run/continue?session_id={session_id}"
+    }
+
+
+@app.get("/api/run/continue")
+async def continue_inference(
+    session_id: str = Query(..., description="Session ID to continue")
+):
+    """
+    Continue the inference pipeline after question has been answered.
+
+    This endpoint picks up where /api/run left off, with the new operator values.
+    """
+    session_data = session_store.get(session_id)
+    if not session_data:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    evidence = session_data.get('evidence', {})
+    model_config = session_data.get('model_config', get_model_config(DEFAULT_MODEL))
+    prompt = session_data.get('prompt', '')
+    web_search_insights = session_data.get('web_search_insights', True)
+
+    return EventSourceResponse(
+        inference_stream_continue(
+            session_id=session_id,
+            prompt=prompt,
+            evidence=evidence,
+            model_config=model_config,
+            web_search_insights=web_search_insights
+        ),
+        media_type="text/event-stream"
+    )
+
+
+async def inference_stream_continue(
+    session_id: str,
+    prompt: str,
+    evidence: dict,
+    model_config: dict,
+    web_search_insights: bool = True
+) -> AsyncGenerator[dict, None]:
+    """
+    Continue inference pipeline from Step 2 (after evidence is complete with constellation data).
+    """
+    start_time = time.time()
+
+    try:
+        # Step 2: Run inference with constellation-enhanced operators
+        api_logger.info("[STEP 2 CONTINUED] Running inference engine with constellation operators")
+        yield {
+            "event": "status",
+            "data": json.dumps({"message": f"Running consciousness inference ({inference_engine.formula_count} formulas)..."})
+        }
+
+        posteriors = await asyncio.to_thread(
+            inference_engine.run_inference,
+            evidence
+        )
+
+        # Check for inference errors
+        if posteriors.get('error'):
+            api_logger.error(f"[INFERENCE] Error: {posteriors.get('error')}")
+            yield {
+                "event": "error",
+                "data": json.dumps({
+                    "message": f"Inference failed: {posteriors.get('error')}",
+                    "recoverable": False
+                })
+            }
+            return
+
+        # Log inference results
+        formula_count = posteriors.get('formula_count', 0)
+        tiers_executed = posteriors.get('tiers_executed', 0)
+        posteriors_count = len(posteriors.get('values', {}))
+        api_logger.info(f"[INFERENCE] Formulas: {formula_count} | Tiers: {tiers_executed} | Posteriors: {posteriors_count}")
+
+        yield {
+            "event": "status",
+            "data": json.dumps({
+                "message": f"Inference complete: {formula_count} formulas, {tiers_executed} tiers, {posteriors_count} posteriors"
+            })
+        }
+
+        # Step 3: Articulation Bridge - Organize, Detect, Build Prompt
+        api_logger.info("[STEP 3] Articulation Bridge processing")
+        yield {
+            "event": "status",
+            "data": json.dumps({"message": "Organizing consciousness state into semantic categories..."})
+        }
+
+        # Organize values into semantic structure
+        consciousness_state = value_organizer.organize(
+            raw_values=posteriors,
+            tier1_values=evidence,
+            session_id=session_id
+        )
+
+        # Detect bottlenecks
+        bottlenecks = bottleneck_detector.detect(consciousness_state)
+        consciousness_state.bottlenecks = bottlenecks
+
+        # Identify leverage points
+        leverage_points = leverage_identifier.identify(consciousness_state)
+        consciousness_state.leverage_points = leverage_points
+
+        api_logger.info(f"[ARTICULATION] Bottlenecks: {len(bottlenecks)} | Leverage: {len(leverage_points)}")
+
+        yield {
+            "event": "status",
+            "data": json.dumps({
+                "message": f"Analysis complete: {len(bottlenecks)} bottlenecks, {len(leverage_points)} leverage points"
+            })
+        }
+
+        # Build articulation context
+        articulation_context = build_articulation_context(
+            user_identity="User",
+            domain=evidence.get('goal_context', {}).get('domain', 'general'),
+            goal=prompt,
+            current_situation=prompt,
+            consciousness_state=consciousness_state,
+            framework_concealment=True,
+            domain_language=True
+        )
+
+        # Build prompt for LLM Call 2
+        articulation_prompt = articulation_prompt_builder.build_prompt(articulation_context)
+
+        # Step 4: LLM Call 2 - Articulation
+        api_logger.info("[STEP 4] LLM Call 2 - Articulation")
+        yield {
+            "event": "status",
+            "data": json.dumps({"message": "Generating insights (streaming)..."})
+        }
+
+        # Stream articulation response
+        async for token_data in stream_articulation_response(
+            articulation_prompt,
+            model_config,
+            web_search_insights
+        ):
+            yield token_data
+
+        # Cleanup session
+        session_store.delete(session_id)
+
+        elapsed = time.time() - start_time
+        api_logger.info(f"[PIPELINE COMPLETE] Total time: {elapsed:.2f}s")
+
+        yield {
+            "event": "done",
+            "data": json.dumps({"elapsed_time": elapsed})
+        }
+
+    except Exception as e:
+        api_logger.error(f"[PIPELINE ERROR] {type(e).__name__}: {e}", exc_info=True)
+        yield {
+            "event": "error",
+            "data": json.dumps({"message": str(e)})
+        }
+
+
+# =====================================================================
+# END CONSTELLATION Q&A ENDPOINTS
+# =====================================================================
+
+
 async def inference_stream(prompt: str, model_config: dict, web_search_data: bool = True, web_search_insights: bool = True) -> AsyncGenerator[dict, None]:
     """Generate SSE events for the inference pipeline with evidence enrichment and optional reverse mapping"""
     start_time = time.time()
+
+    # Create session for constellation Q&A flow
+    session_id = str(uuid.uuid4())
+    session_store.create(session_id, {
+        '_created_at': start_time,
+        'prompt': prompt,
+        'model_config': model_config,
+        'web_search_data': web_search_data,
+        'web_search_insights': web_search_insights,
+        'evidence': None,
+        '_pending_question': None,
+        '_question_asked': False
+    })
+
+    # Yield session ID so client can use it for answer endpoint
+    yield {
+        "event": "session",
+        "data": json.dumps({"session_id": session_id})
+    }
 
     # Start pipeline logging
     pipeline_logger.start_pipeline(prompt)
@@ -353,6 +671,104 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
             "event": "status",
             "data": json.dumps({"message": f"Extracted {obs_count} tier-1 operator values..."})
         }
+
+        # =====================================================================
+        # CONSTELLATION QUESTION FLOW - After LLM Call 1
+        # =====================================================================
+
+        # Parse goal context from evidence
+        question_gen = ConstellationQuestionGenerator()
+        goal_context = question_gen.parse_goal_context(
+            query=prompt,
+            detected_targets=evidence.get('targets', [])
+        )
+
+        # Store goal_context in evidence for downstream use
+        evidence['goal_context'] = {
+            'goal_text': goal_context.explicit_goal,
+            'goal_category': goal_context.category,
+            'why_category': goal_context.why_category,
+            'domain': evidence.get('domain', 'general')
+        }
+
+        # Identify which operators were extracted vs missing
+        extracted_operators = {}
+        for obs in evidence.get('observations', []):
+            if isinstance(obs, dict) and 'var' in obs and 'value' in obs:
+                extracted_operators[obs['var']] = obs['value']
+
+        # Get set of missing operators (core operators)
+        CORE_OPERATORS = {
+            'P_presence', 'A_aware', 'E_equanimity', 'Psi_quality', 'M_maya',
+            'W_witness', 'I_intention', 'At_attachment', 'Se_service', 'Sh_shakti',
+            'G_grace', 'S_surrender', 'D_dharma', 'K_karma', 'Hf_habit',
+            'V_void', 'Ce_celebration', 'Co_coherence', 'R_resistance',
+            'F_fear', 'J_joy', 'Tr_trust', 'O_openness', 'L_love'
+        }
+        missing_operators = CORE_OPERATORS - set(extracted_operators.keys())
+
+        # Determine if question should be asked (only if significant operators missing)
+        should_ask_question = len(missing_operators) >= 5  # Threshold: ask if 5+ operators missing
+
+        if should_ask_question:
+            question = question_gen.generate_single_question(
+                goal_context=goal_context,
+                missing_operators=missing_operators,
+                known_operators=extracted_operators
+            )
+
+            if question:
+                # Store session data for answer processing
+                session_data = session_store.get(session_id)
+                session_data['evidence'] = evidence
+                session_data['_pending_question'] = question
+                session_data['_question_asked'] = True
+                session_store.update(session_id, session_data)
+
+                # Yield question to user and wait for answer
+                yield {
+                    "event": "question",
+                    "data": json.dumps({
+                        "session_id": session_id,
+                        "question_id": question.question_id,
+                        "question_text": question.question_text,
+                        "options": [
+                            {
+                                "id": opt_id,
+                                "text": opt.description
+                            }
+                            for opt_id, opt in question.answer_options.items()
+                        ],
+                        "diagnostic_power": question.diagnostic_power,
+                        "purposes_served": question.purposes_served
+                    })
+                }
+
+                api_logger.info(f"[CONSTELLATION] Question asked: {question.question_id}")
+                api_logger.info(f"[CONSTELLATION] Goal category: {goal_context.category}")
+                api_logger.info(f"[CONSTELLATION] Missing operators: {len(missing_operators)}")
+
+                # Return here - client must call /api/answer and then /api/run/continue
+                yield {
+                    "event": "awaiting_answer",
+                    "data": json.dumps({
+                        "message": "Waiting for constellation selection...",
+                        "session_id": session_id,
+                        "continue_after_answer": f"/api/run/continue?session_id={session_id}"
+                    })
+                }
+                return
+
+        # No question needed - continue with existing operators
+        api_logger.info(f"[CONSTELLATION] No question needed - {len(extracted_operators)} operators extracted")
+        session_data = session_store.get(session_id)
+        session_data['evidence'] = evidence
+        session_data['_question_asked'] = False
+        session_store.update(session_id, session_data)
+
+        # =====================================================================
+        # END CONSTELLATION QUESTION FLOW
+        # =====================================================================
 
         # Step 1.5: Validate evidence before inference
         validation_errors = _validate_evidence(evidence)
