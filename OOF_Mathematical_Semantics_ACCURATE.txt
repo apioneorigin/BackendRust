@@ -588,29 +588,75 @@ Each drive has: internal, external, total, fulfillment
 PATHWAYS PROFILE (From PathwaysEngine)
 ================================================================================
 
-**pathway_truth_progress**
-- Mathematical meaning: Progress on truth pathway
-- 0.0 = No progress
-- 0.5 = Halfway
-- 1.0 = Complete mastery
+The backend calculates THREE pathways, each with THREE sub-components:
 
-**pathway_power_progress**
-- Mathematical meaning: Progress on power pathway
-- 0.0 = No progress
-- 0.5 = Halfway
-- 1.0 = Complete mastery
+## WITNESSING PATHWAY
 
-**pathway_love_progress**
-- Mathematical meaning: Progress on love pathway
-- 0.0 = No progress
-- 0.5 = Halfway
-- 1.0 = Complete mastery
+**pathway_witness_obs (Observation)**
+- Mathematical meaning: Capacity for neutral observation
+- 0.0 = No observation capacity
+- 0.5 = Partial observation
+- 1.0 = Complete observation mastery
+
+**pathway_witness_perc (Perception)**
+- Mathematical meaning: Clarity of perception
+- 0.0 = Distorted perception
+- 0.5 = Partial clarity
+- 1.0 = Perfect perception
+
+**pathway_witness_expr (Expression)**
+- Mathematical meaning: Ability to express witnessed truth
+- 0.0 = Cannot express truth
+- 0.5 = Partial expression
+- 1.0 = Complete truth expression
+
+## CREATING PATHWAY
+
+**pathway_create_intent (Intention)**
+- Mathematical meaning: Clarity and strength of creative intention
+- 0.0 = No clear intention
+- 0.5 = Moderate intention
+- 1.0 = Perfect intention clarity
+
+**pathway_create_attn (Attention)**
+- Mathematical meaning: Focused attention on creation
+- 0.0 = Scattered attention
+- 0.5 = Partial focus
+- 1.0 = Complete focused attention
+
+**pathway_create_manifest (Manifestation)**
+- Mathematical meaning: Capacity to manifest intention into reality
+- 0.0 = No manifestation capacity
+- 0.5 = Partial manifestation
+- 1.0 = Complete manifestation mastery
+
+## EMBODYING PATHWAY
+
+**pathway_embody_thoughts (Embodying Thoughts)**
+- Mathematical meaning: Alignment of thoughts with higher truth
+- 0.0 = Thoughts completely misaligned
+- 0.5 = Partial alignment
+- 1.0 = Perfect thought embodiment
+
+**pathway_embody_words (Embodying Words)**
+- Mathematical meaning: Alignment of words with higher truth
+- 0.0 = Words completely misaligned
+- 0.5 = Partial alignment
+- 1.0 = Perfect word embodiment
+
+**pathway_embody_actions (Embodying Actions)**
+- Mathematical meaning: Alignment of actions with higher truth
+- 0.0 = Actions completely misaligned
+- 0.5 = Partial alignment
+- 1.0 = Perfect action embodiment
+
+## PATHWAY SUMMARY METRICS
 
 **overall_pathway_progress**
-- Mathematical meaning: Average progress across all pathways
-- 0.0 = No progress
-- 0.5 = Moderate progress
-- 1.0 = Complete mastery
+- Mathematical meaning: Average progress across all 9 pathway components
+- 0.0 = No pathway progress
+- 0.5 = Moderate pathway development
+- 1.0 = Complete pathway mastery
 
 ================================================================================
 CIRCLES PROFILE (From CirclesEngine)
