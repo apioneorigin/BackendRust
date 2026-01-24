@@ -1,0 +1,892 @@
+# OOF MATHEMATICAL SEMANTICS REFERENCE
+# Pure meaning definitions for calculated values
+# What each mathematical result represents in consciousness/reality space
+
+================================================================================
+TIER 0: BASE OPERATORS (Extracted, 0.0-1.0 scale)
+================================================================================
+
+## Core Consciousness
+
+**Ψ (Psi)** - Consciousness Quality
+- Mathematical meaning: Degree of awareness present
+- 0.0 = Complete unconsciousness, pure reaction
+- 0.5 = Partial awareness, intermittent presence
+- 1.0 = Full witnessing consciousness, complete awareness
+
+**K (Karma)** - Cause/Effect Pattern Strength
+- Mathematical meaning: Constraint coefficient from past actions
+- 0.0 = Maximum freedom, zero constraints
+- 0.5 = Moderate constraint load
+- 1.0 = Maximum constraint, zero freedom
+
+**M (Maya)** - Illusion/Perception Gap
+- Mathematical meaning: Distance between perceived reality and actual reality
+- 0.0 = Perfect perception alignment
+- 0.5 = Moderate perception gap
+- 1.0 = Complete delusion, maximum gap
+
+**G (Grace)** - Non-Earned Support Flow
+- Mathematical meaning: Ratio of unearned support to earned effort
+- 0.0 = Zero synchronicity, pure effort
+- 0.5 = Balanced support and effort
+- 1.0 = Maximum flow, effortless movement
+
+**W (Witness)** - Observer Consciousness Capacity
+- Mathematical meaning: Separation distance between observer and observed
+- 0.0 = Complete identification, zero separation
+- 0.5 = Partial witnessing capacity
+- 1.0 = Complete observer separation
+
+**A (Awareness)** - Present Moment Attention Quality
+- Mathematical meaning: Concentration of attention in present moment
+- 0.0 = Zero presence, complete distraction
+- 0.5 = Partial presence
+- 1.0 = Total presence, zero time-displacement
+
+**P (Prana)** - Life Energy Availability
+- Mathematical meaning: Available energetic capacity
+- 0.0 = Complete depletion
+- 0.5 = Moderate energy
+- 1.0 = Maximum vitality
+
+**E (Entropy)** - System Disorder Level
+- Mathematical meaning: Degree of chaos in system
+- 0.0 = Perfect order
+- 0.5 = Balanced order/disorder
+- 1.0 = Maximum chaos
+
+**V (Void)** - Emptiness Tolerance Capacity
+- Mathematical meaning: Capacity to sustain in non-manifest state
+- 0.0 = Zero tolerance for emptiness
+- 0.5 = Moderate tolerance
+- 1.0 = Complete comfort with void
+
+**L (Love)** - Unconditional Connection Quality
+- Mathematical meaning: Degree of conditionality in connection
+- 0.0 = Pure conditionality, transactional
+- 0.5 = Mixed conditional/unconditional
+- 1.0 = Pure unconditional love
+
+**R (Resonance)** - Harmonic Alignment Coefficient
+- Mathematical meaning: Phase coherence with environment
+- 0.0 = Complete dissonance
+- 0.5 = Partial alignment
+- 1.0 = Perfect resonance
+
+## Emotional/Behavioral
+
+**At (Attachment)** - Clinging Intensity
+- Mathematical meaning: Strength of holding pattern
+- 0.0 = Zero attachment, complete flow
+- 0.5 = Moderate holding
+- 1.0 = Maximum clinging, cannot release
+
+**Av (Aversion)** - Rejection Force
+- Mathematical meaning: Strength of pushing-away force
+- 0.0 = Complete acceptance
+- 0.5 = Moderate rejection
+- 1.0 = Maximum aversion
+
+**Fe (Fear)** - Fear Response Magnitude
+- Mathematical meaning: Intensity of fear activation
+- 0.0 = Zero fear, complete trust
+- 0.5 = Moderate fear
+- 1.0 = Maximum fear, paralysis
+
+**De (Desire)** - Craving Intensity
+- Mathematical meaning: Strength of wanting force
+- 0.0 = Complete contentment
+- 0.5 = Moderate desire
+- 1.0 = Maximum craving, insatiable
+
+**Re (Resistance)** - Opposition Force to Reality
+- Mathematical meaning: Magnitude of force against what-is
+- 0.0 = Complete acceptance
+- 0.5 = Moderate resistance
+- 1.0 = Maximum fighting of reality
+
+## Practice/Action
+
+**Se (Seva)** - Selfless Service Orientation
+- Mathematical meaning: Ratio of selfless to selfish action
+- 0.0 = Pure self-interest
+- 0.5 = Mixed motivation
+- 1.0 = Pure selfless service
+
+**Ce (Cleaning)** - Pattern Dissolution Rate
+- Mathematical meaning: Speed of pattern purification
+- 0.0 = Zero cleaning, accumulation
+- 0.5 = Moderate purification
+- 1.0 = Maximum cleaning rate
+
+**Su (Surrender)** - Control Release Degree
+- Mathematical meaning: Ratio of surrender to control
+- 0.0 = Total control, zero surrender
+- 0.5 = Mixed control/surrender
+- 1.0 = Complete surrender
+
+**As (Aspiration)** - Upward Movement Force
+- Mathematical meaning: Magnitude of growth vector
+- 0.0 = Zero aspiration, stagnation
+- 0.5 = Moderate growth drive
+- 1.0 = Maximum aspiration
+
+## Mind Structure
+
+**Hf (Habit Force)** - Pattern Momentum
+- Mathematical meaning: Inertia of habitual patterns
+- 0.0 = Zero inertia, complete flexibility
+- 0.5 = Moderate pattern momentum
+- 1.0 = Maximum inertia, locked patterns
+
+**Sa (Samskara)** - Subconscious Impression Depth
+- Mathematical meaning: Depth of conditioning layer
+- 0.0 = No conditioning
+- 0.5 = Moderate conditioning depth
+- 1.0 = Maximum conditioning depth
+
+**Bu (Buddhi)** - Discriminating Intellect Clarity
+- Mathematical meaning: Precision of discriminating function
+- 0.0 = Zero discrimination, complete confusion
+- 0.5 = Partial clarity
+- 1.0 = Perfect discrimination
+
+**Ma (Manas)** - Reactive Mind Activity Level
+- Mathematical meaning: Frequency of reactive thought patterns
+- 0.0 = Complete stillness
+- 0.5 = Moderate mental activity
+- 1.0 = Maximum reactivity
+
+**Ch (Chitta)** - Memory Field Disturbance
+- Mathematical meaning: Turbulence in subconscious field
+- 0.0 = Perfect calm
+- 0.5 = Moderate disturbance
+- 1.0 = Maximum turbulence
+
+================================================================================
+TIER 1: S-LEVEL (Consciousness Development Stage, 1.0-8.0)
+================================================================================
+
+**s_level_numeric**
+- Mathematical meaning: Position on consciousness development scale
+- 1.0-1.9 = Survival focus (security, safety, basic needs)
+- 2.0-2.9 = Sensation focus (pleasure/pain optimization)
+- 3.0-3.9 = Achievement focus (success, competition, status)
+- 4.0-4.9 = Relationship focus (connection, heart, belonging)
+- 5.0-5.9 = Purpose focus (meaning, contribution, service)
+- 6.0-6.9 = Witness focus (truth, observation, understanding)
+- 7.0-7.9 = Unity focus (non-dual, oneness)
+- 8.0+ = Transcendence (beyond categories)
+
+**s_level_transition_rate**
+- Mathematical meaning: Velocity of consciousness level change
+- Unit: Levels per unit time
+- Negative = Regression
+- Zero = Stable
+- Positive = Evolution
+
+**s_level_confidence**
+- Mathematical meaning: Certainty of S-level assessment
+- 0.0 = Complete uncertainty
+- 1.0 = Complete certainty
+
+================================================================================
+TIER 2: MATRIX POSITIONS (-1.0 to +1.0)
+================================================================================
+
+**matrix_truth_position**
+- Mathematical meaning: Position on maya-witness axis
+- -1.0 = Maximum illusion, zero truth perception
+- 0.0 = Balanced truth/illusion
+- +1.0 = Maximum clarity, perfect truth perception
+
+**matrix_power_position**
+- Mathematical meaning: Position on victim-creator axis
+- -1.0 = Complete powerlessness, victim consciousness
+- 0.0 = Balanced empowerment
+- +1.0 = Complete empowerment, creator consciousness
+
+**matrix_love_position**
+- Mathematical meaning: Position on fear-love axis
+- -1.0 = Pure fear-based operation
+- 0.0 = Mixed fear and love
+- +1.0 = Pure love-based operation
+
+**matrix_creation_position**
+- Mathematical meaning: Position on consumption-creation axis
+- -1.0 = Pure consumption/destruction
+- 0.0 = Balanced creation and consumption
+- +1.0 = Pure creation, maximum innovation
+
+**matrix_separation_position**
+- Mathematical meaning: Position on isolation-integration axis
+- -1.0 = Maximum separation, isolation
+- 0.0 = Balanced boundaries and connection
+- +1.0 = Maximum integration, zero boundaries
+
+**matrix_time_position**
+- Mathematical meaning: Temporal attention distribution
+- -1.0 = Past-dominated attention
+- 0.0 = Present-centered attention
+- +1.0 = Future-dominated attention
+
+**matrix_void_position**
+- Mathematical meaning: Position on form-emptiness axis
+- -1.0 = Cannot tolerate emptiness, pure form-clinging
+- 0.0 = Balanced form and emptiness
+- +1.0 = Complete comfort with void
+
+================================================================================
+TIER 2: COHERENCE METRICS (0.0-1.0)
+================================================================================
+
+**coherence_overall**
+- Mathematical meaning: System-wide coherence coefficient
+- 0.0 = Complete incoherence, fragmentation
+- 0.5 = Partial coherence
+- 1.0 = Perfect coherence, total integration
+
+**coherence_vertical**
+- Mathematical meaning: Alignment across consciousness levels
+- 0.0 = Zero vertical alignment (thought vs action mismatch)
+- 0.5 = Partial vertical alignment
+- 1.0 = Perfect vertical alignment (thought-word-action unity)
+
+**coherence_horizontal**
+- Mathematical meaning: Alignment across life domains
+- 0.0 = Complete domain fragmentation
+- 0.5 = Partial horizontal coherence
+- 1.0 = Perfect cross-domain coherence
+
+**coherence_internal**
+- Mathematical meaning: Internal system coherence
+- 0.0 = Maximum internal contradiction
+- 0.5 = Partial internal alignment
+- 1.0 = Perfect internal coherence
+
+**coherence_external**
+- Mathematical meaning: Coherence with external environment
+- 0.0 = Maximum environment misalignment
+- 0.5 = Partial external coherence
+- 1.0 = Perfect environmental alignment
+
+================================================================================
+TIER 2: GAP METRICS (0.0-1.0)
+================================================================================
+
+**maya_witness_gap**
+- Mathematical meaning: |M - W|, absolute distance between illusion and witnessing
+- 0.0 = Perfect alignment between perception and observation
+- 0.5 = Moderate gap
+- 1.0 = Maximum gap (high illusion + low witnessing OR high witnessing + low illusion)
+
+**attachment_surrender_gap**
+- Mathematical meaning: |At - Su|, absolute distance between holding and releasing
+- 0.0 = Perfect balance
+- 0.5 = Moderate imbalance
+- 1.0 = Maximum imbalance
+
+**resistance_acceptance_gap**
+- Mathematical meaning: Distance between fighting and accepting reality
+- 0.0 = Perfect acceptance (Re = 0)
+- 0.5 = Moderate resistance
+- 1.0 = Maximum resistance to what-is
+
+**perception_reality_gap**
+- Mathematical meaning: Distance between believed state and actual state
+- 0.0 = Perfect perception accuracy
+- 0.5 = Moderate perception error
+- 1.0 = Complete perception inaccuracy
+
+**belief_truth_gap**
+- Mathematical meaning: Distance between held beliefs and truth
+- 0.0 = Beliefs perfectly aligned with truth
+- 0.5 = Moderate belief-truth misalignment
+- 1.0 = Complete belief-truth contradiction
+
+**model_world_gap**
+- Mathematical meaning: Distance between mental model and actual world state
+- 0.0 = Perfect model-world correspondence
+- 0.5 = Moderate model error
+- 1.0 = Complete model breakdown
+
+================================================================================
+TIER 3: UCB COMPONENTS (0.0-1.0)
+================================================================================
+
+**ucb_total**
+- Mathematical meaning: Total integration capacity
+- Formula: Weighted average of understanding, coherence, bandwidth
+- 0.0 = Zero integration capacity
+- 0.5 = Moderate capacity
+- 1.0 = Maximum integration capacity
+
+**ucb_understanding**
+- Mathematical meaning: Depth of comprehension
+- 0.0 = Zero understanding
+- 0.5 = Surface understanding
+- 1.0 = Complete understanding
+
+**ucb_coherence**
+- Mathematical meaning: Internal consistency coefficient
+- 0.0 = Maximum internal contradiction
+- 0.5 = Partial coherence
+- 1.0 = Perfect internal coherence
+
+**ucb_bandwidth**
+- Mathematical meaning: Information processing capacity
+- 0.0 = Zero processing capacity
+- 0.5 = Moderate bandwidth
+- 1.0 = Maximum bandwidth
+
+**ucb_depth**
+- Mathematical meaning: Penetration depth of understanding
+- 0.0 = Pure surface
+- 0.5 = Moderate depth
+- 1.0 = Complete depth
+
+**ucb_breadth**
+- Mathematical meaning: Span of understanding across domains
+- 0.0 = Narrow focus
+- 0.5 = Moderate breadth
+- 1.0 = Universal breadth
+
+**ucb_integration**
+- Mathematical meaning: Synthesis capacity across domains
+- 0.0 = Zero integration, pure fragmentation
+- 0.5 = Partial integration
+- 1.0 = Complete synthesis
+
+**ucb_application**
+- Mathematical meaning: Translation from understanding to action
+- 0.0 = Zero application capacity
+- 0.5 = Partial application
+- 1.0 = Perfect application
+
+================================================================================
+TIER 3: NETWORK EFFECTS (Various scales)
+================================================================================
+
+**network_size**
+- Mathematical meaning: Number of nodes in network
+- Unit: Count of connections
+- Range: 0 to N
+
+**network_density**
+- Mathematical meaning: Actual connections / possible connections
+- 0.0 = Zero connectivity
+- 0.5 = Half-connected network
+- 1.0 = Fully connected network
+
+**network_coherence**
+- Mathematical meaning: Phase alignment across network nodes
+- 0.0 = Complete network dissonance
+- 0.5 = Partial network alignment
+- 1.0 = Perfect network coherence
+
+**network_bandwidth**
+- Mathematical meaning: Information flow capacity through network
+- 0.0 = Zero flow capacity
+- 0.5 = Moderate bandwidth
+- 1.0 = Maximum bandwidth
+
+**network_value_multiplier**
+- Mathematical meaning: Network effect amplification coefficient
+- 1.0 = No network effect (linear)
+- 5.0 = 5x amplification from network
+- 10.0 = 10x amplification from network
+
+================================================================================
+TIER 4: GRACE MECHANICS (Various scales)
+================================================================================
+
+**grace_availability**
+- Mathematical meaning: Magnitude of unearned support present
+- 0.0 = Zero grace, pure effort required
+- 0.5 = Moderate grace available
+- 1.0 = Maximum grace, effortless flow
+
+**grace_receptivity**
+- Mathematical meaning: Capacity to receive non-earned support
+- 0.0 = Zero receptivity, cannot receive
+- 0.5 = Partial receptivity
+- 1.0 = Complete receptivity
+
+**grace_flow_rate**
+- Mathematical meaning: Velocity of grace manifestation
+- Unit: Grace units per time
+- Higher = Faster grace flow
+
+**grace_multiplier_effect**
+- Mathematical meaning: Amplification coefficient of grace on effort
+- 1.0 = No amplification (effort = result)
+- 2.5 = Each unit of effort yields 2.5 units of result
+- 5.0 = 5x amplification of effort
+
+================================================================================
+TIER 4: KARMA DYNAMICS (Various scales)
+================================================================================
+
+**karma_burn_rate**
+- Mathematical meaning: Rate of karmic debt dissolution
+- Unit: Karma units per time
+- Negative = Accumulating karma
+- Zero = Stable karma
+- Positive = Burning karma
+
+**karma_accumulation_rate**
+- Mathematical meaning: Rate of new karmic constraint creation
+- Unit: Karma units per time
+- Higher = Faster constraint accumulation
+
+**karma_net_change**
+- Mathematical meaning: karma_burn_rate - karma_accumulation_rate
+- Negative = Net accumulation
+- Zero = Stable
+- Positive = Net reduction
+
+**karma_half_life**
+- Mathematical meaning: Time for karma to reduce by half at current burn rate
+- Unit: Time
+- Shorter = Faster dissolution
+
+================================================================================
+TIER 4: DEATH ARCHITECTURE (Boolean + Sequence)
+================================================================================
+
+**death_d1_identity_active**
+- Mathematical meaning: Boolean flag indicating personal identity death in process
+- false = Identity death not active
+- true = Personal identity dissolution active
+
+**death_d2_relationship_active**
+- Mathematical meaning: Relationship pattern death activation state
+- false = Not active
+- true = Relationship identity dying
+
+**death_d3_achievement_active**
+- Mathematical meaning: Achievement identity death state
+- false = Achievement identity intact
+- true = Achiever identity dissolving
+
+**death_d4_attachment_active**
+- Mathematical meaning: Major attachment release state
+- false = Attachments maintained
+- true = Core attachments releasing
+
+**death_d5_knowledge_active**
+- Mathematical meaning: Knowledge framework collapse state
+- false = Knowledge structure intact
+- true = Epistemic framework dissolving
+
+**death_d6_separation_active**
+- Mathematical meaning: Separation consciousness dissolution state
+- false = Separation maintained
+- true = Separation dissolving
+
+**death_d7_ego_active**
+- Mathematical meaning: Ego structure dissolution state
+- false = Ego intact
+- true = Ego surrendering
+
+**death_sequence_stage**
+- Mathematical meaning: Current position in death sequence (0-7)
+- 0 = No deaths active
+- 1-7 = Number of death layers activated
+- Higher = Deeper transformation
+
+================================================================================
+TIER 5: TRANSFORMATION METRICS (Various scales)
+================================================================================
+
+**breakthrough_probability**
+- Mathematical meaning: Probability of breakthrough event occurring
+- 0.0 = Zero probability
+- 0.5 = 50% probability
+- 1.0 = Breakthrough certain/imminent
+
+**transformation_readiness_score**
+- Mathematical meaning: System readiness for deep transformation
+- 0.0 = Zero readiness, high resistance
+- 0.5 = Moderate readiness
+- 1.0 = Complete readiness
+
+**evolution_rate_months**
+- Mathematical meaning: Velocity of consciousness evolution
+- Unit: S-levels per month
+- Higher = Faster evolution
+
+**timeline_to_next_s_level**
+- Mathematical meaning: Time required to reach next consciousness level
+- Unit: Months
+- Based on current evolution_rate and s_level_transition barriers
+
+**transformation_vector_magnitude**
+- Mathematical meaning: Strength of transformation force
+- 0.0 = No transformation momentum
+- Higher = Stronger transformation force
+
+**transformation_vector_direction**
+- Mathematical meaning: Angular direction of transformation in consciousness space
+- Range: 0-360 degrees (or compass direction)
+- Indicates which dimension transformation is moving toward
+
+**transformation_vector_coherence**
+- Mathematical meaning: Alignment of transformation forces
+- 0.0 = Contradictory transformation vectors
+- 0.5 = Partial alignment
+- 1.0 = Perfect alignment of all transformation forces
+
+================================================================================
+TIER 5: BOTTLENECK STRUCTURE
+================================================================================
+
+**bottleneck (object)**
+- category: Classification of bottleneck type
+- variable: Which operator/dimension is blocked
+- value: Current value of blocking operator
+- impact: Severity classification ("critical", "high", "moderate", "low")
+- description: Semantic description of bottleneck manifestation
+
+**bottleneck_primary_operator**
+- Mathematical meaning: Operator with highest blocking coefficient
+- Value: Operator symbol of primary bottleneck
+
+**bottleneck_primary_severity**
+- Mathematical meaning: Magnitude of primary bottleneck blocking effect
+- 0.0 = Minimal blocking
+- 0.5 = Moderate blocking
+- 1.0 = Complete blocking
+
+**bottleneck_secondary_operator**
+- Mathematical meaning: Second-most significant blocking operator
+- Value: Operator symbol of secondary bottleneck
+
+**bottleneck_count_total**
+- Mathematical meaning: Total number of active bottlenecks
+- Unit: Count
+- Higher = More obstacles present
+
+================================================================================
+TIER 5: LEVERAGE STRUCTURE
+================================================================================
+
+**leverage_point (object)**
+- description: Semantic description of leverage mechanism
+- multiplier: Amplification coefficient
+- activation_requirement: Condition needed to activate
+- confidence: Probability of leverage being accessible
+
+**leverage_highest_multiplier**
+- Mathematical meaning: Maximum available amplification coefficient
+- 1.0 = No leverage (linear)
+- 2.5 = 2.5x amplification available
+- 5.0+ = High leverage available
+
+**leverage_grace_activation**
+- Mathematical meaning: Amplification available through grace mechanics
+- Similar to grace_multiplier_effect
+- Range: 1.0 to 5.0+
+
+**leverage_network_activation**
+- Mathematical meaning: Amplification available through network effects
+- Similar to network_value_multiplier
+- Range: 1.0 to 10.0+
+
+**leverage_breakthrough_catalyst**
+- Mathematical meaning: Catalyst strength for breakthrough event
+- 0.0 = No catalyst present
+- 0.5 = Moderate catalyst
+- 1.0 = Strong catalyst present
+
+================================================================================
+TIER 5: PIPELINE DYNAMICS (Various scales)
+================================================================================
+
+**pipeline_flow_rate**
+- Mathematical meaning: Velocity of flow through transformation pipeline
+- Unit: Flow units per time
+- Higher = Faster throughput
+
+**pipeline_blockage_severity**
+- Mathematical meaning: Severity of pipeline obstruction
+- 0.0 = No blockage, perfect flow
+- 0.5 = Moderate blockage
+- 1.0 = Complete blockage, zero flow
+
+**pipeline_throughput_capacity**
+- Mathematical meaning: Maximum flow capacity of pipeline
+- Unit: Maximum units per time
+- Higher = Greater capacity
+
+================================================================================
+TIER 6: QUANTUM CONSCIOUSNESS (0.0-1.0)
+================================================================================
+
+**quantum_superposition_degree**
+- Mathematical meaning: Capacity to hold multiple states simultaneously
+- 0.0 = Classical binary state only
+- 0.5 = Partial superposition capacity
+- 1.0 = Full superposition capacity
+
+**quantum_entanglement_strength**
+- Mathematical meaning: Non-local connection strength
+- 0.0 = Zero entanglement, pure locality
+- 0.5 = Moderate entanglement
+- 1.0 = Maximum entanglement
+
+**quantum_tunneling_probability**
+- Mathematical meaning: Probability of barrier penetration without classical path
+- 0.0 = Zero tunneling probability
+- 0.5 = Moderate tunneling capacity
+- 1.0 = High tunneling probability
+
+**quantum_decoherence_rate**
+- Mathematical meaning: Rate of quantum state collapse to classical
+- Unit: Decoherence events per time
+- Higher = Faster collapse to classical state
+
+**consciousness_field_strength**
+- Mathematical meaning: Magnitude of consciousness field
+- 0.0 = Zero field strength
+- 0.5 = Moderate field
+- 1.0 = Maximum field strength
+
+**morphogenetic_field_resonance**
+- Mathematical meaning: Coherence with collective consciousness field
+- 0.0 = Zero resonance with collective
+- 0.5 = Partial resonance
+- 1.0 = Complete resonance
+
+**collective_field_coherence**
+- Mathematical meaning: Coherence of collective consciousness field
+- 0.0 = Fragmented collective field
+- 0.5 = Partial collective coherence
+- 1.0 = Unified collective field
+
+================================================================================
+TIER 4: CASCADE DYNAMICS (0.0-1.0 per level)
+================================================================================
+
+**cascade_cleanliness_l1 through l7**
+- Mathematical meaning: Cleanliness coefficient at each cascade level
+- Level 1 (Physical) through Level 7 (Transcendent)
+- 0.0 = Maximum blockage at that level
+- 0.5 = Partial flow
+- 1.0 = Complete cleanliness, perfect flow
+
+**cascade_flow_rate**
+- Mathematical meaning: Overall velocity of energy cascade
+- Unit: Energy units per time
+- Higher = Faster cascade flow
+
+**cascade_blockage_points**
+- Mathematical meaning: Count of blockage locations in cascade
+- Unit: Count
+- Higher = More blockages
+
+**cascade_total_cleanliness**
+- Mathematical meaning: Average cleanliness across all 7 levels
+- 0.0 = Completely blocked cascade
+- 0.5 = Partially flowing
+- 1.0 = Perfectly flowing cascade
+
+================================================================================
+TIER 4: CHAKRA SYSTEM (0.0-1.0 per chakra)
+================================================================================
+
+**chakra_muladhara** (Root)
+- Mathematical meaning: Activation/balance level of root chakra
+- 0.0 = Completely blocked/imbalanced
+- 0.5 = Partially active
+- 1.0 = Fully active and balanced
+
+**chakra_svadhisthana** (Sacral)
+- Mathematical meaning: Sacral chakra activation level
+- 0.0 to 1.0 scale
+
+**chakra_manipura** (Solar Plexus)
+- Mathematical meaning: Solar plexus chakra activation level
+- 0.0 to 1.0 scale
+
+**chakra_anahata** (Heart)
+- Mathematical meaning: Heart chakra activation level
+- 0.0 to 1.0 scale
+
+**chakra_vishuddha** (Throat)
+- Mathematical meaning: Throat chakra activation level
+- 0.0 to 1.0 scale
+
+**chakra_ajna** (Third Eye)
+- Mathematical meaning: Third eye chakra activation level
+- 0.0 to 1.0 scale
+
+**chakra_sahasrara** (Crown)
+- Mathematical meaning: Crown chakra activation level
+- 0.0 to 1.0 scale
+
+**chakra_balance_overall**
+- Mathematical meaning: Overall chakra system balance coefficient
+- 0.0 = Maximum imbalance across chakras
+- 0.5 = Moderate balance
+- 1.0 = Perfect balance across all chakras
+
+================================================================================
+TIER 2: FIVE SACRED DRIVES (0.0-1.0 each)
+================================================================================
+
+Each drive has three components: internal, external, total
+
+**survival_internal**
+- Mathematical meaning: Internal survival drive strength
+- 0.0 to 1.0
+
+**survival_external**
+- Mathematical meaning: External survival manifestation
+- 0.0 to 1.0
+
+**survival_total**
+- Mathematical meaning: survival_internal + survival_external
+- 0.0 to 2.0
+
+**pleasure_internal, pleasure_external, pleasure_total**
+- Mathematical meaning: Pleasure-seeking drive components
+- Similar structure to survival
+
+**achievement_internal, achievement_external, achievement_total**
+- Mathematical meaning: Achievement drive components
+- Similar structure to survival
+
+**connection_internal, connection_external, connection_total**
+- Mathematical meaning: Connection/relationship drive components
+- Similar structure to survival
+
+**transcendence_internal, transcendence_external, transcendence_total**
+- Mathematical meaning: Transcendence aspiration components
+- Similar structure to survival
+
+================================================================================
+TIER 2: OPERATOR DERIVATIVES
+================================================================================
+
+For each of 25 base operators (Ψ, K, M, G, W, A, P, E, V, L, R, At, Av, Se, Ce, Su, As, Fe, De, Re, Hf, Sa, Bu, Ma, Ch):
+
+**[operator]_confidence**
+- Mathematical meaning: Certainty of operator value extraction
+- 0.0 = Complete uncertainty
+- 1.0 = Complete certainty
+
+**[operator]_rate_of_change**
+- Mathematical meaning: Time derivative of operator value
+- Unit: Operator units per time
+- Negative = Decreasing
+- Zero = Stable
+- Positive = Increasing
+
+**[operator]_stability**
+- Mathematical meaning: Variance of operator over time
+- 0.0 = Highly unstable, fluctuating
+- 0.5 = Moderate stability
+- 1.0 = Completely stable
+
+================================================================================
+TEMPORAL FOCUS (0.0-1.0 each)
+================================================================================
+
+**temporal_focus_past**
+- Mathematical meaning: Fraction of attention allocated to past
+- 0.0 = Zero past focus
+- 1.0 = Complete past focus
+
+**temporal_focus_present**
+- Mathematical meaning: Fraction of attention allocated to present
+- 0.0 = Zero presence
+- 1.0 = Complete presence
+
+**temporal_focus_future**
+- Mathematical meaning: Fraction of attention allocated to future
+- 0.0 = Zero future focus
+- 1.0 = Complete future focus
+
+Note: temporal_focus_past + temporal_focus_present + temporal_focus_future = 1.0
+
+================================================================================
+PERFECTION DEGREE (0.0-1.0)
+================================================================================
+
+**perfection_degree_overall**
+- Mathematical meaning: Distance from ideal state across all dimensions
+- 0.0 = Maximum distance from perfection
+- 0.5 = Halfway to ideal
+- 1.0 = Perfect state achieved
+
+================================================================================
+CONTEXTUAL/DOMAIN-SPECIFIC CALCULATED VALUES (0.0-1.0)
+================================================================================
+
+These values are calculated based on query context and domain.
+Not all values are present in every analysis.
+
+**purpose_clarity_score**
+- Mathematical meaning: Clarity of purpose/dharma understanding
+- 0.0 = Complete purpose confusion
+- 0.5 = Emerging purpose clarity
+- 1.0 = Perfect purpose clarity
+
+**dharma_alignment**
+- Mathematical meaning: Alignment with true purpose/calling
+- 0.0 = Complete misalignment with dharma
+- 0.5 = Partial dharma alignment
+- 1.0 = Perfect dharma alignment
+
+**innovation_readiness**
+- Mathematical meaning: System readiness for innovation/breakthrough
+- 0.0 = Zero innovation capacity
+- 0.5 = Moderate innovation readiness
+- 1.0 = Maximum innovation readiness
+
+**competitive_dynamics_score**
+- Mathematical meaning: Strength of competitive positioning (business context)
+- 0.0 = Weakest competitive position
+- 0.5 = Moderate competitive strength
+- 1.0 = Dominant competitive position
+
+**market_alignment**
+- Mathematical meaning: Alignment with market needs/trends (business context)
+- 0.0 = Complete market misalignment
+- 0.5 = Partial market fit
+- 1.0 = Perfect market alignment
+
+**grace_market_alignment**
+- Mathematical meaning: Market conditions favoring entity (grace in market context)
+- 0.0 = Market forces opposing
+- 0.5 = Neutral market conditions
+- 1.0 = Market forces supporting
+
+**brand_evolution_capacity**
+- Mathematical meaning: Capacity for brand transformation (business context)
+- 0.0 = Rigid brand, cannot evolve
+- 0.5 = Moderate brand flexibility
+- 1.0 = Maximum brand evolution capacity
+
+**cultural_transformation_readiness**
+- Mathematical meaning: Organizational culture readiness for change
+- 0.0 = Culture resistant to change
+- 0.5 = Moderate cultural readiness
+- 1.0 = Culture ready for transformation
+
+**NOTE ON NAMING:** Some calculated values use descriptive names that reference base operators:
+- "void_tolerance_capacity" may reference V (Void) operator value
+- "love_quality" may reference L (Love) operator value  
+- "resonance_strength" may reference R (Resonance) operator value
+- "habit_force_strength" may reference Hf (Habit Force) operator value
+
+These are semantic variations for clarity in specific contexts, not separate calculations.
+
+================================================================================
+END OF MATHEMATICAL SEMANTICS REFERENCE
+================================================================================
+
+This document defines what each calculated value represents mathematically.
+It does not instruct how to use, communicate, or apply these values.
