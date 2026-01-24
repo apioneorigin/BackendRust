@@ -276,15 +276,28 @@ bottleneck_detector = BottleneckDetector()
 leverage_identifier = LeverageIdentifier()
 prompt_builder = ArticulationPromptBuilder()
 
-# Load OOF Framework for OpenAI context (full instruction set)
-OOF_PATH = Path(__file__).parent.parent / "OOF_Math.txt"
-OOF_FRAMEWORK = ""
-if OOF_PATH.exists():
-    with open(OOF_PATH, 'r', encoding='utf-8') as f:
-        OOF_FRAMEWORK = f.read()
-    api_logger.info(f"Loaded OOF Framework: {len(OOF_FRAMEWORK)} characters")
+# Load LLM Call 1 context (for operator extraction)
+LLM_CALL1_PATH = Path(__file__).parent.parent / "LLM Call 1.txt"
+LLM_CALL1_CONTEXT = ""
+if LLM_CALL1_PATH.exists():
+    with open(LLM_CALL1_PATH, 'r', encoding='utf-8') as f:
+        LLM_CALL1_CONTEXT = f.read()
+    api_logger.info(f"Loaded LLM Call 1 context: {len(LLM_CALL1_CONTEXT)} characters")
 else:
-    api_logger.warning(f"OOF Framework not found at {OOF_PATH}")
+    api_logger.warning(f"LLM Call 1 context not found at {LLM_CALL1_PATH}")
+
+# Load LLM Call 2 context (for articulation) - OOF Mathematical Semantics
+LLM_CALL2_PATH = Path(__file__).parent.parent / "OOF_Mathematical_Semantics_ACCURATE.txt"
+LLM_CALL2_CONTEXT = ""
+if LLM_CALL2_PATH.exists():
+    with open(LLM_CALL2_PATH, 'r', encoding='utf-8') as f:
+        LLM_CALL2_CONTEXT = f.read()
+    api_logger.info(f"Loaded LLM Call 2 context: {len(LLM_CALL2_CONTEXT)} characters")
+else:
+    api_logger.warning(f"LLM Call 2 context not found at {LLM_CALL2_PATH}")
+
+# Legacy alias for backward compatibility (will be removed)
+OOF_FRAMEWORK = LLM_CALL2_CONTEXT
 
 api_logger.info("Articulation Bridge initialized: ValueOrganizer, BottleneckDetector, LeverageIdentifier, PromptBuilder")
 
@@ -1094,7 +1107,7 @@ For each query, you must:
 You have complete knowledge of the One Origin Framework (OOF) - a consciousness physics system.
 
 === OOF FRAMEWORK KNOWLEDGE ===
-{OOF_FRAMEWORK}
+{LLM_CALL1_CONTEXT}
 === END OOF FRAMEWORK ===
 
 {query_pattern_instructions}
@@ -1199,13 +1212,13 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
                         user_content += "\n\nIMPORTANT: Use the web_search tool to gather real data before responding."
 
                     # Build system prompt with cache_control for prompt caching
-                    # The large OOF_FRAMEWORK is static and cacheable across requests
+                    # The large LLM_CALL1_CONTEXT is static and cacheable across requests
                     # Structure: [cached OOF framework block] + [dynamic instructions block]
                     static_system_content = f"""You are the Reality Transformer consciousness analysis engine.
 You have complete knowledge of the One Origin Framework (OOF) - a consciousness physics system.
 
 === OOF FRAMEWORK KNOWLEDGE ===
-{OOF_FRAMEWORK}
+{LLM_CALL1_CONTEXT}
 === END OOF FRAMEWORK ===
 
 {query_pattern_instructions}"""
@@ -1769,7 +1782,7 @@ Your task is to ARTICULATE these insights in NATURAL, DOMAIN-APPROPRIATE languag
 === RESPONSE MODE: {response_mode} ===
 
 === OOF FRAMEWORK KNOWLEDGE ===
-{OOF_FRAMEWORK}
+{LLM_CALL2_CONTEXT}
 === END OOF FRAMEWORK ===
 
 {'''=== OPERATOR INTERPRETATION FOR EVIDENCE SEARCH ===
@@ -1908,8 +1921,8 @@ SECTION 5: FIRST STEPS
             async with httpx.AsyncClient(timeout=180.0) as client:
                 if provider == "anthropic":
                     # Anthropic Claude streaming API with prompt caching
-                    # Build system prompt with cache_control for the static OOF framework
-                    # The OOF_FRAMEWORK is large and static - perfect for caching
+                    # Build system prompt with cache_control for the static framework
+                    # LLM_CALL2_CONTEXT (OOF Mathematical Semantics) is static - perfect for caching
                     static_system_content = f"""You are Reality Transformer, a consciousness-based transformation engine.
 
 CRITICAL - READ FIRST:
@@ -1925,7 +1938,7 @@ Your task is to ARTICULATE these insights in NATURAL, DOMAIN-APPROPRIATE languag
 === RESPONSE MODE: {response_mode} ===
 
 === OOF FRAMEWORK KNOWLEDGE ===
-{OOF_FRAMEWORK}
+{LLM_CALL2_CONTEXT}
 === END OOF FRAMEWORK ==="""
 
                     # Dynamic portion varies based on web_search and reverse_mapping
@@ -2329,7 +2342,7 @@ async def format_results_streaming(prompt: str, evidence: dict, posteriors: dict
     instructions = f"""You are Reality Transformer, a consciousness-based transformation engine powered by the One Origin Framework (OOF).
 
 === OOF FRAMEWORK KNOWLEDGE ===
-{OOF_FRAMEWORK}
+{LLM_CALL2_CONTEXT}
 === END OOF FRAMEWORK ===
 
 === ARTICULATION STYLE ===
@@ -3218,7 +3231,7 @@ You are receiving a REVERSE CAUSALITY ANALYSIS - we've worked backward from the 
 desired future state to calculate what consciousness changes are required.
 
 === OOF FRAMEWORK KNOWLEDGE ===
-{OOF_FRAMEWORK[:50000]}
+{LLM_CALL2_CONTEXT}
 === END OOF FRAMEWORK ===
 
 === ARTICULATION RULES ===
