@@ -11,7 +11,7 @@ for the complete OOF (Ontological Operating Framework) implementation.
 - E → E_energy (prana), E_ego (self-construct), E_emerge (emergence)
 - A → A_aware (awareness), A_action (karma/action)
 - C → C_base (consciousness base), C_creator (divine), C_cultural (cultural)
-- P → P_presence (being), P_prana (energy), P_prob (probability), P_power (shakti)
+- P → P_presence (being), P_prob (probability), P_power (shakti)
 - L → L_love (bhakti), L_liberate (moksha), L_level (tier/rank)
 
 Variable Suffixes (standardized):
@@ -53,7 +53,6 @@ class NamespaceCategory(Enum):
     CULTURAL = "cultural"   # C_cultural - Collective/cultural
 
     PRESENCE = "presence"   # P_presence - Being/presence
-    PRANA = "prana"         # P_prana - Life force
     PROB = "prob"           # P_prob - Probability
     POWER = "power"         # P_power - Shakti/power
 
@@ -173,13 +172,11 @@ C_COLLISION_MAP = {
 
 # P Namespace Resolution
 P_COLLISION_MAP = {
-    "P": "AMBIGUOUS - use P_presence, P_prana, P_prob, or P_power",
+    "P": "AMBIGUOUS - use P_presence, P_prob, or P_power",
     "P_presence": "Being/presence quality",
-    "P_prana": "Life force/vital energy",
     "P_prob": "Probability measure",
     "P_power": "Shakti/power expression",
     "P_presence_depth": "Depth of present-moment awareness",
-    "P_prana_vitality": "Vital energy level",
     "P_prob_success": "Success probability",
     "P_power_expression": "Power expression mode",
 }
@@ -594,8 +591,8 @@ def _register_core_namespace_variables():
         name="energy",
         namespace=NamespaceCategory.ENERGY,
         suffix=VariableSuffix.SCORE,
-        description="Prana/vital energy composite score",
-        formula="P_prana_vitality * (1 - depletion_factor)",
+        description="Vital energy composite score",
+        formula="P_presence_depth * Sh_shakti * (1 - depletion_factor)",
         category="consciousness"
     ))
 
