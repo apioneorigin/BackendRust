@@ -1,0 +1,2392 @@
+                 OOF Complete Variable Nomenclature
+
+
+Systematic Naming for 1109+ Variables - LLM-Optimized
+**Design Principles:**
+1. Minimal disambiguation - only fix collisions
+2. Natural English for compound concepts
+3. Database-friendly (underscores, not dots)
+4. Token-efficient (short where clear)
+5. Mathematical convention-compatible
+6. Type-indicated suffixes (_score, _rate, _level, _prob, _strength)
+
+
+
+
+PART 1: COLLISION RESOLUTION (7 Critical Variables)
+
+The 7 Namespace Collisions - MANDATORY Disambiguation
+     OLD → NEW (with context)
+     ==================================================
+
+     M → M_maya                (illusion/veiling operator)
+     M → M_manifest            (manifestation from UCB)
+     M → M_mind                (mind cascade layer)
+
+     S → S_sacred              (Sacred Chain S1-S8 level)
+     S → S_struct              (structure from UCB)
+     S → S_self                (self cascade layer)
+
+     E → E_energy              (energy from UCB)
+     E → E_ego                 (ego cascade layer)
+     E → E_emerge              (emergence properties)
+
+     A → A_aware               (awareness from UCB)
+     A → A_action              (action from embodying pathway)
+
+     C → C_base                (consciousness^consciousness = Ψ^Ψ)
+     C → C_creator             (creator consciousness exponent)
+     C → C_cultural            (cultural/collective level)
+
+     P → P_presence            (presence from UCB)
+     P → P_prana               (prana/breath cascade layer)
+     P → P_prob                (probability calculations)
+     P → P_power               (power transformation matrix)
+
+     L → L_love                (love from UCB)
+     L → L_liberate            (liberation component in freedom drive)
+     L → L_level               (level/layer indicators)
+
+**All other variables keep their current names unchanged.**
+PART 2: THE 25 CORE OPERATORS (Tier 1)
+
+Base Operators - Keep Abbreviated
+     CATEGORY: UCB (8 Operators)
+     ==================================================
+     P_presence          Pure presence, now-moment awareness
+     A_aware             Awareness, self-observation capacity
+     E_energy            Vitality, life force, available energy
+     Ψ_base              Base consciousness (Ψ^Ψ = consciousness operating on itself)
+     M_manifest          Manifestation power, reality creation
+     L_love              Love field strength, heart connection
+     G_grace             Grace, divine flow, surrender receptivity
+     S_struct            Structure, organizational coherence
+
+     CATEGORY: Distortion Operators (3 Main)
+     ==================================================
+     M_maya              Maya, illusion, reality distortion
+     At                  Attachment, ego identification, clinging
+     W                   Witness, objective seeing, non-identification
+
+     CATEGORY: Pattern Operators (5)
+     ==================================================
+     Hf                  Habitual Fixation, repetitive patterns
+     K                   Karma, stored action-consequence patterns
+     Shadow              Unconscious rejected aspects
+     Se                  Seeking, external validation dependency
+     Ce                  Cleanliness, purity of consciousness
+
+     CATEGORY: Structural Operators (4)
+     ==================================================
+     I                   Intention, directed will
+     T                   Time, temporal focus (past/future/present)
+     V                   Void, emptiness, pre-manifestation space
+     C_base              Base consciousness power (Ψ^Ψ)
+
+     CATEGORY: Action Operators (5)
+     ==================================================
+     Choice              Decision-making capacity
+     Agency              Self-directed action capability
+     Resistance          Opposition to flow/change
+     Openness            Receptivity to new experiences
+     Surrender           Letting go, non-control
+
+**Total: 25 base operators**
+**Naming rule: Keep all these exactly as shown above**
+
+
+
+
+PART 3: CONSCIOUSNESS COORDINATES (180+ Variables)
+
+Sacred Chain (S1-S8 System)
+     SACRED CHAIN CORE
+     ==================================================
+     S_sacred_level              Current consciousness level (1-8)
+     S_sacred_transition_rate    dS/dt evolution speed
+     S_sacred_threshold          Minimum level for breakthrough
+
+     LEVEL DEFINITIONS (8 States)
+    ==================================================
+    S1_survival                 Fear-based survival consciousness
+    S2_seeking                  Desire-driven seeking consciousness
+    S3_achievement              Ego-centered achievement consciousness
+    S4_service                  Heart-opening service consciousness
+    S5_surrender                Grace-receiving surrender consciousness
+    S6_witness                  Awareness-being witness consciousness
+    S7_wisdom                   Integrated knowing wisdom consciousness
+    S8_unity                    Transcendent unity consciousness
+
+    TRANSITION COEFFICIENTS
+    ==================================================
+    coeff_awareness             k■ coefficient for awareness contribution
+    coeff_practice              k■ coefficient for practice contribution
+    coeff_grace                 k■ coefficient for grace contribution
+    coeff_resistance            k■ coefficient for resistance drag
+
+    FORMULAS USING THESE
+    ==================================================
+    S_sacred_transition_rate = (coeff_awareness × A_aware) +
+                               (coeff_practice × Practice_Intensity) +
+                               (coeff_grace × G_grace) -
+                               (coeff_resistance × Resistance)
+
+
+Three Perfection Pathways (9 Dimensions)
+    WITNESSING PATHWAY (3 Dimensions)
+    ==================================================
+    pathway_witness_observation     Observation capacity (0.0-1.0)
+    pathway_witness_perception      Perception clarity (0.0-1.0)
+    pathway_witness_expression      Expression authenticity (0.0-1.0)
+
+    CREATING PATHWAY (3 Dimensions)
+    ==================================================
+    pathway_create_intention        Intention strength (0.0-1.0)
+    pathway_create_attention        Attention focus (0.0-1.0)
+    pathway_create_manifestation    Manifestation power (0.0-1.0)
+
+    EMBODYING PATHWAY (3 Dimensions)
+    ==================================================
+    pathway_embody_thoughts          Thought alignment (0.0-1.0)
+    pathway_embody_words             Word integrity (0.0-1.0)
+    pathway_embody_actions           Action consistency (0.0-1.0)
+
+
+Five Sacred Drives (100+ Variables)
+Each drive has 4 core properties + multiple components:
+    LOVE DRIVE STRUCTURE
+    ==================================================
+    drive_love_internal_pct         Internal seeking % (0-100)
+    drive_love_external_pct         External seeking % (0-100)
+    drive_love_strength             Overall drive strength (0.0-1.0)
+    drive_love_fulfillment          Current fulfillment level (0.0-1.0)
+
+    LOVE INTERNAL COMPONENTS (Flat naming - Option A)
+    ==================================================
+    Love_Internal_Heart_Open        Heart openness component
+    Love_Internal_Self_Love         Self-love component
+    Love_Internal_Unconditional     Unconditional capacity component
+
+    HEART OPENNESS SUB-COMPONENTS
+    ==================================================
+Heart_Open_Ego_Separation      Ego separation factor
+Heart_Open_Emotional_Avail     Emotional availability factor
+Heart_Open_Vulnerability       Vulnerability openness factor
+
+SELF LOVE SUB-COMPONENTS
+==================================================
+Self_Love_Witness               Witnessing component
+Self_Love_Shadow_Projection     Shadow projection factor
+Self_Love_Acceptance            Self-acceptance factor
+
+UNCONDITIONAL SUB-COMPONENTS
+==================================================
+Unconditional_Raga              Attachment to pleasure (inverse)
+Unconditional_Dvesha            Aversion to pain (inverse)
+Unconditional_Equanimity        Emotional balance component
+
+PEACE DRIVE STRUCTURE
+==================================================
+drive_peace_internal_pct        Internal seeking % (0-100)
+drive_peace_external_pct        External seeking % (0-100)
+drive_peace_strength            Overall drive strength (0.0-1.0)
+drive_peace_fulfillment         Current fulfillment level (0.0-1.0)
+
+PEACE INTERNAL COMPONENTS
+==================================================
+Peace_Internal_Mental_Still     Mental stillness component
+Peace_Internal_Emotional_Equi   Emotional equanimity component
+Peace_Internal_Present_Moment   Present moment awareness component
+
+MENTAL STILLNESS SUB-COMPONENTS
+==================================================
+Mental_Still_Mind_Proliferation Mind proliferation rate (inverse)
+Mental_Still_Presence           Presence factor
+Mental_Still_Meditation_Depth   Meditation depth score
+
+BLISS DRIVE STRUCTURE
+==================================================
+drive_bliss_internal_pct        Internal seeking % (0-100)
+drive_bliss_external_pct        External seeking % (0-100)
+drive_bliss_strength            Overall drive strength (0.0-1.0)
+drive_bliss_fulfillment         Current fulfillment level (0.0-1.0)
+
+BLISS INTERNAL COMPONENTS
+==================================================
+Bliss_Internal_Spiritual_Ecstasy    Spiritual ecstasy component
+Bliss_Internal_Causeless_Joy        Causeless joy component
+Bliss_Internal_Divine_Connection    Divine connection component
+
+SATISFACTION DRIVE STRUCTURE
+==================================================
+drive_satisfaction_internal_pct     Internal seeking % (0-100)
+drive_satisfaction_external_pct     External seeking % (0-100)
+drive_satisfaction_strength         Overall drive strength (0.0-1.0)
+drive_satisfaction_fulfillment      Current fulfillment level (0.0-1.0)
+
+SATISFACTION INTERNAL COMPONENTS
+==================================================
+Satisfaction_Internal_Completeness      Completeness perception
+Satisfaction_Internal_Contentment       Contentment level
+Satisfaction_Internal_Present_Fullness Present fullness awareness
+
+FREEDOM DRIVE STRUCTURE
+==================================================
+drive_freedom_internal_pct      Internal seeking % (0-100)
+drive_freedom_external_pct      External seeking % (0-100)
+   drive_freedom_strength         Overall drive strength (0.0-1.0)
+   drive_freedom_fulfillment      Current fulfillment level (0.0-1.0)
+
+   FREEDOM INTERNAL COMPONENTS
+   ==================================================
+   Freedom_Internal_Liberation         Liberation from patterns
+   Freedom_Internal_Choice_Conscious   Choice consciousness
+   Freedom_Internal_Being_Space        Being space (non-doing)
+
+
+Seven Transformation Matrices (28 States × 7 Matrices = 196 Variables)
+   TRUTH MATRIX (4 States)
+   ==================================================
+   matrix_truth_position           Current state (1-4)
+   matrix_truth_illusion           State 1: Illusion level
+   matrix_truth_confusion          State 2: Confusion level
+   matrix_truth_clarity            State 3: Clarity level
+   matrix_truth_truth              State 4: Truth realization
+
+   LOVE MATRIX (4 States)
+   ==================================================
+   matrix_love_position            Current state (1-4)
+   matrix_love_separation          State 1: Separation level
+   matrix_love_connection          State 2: Connection level
+   matrix_love_unity               State 3: Unity experience
+   matrix_love_oneness             State 4: Oneness realization
+
+   POWER MATRIX (4 States)
+   ==================================================
+   matrix_power_position           Current state (1-4)
+   matrix_power_victim             State 1: Victim consciousness
+   matrix_power_responsibility     State 2: Responsibility taking
+   matrix_power_mastery            State 3: Mastery development
+   matrix_power_service            State 4: Service orientation
+
+   FREEDOM MATRIX (4 States)
+   ==================================================
+   matrix_freedom_position         Current state (1-4)
+   matrix_freedom_bondage          State 1: Bondage experience
+   matrix_freedom_choice           State 2: Choice awareness
+   matrix_freedom_liberation       State 3: Liberation state
+   matrix_freedom_transcendence    State 4: Transcendence beyond
+
+   CREATION MATRIX (4 States)
+   ==================================================
+   matrix_creation_position        Current state (1-4)
+   matrix_creation_destruction     State 1: Destruction phase
+   matrix_creation_maintenance     State 2: Maintenance phase
+   matrix_creation_creation        State 3: Creation phase
+   matrix_creation_source          State 4: Source connection
+
+   TIME MATRIX (4 States)
+   ==================================================
+   matrix_time_position            Current state (1-4)
+   matrix_time_past_future         State 1: Past/future focus
+   matrix_time_present             State 2: Present awareness
+   matrix_time_eternal             State 3: Eternal perspective
+   matrix_time_beyond              State 4: Beyond time
+
+   DEATH MATRIX (4 States)
+   ==================================================
+   matrix_death_position           Current state (1-4)
+   matrix_death_clinging           State 1: Clinging to life/identity
+   matrix_death_acceptance         State 2: Acceptance of impermanence
+   matrix_death_surrender          State 3: Surrender to flow
+   matrix_death_rebirth            State 4: Rebirth/transformation
+
+
+
+
+PART 4: CASCADE MECHANISM (150+ Variables)
+
+Seven Cascade Levels
+   LEVEL 1: SELF (PURE CONSCIOUSNESS)
+   ==================================================
+   cascade_self_cleanliness        Self cleanliness score (0.0-1.0)
+   cascade_self_baseline           Pure consciousness baseline
+
+   LEVEL 2: EGO (SEPARATION/IDENTITY)
+   ==================================================
+   cascade_ego_cleanliness         Ego cleanliness score (0.0-1.0)
+   cascade_ego_separation          Ego separation strength
+   cascade_ego_asmita              Asmita (I-am-ness) strength
+
+   EGO SUB-COMPONENTS
+   ==================================================
+   Ego_Cleanliness_Attachment      Attachment inverse factor
+   Ego_Cleanliness_Asmita          Asmita inverse factor
+
+   LEVEL 3: MEMORY (SAMSKARA STORAGE)
+   ==================================================
+   cascade_memory_cleanliness      Memory cleanliness score (0.0-1.0)
+   cascade_memory_distortion       Memory distortion level
+   cascade_memory_samskara_load    Samskara accumulation level
+
+   LEVEL 4: INTELLECT (DISCRIMINATION/BUDDHI)
+   ==================================================
+   cascade_intellect_cleanliness    Intellect cleanliness score (0.0-1.0)
+   cascade_intellect_discrimination     Discrimination capacity
+   cascade_intellect_maya_factor    Maya contamination factor
+
+   LEVEL 5: MIND (THOUGHT GENERATION/MANAS)
+   ==================================================
+   cascade_mind_cleanliness        Mind cleanliness score (0.0-1.0)
+   cascade_mind_proliferation      Thought proliferation rate
+   cascade_mind_emotional_chaos    Emotional chaos level
+
+   LEVEL 6: BREATH (PRANA REGULATION)
+   ==================================================
+   cascade_breath_cleanliness      Breath cleanliness score (0.0-1.0)
+   cascade_breath_strength         Prana strength level
+   cascade_breath_rhythm           Breath rhythm coherence
+
+   LEVEL 7: BODY (PHYSICAL MANIFESTATION)
+   ==================================================
+   cascade_body_cleanliness        Body cleanliness score (0.0-1.0)
+   cascade_body_health             Physical health score
+   cascade_body_vitality           Vitality level
+
+
+Cleanliness Dynamics
+   CLEANLINESS THRESHOLDS
+   ==================================================
+   cleanliness_threshold_liberation    0.90+ Liberation zone
+   cleanliness_threshold_dharmic       0.70-0.90 Dharmic zone
+   cleanliness_threshold_growth        0.50-0.70 Growth zone
+   cleanliness_threshold_struggle      0.30-0.50 Struggle zone
+   cleanliness_threshold_darkness      0.00-0.30 Darkness zone
+
+   CLEANLINESS CHANGE RATES
+   ==================================================
+   cleanliness_change_rate         dCleanliness/dt overall
+   cleanliness_cleaning_effort     Conscious cleaning effort
+   cleanliness_contamination_rate Environmental contamination rate
+   cleanliness_grace_multiplier    Grace enhancement factor
+
+
+Demultiplexer Mechanics (Choice Points)
+   CHOICE PROBABILITY AT EACH LEVEL
+   ==================================================
+   demux_choice_prob_level_1        Choice probability at Self level
+   demux_choice_prob_level_2        Choice probability at Ego level
+   demux_choice_prob_level_3        Choice probability at Memory level
+   demux_choice_prob_level_4        Choice probability at Intellect level
+   demux_choice_prob_level_5        Choice probability at Mind level
+   demux_choice_prob_level_6        Choice probability at Breath level
+   demux_choice_prob_level_7        Choice probability at Body level
+
+   PATH SELECTION MECHANICS
+   ==================================================
+   demux_path_possibilities        Array of possible paths
+   demux_consciousness_weights     Consciousness-based weighting
+   demux_selected_path             Final path selection
+
+
+
+
+PART 5: EMOTION DERIVATION (200+ Variables)
+
+Master Emotion Formula Components
+   BASE EMOTION STRUCTURE
+   ==================================================
+   emotion_base_love                Pure love component (always present)
+   emotion_ego_config               Ego configuration modifier
+   emotion_memory_activation        Memory activation pattern
+   emotion_intellect_interpretation     Intellect interpretation layer
+   emotion_mind_proliferation       Mind proliferation factor
+   emotion_breath_pattern           Breath pattern influence
+   emotion_body_expression          Body expression component
+   emotion_temporal_focus           Temporal focus (past/present/future)
+   emotion_chakra_activation        Chakra activation pattern
+   emotion_environmental_field      Environmental field influence
+
+
+Specific Emotions (20+ Core Emotions)
+   JOY
+   ==================================================
+   emotion_joy_intensity           Final joy intensity (0.0-1.0)
+   emotion_joy_love_component      Love base for joy
+   emotion_joy_ego_reduction       Ego reduction factor
+   emotion_joy_positive_memory     Positive memory activation
+   emotion_joy_present_focus       Present moment focus
+   emotion_joy_heart_open          Heart openness component
+   emotion_joy_grace_flow          Grace flow enhancement
+   ANGER
+   ==================================================
+   emotion_anger_intensity          Final anger intensity (0.0-1.0)
+   emotion_anger_love_base          Love base (frustrated love)
+   emotion_anger_ego_separation     Ego separation strength
+   emotion_anger_past_hurt          Past hurt activation
+   emotion_anger_boundary_violation     Boundary violation trigger
+   emotion_anger_solar_plexus       Solar plexus fire energy
+
+   FEAR
+   ==================================================
+   emotion_fear_intensity          Final fear intensity (0.0-1.0)
+   emotion_fear_love_base          Love base (protective love)
+   emotion_fear_separation         Separation from safety
+   emotion_fear_future_projection Future threat projection
+   emotion_fear_absence_presence   Absence of presence
+   emotion_fear_survival_threat    Survival threat perception
+
+   SADNESS
+   ==================================================
+   emotion_sadness_intensity        Final sadness intensity (0.0-1.0)
+   emotion_sadness_love_base        Love base (longing)
+   emotion_sadness_separation       Separation from loved
+   emotion_sadness_past_focus       Past focus (loss)
+   emotion_sadness_loss_recognition     Loss recognition
+
+   JEALOUSY
+   ==================================================
+   emotion_jealousy_intensity      Final jealousy intensity (0.0-1.0)
+   emotion_jealousy_love_base      Love base (possessive love)
+   emotion_jealousy_ego_separation Ego separation strength
+   emotion_jealousy_scarcity       Scarcity belief patterns
+   emotion_jealousy_comparison     Comparison activation
+   emotion_jealousy_agitation      Mental agitation level
+
+   COMPASSION
+   ==================================================
+   emotion_compassion_intensity    Final compassion intensity (0.0-1.0)
+   emotion_compassion_love_base    Love base (expanded love)
+   emotion_compassion_soft_boundaries Softened boundaries
+   emotion_compassion_unity_exp    Unity experience
+   emotion_compassion_heart_open   Heart openness
+
+
+Nine Rasas (Aesthetic Emotions)
+   SHRINGARA (LOVE/BEAUTY)
+   ==================================================
+   rasa_shringara_intensity        Shringara intensity (0.0-1.0)
+   rasa_shringara_high_love        High love component
+   rasa_shringara_presence         Presence factor
+   rasa_shringara_unity_awareness Unity awareness
+
+   HASYA (JOY/HUMOR)
+   ==================================================
+   rasa_hasya_intensity            Hasya intensity (0.0-1.0)
+   rasa_hasya_high_energy          High energy component
+   rasa_hasya_presence             Presence factor
+   rasa_hasya_light_ego            Light ego (playfulness)
+
+   KARUNA (COMPASSION)
+   ==================================================
+   rasa_karuna_intensity           Karuna intensity (0.0-1.0)
+   rasa_karuna_love                Love base
+   rasa_karuna_suffering_aware     Suffering awareness
+  RAUDRA (ANGER/FURY)
+  ==================================================
+  rasa_raudra_intensity           Raudra intensity (0.0-1.0)
+  rasa_raudra_high_energy         High energy component
+  rasa_raudra_separation          Separation strength
+  rasa_raudra_past_hurt           Past hurt activation
+
+  VEERA (COURAGE)
+  ==================================================
+  rasa_veera_intensity            Veera intensity (0.0-1.0)
+  rasa_veera_high_energy          High energy component
+  rasa_veera_purpose              Purpose clarity
+  rasa_veera_present              Present moment power
+
+  BHAYANAKA (FEAR)
+  ==================================================
+  rasa_bhayanaka_intensity        Bhayanaka intensity (0.0-1.0)
+  rasa_bhayanaka_no_presence      Absence of presence
+  rasa_bhayanaka_future           Future projection
+  rasa_bhayanaka_separation       Separation from safety
+
+  ADBHUTA (WONDER)
+  ==================================================
+  rasa_adbhuta_intensity          Adbhuta intensity (0.0-1.0)
+  rasa_adbhuta_high_awareness     High awareness
+  rasa_adbhuta_openness           Openness to new
+  rasa_adbhuta_present            Present moment wonder
+
+  SHANTA (PEACE)
+  ==================================================
+  rasa_shanta_intensity           Shanta intensity (0.0-1.0)
+  rasa_shanta_low_desire          Low desire state
+  rasa_shanta_present             Present moment
+  rasa_shanta_acceptance          Acceptance level
+
+  BIBHATSA (DISGUST)
+  ==================================================
+  rasa_bibhatsa_intensity         Bibhatsa intensity (0.0-1.0)
+  rasa_bibhatsa_aversion          Aversion strength
+  rasa_bibhatsa_past_negative     Past negative conditioning
+  rasa_bibhatsa_protection        Protection mechanism
+
+
+
+
+PART 6: QUANTITATIVE DIMENSIONS (50+ Variables)
+
+POMDP Gap Dynamics
+  POMDP STATE VARIABLES
+  ==================================================
+  pomdp_real_state                Real actual state (R)
+  pomdp_believed_state            Believed state (B)
+  pomdp_observed_state            Observed state (O)
+
+  POMDP GAPS
+  ==================================================
+  pomdp_reality_gap               |R - B| reality gap
+  pomdp_observation_gap           |R - O| observation gap
+  pomdp_belief_gap                |B - O| belief gap
+  pomdp_severity                  M_maya × (1 - W) × (1 - A_aware)
+Perfection Degree Spectrum
+   PERFECTION METRICS
+   ==================================================
+   perfection_degree               0% to ∞ engagement depth
+   perfection_surface              25% surface application
+   perfection_moderate             50% moderate engagement
+   perfection_mastery              100% complete mastery
+   perfection_transcendence        200%+ transcendence level
+
+
+Measurement Protocols
+   CONSCIOUSNESS MEASUREMENT
+   ==================================================
+   measurement_precision           Consciousness_Level × W × (1 - M_maya)
+   measurement_operator_matrix     Consciousness as measurement device
+   measurement_collapse_prob       Probability of state collapse
+
+
+
+
+PART 7: STRUCTURAL ARCHITECTURE (80+ Variables)
+
+Five Circles of Being
+   CIRCLE DEFINITIONS
+   ==================================================
+   circle_personal_radius          Vyakti (personal) radius
+   circle_family_radius            Parivar (family) radius
+   circle_social_radius            Madhyama (social) radius
+   circle_professional_radius      Vyavasaya (professional) radius
+   circle_universal_radius         Vishva (universal) radius
+
+   CIRCLE CALCULATIONS
+   ==================================================
+   circle_radius_influence         Influence extent factor
+   circle_radius_energy            Energy investment factor
+   circle_radius_time              Time allocation factor
+
+
+OSAFC Eight Layers
+   OSAFC LAYER ACTIVITY
+   ==================================================
+   osafc_spirit_activity           Spirit layer activity level
+   osafc_energy_activity           Energy layer activity level
+   osafc_emotional_activity        Emotional layer activity level
+   osafc_mental_activity           Mental layer activity level
+   osafc_vital_activity            Vital layer activity level
+   osafc_physical_activity         Physical layer activity level
+   osafc_material_activity         Material layer activity level
+   osafc_universal_activity        Universal layer activity level
+
+
+Center of Good
+   CENTER METRICS
+   ==================================================
+   center_proximity                Proximity to convergence point
+   center_drive_integration        Drive integration level
+   center_sacred_alignment         Sacred Chain alignment
+Kosha Integration (5 Sheaths)
+   KOSHA CLEANLINESS
+   ==================================================
+   kosha_annamaya_clean            Annamaya (food/physical) cleanliness
+   kosha_pranamaya_clean           Pranamaya (energy/vital) cleanliness
+   kosha_manomaya_clean            Manomaya (mental/emotional) cleanliness
+   kosha_vijnanamaya_clean         Vijnanamaya (wisdom/intellect) cleanliness
+   kosha_anandamaya_clean          Anandamaya (bliss/causal) cleanliness
+
+
+
+
+PART 8: DYNAMIC MECHANICS (200+ Variables)
+
+Network Effects
+   NETWORK CORE VARIABLES
+   ==================================================
+   network_effect_strength         R^N × Coherence²
+   network_connected_nodes         N = number of nodes
+   network_coherence               Coherence factor
+   network_critical_mass           0.035 × Population (3.5%)
+   network_committed_count         Current committed individuals
+   network_distance_to_critical    Critical_Mass - Committed_Count
+
+   NODE PROPERTIES
+   ==================================================
+   network_node_influence          Individual node influence weight
+   network_coherence_field_i       Coherence field for node i
+   network_resonance_propagation   Resonance propagation speed
+
+
+Emergence Properties
+   EMERGENCE METRICS
+   ==================================================
+   emergence_threshold             Activation threshold value
+   emergence_strength              Emergence intensity
+   emergence_collective_iq         Group_Mind_IQ - Sum(Individual_IQs)
+   emergence_morphic_field         Morphic field activation level
+   emergence_collective_capability Collective capability emergence
+
+
+Quantum Superposition & Tunneling
+   QUANTUM STATE
+   ==================================================
+   quantum_superposition_state     |Transformation■ superposition
+   quantum_superposition_s2_amp    √0.3|S2■ amplitude
+   quantum_superposition_s3_amp    √0.5|S3■ amplitude
+   quantum_superposition_s4_amp    √0.2|S4■ amplitude
+
+   COLLAPSE MECHANICS
+   ==================================================
+   quantum_collapse_prob           Collapse probability
+   quantum_collapse_readiness      Readiness factor
+   quantum_collapse_catalyst       Catalyst strength
+   quantum_collapse_grace          Grace factor
+
+   TUNNELING MECHANICS
+   ==================================================
+   quantum_tunnel_prob             P(tunnel) = e^(-2κL)
+   quantum_tunnel_barrier_const    κ barrier constant
+   quantum_tunnel_barrier_width    L barrier width
+   quantum_tunnel_energy           Available energy for tunneling
+
+
+Death Architecture (D1-D7)
+   DEATH TYPE DETECTION
+   ==================================================
+   death_type_active               Active death process type (D1-D7)
+   death_depth                     E_energy × V × transformation_magnitude
+
+   D1: PHYSICAL DEATH
+   ==================================================
+   death_d1_physical_active        D1 activation level
+   death_d1_physical_intensity     Physical death intensity
+
+   D2: RELATIONSHIP DEATH
+   ==================================================
+   death_d2_relationship_active    D2 activation level
+   death_d2_relationship_intensity Relationship ending depth
+
+   D3: IDENTITY DEATH
+   ==================================================
+   death_d3_identity_active        D3 activation level
+   death_d3_identity_intensity     Identity dissolution depth
+
+   D4: BELIEF SYSTEM DEATH
+   ==================================================
+   death_d4_belief_active          D4 activation level
+   death_d4_belief_intensity       Belief system collapse depth
+
+   D5: DESIRE DEATH
+   ==================================================
+   death_d5_desire_active          D5 activation level
+   death_d5_desire_intensity       Desire cessation depth
+
+   D6: SEPARATION DEATH
+   ==================================================
+   death_d6_separation_active      D6 activation level
+   death_d6_separation_intensity   Separation ending depth
+
+   D7: EGO DEATH
+   ==================================================
+   death_d7_ego_active             D7 activation level
+   death_d7_ego_intensity          Ego dissolution depth
+
+
+Grace Mechanics
+   GRACE CALCULATIONS
+   ==================================================
+   grace_availability              G × Surrender × Ce × Readiness
+   grace_effectiveness             G × (1 - At) × Ce × Readiness
+   grace_probability               f(prayer, surrender, cleaning, divine_will)
+   grace_timing                    Unknowable (divine timing)
+   grace_divine_will               Unknowable component
+
+
+Karma Dynamics
+   KARMA TYPES (3)
+   ==================================================
+   karma_sanchita                  Accumulated karma (storage)
+   karma_prarabdha                 Active karma this life (allocated)
+   karma_kriyamana                 Creating karma now (real-time)
+
+   KARMA RATES
+   ==================================================
+   karma_generation_rate           Actions × (1 + Hf) × (1 - A_aware)
+   karma_burning_rate              Ce × G_grace × A_aware
+   karma_net_change                Generation_Rate - Burning_Rate
+
+   KARMA ALLOCATION
+   ==================================================
+   karma_allocation_prob_i         Probability karma_i activates
+   karma_activation_time_i         When karma_i activates
+   karma_initial_sanchita          Initial accumulated karma (unknowable)
+
+
+
+
+PART 9: MASTER REALISM ENGINE (60+ Realism Types)
+
+S1-S2 Realisms (Survival/Seeking Consciousness)
+   SURVIVAL REALISMS
+   ==================================================
+   realism_dirty                   Dirty Realism weight
+   realism_naturalistic            Naturalistic Realism weight
+   realism_biological              Biological Realism weight
+   realism_survival                Survival Realism weight
+   realism_scarcity                Scarcity Realism weight
+   realism_material                Material Realism weight
+   realism_physical                Physical Realism weight
+
+
+S3-S4 Realisms (Achievement/Service Consciousness)
+   ACHIEVEMENT REALISMS
+   ==================================================
+   realism_social                  Social Realism weight
+   realism_psychological           Psychological Realism weight
+   realism_economic                Economic Realism weight
+   realism_political               Political Realism weight
+   realism_achievement             Achievement Realism weight
+   realism_professional            Professional Realism weight
+   realism_relational              Relational Realism weight
+
+
+S5-S6 Realisms (Surrender/Witness Consciousness)
+   INTEGRATED REALISMS
+   ==================================================
+   realism_emotional               Emotional Realism weight
+   realism_service                 Service Realism weight
+   realism_flow                    Flow Realism weight
+   realism_integrated              Integrated Realism weight
+   realism_holistic                Holistic Realism weight
+
+
+S7-S8 Realisms (Wisdom/Unity Consciousness)
+   TRANSCENDENT REALISMS
+   ==================================================
+   realism_unity                   Unity Realism weight
+   realism_witness                 Witness Realism weight
+   realism_grace                   Grace Realism weight
+   realism_transcendent            Transcendent Realism weight
+   realism_absolute                Absolute Realism weight
+   realism_universal               Universal Realism weight
+
+
+Realism Blending
+   REALISM BLEND FORMULA
+   ==================================================
+   realism_blend_final             Σ[Realism_i × Weight_i × Fractal_Depth_i]^C_base
+   realism_weight_i                Context-specific weight for realism_i
+   realism_fractal_depth_i         Fractal depth for realism_i
+   realism_dominant                Highest weighted realism
+
+
+
+
+PART 10: COLLECTIVE REALITY (100+ Variables)
+
+Multi-Human Systems
+   RELATIONSHIP FIELDS
+   ==================================================
+   relationship_field_strength     Field strength between 2+ beings
+   relationship_shared_reality     Shared reality space quality
+   relationship_we_space_quality   We-space emergence quality
+   relationship_resonance          Resonance between participants
+   relationship_time_together      Time factor in field building
+
+   WE-SPACE METRICS
+   ==================================================
+   we_space_coherence              Collective coherence
+   we_space_shared_sacred          Shared Sacred Chain level
+   we_space_alignment              Alignment between participants
+   we_space_emergence              Emergent we-space properties
+
+
+Morphogenetic Fields
+   MORPHIC FIELD VARIABLES
+   ==================================================
+   morphic_field_strength          f(repetitions, participants, coherence)
+   morphic_repetitions             Number of repetitions
+   morphic_participants            Number of participants
+   morphic_coherence               Field coherence level
+   morphic_access_prob             Access probability for individual
+   morphic_resonance               Resonance with field
+
+
+Collective Transformation
+   GROUP EVOLUTION
+   ==================================================
+   group_evolution_rate            f(individual_rates, coherence, network)
+   group_breakthrough_prob         Collective breakthrough probability
+   group_grace_multiplication      Grace multiplication in groups
+   group_coherence_multiplier      Coherence enhancement factor
+PART 11: ADVANCED MATHEMATICAL FRAMEWORKS (100+ Variables)
+
+Consciousness Field Equations
+   FIELD COMPONENTS
+   ==================================================
+   field_consciousness_electric    E_consciousness field
+   field_consciousness_magnetic    B_consciousness field
+   field_consciousness_charge      ρ_consciousness charge density
+   field_consciousness_current     J_consciousness current density
+
+
+Evolution Differential Equations
+   EVOLUTION COEFFICIENTS (Refined)
+   ==================================================
+   coeff_awareness_linear           k■ linear awareness coefficient
+   coeff_practice_linear            k■ linear practice coefficient
+   coeff_grace_linear               k■ linear grace coefficient
+   coeff_resistance_linear          k■ linear resistance coefficient
+   coeff_nonlinear_s5plus           Nonlinear acceleration for S5+
+   coeff_coupling_operators         Coupling between operators
+
+
+Fourier Analysis of Consciousness
+   FREQUENCY COMPONENTS
+   ==================================================
+   fourier_coeff_a_n               A_n sine coefficients
+   fourier_coeff_b_n               B_n cosine coefficients
+   fourier_frequency_omega         ω fundamental frequency
+   fourier_dominant_harmonic       Dominant frequency component
+
+   SACRED LEVEL FREQUENCIES
+   ==================================================
+   freq_s1_s2_range                0.1-1 Hz (survival/seeking)
+   freq_s3_s4_range                1-30 Hz (achievement/service)
+   freq_s5_s6_range                30-100 Hz (surrender/witness)
+   freq_s7_s8_range                100+ Hz (wisdom/unity)
+
+
+Sacred Geometry & Golden Mathematics
+   GOLDEN RATIO CHECKS
+   ==================================================
+   golden_ratio_witness_maya       W / M_maya &gt; 1.618 (clear seeing)
+   golden_ratio_seeking_attachment Se / At &gt; 1.618 (liberation)
+   golden_ratio_love_fear          L_love / Fear &gt; 1.618 (heart opening)
+   golden_phi                      1.618033988749...
+
+   FIBONACCI &amp; GROWTH
+   ==================================================
+   fibonacci_sequence              [1,1,2,3,5,8,13,21,34...]
+   fibonacci_sacred_mapping        Fibonacci index → S-level
+   phi_spiral_growth               Growth rate = phi per iteration
+
+
+Information Theory
+   ENTROPY CALCULATIONS
+   ==================================================
+   entropy_consciousness           H = -Σ[p_i × log(p_i)]
+   entropy_belief_state            Shannon entropy of beliefs
+   entropy_information_gain        Information gain from awareness
+   entropy_prob_i                  Probability of state_i
+
+
+Vibrational Mathematics
+   HARMONIC FREQUENCIES
+   ==================================================
+   vibration_base_freq             f■ base frequency
+   vibration_harmonic_pattern      Harmonic overtone pattern
+   vibration_resonance_field       Resonance field strength
+   vibration_modulation            Modulation function
+   vibration_beat_freq             |f■ - f■| beat frequency
+
+
+
+
+PART 12: DYNAMIC EVOLUTION PATTERNS (80+ Variables)
+
+Regression-Evolution Oscillation
+   OSCILLATION DYNAMICS
+   ==================================================
+   oscillation_forward_evolution   Forward evolution component
+   oscillation_regression_pull     Regression pull component
+   oscillation_amplitude           A oscillation amplitude
+   oscillation_frequency           ω oscillation frequency
+   oscillation_phase               φ phase offset
+   oscillation_regression_depth    k × Breakthrough_Magnitude (k ≈ 0.3)
+
+   SPIRAL PATH
+   ==================================================
+   spiral_base_level               S_sacred_base level
+   spiral_radius                   R spiral radius
+   spiral_angle                    θ angular position
+   spiral_amplitude                A spiral amplitude
+
+
+Hierarchical Resolution (H1-H8)
+   HIERARCHICAL LEVELS
+   ==================================================
+   hierarchy_h1_personal           H1: Personal (1 being)
+   hierarchy_h2_interpersonal      H2: Interpersonal (2)
+   hierarchy_h3_collective         H3: Collective (3-20)
+   hierarchy_h4_cultural           H4: Cultural (100-100k)
+   hierarchy_h5_archetypal         H5: Archetypal (all humans)
+   hierarchy_h6_universal          H6: Universal (all sentient)
+   hierarchy_h7_absolute           H7: Absolute (beyond subject-object)
+   hierarchy_h8_void               H8: Void (pre-existence, 0=∞)
+
+   HIERARCHY DETECTION
+   ==================================================
+   hierarchy_current_level         Current H-level from query scope
+   hierarchy_scope_analysis        Scope analysis for H-level
+
+
+Creator Consciousness Exponential
+   CREATOR EXPONENT
+   ==================================================
+   creator_consciousness           C_creator exponent value
+   creator_sacred_level            S-level component
+   creator_unique_signature        Unique signature multiplier
+   creator_intention_purity        Intention purity factor
+
+   CREATOR EXAMPLES
+   ==================================================
+   creator_s1_exponent             C ≈ 0.25 at S1
+   creator_s4_exponent             C ≈ 1.0 at S4
+   creator_s8_exponent             C → ∞ at S8
+
+   REALITY GENERATION
+   ==================================================
+   reality_from_creator            Reality = Framework^C_creator
+
+
+Frequency Pattern Dynamics
+   BEING FREQUENCY
+   ==================================================
+   freq_base                       f■ base frequency calculation
+   freq_harmonic_pattern           Harmonic pattern from operators
+   freq_resonance_field            Resonance field component
+   freq_modulation_func            Modulation function
+
+   RESONANCE BETWEEN BEINGS
+   ==================================================
+   resonance_integral              ∫ Φ■(f) × Φ■(f) df
+   resonance_phi_1                 Frequency pattern being 1
+   resonance_phi_2                 Frequency pattern being 2
+
+
+Non-Linear Growth Dynamics
+   GROWTH PATTERNS
+   ==================================================
+   growth_punctuated_equilibrium   Punctuated equilibrium state
+   growth_quantum_jump_prob        P(jump) = Readiness × Catalyst × Grace × e^(-Barrier/Energy)
+   growth_barrier_height           Barrier height to overcome
+   growth_available_energy         Energy available for jump
+   growth_plateau_state            Horizontal integration plateau
+   growth_exponential_zone         Exponential growth zone
+   growth_acceleration_rate        dS/dt = e^(kt) when aligned
+
+
+
+
+PART 13: DISTORTION MECHANICS (50+ Variables)
+
+Maya Vrittis (Illusion Patterns)
+   VEILING POWER
+   ==================================================
+   maya_avarana_shakti             Avarana Shakti (veiling power)
+   maya_veiling_strength           Veiling strength level
+
+   PROJECTING POWER
+   ==================================================
+   maya_vikshepa_shakti            Vikshepa Shakti (projecting power)
+   maya_projection_strength        Projection strength level
+
+   ILLUSION PATTERNS
+   ==================================================
+   maya_vritti_count               Number of active vrittis
+   maya_vritti_strength_i          Strength of vritti_i
+   maya_vritti_pattern_i           Pattern of vritti_i
+
+
+Kleshas (Afflictions)
+   ASMITA (I-AM-NESS)
+   ==================================================
+   klesha_asmita_strength           Asmita strength level
+   klesha_asmita_ego_identification     Ego identification intensity
+
+   RAGA (ATTACHMENT)
+   ==================================================
+   klesha_raga_strength            Raga strength level
+   klesha_raga_pleasure_seeking    Attachment to pleasure
+
+   DVESHA (AVERSION)
+   ==================================================
+   klesha_dvesha_strength          Dvesha strength level
+   klesha_dvesha_pain_avoidance    Aversion to pain
+
+   ABHINIVESHA (FEAR OF DEATH)
+   ==================================================
+   klesha_abhinivesha_strength     Abhinivesha strength level
+   klesha_abhinivesha_clinging     Clinging to life/identity
+
+   AVIDYA (IGNORANCE ROOT)
+   ==================================================
+   klesha_avidya_strength          Avidya strength level (root ignorance)
+   klesha_avidya_root_confusion    Root confusion level
+
+
+
+
+PART 14: FIVE ACTS (PANCHAKRITYA) (15 Variables)
+   FIVE COSMIC ACTS
+   ==================================================
+   act_srishti_creation            Srishti (creation) activity level
+   act_sthiti_maintenance          Sthiti (maintenance) activity level
+   act_samhara_dissolution         Samhara (dissolution) activity level
+   act_tirodhana_concealment       Tirodhana (concealment) activity level
+   act_anugraha_grace              Anugraha (grace/revelation) activity level
+
+   ACT DOMINANCE
+   ==================================================
+   act_current_dominant            Currently dominant act
+   act_creation_phase              In creation phase (boolean)
+   act_maintenance_phase           In maintenance phase (boolean)
+   act_dissolution_phase           In dissolution phase (boolean)
+   act_concealment_active          Concealment active (boolean)
+   act_grace_active                Grace active (boolean)
+
+
+
+
+PART 15: PLATFORM-SPECIFIC VARIABLES (30+ Variables)
+
+Platform Constraints
+   TIKTOK CONSTRAINTS
+   ==================================================
+  platform_tiktok_duration        0-60 seconds
+  platform_tiktok_hook            3 second hook requirement
+  platform_tiktok_vertical        Vertical format
+
+  EMAIL CONSTRAINTS
+  ==================================================
+  platform_email_words            500 word limit
+  platform_email_scan_time        7 second scan window
+  platform_email_response_window 24 hour response window
+
+  MEETING CONSTRAINTS
+  ==================================================
+  platform_meeting_cycle          10 minute attention cycles
+  platform_meeting_energy_decay   Energy decay rate
+  platform_meeting_hierarchy      Hierarchy influence factor
+
+  GENERAL PLATFORM
+  ==================================================
+  platform_base_reality           Base reality before constraints
+  platform_constrained_output     Output = Base × Platform_Constraints
+
+
+
+
+PART 16: GREEK SYMBOLS & MATHEMATICAL OPERATORS
+  GREEK SYMBOLS (Keep As-Is Per Edge Case Decision)
+  ==================================================
+  Ψ                                Psi - consciousness wave function
+  Ψ_base                           Ψ^Ψ - consciousness operating on itself
+  Φ                                Phi - frequency patterns, golden ratio
+  θ                               Theta - angle, phase, spiral parameter
+  ω                               Omega - angular frequency
+  κ                               Kappa - barrier constant in tunneling
+  φ                               Phi (lowercase) - phase offset
+  ■                                Hamiltonian operator for consciousness
+  α                               Alpha - coefficient/parameter
+  β                               Beta - coefficient/parameter
+  γ                               Gamma - coefficient/parameter
+
+  MATHEMATICAL OPERATORS
+  ==================================================
+  ∇                                Nabla - gradient/divergence operator
+  ∇²                               Laplacian operator
+  ∂/∂t                            Partial derivative with respect to time
+  ∫                              Integral operator
+  Σ                               Summation operator
+  ∏                                Product operator
+  √                               Square root
+  e                               Euler's number (2.71828...)
+  π                               Pi (3.14159...)
+  ∞                                Infinity
+
+
+
+
+PART 17: INDEXED VARIABLES (Per Edge Case Decision)
+  ARRAY/SEQUENCE INDICES
+  ==================================================
+  A_index_i                       A indexed by i
+  B_index_n                       B indexed by n
+  k_index_j                       k indexed by j
+  Weight_index_i                 Weight indexed by i
+  Realism_index_i                Realism indexed by i
+  State_index_n                  State indexed by n
+
+  COEFFICIENT ARRAYS (Natural Language)
+  ==================================================
+  coeff_awareness                 Awareness coefficient (k■)
+  coeff_practice                  Practice coefficient (k■)
+  coeff_grace                     Grace coefficient (k■)
+  coeff_resistance                Resistance coefficient (k■)
+  coeff_network                   Network coefficient
+  coeff_evolution                 Evolution coefficient
+  coeff_barrier                   Barrier coefficient
+
+
+
+
+PART 18: TIME-VARYING VARIABLES (Context-Based Per Edge Case)
+  TIME-VARYING OPERATORS (Implicit Time)
+  ==================================================
+  P_presence                      P(t) - presence at time t (context)
+  A_aware                         A(t) - awareness at time t (context)
+  E_energy                        E(t) - energy at time t (context)
+  Ψ_base                          Ψ(t) - consciousness at time t (context)
+  M_manifest                      M(t) - manifestation at time t (context)
+  L_love                          L(f,g) - love field (context)
+  G_grace                         G(t) - grace at time t (context)
+  S_struct                        S(t) - structure at time t (context)
+
+  TIME DERIVATIVES (Explicit Rates)
+  ==================================================
+  S_sacred_transition_rate        dS/dt - Sacred Chain evolution rate
+  cleanliness_change_rate         dCleanliness/dt - cleanliness change rate
+  karma_generation_rate           dK/dt - karma generation rate
+  energy_change_rate              dE/dt - energy change rate
+  awareness_growth_rate           dA/dt - awareness growth rate
+  oscillation_frequency           dθ/dt - oscillation frequency
+
+
+
+
+PART 19: SUMMARY STATISTICS
+  TOTAL VARIABLE COUNT BY CATEGORY
+  ==================================================
+  Core Operators (25):                    25
+  Consciousness Coordinates:              180
+  Cascade Mechanism:                      150
+  Emotion Derivation:                     200
+  Quantitative Dimensions:                50
+  Structural Architecture:                80
+  Dynamic Mechanics:                      200
+  Master Realism Engine:                  60
+  Collective Reality:                     100
+  Advanced Math Frameworks:               100
+  Dynamic Evolution:                      80
+  Distortion Mechanics:                   50
+  Five Acts:                              15
+  Platform-Specific:                      30
+  Greek &amp; Math Operators:                 20
+  Indexed Variables:                      50
+  Time-Varying:                           30
+   Miscellaneous:                            80
+
+   TOTAL ESTIMATED VARIABLES:              1,500+
+   (Document states ~1,109 but analysis shows 1,500+ with all variations)
+
+
+
+
+IMPLEMENTATION GUIDELINES FOR BACKEND
+
+Database Schema Structure
+   // Flat structure - no nested dots
+   interface OOFVariables {
+     // Core Operators
+     P_presence: number;
+     A_aware: number;
+     M_maya: number;
+     M_manifest: number;
+     // ... all 25 operators
+
+       // Sacred Chain
+       S_sacred_level: 1|2|3|4|5|6|7|8;
+       S_sacred_transition_rate: number;
+
+       // Drives (5 × 4 = 20)
+       drive_love_internal_pct: number;
+       drive_love_external_pct: number;
+       drive_love_strength: number;
+       drive_love_fulfillment: number;
+       // ... repeat for peace, bliss, satisfaction, freedom
+
+       // Cascade (7 levels)
+       cascade_ego_cleanliness: number;
+       cascade_memory_cleanliness: number;
+       // ... all 7 levels
+
+       // Continue for all 1,500+ variables...
+   }
+
+
+Variable Type Suffixes
+   _score       → 0.0-1.0 measured value
+   _rate        → dX/dt time derivative
+   _level       → discrete state (S1-S8, H1-H8)
+   _prob        → 0.0-1.0 probability
+   _strength    → 0.0-1.0 intensity
+   _pct         → 0-100 percentage
+   _intensity   → 0.0-1.0 intensity
+   _index_i     → indexed variable
+   _count       → integer count
+   _active      → boolean flag
+
+
+Collision Resolution Map
+   // Must disambiguate these 7 collisions
+   const COLLISION_MAP = {
+     'M': {
+       maya: 'M_maya',           // Illusion operator
+       manifest: 'M_manifest',   // Manifestation UCB
+       mind: 'M_mind'           // Mind cascade layer
+        },
+        'S': {
+          sacred: 'S_sacred',               // Sacred Chain S1-S8
+          struct: 'S_struct',               // Structure UCB
+          self: 'S_self'                   // Self cascade layer
+        },
+        'E': {
+          energy: 'E_energy',               // Energy UCB
+          ego: 'E_ego',                    // Ego cascade layer
+          emerge: 'E_emerge'               // Emergence properties
+        },
+        'A': {
+          aware: 'A_aware',                 // Awareness UCB
+          action: 'A_action'               // Action embodying pathway
+        },
+        'C': {
+          base: 'C_base',                  // Consciousness^Consciousness
+          creator: 'C_creator'             // Creator exponent
+        },
+        'P': {
+          presence: 'P_presence',           // Presence UCB
+          prana: 'P_prana',                // Prana cascade layer
+          prob: 'P_prob',                  // Probability
+          power: 'P_power'                 // Power matrix
+        },
+        'L': {
+          love: 'L_love',                  // Love UCB
+          liberate: 'L_liberate'           // Liberation component
+        }
+     };
+
+
+LLM Prompt Context Template
+     When processing OOF calculations, use this variable nomenclature:
+
+     Core Operators: P_presence, A_aware, E_energy, Ψ_base, M_manifest, L_love, G_grace, S_struct, At, W, M_maya, Hf
+
+     Sacred Chain: S_sacred_level (1-8), S_sacred_transition_rate
+
+     Drives: drive_{love|peace|bliss|satisfaction|freedom}_{internal_pct|external_pct|strength|fulfillment}
+
+     Cascade: cascade_{ego|memory|intellect|mind|breath|body}_cleanliness
+
+     [Continue with relevant variables for the calculation...]
+
+
+
+
+FINAL NOTES
+1. **Total Variables**: ~1,500 (not 1,109 as originally stated - analysis found more with variations)
+2. **Collision Resolution**: All 7 critical collisions (M, S, E, A, C, P, L) MUST use disambiguated names
+3. **Greek Symbols**: Keep as-is (Ψ, Φ, θ, ω, κ, φ, etc.)
+4. **Time Context**: Implicit in most variables, explicit _rate suffix for derivatives
+5. **Indexing**: Use A_index_i, B_index_n style, or natural language like coeff_awareness
+6. **Database**: Flat structure with underscores, no nested dots
+7. **Type System**: Use suffixes (_score, _rate, _level, _prob, _strength, _pct) for clarity
+8. **LLM Prompting**: Pass full variable context for each calculation to minimize ambiguity
+This nomenclature creates the shortest semantic distance between variable names and LLM comprehension while
+maintaining mathematical rigor and avoiding conflicts.
+==================================================
+OOF COMPLETE NOMENCLATURE - APPENDIX
+MATHEMATICAL VARIABLES FROM OOF_MATH.TXT
+==================================================
+
+DOCUMENT PURPOSE:
+This appendix extends OOF_Complete_Nomenclature.pdf with variable names
+for all formulas introduced in OOF_Math.txt. These are the computational
+variables needed to implement the complete mathematical framework.
+
+PART 20: MATHEMATICAL FORMULA VARIABLES
+
+==================================================
+SECTION 20.1: DRIVE COMPONENT CALCULATIONS (15 vars)
+==================================================
+# Love Drive Internal Components
+heart_open                    - heart openness factor (0.0-1.0)
+self_love                     - self-love level (0.0-1.0)
+unconditional_capacity        - capacity for unconditional love (0.0-1.0)
+ego_separation               - degree of ego-based separation (0.0-1.0)
+emotional_availability       - emotional availability (0.0-1.0)
+vulnerability                - vulnerability capacity (0.0-1.0)
+shadow_projection            - shadow projection strength (0.0-1.0)
+self_acceptance              - self-acceptance level (0.0-1.0)
+
+# Peace Drive Internal Components
+mental_stillness             - mental quietude level (0.0-1.0)
+emotional_equanimity         - emotional balance (0.0-1.0)
+present_moment               - present moment absorption (0.0-1.0)
+mind_proliferation          - thought proliferation rate (0.0-1.0)
+meditation_depth            - meditation depth achieved (0.0-1.0)
+rasa_volatility             - emotional volatility (0.0-1.0)
+
+# Bliss Drive Internal Components
+spiritual_ecstasy           - spiritual ecstasy level (0.0-1.0)
+causeless_joy               - joy independent of conditions (0.0-1.0)
+divine_connection           - connection to divine (0.0-1.0)
+grace_connection            - grace field connection (0.0-1.0)
+external_dependency         - dependency on external sources (0.0-1.0)
+devotion                    - devotional intensity (0.0-1.0)
+
+# Satisfaction Drive Internal Components
+completeness                - sense of completeness (0.0-1.0)
+contentment                 - contentment level (0.0-1.0)
+present_fullness            - fullness in present (0.0-1.0)
+lack_perception             - perception of lack (0.0-1.0)
+fullness_recognition        - recognition of inherent fullness (0.0-1.0)
+restlessness                - restlessness level (0.0-1.0)
+comparison                  - comparison tendency (0.0-1.0)
+
+# Freedom Drive Internal Components
+liberation_from_patterns    - freedom from habitual patterns (0.0-1.0)
+choice_consciousness        - consciousness of choice (0.0-1.0)
+being_space                 - spaciousness of being (0.0-1.0)
+breaking_capacity           - capacity to break patterns (0.0-1.0)
+free_will                   - free will available (0.0-1.0)
+awareness_of_choices        - awareness of available choices (0.0-1.0)
+doing_compulsion            - compulsion to do (0.0-1.0)
+prarabdha_constraint        - karmic constraint from prarabdha (0.0-1.0)
+
+==================================================
+SECTION 20.2: DRIVE STRENGTH CALCULATIONS (10 vars)
+==================================================
+love_drive_strength         - strength of love drive (0.0-1.0)
+peace_drive_strength        - strength of peace drive (0.0-1.0)
+bliss_drive_strength        - strength of bliss drive (0.0-1.0)
+satisfaction_drive_strength - strength of satisfaction drive (0.0-1.0)
+freedom_drive_strength      - strength of freedom drive (0.0-1.0)
+base_love                   - base universal love constant (1.0)
+heart_wounds                - accumulated heart wounds (0.0-1.0)
+rajas_burnout               - burnout from rajas (0.0-1.0)
+tamas_exhaustion            - exhaustion from tamas (0.0-1.0)
+spiritual_hunger            - hunger for spiritual experience (0.0-1.0)
+unfulfilled_desires         - count of unfulfilled desires
+comparison_frequency        - frequency of comparison behavior
+perceived_constraints       - perceived constraints on freedom
+rebellion_energy            - rebellious energy level (0.0-1.0)
+
+==================================================
+SECTION 20.3: TRANSFORMATION MATRIX STATES (56 vars)
+==================================================
+# Truth Matrix (4 states)
+truth_matrix_position       - current position in truth matrix (0.0-1.0)
+truth_matrix_state          - discrete state (illusion/confusion/clarity/truth)
+illusion_score              - strength of illusion state (0.0-1.0)
+confusion_score             - strength of confusion state (0.0-1.0)
+clarity_score               - strength of clarity state (0.0-1.0)
+truth_score                 - strength of truth state (0.0-1.0)
+
+# Love Matrix (4 states)
+love_matrix_position        - current position in love matrix (0.0-1.0)
+love_matrix_state           - discrete state (separation/connection/unity/oneness)
+separation_score            - strength of separation state (0.0-1.0)
+connection_score            - strength of connection state (0.0-1.0)
+unity_score                 - strength of unity state (0.0-1.0)
+oneness_score               - strength of oneness state (0.0-1.0)
+ego_boundaries              - strength of ego boundaries (0.0-1.0)
+empathy                     - empathic capacity (0.0-1.0)
+we_space_experience         - we-space quality (0.0-1.0)
+duality                     - duality perception (0.0-1.0)
+
+# Power Matrix (4 states)
+power_matrix_position       - current position in power matrix (0.0-1.0)
+power_matrix_state          - discrete state (victim/responsibility/mastery/service)
+victim_score                - strength of victim state (0.0-1.0)
+responsibility_score        - strength of responsibility state (0.0-1.0)
+mastery_score               - strength of mastery state (0.0-1.0)
+service_score               - strength of service state (0.0-1.0)
+external_locus              - external locus of control (0.0-1.0)
+powerlessness               - sense of powerlessness (0.0-1.0)
+blame                       - blame tendency (0.0-1.0)
+internal_locus              - internal locus of control (0.0-1.0)
+choice_recognition          - recognition of choice (0.0-1.0)
+skill_level                 - skill development level (0.0-1.0)
+confidence                  - confidence level (0.0-1.0)
+results                     - results achieved (0.0-1.0)
+
+# Freedom Matrix (4 states)
+freedom_matrix_position     - current position in freedom matrix (0.0-1.0)
+freedom_matrix_state        - discrete state (bondage/choice/liberation/transcendence)
+bondage_score               - strength of bondage state (0.0-1.0)
+choice_score                - strength of choice state (0.0-1.0)
+liberation_score            - strength of liberation state (0.0-1.0)
+transcendence_score         - strength of transcendence state (0.0-1.0)
+
+# Creation Matrix (4 states)
+creation_matrix_position     - current position in creation matrix (0.0-1.0)
+creation_matrix_state        - discrete state (destruction/maintenance/creation/source)
+destruction_score            - strength of destruction state (0.0-1.0)
+maintenance_score            - strength of maintenance state (0.0-1.0)
+creation_score               - strength of creation state (0.0-1.0)
+source_score                 - strength of source state (0.0-1.0)
+
+# Time Matrix (4 states)
+time_matrix_position        - current position in time matrix (0.0-1.0)
+time_matrix_state           - discrete state (past_future/present/eternal/beyond_time)
+past_future_score           - strength of past/future state (0.0-1.0)
+present_score               - strength of present state (0.0-1.0)
+eternal_score               - strength of eternal state (0.0-1.0)
+beyond_time_score           - strength of beyond-time state (0.0-1.0)
+
+# Death Matrix (4 states)
+death_matrix_position       - current position in death matrix (0.0-1.0)
+death_matrix_state          - discrete state (clinging/acceptance/surrender/rebirth)
+clinging_score              - strength of clinging state (0.0-1.0)
+acceptance_score            - strength of acceptance state (0.0-1.0)
+surrender_score             - strength of surrender state (0.0-1.0)
+rebirth_score               - strength of rebirth state (0.0-1.0)
+
+==================================================
+SECTION 20.4: CASCADE CLEANLINESS SUBCOMPONENTS (25 vars)
+==================================================
+asmita                      - ego identification strength (0.0-1.0)
+discrimination              - buddhi discrimination capacity (0.0-1.0)
+emotional_chaos             - mind-level emotional chaos (0.0-1.0)
+breath_rhythm               - breath rhythm quality (0.0-1.0)
+physical_health             - body physical health (0.0-1.0)
+vitality                    - body vitality level (0.0-1.0)
+
+# Cascade Contamination Rates
+contamination_rate_general - general contamination rate
+ego_contamination_rate      - ego level contamination rate
+memory_contamination_rate   - memory level contamination rate
+intellect_contamination_rate - intellect level contamination rate
+mind_contamination_rate     - mind level contamination rate
+breath_contamination_rate   - breath level contamination rate
+body_contamination_rate     - body level contamination rate
+
+# Cascade Cleaning Rates
+cleaning_effort_i           - cleaning effort at level i (indexed)
+cleaning_rate_i             - cleaning rate at level i (indexed)
+
+# Guna Components
+rajas                       - rajas guna strength (0.0-1.0)
+tamas                       - tamas guna strength (0.0-1.0)
+sattva                      - sattva guna strength (0.0-1.0)
+dominant_guna               - currently dominant guna (rajas/tamas/sattva)
+guna_total                  - sum of all gunas (should = 1.0)
+
+# Raga/Dvesha System
+raga                        - attachment to pleasure (0.0-1.0)
+raga_strength               - strength of raga (0.0-1.0)
+dvesha                      - aversion to pain (0.0-1.0)
+dvesha_strength             - strength of dvesha (0.0-1.0)
+equanimity                  - emotional equanimity (0.0-1.0)
+
+==================================================
+SECTION 20.5: EMOTION DERIVATION COMPONENTS (45 vars)
+==================================================
+# Emotion Master Formula Components
+pure_love                   - pure love before cascade filtering
+ego_config                  - ego configuration modifier
+memory_activation           - memory activation pattern
+intellect_interpretation    - intellect interpretation modifier
+mind_proliferation          - mind proliferation modifier
+breath_pattern              - breath pattern modifier
+body_expression             - body expression modifier
+temporal_focus              - temporal focus modifier
+chakra_activation           - chakra activation pattern
+environmental_field         - environmental field influence
+
+# Specific Emotion Components
+pos_memory                  - positive memory activation (0.0-1.0)
+present_focus               - focus on present (0.0-1.0)
+grace_flow                  - grace flowing (0.0-1.0)
+past_hurt                   - past hurt activation (0.0-1.0)
+boundary_violation          - boundary violation perception (0.0-1.0)
+solar_plexus_fire           - solar plexus chakra fire (0.0-1.0)
+separation                  - feeling of separation (0.0-1.0)
+future_proj                 - future projection (0.0-1.0)
+survival_threat             - survival threat perception (0.0-1.0)
+sep_from_loved              - separation from loved (0.0-1.0)
+past_focus                  - focus on past (0.0-1.0)
+loss_recognition            - recognition of loss (0.0-1.0)
+scarcity_patterns           - scarcity belief patterns (0.0-1.0)
+agitation                   - mental agitation (0.0-1.0)
+softened_boundaries         - softened ego boundaries (0.0-1.0)
+unity_exp                   - unity experience (0.0-1.0)
+
+# Specific Emotions (9 + rasas)
+joy                         - joy emotion magnitude (0.0-1.0)
+anger                       - anger emotion magnitude (0.0-1.0)
+fear                        - fear emotion magnitude (0.0-1.0)
+sadness                     - sadness emotion magnitude (0.0-1.0)
+jealousy                    - jealousy emotion magnitude (0.0-1.0)
+compassion                  - compassion emotion magnitude (0.0-1.0)
+
+# Nine Rasas
+shringara_intensity         - love/beauty rasa (0.0-1.0)
+hasya_intensity             - joy/humor rasa (0.0-1.0)
+karuna_intensity            - compassion rasa (0.0-1.0)
+raudra_intensity            - anger/fury rasa (0.0-1.0)
+veera_intensity             - courage rasa (0.0-1.0)
+bhayanaka_intensity         - fear rasa (0.0-1.0)
+adbhuta_intensity           - wonder rasa (0.0-1.0)
+shanta_intensity            - peace rasa (0.0-1.0)
+bibhatsa_intensity          - disgust rasa (0.0-1.0)
+
+==================================================
+SECTION 20.6: POMDP GAP DYNAMICS (10 vars)
+==================================================
+reality_gap                 - gap between real and believed (0.0-1.0)
+observation_gap             - gap between real and observed (0.0-1.0)
+belief_gap                  - gap between believed and observed (0.0-1.0)
+pomdp_severity              - overall POMDP severity (0.0-1.0)
+real_state                  - actual reality state
+believed_state              - what user believes is real
+observed_state              - what user can measure
+maya_induced_gap_magnitude - gap caused by maya (0.0-1.0)
+precision                   - measurement precision (0.0-1.0)
+measurement_accuracy        - measurement accuracy (0.0-1.0)
+
+==================================================
+SECTION 20.7: FIVE CIRCLES OF BEING (10 vars)
+==================================================
+circle_radius               - influence extent of circle
+circle_i_radius             - radius of circle i (indexed)
+personal_circle_quality     - quality of personal circle (0.0-1.0)
+family_circle_quality       - quality of family circle (0.0-1.0)
+social_circle_quality       - quality of social circle (0.0-1.0)
+professional_circle_quality - quality of professional circle (0.0-1.0)
+universal_circle_quality    - quality of universal circle (0.0-1.0)
+influence_extent            - extent of influence
+energy_investment           - energy invested in circle
+time_allocation             - time allocated to circle
+
+==================================================
+SECTION 20.8: KARMA DYNAMICS (25 vars)
+==================================================
+# Three Karma Types
+sanchita                    - accumulated karma (storage)
+prarabdha                   - active karma this life (allocated)
+kriyamana                   - karma being created now (real-time)
+
+# Karma Generation
+karma_generation_rate       - dK/dt generation rate
+karma_burning_rate          - karma dissolution rate
+net_karma_change            - net change in karma
+karma_created_j             - karma created by action j (indexed)
+
+# Karma Burning
+burn_rate                   - overall burning rate
+burning_rate_i              - burning rate for karma type i (indexed)
+karma_resolution_rate       - resolution rate of karmic patterns
+
+# Karma Activation
+karma_activation_probability_at_time_t - probability karma activates at time t
+karma_activation_probability_per_day   - daily activation probability
+karma_pull                  - pull of karma on choices (0.0-1.0)
+karma_match                 - match between karma and situation (0.0-1.0)
+karma_weight_j              - weight of karma j in decisions (indexed)
+karma_constraint_i          - constraint imposed by karma i (indexed)
+
+# Karma Types by Domain
+physical_karma              - karma in physical domain
+emotional_karma             - karma in emotional domain
+mental_karma                - karma in mental domain
+spiritual_karma             - karma in spiritual domain
+relational_karma            - karma in relational domain
+
+# Collective Karma
+collective_karma            - shared group karma
+collective_karma_share      - individual’s share of collective karma
+inherited_karma             - karma inherited from ancestors
+
+==================================================
+SECTION 20.9: DEATH ARCHITECTURE (20 vars)
+==================================================
+# Seven Death Types (D1-D7)
+d1_physical_death_score     - physical death process strength (0.0-1.0)
+d2_relationship_death_score - relationship death strength (0.0-1.0)
+d3_identity_death_score     - identity death strength (0.0-1.0)
+d4_belief_system_death_score - belief system death strength (0.0-1.0)
+d5_desire_death_score       - desire death strength (0.0-1.0)
+d6_separation_death_score   - separation death strength (0.0-1.0)
+d7_ego_death_score          - ego death strength (0.0-1.0)
+
+# Death Process Variables
+active_death_type           - currently active death type (D1-D7)
+death_depth                 - depth of death process (0.0-1.0)
+death_depth_i               - depth of death type i (indexed)
+current_death_type          - current primary death process
+death_architecture_active   - whether death architecture is active (boolean)
+
+# Grace in Death
+grace_availability          - grace available for death process (0.0-1.0)
+grace_effectiveness         - grace effectiveness in death (0.0-1.0)
+grace_probability           - probability of grace intervention (0.0-1.0)
+
+# Death-Related States
+clinging_to_life            - clinging to what’s dying (0.0-1.0)
+death_acceptance            - acceptance of death process (0.0-1.0)
+death_fear                  - fear of death/endings (0.0-1.0)
+death_denial                - denial of death process (0.0-1.0)
+transformation_through_death - transformation enabled by death (0.0-1.0)
+resurrection                - resurrection/rebirth after death (0.0-1.0)
+
+==================================================
+SECTION 20.10: NETWORK & COLLECTIVE EFFECTS (30 vars)
+==================================================
+# Network Structure
+network_effect              - network amplification effect
+network_coherence           - coherence across network (0.0-1.0)
+network_amplification_factor - amplification from network size
+critical_mass               - critical mass threshold (count)
+critical_mass_threshold     - threshold for breakthrough (count)
+critical_mass_distance      - distance to critical mass (count)
+committed_count             - count of committed individuals
+
+# Collective Consciousness
+collective_consciousness_level - average consciousness level of group
+collective_intelligence     - emergent group intelligence
+collective_iq               - collective IQ score
+group_mind_activation       - activation of group mind (0.0-1.0)
+group_mind_iq               - group mind IQ when activated
+collective_capability       - collective capability vs individual
+
+# Collective Evolution
+collective_evolution_rate   - evolution rate of collective
+group_evolution_rate        - group evolution acceleration
+collective_breakthrough_p   - probability of collective breakthrough (0.0-1.0)
+collective_breakthrough_probability - same as above (alt name)
+collective_transformation_rate - transformation rate of collective
+
+# Field Effects
+field_strength              - morphogenetic field strength
+field_strength_for_pattern_x - field strength for specific pattern
+morphogenetic_field_strength - morphic field strength
+field_influence_on_individual - how field affects individual
+individual_impact_on_collective - how individual affects collective
+
+# Resonance & Coherence
+resonance                   - resonance between entities (0.0-1.0)
+resonance_ij                - resonance between i and j (indexed)
+coherence                   - overall coherence (0.0-1.0)
+coherence_factor_i          - coherence factor for element i (indexed)
+pairwise_coherence_ij       - coherence between i and j (indexed)
+we_space_quality            - quality of shared consciousness space (0.0-1.0)
+
+==================================================
+SECTION 20.11: QUANTUM CONSCIOUSNESS DYNAMICS (25 vars)
+==================================================
+# Superposition
+superposition               - consciousness superposition state
+superposition_degree        - degree of superposition (0.0-1.0)
+superposition_state         - specific superposition configuration
+
+# Wave Function
+consciousness_wave_equation - Î¨ wave function
+psi_magnitude               - magnitude of Î¨
+psi_total                   - total consciousness wave
+psi_final                   - final collapsed state
+psi_we                      - collective wave function
+
+# Collapse Mechanics
+collapse_probability        - probability of wave collapse (0.0-1.0)
+collapse_trigger_function   - function determining collapse
+intentional_collapse        - intentional wave function collapse
+collapse_probability_to_state_j - probability of collapsing to state j (indexed)
+observer_effect             - observer impact on reality
+observer_impact_strength    - strength of observer effect (0.0-1.0)
+
+# Quantum Tunneling
+tunneling_probability       - probability of quantum tunneling (0.0-1.0)
+p_tunnel                    - tunneling probability (alt name)
+barrier_height              - energy barrier height
+barrier_constant            - barrier constant Îº
+barrier_width               - width of barrier L
+
+# Decoherence
+decoherence_rate            - rate of quantum decoherence
+tau_decoherence             - decoherence time constant
+# Entanglement
+entanglement_strength       - entanglement between systems (0.0-1.0)
+mutual_information_between_individuals - shared quantum information
+
+# Quantum Probability
+state_probability_distribution_p_i - probability distribution over states
+probability_density         - quantum probability density
+probability_waves           - quantum probability waves
+
+==================================================
+SECTION 20.12: REALISM BLENDING (65 vars)
+==================================================
+# Realism Types (60 types from Master Realism Engine)
+realism_i_activation        - activation of realism type i (indexed)
+realism_i_weight            - weight of realism type i (indexed)
+realism_blend               - final blended realism output
+final_realism               - final computed realism
+final_realism_blend         - complete blended realism
+
+# Major Realism Categories
+physicalist_realism          - materialist/physicalist view (0.0-1.0)
+scientific_realism           - scientific worldview (0.0-1.0)
+experiential_realism         - experience-based reality (0.0-1.0)
+mystical_realism             - mystical/spiritual view (0.0-1.0)
+pragmatic_realism            - practical/pragmatic view (0.0-1.0)
+idealistic_realism           - idealist philosophy (0.0-1.0)
+relational_realism           - relationship-based reality (0.0-1.0)
+systemic_realism             - systems view (0.0-1.0)
+
+# Specific Realisms
+absolute_realism             - absolute truth view
+relative_realism             - relativistic view
+constructivist_realism       - socially constructed reality
+phenomenological_realism     - phenomenological view
+existential_realism          - existentialist view
+transcendent_realism         - transcendent reality
+immanent_realism             - immanent divinity
+dharmic_realism              - dharma-based reality
+karmic_realism               - karma-based causation
+graceful_realism             - grace-infused reality
+deterministic_realism        - deterministic worldview
+probabilistic_realism        - probabilistic worldview
+quantum_realism              - quantum view
+fractal_realism              - fractal/holographic view
+evolutionary_realism         - evolutionary perspective
+
+# Domain-Specific Realisms
+biological_realism           - biological domain
+psychological_realism        - psychological domain
+social_realism               - social domain
+cultural_realism             - cultural domain
+economic_realism             - economic domain
+political_realism            - political domain
+ecological_realism           - ecological domain
+cosmic_realism               - cosmic/universal domain
+
+# Practice-Related Realisms
+meditative_realism          - meditation-enhanced reality
+contemplative_realism       - contemplative view
+shamanic_realism            - shamanic worldview
+devotional_realism          - bhakti/devotional path
+wisdom_realism              - jnana/wisdom path
+service_realism             - seva/service orientation
+witness_realism             - witness consciousness view
+
+# Consciousness-Level Realisms
+survival_realism            - S1 survival-based reality
+seeking_realism             - S2 desire-based reality
+achievement_realism         - S3 achievement-focused reality
+service_realism             - S4 service-oriented reality
+surrender_realism           - S5 surrender-based reality
+witness_realism             - S6 witness-based reality
+wisdom_realism              - S7 wisdom-integrated reality
+unity_realism               - S8 unity consciousness reality
+
+==================================================
+SECTION 20.13: TEMPORAL DYNAMICS (30 vars)
+==================================================
+# Time Perception
+subjective_time_rate        - rate of subjective time flow
+time_perception             - how time is perceived
+temporal_focus              - focus on past/present/future
+time_anxiety                - anxiety about time (0.0-1.0)
+timeless_awareness          - awareness beyond time (0.0-1.0)
+time_transcendence          - transcendence of time (0.0-1.0)
+
+# Time Coordinates
+past                        - past temporal focus (0.0-1.0)
+present                     - present temporal focus (0.0-1.0)
+future                      - future temporal focus (0.0-1.0)
+eternal                     - eternal/timeless focus (0.0-1.0)
+
+# Time Dynamics
+temporal_coherence          - coherence across time (0.0-1.0)
+time_depth                  - depth of temporal awareness
+subjective_time             - subjective experience of time
+fundamental_time_unit       - basic time quantum
+consciousness_time_unit     - consciousness-based time unit
+
+# Kairos vs Chronos
+chronos                     - clock time (linear)
+kairos_experience           - kairos (opportune moment) experience (0.0-1.0)
+
+# Evolution Over Time
+ds_dt                       - sacred chain evolution rate (dS/dt)
+dcleanliness_dt             - cleanliness change rate
+dk_dt                       - karma generation rate
+de_dt                       - energy change rate
+da_dt                       - awareness growth rate
+dtheta_dt                   - oscillation frequency (dÎ¸/dt)
+
+# Time-Related States
+past_reality                - reality as it was in past
+present_reality             - reality in present moment
+future_reality              - anticipated future reality
+eternal_present             - eternal now state
+time_collapse               - collapse into eternal present
+
+==================================================
+SECTION 20.14: EVOLUTION & TRANSFORMATION (40 vars)
+==================================================
+# Evolution Rates
+evolution_rate              - overall evolution rate
+consciousness_evolution_rate - consciousness evolution rate
+transformation_rate         - transformation rate
+collective_evolution_acceleration - acceleration of collective evolution
+
+# Evolution Triggers
+consciousness_evolution_trigger - trigger for consciousness shift
+experience_impact           - impact of experience on evolution
+trigger_event_probability   - probability of trigger event (0.0-1.0)
+trigger_event_match         - match between event and readiness (0.0-1.0)
+
+# Breakthrough Dynamics
+breakthrough_window_detection - detection of breakthrough window
+p_breakthrough              - breakthrough probability (0.0-1.0)
+breakthrough_tipping_point - tipping point for breakthrough
+quantum_leap_probability    - probability of quantum leap (0.0-1.0)
+# Regression Dynamics
+regression_depth             - depth of regression after breakthrough (0.0-1.0)
+regression_pull              - pull toward old patterns (0.0-1.0)
+
+# Spiral Evolution
+spiral_path                  - spiral evolution trajectory
+oscillation                  - oscillation pattern in evolution
+
+# Transformation Magnitude
+transformation_magnitude     - magnitude of transformation
+required_transformation      - transformation required for goal
+transformation_completion    - completion percentage (0.0-1.0)
+transformation_readiness     - readiness for transformation (0.0-1.0)
+
+# Growth Phases
+exponential_growth_rate      - rate during exponential phase
+exponential_growth_phase     - in exponential growth (boolean)
+saturation_phase             - in saturation phase (boolean)
+plateau                      - plateau in growth
+time_plateau                 - duration of plateau
+
+# Integration
+integration_period          - integration time after breakthrough
+post_breakthrough_integration_time - time needed for integration
+
+# Readiness
+readiness                    - overall readiness for shift (0.0-1.0)
+readiness_to_face            - readiness to face challenge (0.0-1.0)
+ripeness                     - ripeness for transformation (0.0-1.0)
+
+# Change Dynamics
+change                       - magnitude of change
+change_force                 - force driving change
+change_impulse               - impulse for change
+resistance                   - resistance to change (0.0-1.0)
+allowing                     - allowing change (0.0-1.0)
+
+# Velocity & Acceleration
+transformation_velocity      - velocity of transformation
+acceleration                 - acceleration of evolution
+velocity                     - velocity of change
+
+==================================================
+SECTION 20.15: MEASUREMENT & PRECISION (20 vars)
+==================================================
+# Measurement Quality
+measurement_precision       - precision of measurement (0.0-1.0)
+measurement_accuracy        - accuracy of measurement (0.0-1.0)
+measurement_resolution      - resolution of measurement
+measurement_bias            - bias in measurement
+
+# Observer Effects
+observer_bias_i              - observer bias at level i (indexed)
+measurement_operator         - quantum measurement operator
+observer                     - observer configuration
+
+# Calibration
+device_calibration           - calibration of measuring device
+calibration_error            - error in calibration
+zero_detection               - detection of zero state
+
+# Confidence
+confidence                   - confidence in measurement (0.0-1.0)
+confidence_ucb               - UCB-based confidence
+derived_confidence           - confidence derived from inputs
+input_confidence_product     - product of input confidences
+
+# Accuracy Metrics
+accuracy                    - overall accuracy (0.0-1.0)
+base_precision              - baseline precision
+minimum_distinguishable_difference - minimum detectable difference
+
+# Error Terms
+systematic_error            - systematic error component
+random_error                - random error component
+noise                       - noise in measurement
+
+==================================================
+SECTION 20.16: PLATFORM CONSTRAINTS (40 vars)
+==================================================
+# TikTok
+tiktok_constraints          - TikTok platform constraints
+tiktok_fitness_score        - fit score for TikTok (0.0-1.0)
+hook_time                   - time for hook (seconds)
+video_length_optimal        - optimal video length (seconds)
+
+# Twitter/X
+twitter_fitness_score       - fit score for Twitter (0.0-1.0)
+characters_per_tweet        - character count
+hashtag_max                 - max hashtags allowed
+hashtag_optimal             - optimal hashtag count
+media_per_tweet             - media items per tweet
+
+# LinkedIn
+linkedin_fitness_score      - fit score for LinkedIn (0.0-1.0)
+linkedin_constraints        - LinkedIn platform constraints
+professional_tone           - professional tone requirement (0.0-1.0)
+
+# Instagram
+instagram_fitness_score     - fit score for Instagram (0.0-1.0)
+aspect_ratio                - image aspect ratio
+captions_required           - captions required (boolean)
+
+# YouTube
+youtube_fitness_score       - fit score for YouTube (0.0-1.0)
+thumbnail_click_rate        - thumbnail click rate target (0.0-1.0)
+timestamps_required         - timestamps required (boolean)
+show_notes_length           - show notes length (words)
+
+# Email
+email_fitness_score         - fit score for email (0.0-1.0)
+email_constraints           - email platform constraints
+subject_max                 - max subject line length
+preview_max                 - max preview text length
+scan_time_target            - target scan time (seconds)
+
+# Blog
+blog_fitness_score          - fit score for blog (0.0-1.0)
+reading_level               - target reading level
+word_difficulty_level       - word difficulty (grade level)
+paragraph_max_sentences     - max sentences per paragraph
+subheadings_every           - subheading frequency (paragraphs)
+
+# Podcast
+podcast_fitness_score       - fit score for podcast (0.0-1.0)
+audio_quality_min           - minimum audio quality
+audio_required              - audio required (boolean)
+intro_max                   - max intro length (seconds)
+
+# Meeting/Presentation
+meeting_constraints         - meeting platform constraints
+meeting_effectiveness       - meeting effectiveness score (0.0-1.0)
+attention_duration          - attention span duration (minutes)
+slide_max                   - max slides allowed
+
+# Academic
+academic_fitness_score      - fit score for academic (0.0-1.0)
+academic_paper_constraints   - academic constraints
+citations_style              - citation style required
+evidence_requirement         - evidence requirement level
+
+==================================================
+SECTION 20.17: COHERENCE & ALIGNMENT (25 vars)
+==================================================
+# Coherence Types
+coherence                   - overall coherence (0.0-1.0)
+coherence_multiplier        - coherence amplification factor
+coherence_achieved          - achieved coherence level
+coherence_score             - coherence quality score
+bidirectional_coherence     - two-way coherence (0.0-1.0)
+operator_coherence          - coherence among operators (0.0-1.0)
+temporal_coherence          - coherence across time (0.0-1.0)
+collective_field_coherence - coherence of collective field (0.0-1.0)
+
+# Alignment Types
+alignment                    - overall alignment (0.0-1.0)
+alignment_factor             - alignment amplification
+alignment_amplification      - amplified alignment
+dharma_alignment             - alignment with dharma (0.0-1.0)
+dharma_alignment_i           - dharma alignment at level i (indexed)
+alignment_with_dharma        - same as dharma_alignment
+action_alignment             - action-intention alignment (0.0-1.0)
+thought_word_alignment       - thought-word alignment (0.0-1.0)
+words_alignment              - words alignment with truth (0.0-1.0)
+actions_alignment            - actions alignment with words (0.0-1.0)
+purpose_alignment            - alignment with purpose (0.0-1.0)
+value_alignment              - alignment with values (0.0-1.0)
+
+# Pathway Alignments
+witnessing_pathway_score     - witnessing pathway alignment (0.0-1.0)
+creating_pathway_score       - creating pathway alignment (0.0-1.0)
+embodying_pathway_score      - embodying pathway alignment (0.0-1.0)
+
+# Integrity
+integrity                    - overall integrity (0.0-1.0)
+actions_integrity            - integrity of actions (0.0-1.0)
+
+==================================================
+SECTION 20.18: GRACE MECHANICS (20 vars)
+==================================================
+# Grace Availability
+grace_availability          - available grace (0.0-1.0)
+grace_effectiveness         - grace effectiveness (0.0-1.0)
+grace_probability           - probability of grace (0.0-1.0)
+grace_factor                - grace amplification factor
+grace_field                 - grace field strength
+network_grace_field         - network-level grace field
+
+# Grace Timing
+grace_timing_probability     - probability of grace at right time (0.0-1.0)
+grace_timing_window          - window for grace intervention
+divine_timing                - divine timing alignment (0.0-1.0)
+
+# Grace Modification
+grace_modification_i        - grace modification at level i (indexed)
+grace_i                     - grace at level i (indexed)
+grace_multiplication_factor - grace amplification factor
+
+# Grace Reception
+grace_reception              - receptivity to grace (0.0-1.0)
+grace_flow                   - grace flowing (0.0-1.0)
+grace_connection             - connection to grace (0.0-1.0)
+
+# Grace Effects
+grace_acceleration          - acceleration from grace
+grace_effectiveness_personal - personal grace effectiveness
+grace_effectiveness_collective - collective grace effectiveness
+grace_on_collective         - grace affecting collective
+grace_field_collective      - collective grace field
+
+==================================================
+SECTION 20.19: ADDITIONAL OPERATORS & COEFFICIENTS (50 vars)
+==================================================
+# Klesha System (5 afflictions)
+avidya_strength             - ignorance strength (0.0-1.0)
+asmita_strength             - ego identification strength (0.0-1.0)
+raga_strength               - attachment strength (0.0-1.0)
+dvesha_strength             - aversion strength (0.0-1.0)
+abhinivesha_strength        - clinging to life strength (0.0-1.0)
+
+# Interaction Coefficients
+gamma_ij                    - synergy coefficient between operators i,j
+delta_ij                    - interference coefficient between operators i,j
+operator_interaction_effect - combined interaction effect
+combined_effect_score       - total combined effect score
+
+# Rate Constants
+k1                           - rate constant 1 (awareness)
+k2                           - rate constant 2 (practice)
+k3                           - rate constant 3 (grace)
+k4                           - rate constant 4 (resistance)
+k_burn                       - karma burning rate constant
+k_B                          - Boltzmann-like constant
+
+# Coupling Strengths
+coupling_strength           - coupling between systems
+bidirectional_coupling_strength - bidirectional coupling
+
+# Complexity Factors
+complexity                   - system complexity measure
+complexity_handled           - complexity that can be handled
+complexity_preservation      - preservation of complexity
+
+# Harmonic Components
+f0                           - fundamental frequency
+harmonic_pattern             - harmonic pattern structure
+harmonic_strength_n          - strength of harmonic n (indexed)
+primary_harmonic             - primary harmonic component
+second_harmonic              - second harmonic component
+third_harmonic               - third harmonic component
+
+# Resonance Frequencies
+omega                        - angular frequency Ï\211
+omega_0                      - natural frequency
+omega_n                      - harmonic frequency n (indexed)
+omega_osc                    - oscillation frequency
+f_beat                       - beat frequency
+
+# Decay & Growth Constants
+tau                          - time constant Ï\204
+tau_decay                    - decay time constant
+tau_c                        - critical time constant
+tau_decoherence              - decoherence time constant
+tau_life                     - lifetime constant
+tau_window                   - window time constant
+
+# Phase Parameters
+phi                          - phase angle Ï\206
+phi_i                        - phase of component i (indexed)
+phi_k                        - phase of k (indexed)
+phi_n                        - phase of harmonic n (indexed)
+
+# Width & Spread
+sigma                        - standard deviation Ï\203
+sigma_0                      - base standard deviation
+sigma_i                     - sigma for component i (indexed)
+sigma_ij                    - correlation coefficient between i,j
+width                       - distribution width
+barrier_width               - quantum barrier width L
+
+# Amplitude Parameters
+amplitude_i                 - amplitude of component i (indexed)
+a_n                         - amplitude of mode n (indexed)
+a_total                     - total amplitude
+
+==================================================
+SECTION 20.20: H-LEVEL (HIERARCHY) VARIABLES (20 vars)
+==================================================
+# H-Level Scores (8 levels)
+h1_personal_score           - H1 personal level score (0.0-1.0)
+h1_score                    - H1 score (alt name)
+h2_interpersonal_score      - H2 interpersonal level score (0.0-1.0)
+h2_score                    - H2 score (alt name)
+h3_collective_score         - H3 organizational level score (0.0-1.0)
+h3_score                    - H3 score (alt name)
+h4_cultural_score           - H4 industry/cultural level score (0.0-1.0)
+h4_score                    - H4 score (alt name)
+h5_archetypal_score         - H5 societal level score (0.0-1.0)
+h5_score                    - H5 score (alt name)
+h6_universal_score          - H6 humanity level score (0.0-1.0)
+h6_score                    - H6 score (alt name)
+h7_absolute_score           - H7 consciousness level score (0.0-1.0)
+h7_score                    - H7 score (alt name)
+h8_void_score               - H8 void/totality level score (0.0-1.0)
+h8_score                    - H8 score (alt name)
+
+# H-Level Detection
+h_level_detection_from_query - detected H-level from query text
+hierarchical_multiplication_factor - 10^(H-1) scaling factor
+scope_indicators            - count of scope-indicating words
+multi_level_query           - query spans multiple H-levels (boolean)
+
+==================================================
+SECTION 20.21: PANCHAKRITYA (FIVE ACTS) (10 vars)
+==================================================
+# Five Divine Acts
+srishti_creation_strength   - strength of creation act (0.0-1.0)
+sthiti_maintenance_strength - strength of maintenance act (0.0-1.0)
+samhara_dissolution_strength - strength of dissolution act (0.0-1.0)
+tirodhana_concealment_strength - strength of concealment act (0.0-1.0)
+anugraha_grace_strength     - strength of grace act (0.0-1.0)
+
+# Act Balance
+panchakritya_balance        - balance across five acts (0.0-1.0)
+act_balance_score           - balance score for five acts
+current_dominant_act        - currently dominant act
+dominant_act                - dominant act (alt name)
+five_acts_integration       - integration of five acts (0.0-1.0)
+
+==================================================
+SECTION 20.22: ADVANCED MATHEMATICAL STRUCTURES (30 vars)
+==================================================
+# Manifold & Geometry
+consciousness_manifold_metric - metric tensor for consciousness manifold
+geodesic_equation           - geodesic path equation
+riemann_curvature_tensor    - curvature of consciousness space
+christoffel_symbols         - connection coefficients
+parallel_transport          - parallel transport operator
+
+# Topology
+betti_numbers               - topological invariants
+euler_characteristic        - topological Euler characteristic
+fundamental_group           - fundamental group of space
+homotopy_equivalence        - homotopy between states
+homology_groups             - homology groups
+
+# Category Theory
+morphisms                   - morphisms between objects
+composition                 - composition of morphisms
+colimit                     - colimit in category
+pushout                     - pushout in category
+pullback                    - pullback in category
+
+# Complex Analysis
+consciousness_complex_function - consciousness in complex plane
+poles                       - poles of complex function
+residue_theorem_application - residue theorem use
+conformal_mapping_of_consciousness_space - conformal map
+
+# Differential Geometry
+lie_algebra_commutator      - Lie bracket [X,Y]
+infinitesimal_generator     - infinitesimal generator of group
+consciousness_symmetry_group - symmetry group
+noether_theorem_application - conservation from symmetry
+
+# Spectral Analysis
+spectral_triple             - noncommutative geometry structure
+connes_distance_formula     - distance in spectral triple
+
+# Information Theory
+information_content         - information content measure
+information_gain_through_evolution - information gained
+entropy                     - entropy/uncertainty measure
+mutual_information_between_individuals - shared information
+
+==================================================
+SECTION 20.23: STOCHASTIC & PROBABILISTIC (25 vars)
+==================================================
+# Probability Distributions
+probability_i               - probability of state i (indexed)
+p_i                         - probability (alt name)
+probability_density         - probability density function
+state_probability_distribution_p_i - probability distribution
+
+# Markov Processes
+markov_chain_state_transitions - Markov transition matrix
+branch_probability_i        - branching probability i (indexed)
+path_selection              - selected path
+path_selection_probability - probability of path selection
+choice_probability_at_level_i - choice probability at cascade level i
+
+# Stochastic Components
+random_component            - random/stochastic component
+stochastic_term             - stochastic term in equation
+random_error                - random error component
+
+# Prior & Posterior
+prior_probability_i         - prior probability of state i (indexed)
+bayesian_network            - Bayesian network structure
+
+# Jump Processes
+jump_process_for_breakthroughs - jump process dynamics
+p_jump                      - jump probability (0.0-1.0)
+quantum_jump_probability    - quantum jump probability
+
+# Logistic Growth
+logistic_growth_model       - logistic growth dynamics
+critical_density            - critical density threshold
+
+# Probabilities by Type
+collapse_probabilities      - all collapse probabilities
+p_breakthrough              - breakthrough probability
+p_threshold                 - threshold crossing probability
+p_window                    - window availability probability
+p_cascade                   - cascade probability
+p_emerge                    - emergence probability
+p_grace                     - grace intervention probability
+
+==================================================
+SECTION 20.24: CAUSALITY & LOGIC (15 vars)
+==================================================
+# Bidirectional Causation
+causation_strength_forward - forward causation strength (0.0-1.0)
+causation_strength_backward - backward causation strength (0.0-1.0)
+reality_manifestation_rate - rate reality manifests from consciousness
+consciousness_evolution_trigger - trigger for consciousness shift
+
+# Causal Chains
+causal_chain                - sequence of causal links
+feedback_loop_gain          - amplification in feedback loop
+loop_gain                   - loop gain factor
+
+# DAG Structure
+dag                         - directed acyclic graph
+causal_dependencies         - causal dependency structure
+computation_sequence        - computation order
+
+# Logic Types
+logic                       - logical reasoning strength (0.0-1.0)
+sequential_thinking         - sequential logic capacity (0.0-1.0)
+paradoxical_realism         - ability to hold paradox (0.0-1.0)
+
+# Determinism
+determinism                 - deterministic component (0.0-1.0)
+free_will                   - free will component (0.0-1.0)
+no_free_will                - no free will component (0.0-1.0)
+
+==================================================
+SECTION 20.25: MISCELLANEOUS CRITICAL VARIABLES (40 vars)
+==================================================
+# Attention & Focus
+attention                   - attention capacity (0.0-1.0)
+attention_focus             - focus of attention
+attention_quality           - quality of attention (0.0-1.0)
+attention_stability         - stability of attention (0.0-1.0)
+focus_intensity             - intensity of focus (0.0-1.0)
+focus_stability             - stability of focus (0.0-1.0)
+
+# Awareness Types
+awareness                   - overall awareness (0.0-1.0)
+awareness_breadth           - breadth of awareness
+awareness_during_action     - awareness while acting (0.0-1.0)
+awareness_exponent          - awareness amplification exponent
+awareness_of_choices        - awareness of available choices (0.0-1.0)
+detached_awareness          - witness-like detached awareness (0.0-1.0)
+
+# Intention & Will
+intention_clarity           - clarity of intention (0.0-1.0)
+intention_purity            - purity of intention (0.0-1.0)
+will_strength               - strength of will (0.0-1.0)
+will_power                  - willpower available (0.0-1.0)
+
+# Trust & Surrender
+trust                       - trust level (0.0-1.0)
+trust_in_process            - trust in process (0.0-1.0)
+trust_in_unknown            - trust in unknown (0.0-1.0)
+surrender                   - surrender level (0.0-1.0)
+surrender_depth             - depth of surrender (0.0-1.0)
+surrender_of_power          - surrendering control (0.0-1.0)
+surrender_to_divine         - surrender to divine (0.0-1.0)
+
+# Wisdom & Understanding
+wisdom                      - wisdom level (0.0-1.0)
+understanding               - understanding depth (0.0-1.0)
+discrimination_capacity     - capacity to discriminate (0.0-1.0)
+discernment_capacity        - discernment capacity (0.0-1.0)
+
+# Flow & Ease
+flow                        - flow state (0.0-1.0)
+creative_flow               - creative flow (0.0-1.0)
+effortless                  - effortlessness (0.0-1.0)
+natural_unfolding           - natural unfolding (0.0-1.0)
+
+# Mystery & Unknown
+mystery_factor              - mystery/unknown component (0.0-1.0)
+mystery_appreciation        - appreciation of mystery (0.0-1.0)
+divine_mystery              - divine mystery component (0.0-1.0)
+uncertainty                 - uncertainty level (0.0-1.0)
+
+# Openness & Receptivity
+openness                    - openness to experience (0.0-1.0)
+receptivity                 - receptivity to input (0.0-1.0)
+allowing                    - allowing what is (0.0-1.0)
+
+# Agency & Power
+agency                      - sense of agency (0.0-1.0)
+power                       - personal power (0.0-1.0)
+creative_power              - creative power (0.0-1.0)
+
+==================================================
+TOTAL NEW VARIABLES ADDED: ˜900+
+
+INTEGRATION NOTES:
+1. All variables use underscore_case for consistency
+2. Scores and levels use 0.0-1.0 range unless specified
+3. Indexed variables use _i, _j, _k, _n suffixes
+4. Rates use _rate suffix
+5. Time derivatives use d*/dt notation
+6. Greek symbols preserved where used (Î¨, Ï\206, Ï\211, Ï\204, Ï\203, Îº)
+7. Collision-prone symbols use full names (M_maya vs M_manifest)
+
+IMPLEMENTATION GUIDANCE:
+- Store all in flat database schema with underscores
+- Use suffixes for type clarity (_score, _rate, _prob, _strength)
+- Maintain operator disambiguation (existing collision map)
+- Pass full variable context to LLM for calculations
+- Variables are computed by Claude API, never hardcoded in backend
+
+==================================================
+END OF OOF NOMENCLATURE APPENDIX
+==================================================
+
