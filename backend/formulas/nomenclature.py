@@ -52,6 +52,15 @@ class NamespaceCategory(Enum):
     CREATOR = "creator"     # C_creator - Divine/source
     CULTURAL = "cultural"   # C_cultural - Collective/cultural
 
+    # Additional namespaces
+    PRESENCE = "presence"   # P_presence - Present moment awareness
+    PRANA = "prana"         # P_prana - Life force/vital energy
+    PROB = "prob"           # P_prob - Probability calculations
+    POWER = "power"         # P_power - Shakti/power expression
+    LOVE = "love"           # L_love - Love/connection
+    LIBERATE = "liberate"   # L_liberate - Liberation/freedom
+    LEVEL = "level"         # L_level - Consciousness levels
+
     PRESENCE = "presence"   # P_presence - Being/presence
     PROB = "prob"           # P_prob - Probability
     POWER = "power"         # P_power - Shakti/power
