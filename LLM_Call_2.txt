@@ -1,0 +1,474 @@
+================================================================================
+LLM CALL 2: FREEDOM-RESPECTING VERSION - KEY PROMPT SECTIONS
+================================================================================
+
+This shows the modified sections of articulation_prompt_builder.py that respect
+LLM freedom. These replace the over-constraining sections identified in the
+freedom violations analysis.
+
+================================================================================
+SECTION 1: MODIFIED _build_framework_section() METHOD
+================================================================================
+
+Replace lines 129-198 with:
+
+```python
+def _build_framework_section(self) -> str:
+    """Build framework reference section - FREEDOM-RESPECTING VERSION"""
+    return """## FRAMEWORK REFERENCE
+
+The OOF.txt framework document is available in your context. Use it for:
+- Operator definitions and interpretation ranges
+- Transformation matrix meanings
+- S-level characteristics
+- Consciousness physics principles
+
+Reference the framework internally but express insights naturally - as if 
+speaking to a trusted friend or client.
+
+## VALUE SELECTION PROTOCOL
+
+You are receiving ALL calculated consciousness values (~1,500-2,500 values).
+Your task is to SELECT which values to articulate based on context.
+
+### SELECTION PRINCIPLES:
+
+**1. QUERY RELEVANCE (Priority 1)**
+Select values that directly answer the user's specific question.
+Focus on what matters for THIS query, not generic patterns.
+
+**2. USER-REQUESTED TARGETS (Priority 2)**
+LLM Call 1 identified targets based on query analysis.
+These are high-confidence relevant values - include them.
+
+**3. SEARCH GUIDANCE HIGH-PRIORITY (Priority 3)**
+LLM Call 1 flagged values for evidence-grounding.
+Include these if relevant to the query.
+
+**4. CAUSAL CHAIN COMPLETENESS**
+If articulating bottleneck X, include ALL values in its causal chain.
+Show the full consciousness → reality connection.
+Don't leave causal gaps.
+
+**5. TRANSFORMATION CONTEXT**
+If discussing transformation, include transformation-related values
+(S-level, matrices, death architecture, grace availability).
+
+### ARTICULATION EFFICIENCY:
+
+- Articulate 20-50 key values (not all 2,500)
+- USE the full value set to understand the complete picture
+- Synthesize patterns across all values
+- Reference supporting values without listing them all
+
+### PRINCIPLE:
+
+You have access to EVERYTHING. Use your intelligence and context to decide 
+what matters for THIS query. Don't list all values - synthesize the relevant 
+ones into breakthrough insights."""
+```
+
+**KEY CHANGES:**
+- ❌ REMOVED: Pre-specified value lists for query types ("If user asks X → focus on Y")
+- ❌ REMOVED: Detailed step-by-step example (765 lines in Call 1 style)
+- ❌ REMOVED: "WHAT TO IGNORE" checklist with ❌ symbols
+- ✓ KEPT: General selection principles
+- ✓ KEPT: "Use your intelligence" trust statement
+
+**REDUCTION:** 70 lines → 30 lines (57% reduction)
+
+================================================================================
+SECTION 2: MODIFIED _build_generation_instructions() METHOD
+================================================================================
+
+Replace lines 707-797 with:
+
+```python
+def _build_generation_instructions(self, instructions: ArticulationInstructions) -> str:
+    """Build generation instructions - FREEDOM-RESPECTING VERSION"""
+    
+    # Build concealment and domain notes (keep unchanged)
+    concealment_note = """- **Framework Concealment:** Never use technical terms 
+like "Maya operator", "S-level", "transformation matrix". Translate everything 
+into natural, domain-appropriate language."""
+    
+    domain_note = ""
+    if instructions.domain_context:
+        domain_note = f"- **Domain Adaptation:** User is in {instructions.domain_context} 
+domain. Use appropriate terminology and examples."
+    
+    # Build priorities string if available (keep unchanged)
+    priorities_str = ""
+    if instructions.insight_priorities:
+        priorities_str = "\n**Priority Insights to Emphasize:**\n" + '\n'.join(
+            f"- {p.replace('_', ' ').title()}"
+            for p in instructions.insight_priorities
+        )
+    
+    return f"""## ARTICULATION INSTRUCTIONS
+
+### ARTICULATION GOALS
+
+Your response should accomplish these goals (structure naturally based on context):
+
+**Show Current Reality:** Express where the user actually is vs where they think 
+they are. Ground this in web research and consciousness analysis. Point out any 
+perception gaps (POMDP).
+
+**Explain Consciousness Patterns:** Identify which consciousness patterns are 
+creating the current situation. Explain HOW these patterns interact to produce 
+observable results. Make the invisible visible.
+
+**Identify Transformation Requirements:** Describe what actually needs to shift 
+internally to enable external results. Reference transformation vectors and 
+leverage points.
+
+**Provide Practical Leverage:** Offer concrete next actions aligned with their 
+consciousness state and current capacity.
+
+### STYLE REQUIREMENTS
+{concealment_note}
+{domain_note}
+
+- **Natural Flow:** Write as a wise advisor who sees patterns they cannot see, 
+not as a calculation system reporting numbers.
+
+- **Insight Priority:** Lead with the most impactful insights. Don't try to 
+communicate everything - focus on what matters most for their transformation.
+
+- **Grounded in Data:** Ground major claims in either web research findings or 
+calculated consciousness values. Express these naturally, not as citations.
+{priorities_str}
+
+## EVIDENCE GROUNDING PROTOCOL
+
+When consciousness values are calculated, ground them in observable reality:
+
+**Process:**
+1. Translate consciousness patterns into measurable behaviors/outcomes
+2. Formulate search queries to find observable proof  
+3. Cite evidence naturally in your articulation
+4. Include "Sources:" section at the end listing all web sources used
+
+**Use search_guidance from Call 1** for high-priority values to ground.
+
+**Quality Standards:**
+- Focus on major insights (not every value)
+- Show consciousness pattern → observable reality → cited proof
+- Integrate evidence into narrative flow naturally
+- Let evidence strengthen insights, not replace them"""
+```
+
+**KEY CHANGES:**
+- ❌ REMOVED: Rigid 5-step numbered structure (### 1. ### 2. ### 3. etc.)
+- ❌ REMOVED: 150-line consciousness→reality mapping catalog
+- ❌ REMOVED: Detailed numbered evidence integration rules
+- ✓ KEPT: Articulation goals (expressed as goals, not steps)
+- ✓ KEPT: Framework concealment requirement
+- ✓ KEPT: Evidence grounding requirement
+- ✓ CHANGED: "Structure naturally based on context" (freedom to adapt)
+
+**REDUCTION:** 90 lines → 35 lines (61% reduction)
+
+================================================================================
+SECTION 3: COMPLETE BEFORE/AFTER COMPARISON
+================================================================================
+
+### BEFORE (OVER-CONSTRAINING):
+
+**VALUE SELECTION PROTOCOL:**
+```python
+**1. QUERY RELEVANCE (Priority 1)**
+- What values DIRECTLY answer the user's question?
+- If user asks "Why can't we innovate?" → Focus on: At_attachment, Fe_fear, 
+  Re_resistance, M_maya, breakthrough_probability
+- If user asks "Show transformation path" → Focus on: S_level, matrices, 
+  death_architecture, grace_karma_ratio
+- IGNORE values unrelated to their specific query
+```
+
+**ARTICULATION STRUCTURE:**
+```python
+### 1. CURRENT REALITY ANALYSIS
+Express where the user actually is right now (not where they think they are).
+Ground this in both the web research data and consciousness analysis.
+Point out any gaps between believed state and actual state (POMDP gaps).
+
+### 2. STRUCTURAL GAP IDENTIFICATION
+[rigid numbered steps 2-5...]
+```
+
+**EVIDENCE MAPPING:**
+```python
+**HIGH ATTACHMENT (At > 0.70)**
+- Observable: Resistance to change, sunk cost behavior, loyalty to legacy
+- Search for: "[entity] migration challenges", "[entity] change resistance"
+- Proof type: Industry reports, analyst assessments
+
+**HIGH MAYA (M > 0.65)**
+- Observable: Market perception vs reality gaps, optimistic forecasting
+- Search for: "[entity] analyst vs reality", "[entity] market expectations"
+[continues for 150+ lines...]
+```
+
+---
+
+### AFTER (FREEDOM-RESPECTING):
+
+**VALUE SELECTION PROTOCOL:**
+```python
+**1. QUERY RELEVANCE (Priority 1)**
+Select values that directly answer the user's specific question.
+Focus on what matters for THIS query, not generic patterns.
+
+**2. USER-REQUESTED TARGETS (Priority 2)**
+LLM Call 1 identified targets based on query analysis.
+These are high-confidence relevant values - include them.
+```
+
+**ARTICULATION STRUCTURE:**
+```python
+Your response should accomplish these goals (structure naturally based on context):
+
+**Show Current Reality:** Express where the user actually is vs where they 
+think they are. Point out any perception gaps.
+
+**Explain Consciousness Patterns:** Identify patterns creating the current 
+situation. Make the invisible visible.
+
+[goals, not numbered steps...]
+```
+
+**EVIDENCE MAPPING:**
+```python
+When consciousness values are calculated, ground them in observable reality:
+
+**Process:**
+1. Translate consciousness patterns into measurable behaviors/outcomes
+2. Formulate search queries to find observable proof
+3. Cite evidence naturally
+
+**Use search_guidance from Call 1** for high-priority values to ground.
+```
+
+================================================================================
+SECTION 4: SECTIONS TO KEEP UNCHANGED
+================================================================================
+
+The following sections are already freedom-respecting and should NOT be changed:
+
+### KEEP UNCHANGED: _build_header()
+```python
+def _build_header(self) -> str:
+    """Build the prompt header"""
+    return """# REALITY TRANSFORMER: CONSCIOUSNESS ARTICULATION
+
+You are receiving a complete consciousness analysis based on the One Origin Framework.
+
+Your task is to articulate these insights in natural language that the user can 
+understand and act upon.
+
+CRITICAL: You must CONCEAL framework terminology. Never say "Maya operator" or 
+"S-level" - translate everything into natural, domain-appropriate language."""
+```
+
+**Why keep:** Clear task definition without constraining HOW to accomplish it
+
+---
+
+### KEEP UNCHANGED: _build_consciousness_state_section()
+```python
+def _build_consciousness_state_section(self, state: ConsciousnessState) -> str:
+    """Build the consciousness state section with organized values"""
+    
+    # Presents calculated values organized by tier
+    # Shows actual data (Core Operators, Matrix Positions, etc.)
+    
+    return f"""## CALCULATED CONSCIOUSNESS STATE
+
+### CORE CONFIGURATION
+**S-Level:** {s_level.current} ({s_level.label})
+**Key Operators:**
+- Presence: {ops.P_presence}%
+- Awareness: {ops.A_aware}%
+[etc...]
+```
+
+**Why keep:** This is DATA PRESENTATION, not thinking constraints. Shows what 
+values are available for articulation.
+
+---
+
+### KEEP UNCHANGED: _build_unity_metrics_section()
+**Why keep:** Presents Unity Principle data without constraining articulation
+
+### KEEP UNCHANGED: _build_dual_pathway_section()
+**Why keep:** Presents Dual Pathway data without constraining articulation
+
+### KEEP UNCHANGED: _build_bottleneck_section()
+**Why keep:** Presents bottleneck data without constraining articulation
+
+### KEEP UNCHANGED: _build_leverage_section()
+**Why keep:** Presents leverage data without constraining articulation
+
+### KEEP UNCHANGED: _build_context_section()
+**Why keep:** Presents user query and research without constraining response
+
+================================================================================
+SECTION 5: IMPLEMENTATION PLAN
+================================================================================
+
+### STEP 1: Create Modified articulation_prompt_builder.py
+
+Replace these two methods only:
+1. `_build_framework_section()` - lines 117-198
+2. `_build_generation_instructions()` - lines 707-797
+
+Keep all other methods unchanged.
+
+---
+
+### STEP 2: Testing Protocol
+
+**Test on 100 diverse queries:**
+- 20 business/corporate contexts
+- 20 personal transformation
+- 20 innovation challenges  
+- 20 relationship issues
+- 20 mixed/edge cases
+
+**Metrics to track:**
+1. **Value Selection Quality:** Are relevant values selected?
+2. **Evidence Grounding:** Is search effective? Are insights grounded?
+3. **Articulation Clarity:** Is the response clear and impactful?
+4. **Natural Flow:** Does it feel natural vs robotic?
+5. **Framework Concealment:** Are technical terms properly translated?
+
+**Compare to current version:**
+- Side-by-side comparison on same 100 queries
+- Measure quality differences
+- Identify any gaps
+
+---
+
+### STEP 3: Iteration
+
+If testing reveals gaps:
+1. **Analyze the gap:** Is it missing domain knowledge or over-constraint?
+2. **Add minimal guidance:** Focus on knowledge, not templates
+3. **Re-test:** Verify gap is closed without re-introducing constraints
+
+**DO NOT revert to templates if quality drops.** Instead, add targeted knowledge.
+
+---
+
+### STEP 4: Rollout
+
+**Phase 1:** A/B test (2 weeks)
+- 50% traffic to old version
+- 50% traffic to new version
+- Monitor quality metrics
+
+**Phase 2:** Full migration (1 week)
+- If A/B test successful, switch 100% to new version
+- Monitor for regression
+- Iterate based on feedback
+
+**Phase 3:** Optimization (ongoing)
+- Continue removing unnecessary constraints found
+- Keep refining toward maximum freedom
+- Trust LLM intelligence progressively more
+
+================================================================================
+SECTION 6: EXPECTED OUTCOMES
+================================================================================
+
+### QUANTITATIVE:
+
+**Code Reduction:**
+- articulation_prompt_builder.py: 891 → 677 lines (24% reduction)
+- Generated prompt size: ~15KB → ~11KB (27% reduction)
+- Token savings: ~4,000 tokens per Call 2 invocation
+
+**Combined with Call 1 reduction:**
+- Call 1: 83KB → 27.6KB (67% reduction)
+- Call 2: 39KB → 30KB (23% reduction)
+- Total: 122KB → 57.6KB (53% reduction across both calls)
+
+---
+
+### QUALITATIVE:
+
+**Better Articulation Quality:**
+1. More contextual relevance (no pre-specified value lists)
+2. More natural flow (no rigid numbered structure)
+3. More creative search strategies (no hardcoded patterns)
+4. More adaptive to edge cases (freedom to innovate)
+
+**Respects LLM Intelligence:**
+1. Trusts relevance determination
+2. Trusts consciousness→reality mapping
+3. Trusts natural structuring
+4. Trusts citation integration
+
+**Maintains Quality Standards:**
+1. Framework concealment still enforced
+2. Evidence grounding still required
+3. Domain adaptation still guided
+4. Essential data still presented
+
+================================================================================
+SECTION 7: RISK MITIGATION
+================================================================================
+
+### POTENTIAL RISKS:
+
+**Risk 1: Value selection becomes too broad**
+- Mitigation: Call 1 still provides targets as guidance
+- Fallback: Add "focus on user-requested targets" emphasis
+
+**Risk 2: Search queries become less effective**
+- Mitigation: Call 1 still provides search_guidance
+- Fallback: Add minimal consciousness→reality examples (not catalog)
+
+**Risk 3: Articulation loses structure**
+- Mitigation: Goals are still clear, just not numbered
+- Fallback: Add "typical flow" suggestion (not mandate)
+
+**Risk 4: Evidence integration becomes weak**
+- Mitigation: Quality standards still specified
+- Fallback: Add grounding emphasis (not rules)
+
+### ROLLBACK PLAN:
+
+If new version shows significant quality regression:
+1. Identify specific gap causing regression
+2. Add MINIMAL targeted guidance (not full templates)
+3. Re-test with targeted fix
+4. Only revert if targeted fix doesn't work
+
+**Principle:** Never revert to full constraints. Fix gaps with minimal knowledge, 
+not templates.
+
+================================================================================
+CONCLUSION
+================================================================================
+
+**LLM Call 2 freedom-respecting version:**
+- Removes 214 lines of over-constraining guidance (24% reduction)
+- Main change: Removes 150-line consciousness→reality mapping catalog
+- Trusts LLM to determine relevance, map concepts, structure naturally
+- Maintains essential framework concealment and evidence grounding
+- Expected outcome: Equal or better articulation quality with more freedom
+
+**Implementation priority:**
+1. ✓ Reduce Call 1 FIRST (already done, 69% reduction)
+2. → Test Call 1 thoroughly (in progress)
+3. → Then reduce Call 2 (this document, 24% reduction)
+4. → Test Call 2 thoroughly
+5. → Deploy both freedom-respecting versions
+
+**The principle remains:**
+Give LLM domain knowledge and clear goals, then TRUST its intelligence.
+
+================================================================================

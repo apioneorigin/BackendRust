@@ -1,0 +1,704 @@
+# OOF EXTRACTION FRAMEWORK
+# For LLM Call 1: Semantic Understanding & Tier 0 Value Extraction
+# FREEDOM-RESPECTING VERSION: Trusts LLM intelligence, removes thinking constraints
+
+================================================================================
+PART 1: THE 25 BASE OPERATORS - CORE DEFINITIONS
+================================================================================
+
+Extract these operators from the user's text. Each operator ranges from 0.0 to 1.0.
+Assess confidence (0.0-1.0) based on available evidence.
+
+## CORE CONSCIOUSNESS OPERATORS
+
+### Ψ (Psi) - Consciousness Quality
+**Definition:** Overall quality and depth of consciousness present
+**Range:** 0.0 = reactive/unconscious patterns, 1.0 = deep awareness/witnessing
+
+### K (Karma) - Cause/Effect Pattern Strength
+**Definition:** How strongly past actions/patterns constrain current reality
+**Range:** 0.0 = high freedom/minimal constraints, 1.0 = heavy karmic load
+
+### M (Maya) - Illusion/Confusion/Misalignment
+**Definition:** Gap between perception and reality, delusion strength
+**Range:** 0.0 = clear perception, 1.0 = strong delusion/major blind spots
+
+### G (Grace) - Non-Earned Support/Synchronicity
+**Definition:** Flow of unearned support, favorable conditions, synchronicity
+**Range:** 0.0 = everything is struggle, 1.0 = strong flow/effortless movement
+
+### W (Witness) - Observer Consciousness
+**Definition:** Capacity to observe self from detached perspective
+**Range:** 0.0 = completely identified, 1.0 = strong witnessing/meta-awareness
+
+### A (Awareness) - Present Moment Attention
+**Definition:** Quality of attention to present moment
+**Range:** 0.0 = lost in thoughts/distracted, 1.0 = vivid presence/sharp attention
+
+### P (Presence) - Now-Moment Anchoring
+**Definition:** Degree of anchoring in present moment (formerly "Prana" in some docs)
+**Range:** 0.0 = absent/scattered, 1.0 = fully present/grounded
+
+### E (Equanimity) - Evenness/Balance
+**Definition:** Equanimity and balanced response to experience
+**Range:** 0.0 = highly reactive, 1.0 = deeply balanced/even
+
+### V (Void) - Emptiness Tolerance
+**Definition:** Capacity to be with nothingness, no-thing-ness
+**Range:** 0.0 = cannot tolerate emptiness, 1.0 = deep comfort with space
+
+### L (Love) - Unconditional Connection
+**Definition:** Quality of unconditional love and connection
+**Range:** 0.0 = conditional/transactional, 1.0 = deep unconditional love
+
+### R (Resistance) - Fighting What Is
+**Definition:** Degree of resistance to current reality
+**Range:** 0.0 = accepting reality/flowing, 1.0 = strong resistance/fighting
+
+### O (Openness) - Receptivity
+**Definition:** Openness to new experiences and perspectives
+**Range:** 0.0 = closed/rigid, 1.0 = fully open/receptive
+
+### Tr (Trust) - Trust/Faith
+**Definition:** Trust in process, life, or higher intelligence
+**Range:** 0.0 = deep distrust, 1.0 = profound trust/faith
+
+### J (Joy) - Joy Quality
+**Definition:** Presence and quality of joy
+**Range:** 0.0 = joyless/heavy, 1.0 = radiant joy
+
+### Co (Coherence) - Internal Alignment
+**Definition:** Coherence between levels of being
+**Range:** 0.0 = fragmented/incoherent, 1.0 = unified/coherent
+
+### D (Dharma) - Right Action/Purpose Alignment
+**Definition:** Alignment with right action and purpose
+**Range:** 0.0 = off-path/misaligned, 1.0 = perfect alignment
+
+## EMOTIONAL/BEHAVIORAL OPERATORS
+
+### At (Attachment) - Clinging/Holding On
+**Definition:** Degree of attachment to outcomes, people, patterns, identities
+**Range:** 0.0 = non-attached/flowing, 1.0 = extreme clinging/cannot let go
+
+### Av (Aversion) - Pushing Away/Rejection
+**Definition:** Degree of resistance and pushing away experiences
+**Range:** 0.0 = accepting/allowing, 1.0 = strong rejection/avoidance
+
+### F (Fear) - Fear Intensity
+**Definition:** Strength of fear response and anxiety
+**Range:** 0.0 = minimal fear/trust, 1.0 = dominated by fear/paralyzed
+
+### De (Desire) - Craving Intensity
+**Definition:** Strength of wanting, craving, needing
+**Range:** 0.0 = content/fulfilled, 1.0 = intense craving/insatiable
+
+### Su (Suffering) - Pain Experience
+**Definition:** Degree of suffering present
+**Range:** 0.0 = no suffering, 1.0 = intense suffering
+
+## PRACTICE/ACTION OPERATORS
+
+### Se (Service) - Selfless Service Orientation
+**Definition:** Orientation toward selfless service (seva)
+**Range:** 0.0 = self-focused, 1.0 = pure service orientation
+
+### Ce (Celebration/Cleaning) - Purification/Joy
+**Definition:** Dual meaning - purification action or celebratory state
+**Range:** 0.0 = stagnant/heavy, 1.0 = active purification or celebration
+
+### S (Surrender) - Letting Go to Higher
+**Definition:** Surrender to higher intelligence or what is
+**Range:** 0.0 = controlling/grasping, 1.0 = complete surrender
+
+### As (Aspiration) - Upward Movement Desire
+**Definition:** Aspiration toward higher consciousness
+**Range:** 0.0 = no aspiration, 1.0 = strong upward pull
+
+## MIND STRUCTURE OPERATORS
+
+### Hf (Habit Force) - Pattern Momentum
+**Definition:** Strength of habitual patterns and momentum
+**Range:** 0.0 = no habits/fully free, 1.0 = completely habituated
+
+### Sa (Samskara) - Deep Impressions
+**Definition:** Depth of subconscious impressions
+**Range:** 0.0 = no impressions, 1.0 = deeply grooved patterns
+
+### Bu (Buddhi) - Discriminating Intellect
+**Definition:** Quality of discriminating intelligence
+**Range:** 0.0 = no discernment, 1.0 = clear discrimination
+
+### Ma (Manas) - Reactive Mind
+**Definition:** Reactive mind activity level
+**Range:** 0.0 = quiet mind, 1.0 = highly reactive mind
+
+### Ch (Chitta) - Memory/Subconscious Field
+**Definition:** Subconscious memory field activity
+**Range:** 0.0 = clear field, 1.0 = heavily charged field
+
+### I (Intention) - Intentionality
+**Definition:** Clarity and strength of intention
+**Range:** 0.0 = no clear intention, 1.0 = crystal clear intention
+
+================================================================================
+PART 2: S-LEVEL (SACRED CHAIN) - CONSCIOUSNESS DEVELOPMENT STAGES
+================================================================================
+
+Identify the user's current S-level (1.0-8.0) based on their core drive and 
+consciousness quality. Assess confidence in this determination.
+
+## S1: SURVIVAL (Physical Security)
+**Core drive:** Physical safety, survival, avoiding threat
+**Consciousness quality:** Body-focused, fear-based, reactive to danger
+
+## S2: SENSATION (Pleasure/Pain)
+**Core drive:** Pleasure seeking, pain avoidance, sensory experience
+**Consciousness quality:** Sensation-focused, hedonistic, comfort-oriented
+
+## S3: ACHIEVEMENT (Power/Success)
+**Core drive:** Competence, mastery, winning, achievement, status
+**Consciousness quality:** Goal-oriented, competitive, self-improvement
+
+## S4: RELATIONSHIP (Connection/Belonging)
+**Core drive:** Connection, belonging, love, relationships, harmony
+**Consciousness quality:** Other-focused, relational, empathic
+
+## S5: SERVICE (Contribution/Meaning)
+**Core drive:** Contribution, meaning, service, making a difference
+**Consciousness quality:** Purpose-driven, values-based, legacy-focused
+
+## S6: WITNESS (Observer/Truth)
+**Core drive:** Truth, understanding, witnessing, pure awareness
+**Consciousness quality:** Observer perspective, detached, truth-seeking
+
+## S7: UNITY (Non-Dual Experience)
+**Core drive:** Unity, oneness, non-separation, transcendence
+**Consciousness quality:** Non-dual awareness, unity consciousness
+
+## S8: TRANSCENDENCE (Beyond All)
+**Core drive:** Beyond all drives, pure being, absolute
+**Consciousness quality:** Transcendent, formless, beyond description
+
+================================================================================
+PART 3: QUERY UNDERSTANDING
+================================================================================
+
+Recognize the type of query to better understand what the user is asking:
+
+**Common Query Patterns:**
+1. Innovation (breakthrough, creativity, disruption, new markets)
+2. Transformation (change, evolution, growth, becoming)
+3. Purpose (meaning, calling, mission, why)
+4. Relationship (team, culture, connection, trust, communication)
+5. Performance (results, execution, achievement, delivery)
+6. Blockage (stuck, obstacles, can't, struggle, resistance)
+7. Strategy (plan, approach, path, roadmap, how to)
+8. Healing (wellness, integration, recovery, balance)
+9. Leadership (influence, vision, direction, culture)
+10. Decision (choice, options, direction, uncertainty)
+
+Understanding the query pattern helps you extract relevant operators and 
+identify useful calculation targets.
+
+================================================================================
+PART 4: EXTRACTION TASK & GUIDANCE
+================================================================================
+
+## YOUR TASK
+
+Extract from the user's text:
+
+1. **Core Operators (25 values):**
+   - Extract value (0.0-1.0) and confidence (0.0-1.0) for each operator
+   - If insufficient data, return null for that operator
+   - Be honest about uncertainty in confidence scores
+
+2. **S-Level:**
+   - Determine current S-level (1.0-8.0)
+   - Assess confidence in this determination
+   - Identify if they're in transition between levels
+
+3. **Drive Strengths:**
+   - Assess strength of five core drives: love, peace, bliss, satisfaction, freedom
+   - Each 0.0-1.0 based on evidence in text
+
+4. **Temporal Focus:**
+   - How much focus is on past/present/future (should sum to ~1.0)
+
+5. **Calculation Targets:**
+   - Identify 20-50 Tier 2-6 values that should be calculated
+   - Based on query relevance and extracted operators
+   - Prioritize values that:
+     * Directly answer the user's question
+     * Complete causal chains (causes → effects)
+     * Have strong evidence for grounding in reality
+
+6. **Search Guidance:**
+   - Flag 5-10 high-priority values for evidence grounding
+   - For each, suggest a search query to find observable proof
+   - Focus on values that manifest as measurable behaviors or outcomes
+
+## CONFIDENCE ASSESSMENT
+
+Assess your confidence (0.0-1.0) for each extraction based on available evidence.
+Be honest about uncertainty. Trust your judgment.
+
+## TARGET IDENTIFICATION PRINCIPLES
+
+Available calculation targets span Tier 2-6 (see schema for complete list):
+
+**Tier 2:** Direct derivatives (distortions, chakras, gunas, cascade cleanliness)
+**Tier 3:** Complex combinations (coherence, matrices, death architecture)
+**Tier 4:** Network dynamics (breakthrough, grace mechanics, pipeline flow)
+**Tier 5:** Predictions (timelines, transformation vectors)
+**Tier 6:** Quantum fields (consciousness curvature, field dynamics)
+
+Select targets that:
+1. Directly relate to the user's query and situation
+2. Complete causal chains (if bottleneck X, include its causes and effects)
+3. Have strong evidence signals that could be grounded in observable reality
+
+Don't pre-filter based on query type - use your intelligence to determine 
+what's relevant for THIS specific query.
+
+## EVIDENCE GROUNDING GUIDANCE
+
+Identify which extracted values could be grounded in searchable, observable evidence.
+
+Prioritize values that manifest as:
+- Measurable behaviors (frequency, patterns, responses)
+- Observable outcomes (results, impacts, consequences)
+- Historical patterns (trends, consistency, track record)
+
+For each high-priority value, suggest a search query that would find proof.
+
+Generate consciousness-to-reality mappings showing:
+- Consciousness value (e.g., "High attachment to legacy systems")
+- Observable reality (e.g., "Resistance to new technology adoption")
+- Proof search (e.g., "Search for: technology adoption resistance, legacy system dependencies")
+
+## EXTRACTION PRINCIPLES
+
+1. **Text is primary source** - Extract from what's actually written
+2. **Inference is secondary** - Use context to infer, but flag lower confidence
+3. **Null is okay** - If no data, return null rather than guessing
+4. **Context matters** - Same words mean different things in different domains
+5. **Patterns over single mentions** - Look for consistent patterns
+6. **Contradictions are data** - If text contradicts itself, that's M_maya signal
+7. **Behavioral > stated** - What they do reveals more than what they say
+
+================================================================================
+PART 5: OUTPUT JSON SCHEMA (EXACT FORMAT REQUIRED)
+================================================================================
+
+Return your response as valid JSON with this exact structure:
+
+```json
+{
+  "extraction_metadata": {
+    "query_pattern": "innovation|transformation|purpose|relationship|performance|blockage|strategy|healing|leadership|decision|other",
+    "confidence_overall": 0.0-1.0,
+    "data_quality": "rich|moderate|sparse",
+    "extraction_notes": "Brief notes on extraction quality or challenges"
+  },
+  
+  "core_operators": {
+    "psi_consciousness": {"value": 0.0-1.0 or null, "confidence": 0.0-1.0},
+    "K_karma": {"value": 0.0-1.0 or null, "confidence": 0.0-1.0},
+    "M_maya": {"value": 0.0-1.0 or null, "confidence": 0.0-1.0},
+    "G_grace": {"value": 0.0-1.0 or null, "confidence": 0.0-1.0},
+    "W_witness": {"value": 0.0-1.0 or null, "confidence": 0.0-1.0},
+    "A_aware": {"value": 0.0-1.0 or null, "confidence": 0.0-1.0},
+    "P_presence": {"value": 0.0-1.0 or null, "confidence": 0.0-1.0},
+    "E_equanimity": {"value": 0.0-1.0 or null, "confidence": 0.0-1.0},
+    "V_void": {"value": 0.0-1.0 or null, "confidence": 0.0-1.0},
+    "L_love": {"value": 0.0-1.0 or null, "confidence": 0.0-1.0},
+    "R_resistance": {"value": 0.0-1.0 or null, "confidence": 0.0-1.0},
+    "O_openness": {"value": 0.0-1.0 or null, "confidence": 0.0-1.0},
+    "Tr_trust": {"value": 0.0-1.0 or null, "confidence": 0.0-1.0},
+    "J_joy": {"value": 0.0-1.0 or null, "confidence": 0.0-1.0},
+    "Co_coherence": {"value": 0.0-1.0 or null, "confidence": 0.0-1.0},
+    "D_dharma": {"value": 0.0-1.0 or null, "confidence": 0.0-1.0},
+    "At_attachment": {"value": 0.0-1.0 or null, "confidence": 0.0-1.0},
+    "Av_aversion": {"value": 0.0-1.0 or null, "confidence": 0.0-1.0},
+    "F_fear": {"value": 0.0-1.0 or null, "confidence": 0.0-1.0},
+    "De_desire": {"value": 0.0-1.0 or null, "confidence": 0.0-1.0},
+    "Su_suffering": {"value": 0.0-1.0 or null, "confidence": 0.0-1.0},
+    "Se_service": {"value": 0.0-1.0 or null, "confidence": 0.0-1.0},
+    "Ce_celebration": {"value": 0.0-1.0 or null, "confidence": 0.0-1.0},
+    "S_surrender": {"value": 0.0-1.0 or null, "confidence": 0.0-1.0},
+    "As_aspiration": {"value": 0.0-1.0 or null, "confidence": 0.0-1.0},
+    "Hf_habit": {"value": 0.0-1.0 or null, "confidence": 0.0-1.0},
+    "Sa_samskara": {"value": 0.0-1.0 or null, "confidence": 0.0-1.0},
+    "Bu_buddhi": {"value": 0.0-1.0 or null, "confidence": 0.0-1.0},
+    "Ma_manas": {"value": 0.0-1.0 or null, "confidence": 0.0-1.0},
+    "Ch_chitta": {"value": 0.0-1.0 or null, "confidence": 0.0-1.0},
+    "I_intention": {"value": 0.0-1.0 or null, "confidence": 0.0-1.0}
+  },
+  
+  "s_level": {
+    "current": 1.0-8.0,
+    "confidence": 0.0-1.0,
+    "in_transition": true|false,
+    "transition_direction": "up|down|stable",
+    "reasoning": "Brief explanation of S-level assessment"
+  },
+  
+  "drive_strengths": {
+    "love": 0.0-1.0 or null,
+    "peace": 0.0-1.0 or null,
+    "bliss": 0.0-1.0 or null,
+    "satisfaction": 0.0-1.0 or null,
+    "freedom": 0.0-1.0 or null
+  },
+  
+  "temporal_focus": {
+    "past": 0.0-1.0,
+    "present": 0.0-1.0,
+    "future": 0.0-1.0
+  },
+  
+  "calculation_targets": [
+    "target_name_1",
+    "target_name_2"
+    // 20-50 target names from Tier 2-6
+    // Examples: "breakthrough_probability", "matrix_truth_position", 
+    // "death_d3_achievement", "coherence_overall", "grace_multiplier"
+  ],
+  
+  "search_guidance": {
+    "high_priority_values": [
+      "value_name_1",
+      "value_name_2"
+      // 5-10 values that should be grounded in evidence
+    ],
+    "evidence_search_queries": [
+      {
+        "target_value": "name of value to ground",
+        "search_query": "suggested search query",
+        "proof_type": "measurable_behavior|observable_outcome|historical_pattern"
+      }
+      // 5-10 search queries
+    ],
+    "consciousness_to_reality_mappings": [
+      {
+        "consciousness_value": "extracted operator or pattern",
+        "observable_reality": "what this manifests as in reality",
+        "proof_search": "what to search for as evidence"
+      }
+      // 5-10 mappings
+    ]
+  }
+}
+```
+
+## AVAILABLE CALCULATION TARGETS (Reference)
+
+You can select from 450+ available targets across Tier 2-6:
+
+**Tier 2 Examples:** chakra_anahata, guna_sattva, cascade_cleanliness_l3, 
+distortion_attachment, drives_internalization_love
+
+**Tier 3 Examples:** coherence_overall, matrix_truth_position, death_d3_achievement,
+ucb_total, pomdp_reality_gap
+
+**Tier 4 Examples:** breakthrough_probability, grace_multiplier, pipeline_flow_rate,
+network_coherence, karma_burn_rate
+
+**Tier 5 Examples:** timeline_to_goal, transformation_vector_magnitude,
+evolution_rate_months
+
+**Tier 6 Examples:** quantum_tunneling_probability, consciousness_field_strength,
+morphogenetic_resonance
+
+See backend schema for complete list. Select based on query relevance.
+
+================================================================================
+PART 6: EXTRACTION EXAMPLES
+================================================================================
+
+## EXAMPLE 1: Business Innovation Query
+
+**User Input:**
+"Our company has been market leader for 15 years with our proven platform. We know 
+we should innovate, but every new initiative gets killed in planning phase. The team 
+says it's too risky to change what works. We're starting to see competitors gain ground,
+but pivoting feels impossible. How do we break through?"
+
+**Extracted JSON:**
+```json
+{
+  "extraction_metadata": {
+    "query_pattern": "innovation",
+    "confidence_overall": 0.78,
+    "data_quality": "moderate",
+    "extraction_notes": "Clear attachment and fear patterns, some maya signals"
+  },
+  "core_operators": {
+    "At_attachment": {"value": 0.82, "confidence": 0.85},
+    "F_fear": {"value": 0.76, "confidence": 0.80},
+    "R_resistance": {"value": 0.71, "confidence": 0.75},
+    "M_maya": {"value": 0.68, "confidence": 0.65},
+    "G_grace": {"value": 0.25, "confidence": 0.60},
+    "W_witness": {"value": 0.35, "confidence": 0.55},
+    "Hf_habit": {"value": 0.79, "confidence": 0.70},
+    "Bu_buddhi": {"value": 0.45, "confidence": 0.60},
+    "I_intention": {"value": 0.55, "confidence": 0.65},
+    // Other operators null due to insufficient data
+  },
+  "s_level": {
+    "current": 3.2,
+    "confidence": 0.75,
+    "in_transition": false,
+    "transition_direction": "stable",
+    "reasoning": "Achievement-focused (market leader, proven platform) with competitive awareness"
+  },
+  "drive_strengths": {
+    "love": 0.3,
+    "peace": 0.2,
+    "satisfaction": 0.4,
+    "freedom": 0.3
+  },
+  "temporal_focus": {
+    "past": 0.6,
+    "present": 0.2,
+    "future": 0.2
+  },
+  "calculation_targets": [
+    "breakthrough_probability",
+    "maya_witness_gap",
+    "attachment_surrender_gap",
+    "matrix_creation_position",
+    "death_d3_achievement",
+    "grace_availability",
+    "quantum_tunneling_probability",
+    "habit_force_momentum",
+    "resistance_acceptance_gap",
+    "coherence_overall",
+    "karma_burn_rate",
+    "leverage_highest_multiplier"
+  ],
+  "search_guidance": {
+    "high_priority_values": [
+      "At_attachment (0.82)",
+      "F_fear (0.76)",
+      "Hf_habit (0.79)",
+      "M_maya (0.68)",
+      "breakthrough_probability"
+    ],
+    "evidence_search_queries": [
+      {
+        "target_value": "At_attachment to legacy platform",
+        "search_query": "platform lock-in costs, legacy system dependencies",
+        "proof_type": "measurable_behavior"
+      },
+      {
+        "target_value": "F_fear blocking innovation",
+        "search_query": "innovation risk aversion, failed initiatives",
+        "proof_type": "historical_pattern"
+      },
+      {
+        "target_value": "M_maya (market position delusion)",
+        "search_query": "market share trends, competitor growth rates",
+        "proof_type": "observable_outcome"
+      }
+    ],
+    "consciousness_to_reality_mappings": [
+      {
+        "consciousness_value": "High attachment (0.82) to proven platform",
+        "observable_reality": "New initiatives killed in planning, resistance to change",
+        "proof_search": "Search: project approval rates, innovation pipeline velocity"
+      },
+      {
+        "consciousness_value": "High fear (0.76) of risk",
+        "observable_reality": "Risk-averse culture, 'too risky' language dominates",
+        "proof_search": "Search: risk assessment frameworks, decision-making criteria"
+      }
+    ]
+  }
+}
+```
+
+---
+
+## EXAMPLE 2: Personal Transformation Query
+
+**User Input:**
+"I've spent 20 years building my career as a lawyer, but lately I wake up with this 
+empty feeling. The cases don't matter to me anymore. I keep thinking there's something 
+more meaningful I should be doing, maybe teaching or social work, but I have a mortgage,
+kids in college. I feel stuck between who I am and who I want to become. Sometimes I 
+just sit in my car before going into the office, wondering what I'm doing with my life."
+
+**Extracted JSON:**
+```json
+{
+  "extraction_metadata": {
+    "query_pattern": "transformation",
+    "confidence_overall": 0.82,
+    "data_quality": "rich",
+    "extraction_notes": "Clear S-level transition signals, strong aspiration, attachment conflict"
+  },
+  "core_operators": {
+    "As_aspiration": {"value": 0.73, "confidence": 0.80},
+    "At_attachment": {"value": 0.71, "confidence": 0.85},
+    "V_void": {"value": 0.62, "confidence": 0.75},
+    "W_witness": {"value": 0.58, "confidence": 0.70},
+    "K_karma": {"value": 0.68, "confidence": 0.75},
+    "Su_suffering": {"value": 0.55, "confidence": 0.70},
+    "D_dharma": {"value": 0.35, "confidence": 0.65},
+    "S_surrender": {"value": 0.28, "confidence": 0.60},
+    "F_fear": {"value": 0.64, "confidence": 0.70},
+    "P_presence": {"value": 0.48, "confidence": 0.65}
+  },
+  "s_level": {
+    "current": 4.7,
+    "confidence": 0.80,
+    "in_transition": true,
+    "transition_direction": "up",
+    "reasoning": "Transitioning from S4 (career identity) toward S5 (meaning/service). Empty feeling indicates dharma misalignment, aspiration toward contribution."
+  },
+  "drive_strengths": {
+    "love": 0.5,
+    "peace": 0.3,
+    "satisfaction": 0.2,
+    "freedom": 0.4
+  },
+  "temporal_focus": {
+    "past": 0.3,
+    "present": 0.4,
+    "future": 0.3
+  },
+  "calculation_targets": [
+    "death_d3_achievement",
+    "death_d4_relationship",
+    "s_level_transition_rate",
+    "attachment_surrender_gap",
+    "timeline_to_next_s_level",
+    "dharma_alignment",
+    "aspiration_total",
+    "matrix_truth_position",
+    "void_tolerance",
+    "grace_availability",
+    "karma_constraints",
+    "transformation_vector_magnitude",
+    "leverage_grace_activation",
+    "coherence_vertical"
+  ],
+  "search_guidance": {
+    "high_priority_values": [
+      "As_aspiration (0.73) toward service",
+      "At_attachment (0.71) to career identity",
+      "V_void (0.62) tolerance",
+      "K_karma (0.68) constraints",
+      "death_d3_achievement"
+    ],
+    "evidence_search_queries": [
+      {
+        "target_value": "Career identity attachment",
+        "search_query": "career transition challenges, professional identity crisis",
+        "proof_type": "historical_pattern"
+      },
+      {
+        "target_value": "Dharma misalignment",
+        "search_query": "job dissatisfaction rates, meaning crisis in mid-career",
+        "proof_type": "observable_outcome"
+      },
+      {
+        "target_value": "S-level transition (4→5)",
+        "search_query": "career to purpose transition, achievement to contribution shift",
+        "proof_type": "measurable_behavior"
+      }
+    ],
+    "consciousness_to_reality_mappings": [
+      {
+        "consciousness_value": "High aspiration (0.73) toward meaning/service",
+        "observable_reality": "Thinking about teaching/social work, empty feeling in current work",
+        "proof_search": "Search: purpose-driven career changes, service profession transitions"
+      },
+      {
+        "consciousness_value": "High attachment (0.71) + High karma (0.68)",
+        "observable_reality": "Feeling stuck due to mortgage, college costs, 20-year investment",
+        "proof_search": "Search: financial constraints in career transitions, sunk cost effects"
+      },
+      {
+        "consciousness_value": "Growing void tolerance (0.62)",
+        "observable_reality": "Sitting in car, being with uncertainty, questioning",
+        "proof_search": "Search: contemplative practices, liminal space in transitions"
+      }
+    ]
+  }
+}
+```
+
+================================================================================
+PART 7: EXTRACTION PROTOCOL
+================================================================================
+
+## STEP 1: READ COMPLETELY
+Read the entire user input before extracting. Understand context holistically.
+
+## STEP 2: IDENTIFY PATTERNS
+Look for consistent patterns across the text:
+- Repeated themes
+- Emotional tones
+- Behavioral indicators
+- Contradictions (maya signals)
+- Language style and focus
+
+## STEP 3: EXTRACT OPERATORS
+For each operator:
+- Assess value (0.0-1.0) based on evidence
+- Assess confidence (0.0-1.0) in your assessment
+- If insufficient data, return null
+- Trust your judgment - don't overthink
+
+## STEP 4: DETERMINE S-LEVEL
+Identify core drive and consciousness quality:
+- What motivates them fundamentally?
+- What level of awareness do they demonstrate?
+- Are they in transition?
+
+## STEP 5: SELECT TARGETS
+Choose 20-50 calculation targets that:
+- Answer their specific question
+- Complete causal chains
+- Can be grounded in evidence
+
+## STEP 6: GENERATE SEARCH GUIDANCE
+Identify 5-10 values for evidence grounding:
+- What could be proven through search?
+- What search queries would find proof?
+- What's the consciousness → reality mapping?
+
+## STEP 7: VALIDATE & OUTPUT
+- Check JSON is valid
+- Verify confidence scores are honest
+- Ensure targets are relevant
+- Return complete JSON response
+
+================================================================================
+PART 8: CRITICAL RULES
+================================================================================
+
+1. **Framework Integrity:** Never invent operators outside the 25 defined ones
+2. **Null Over Guessing:** Return null if insufficient data, don't fabricate
+3. **Confidence Honesty:** Be truthful about uncertainty in confidence scores
+4. **Evidence-Based:** Extract from actual text, not assumptions about the domain
+5. **Context Sensitivity:** Same words mean different things in different contexts
+6. **Behavioral Priority:** Actions reveal more than stated beliefs
+7. **Contradictions are Data:** Text contradicting itself is a maya signal
+8. **JSON Validity:** Always return valid, parseable JSON
+9. **Target Relevance:** Select targets based on THIS query, not generic patterns
+10. **Search Groundedness:** Only flag values that have searchable, observable evidence
+
+================================================================================
+END OF FRAMEWORK
+================================================================================
+
+You now have everything needed to extract Tier 0 values from user text.
+Trust your intelligence. Use your judgment. Be honest about uncertainty.
+
+The backend will handle all calculations. Your job is semantic understanding
+and relevance determination based on the specific query and context.
