@@ -763,6 +763,161 @@ PANCHAKRITYA PROFILE (From PanchakrityaEngine - 5 Acts)
 - 1.0 = Fully receptive
 
 ================================================================================
+UNITY METRICS (From UnityPrincipleEngine - Jeevatma-Paramatma)
+================================================================================
+
+These metrics measure the separation vs unity between individual soul (Jeevatma) 
+and universal consciousness (Paramatma).
+
+**separation_distance**
+- Mathematical meaning: Distance between Jeevatma and Paramatma
+- Formula: d(S) = d_initial * e^(-k*S) where S is s_level
+- 0.0 = Complete unity, zero separation
+- 0.5 = Moderate separation
+- 1.0 = Maximum separation
+
+**distortion_field**
+- Mathematical meaning: Distortion of Paramatma signal through Jeevatma configuration
+- Formula: Delta(d) = 1 - e^(-d/d0)
+- 0.0 = No distortion, perfect signal
+- 0.5 = Moderate distortion
+- 1.0 = Complete distortion
+
+**percolation_quality**
+- Mathematical meaning: Quality of wisdom flow from Paramatma through Jeevatma
+- Formula: (1-Delta) * (W*A*P) * (1-M)
+- 0.0 = Zero percolation, blocked flow
+- 0.5 = Partial percolation
+- 1.0 = Perfect percolation, clear wisdom flow
+
+**unity_realization_percent**
+- Mathematical meaning: Percentage of unity realization
+- Formula: 100 * (1 - d(S))
+- 0% = Complete separation consciousness
+- 50% = Moderate unity realization
+- 100% = Complete unity consciousness
+
+**unity_vector**
+- Mathematical meaning: Net direction toward unity or separation
+- Range: -1.0 to +1.0
+- -1.0 = Maximum movement toward separation
+- 0.0 = Neutral, no net movement
+- +1.0 = Maximum movement toward unity
+
+**dharmic_karma_net**
+- Mathematical meaning: Net dharmic vs adharmic karma balance
+- Positive = Dharmic karma exceeds adharmic
+- Zero = Balanced dharmic and adharmic
+- Negative = Adharmic karma exceeds dharmic
+
+**grace_multiplier**
+- Mathematical meaning: Grace amplification based on unity alignment
+- 1.0 = No amplification
+- 2.0 = 2x grace amplification
+- 5.0+ = High grace amplification
+
+**unity_confidence**
+- Mathematical meaning: Confidence in unity metrics calculation
+- 0.0 = Low confidence (many operators missing)
+- 0.5 = Moderate confidence
+- 1.0 = High confidence (all operators present)
+
+**operator_contributions (dictionary)**
+- Mathematical meaning: Individual operator contributions to unity vector
+- Structure: {operator_name: contribution_value}
+- Shows which operators are moving toward unity (+) or separation (-)
+
+================================================================================
+DUAL PATHWAYS (Goal Achievement Analysis)
+================================================================================
+
+Every goal has TWO pathways to achievement:
+1. SEPARATION-BASED: Control, force, fear-driven (high initial success, poor sustainability)
+2. UNITY-BASED: Surrender, flow, authentic action (moderate initial, excellent sustainability)
+
+## PATHWAY METRICS (Calculated for BOTH pathways)
+
+Each pathway (separation_based and unity_based) has these metrics:
+
+**initial_success_probability**
+- Mathematical meaning: Probability of initial goal achievement
+- 0.0 = Zero probability of initial success
+- 0.5 = 50% probability
+- 1.0 = Near-certain initial success
+- Note: Separation pathway often has higher initial probability
+
+**sustainability_probability**
+- Mathematical meaning: Probability that success will sustain over time
+- 0.0 = Will definitely collapse
+- 0.5 = May sustain
+- 1.0 = Highly sustainable
+- Note: Unity pathway has much higher sustainability
+
+**fulfillment_quality**
+- Mathematical meaning: Quality of fulfillment from achieving goal
+- 0.0 = Empty achievement, no satisfaction
+- 0.5 = Moderate fulfillment
+- 1.0 = Deep, lasting satisfaction
+- Note: Unity pathway provides higher fulfillment
+
+**energetic_cost**
+- Mathematical meaning: Energy drain required to achieve goal
+- 0.0 = Effortless, no drain
+- 0.5 = Moderate effort required
+- 1.0 = Extreme energetic drain
+- Note: Separation pathway has higher cost (lower is better)
+
+**time_cost_months**
+- Mathematical meaning: Expected timeline in months to achieve goal
+- Unit: Months
+- Separation pathway: Often faster initially (2-12 months)
+- Unity pathway: May be longer but grace accelerates (4-18 months)
+
+**separation_amplification**
+- Mathematical meaning: How much this pathway increases separation
+- 0.0 = No increase in separation
+- 0.5 = Moderate separation increase
+- 1.0 = Maximum separation increase
+- Note: Separation pathway amplifies separation, Unity pathway does not
+
+**unity_alignment**
+- Mathematical meaning: Alignment with unity consciousness
+- Range: -1.0 to +1.0
+- -1.0 = Maximum opposition to unity (separation pathway)
+- 0.0 = Neutral
+- +1.0 = Maximum alignment with unity (unity pathway)
+
+**total_weighted_success**
+- Mathematical meaning: Composite success score
+- Weights: initial (30%), sustainability (40%), fulfillment (30%)
+- 0.0 = Complete failure
+- 0.5 = Moderate success
+- 1.0 = Optimal success
+
+## DUAL PATHWAY COMPARISON
+
+**recommended**
+- Mathematical meaning: Which pathway is recommended
+- Values: "unity", "separation", "intermediate"
+- Based on comparison of total weighted success scores
+
+**recommendation_reasoning**
+- Mathematical meaning: Natural language explanation of recommendation
+- Type: String
+- Explains why one pathway is better than the other
+
+**projection_months**
+- Mathematical meaning: Time-series projection of both pathways
+- Structure: List of (month, separation_prob, unity_prob)
+- Shows how pathways perform over time (decay vs compound)
+
+**crossover_month**
+- Mathematical meaning: Month when unity pathway overtakes separation pathway
+- Unit: Months from start
+- None if no crossover occurs
+- Typically 3-8 months for most goals
+
+================================================================================
 BOTTLENECK STRUCTURE
 ================================================================================
 
