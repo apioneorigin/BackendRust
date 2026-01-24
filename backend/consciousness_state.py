@@ -46,15 +46,20 @@ class UnitySeparationMetrics:
 
 @dataclass
 class PathwayMetrics:
-    """Metrics for a single pathway (separation or unity)"""
-    initial_success_probability: float = 0.0
-    sustainability_probability: float = 0.0
-    fulfillment_quality: float = 0.0
-    energetic_cost: float = 0.0       # 0-1, lower is better
-    time_cost_months: float = 0.0
-    separation_amplification: float = 0.0  # How much this increases separation
-    unity_alignment: float = 0.0      # -1 to +1
-    total_weighted_success: float = 0.0  # Composite score
+    """
+    Metrics for a single pathway (separation or unity).
+
+    Separation pathway: decay_rate > 0, compound_rate = 0
+    Unity pathway: decay_rate = 0, compound_rate > 0
+    """
+    initial_success_probability: Optional[float] = None   # Immediate achievement likelihood
+    sustainability_probability: Optional[float] = None    # Long-term sustainability
+    fulfillment_quality: Optional[float] = None           # Satisfaction/peace quality
+    decay_rate: Optional[float] = None                    # Monthly decay rate (separation pathway)
+    compound_rate: Optional[float] = None                 # Monthly compound rate (unity pathway)
+    time_to_goal_months: Optional[float] = None           # Estimated time to achieve goal
+    effort_required: Optional[float] = None               # 0-1, lower is better
+    grace_utilization: Optional[float] = None             # How much grace is leveraged (unity)
 
 
 @dataclass

@@ -24,34 +24,15 @@ ZERO-FALLBACK: All calculations return None if required inputs missing.
 """
 
 import math
+import sys
+import os
 from typing import Dict, List, Optional, Tuple
-from dataclasses import dataclass, field
+
+# Add parent directory to path for imports
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from .unity_principle import UnitySeparationMetrics
-
-
-@dataclass
-class PathwayMetrics:
-    """Metrics for a single pathway (separation or unity)"""
-    initial_success_probability: float = 0.0
-    sustainability_probability: float = 0.0
-    fulfillment_quality: float = 0.0
-    energetic_cost: float = 0.0       # 0-1, lower is better
-    time_cost_months: float = 0.0
-    separation_amplification: float = 0.0  # How much this increases separation
-    unity_alignment: float = 0.0      # -1 to +1
-    total_weighted_success: float = 0.0  # Composite score
-
-
-@dataclass
-class DualPathway:
-    """Comparison of separation vs unity pathways"""
-    separation_based: PathwayMetrics = field(default_factory=PathwayMetrics)
-    unity_based: PathwayMetrics = field(default_factory=PathwayMetrics)
-    recommended: str = "unity"  # 'unity', 'separation', 'intermediate'
-    recommendation_reasoning: str = ""
-    projection_months: List[Tuple[int, float, float]] = field(default_factory=list)
-    crossover_month: Optional[int] = None  # When unity overtakes separation
+from consciousness_state import PathwayMetrics, DualPathway
 
 
 # =============================================================================
@@ -106,25 +87,15 @@ def calculate_separation_pathway(
     # Higher attachment = more forcing = faster timeline
     time_months = max(2, 12 - (At * 4) - (F * 3))
 
-    # This pathway amplifies separation
-    separation_amp = (At + F + R) / 3.0
-
-    # Unity alignment is negative
-    unity_align = -(At + F) / 2.0
-
-    # Weighted success: prioritize sustainability over initial
-    # Weights: initial 30%, sustainability 40%, fulfillment 30%
-    total = (initial_prob * 0.3) + (sustainability * 0.4) + (fulfillment * 0.3)
-
     return PathwayMetrics(
         initial_success_probability=initial_prob,
         sustainability_probability=sustainability,
         fulfillment_quality=fulfillment,
-        energetic_cost=energetic_cost,
-        time_cost_months=time_months,
-        separation_amplification=separation_amp,
-        unity_alignment=unity_align,
-        total_weighted_success=total
+        decay_rate=0.05,               # 5% monthly decay for separation pathway
+        compound_rate=0.0,             # Separation doesn't compound
+        time_to_goal_months=time_months,
+        effort_required=energetic_cost,
+        grace_utilization=0.0          # Separation doesn't utilize grace
     )
 
 
@@ -175,24 +146,18 @@ def calculate_unity_pathway(
     # Timeline may be longer but grace accelerates
     time_months = max(4, 18 - (G * 6) - (S * 4))
 
-    # This pathway doesn't amplify separation
-    separation_amp = 0.0
-
-    # Unity alignment is positive
-    unity_align = (S + W + G) / 3.0
-
-    # Weighted success
-    total = (initial_prob * 0.3) + (sustainability * 0.4) + (fulfillment * 0.3)
+    # Grace utilization for unity pathway
+    grace_util = G * 0.7 + S * 0.3  # Weighted combination of grace and surrender
 
     return PathwayMetrics(
         initial_success_probability=initial_prob,
         sustainability_probability=sustainability,
         fulfillment_quality=fulfillment,
-        energetic_cost=energetic_cost,
-        time_cost_months=time_months,
-        separation_amplification=separation_amp,
-        unity_alignment=unity_align,
-        total_weighted_success=total
+        decay_rate=0.0,                # Unity doesn't decay
+        compound_rate=0.03,            # 3% monthly compound for unity pathway
+        time_to_goal_months=time_months,
+        effort_required=energetic_cost,
+        grace_utilization=grace_util
     )
 
 
