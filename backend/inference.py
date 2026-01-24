@@ -41,6 +41,15 @@ try:
         RealismEngine,
         OOFInferenceEngine
     )
+    from .formulas.unity_principle import (
+        get_unity_metrics,
+        calculate_unity_vector,
+        calculate_separation_distance,
+        UNITY_DIRECTION,
+    )
+    from .formulas.dual_pathway_calculator import (
+        calculate_dual_pathways,
+    )
 except ImportError:
     from formulas import (
         MatrixDetector,
@@ -52,6 +61,15 @@ except ImportError:
         QuantumMechanics,
         RealismEngine,
         OOFInferenceEngine
+    )
+    from formulas.unity_principle import (
+        get_unity_metrics,
+        calculate_unity_vector,
+        calculate_separation_distance,
+        UNITY_DIRECTION,
+    )
+    from formulas.dual_pathway_calculator import (
+        calculate_dual_pathways,
     )
 
 
@@ -873,6 +891,74 @@ class InferenceEngine:
             logger.info(f"[ADVANCED] OOFEngine: health={oof_profile.overall_health:.3f}, liberation={oof_profile.liberation_index:.3f}, integration={oof_profile.integration_score:.3f}")
         except Exception as e:
             logger.warning(f"[ADVANCED] OOFInferenceEngine error (non-fatal): {e}")
+
+        # Unity Principle Calculations (Jeevatma-Paramatma dynamics)
+        logger.debug("[ADVANCED] Running Unity Principle calculations...")
+        try:
+            # Build operators dict for unity calculations
+            unity_ops = {
+                'W_witness': operators.get('W_witness', operators.get('W', operators.get('Witness'))),
+                'A_aware': operators.get('A_aware', operators.get('A', operators.get('Awareness'))),
+                'P_presence': operators.get('P_presence', operators.get('P', operators.get('Prana', operators.get('Presence')))),
+                'G_grace': operators.get('G_grace', operators.get('G', operators.get('Grace'))),
+                'S_surrender': operators.get('S_surrender', operators.get('Su', operators.get('Surrender'))),
+                'At_attachment': operators.get('At_attachment', operators.get('At', operators.get('Attachment'))),
+                'F_fear': operators.get('F_fear', operators.get('Fe', operators.get('Fear'))),
+                'M_maya': operators.get('M_maya', operators.get('M', operators.get('Maya'))),
+                'R_resistance': operators.get('R_resistance', operators.get('Re', operators.get('Resistance'))),
+                'Co_coherence': operators.get('Co_coherence', operators.get('Co', operators.get('Coherence'))),
+            }
+
+            # Get unity metrics
+            unity_metrics = get_unity_metrics(unity_ops, s_level)
+            if unity_metrics:
+                values['unity_separation_distance'] = unity_metrics.separation_distance
+                values['unity_distortion_field'] = unity_metrics.distortion_field
+                values['unity_percolation_quality'] = unity_metrics.percolation_quality
+                values['unity_vector'] = unity_metrics.unity_vector
+                values['unity_net_direction'] = unity_metrics.net_direction
+                confidence['unity_separation_distance'] = 0.85
+                confidence['unity_distortion_field'] = 0.85
+                confidence['unity_percolation_quality'] = 0.85
+                confidence['unity_vector'] = 0.85
+                confidence['unity_net_direction'] = 0.85
+                logger.info(f"[ADVANCED] Unity: separation_d={unity_metrics.separation_distance:.3f}, distortion={unity_metrics.distortion_field:.3f}, percolation={unity_metrics.percolation_quality:.3f}")
+
+            # Calculate dual pathways if goal context is available
+            # (Goal context comes from evidence dict if provided by Call 1)
+            goal_context = operators.get('_goal_context')
+            if goal_context and unity_metrics:
+                dual_pathways = calculate_dual_pathways(
+                    goal=goal_context.get('goal', ''),
+                    goal_category=goal_context.get('category', 'achievement'),
+                    operators=unity_ops,
+                    unity_metrics=unity_metrics
+                )
+                if dual_pathways:
+                    # Separation pathway
+                    values['pathway_separation_initial_success'] = dual_pathways.separation_pathway.initial_success_probability
+                    values['pathway_separation_sustainability'] = dual_pathways.separation_pathway.sustainability_probability
+                    values['pathway_separation_fulfillment'] = dual_pathways.separation_pathway.fulfillment_quality
+                    values['pathway_separation_decay_rate'] = dual_pathways.separation_pathway.decay_rate
+                    # Unity pathway
+                    values['pathway_unity_initial_success'] = dual_pathways.unity_pathway.initial_success_probability
+                    values['pathway_unity_sustainability'] = dual_pathways.unity_pathway.sustainability_probability
+                    values['pathway_unity_fulfillment'] = dual_pathways.unity_pathway.fulfillment_quality
+                    values['pathway_unity_compound_rate'] = dual_pathways.unity_pathway.compound_rate
+                    # Comparison
+                    values['pathway_crossover_months'] = dual_pathways.crossover_point_months
+                    values['pathway_recommendation'] = dual_pathways.recommended_pathway
+                    values['pathway_blend_ratio'] = dual_pathways.optimal_blend_ratio
+                    # Confidence
+                    for key in ['pathway_separation_initial_success', 'pathway_separation_sustainability',
+                                'pathway_separation_fulfillment', 'pathway_separation_decay_rate',
+                                'pathway_unity_initial_success', 'pathway_unity_sustainability',
+                                'pathway_unity_fulfillment', 'pathway_unity_compound_rate',
+                                'pathway_crossover_months', 'pathway_blend_ratio']:
+                        confidence[key] = 0.80
+                    logger.info(f"[ADVANCED] DualPathways: crossover={dual_pathways.crossover_point_months}mo, recommended={dual_pathways.recommended_pathway}")
+        except Exception as e:
+            logger.warning(f"[ADVANCED] Unity Principle calculations error (non-fatal): {e}")
 
         logger.info(f"[ADVANCED] All modules complete: {len(values)} values computed")
 

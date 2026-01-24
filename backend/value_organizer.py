@@ -16,7 +16,9 @@ from consciousness_state import (
     PipelineFlow, BreakthroughDynamics, KarmaDynamics, GraceMechanics,
     NetworkEffects, POMDPGaps, MorphogeneticFields,
     TimelinePredictions, TransformationVectors, QuantumMechanics, FrequencyAnalysis,
-    Bottleneck, LeveragePoint
+    Bottleneck, LeveragePoint,
+    # Unity Principle dataclasses
+    UnitySeparationMetrics, DualPathway, PathwayMetrics, GoalContext
 )
 from nomenclature import (
     get_s_level_label, get_matrix_position, get_manifestation_time_label, get_dominant
@@ -41,6 +43,7 @@ class ValueOrganizer:
         Transform flat backend output into organized consciousness state.
 
         PURE ARCHITECTURE: Pass context from Call 1 to guide Call 2 value selection.
+        UNITY PRINCIPLE: Extract unity metrics and dual pathways for Jeevatma-Paramatma analysis.
         """
         return ConsciousnessState(
             timestamp=datetime.now().isoformat(),
@@ -56,7 +59,11 @@ class ValueOrganizer:
             leverage_points=[],  # Will be populated by LeverageIdentifier
             # PURE ARCHITECTURE: Pass Call 1 context to guide Call 2 value selection
             targets=tier1_values.get('targets', []),
-            query_pattern=tier1_values.get('query_pattern', '')
+            query_pattern=tier1_values.get('query_pattern', ''),
+            # UNITY PRINCIPLE: Extract unity metrics and dual pathways
+            unity_metrics=self._extract_unity_metrics(raw_values),
+            dual_pathways=self._extract_dual_pathways(raw_values),
+            goal_context=self._extract_goal_context(tier1_values)
         )
 
     def _get_value(self, values: Dict[str, Any], *keys, default: float = 0.5) -> float:
@@ -476,4 +483,88 @@ class ValueOrganizer:
             field_charge_density=self._get_value(v, 'field_charge', default=0.5),
             field_current_density=self._get_value(v, 'field_current', default=0.5),
             consciousness_curvature=self._get_value(v, 'consciousness_curvature', default=0.0)
+        )
+
+    def _extract_unity_metrics(self, values: Dict[str, Any]) -> UnitySeparationMetrics:
+        """
+        Extract Unity Principle metrics from calculated values.
+
+        UNITY PRINCIPLE: Jeevatma-Paramatma dynamics
+        - separation_distance: Current distance from Source (exponentially decays with S-level)
+        - distortion_field: How much Maya distorts perception
+        - percolation_quality: How well grace/prana flows through
+        - unity_vector: Net direction toward unity (-1 to +1)
+        """
+        v = values.get('values', values)
+
+        return UnitySeparationMetrics(
+            separation_distance=self._get_value(v, 'unity_separation_distance', default=0.5),
+            distortion_field=self._get_value(v, 'unity_distortion_field', default=0.3),
+            percolation_quality=self._get_value(v, 'unity_percolation_quality', default=0.5),
+            unity_vector=self._get_value(v, 'unity_vector', default=0.0),
+            net_direction=v.get('unity_net_direction', 'neutral')
+        )
+
+    def _extract_dual_pathways(self, values: Dict[str, Any]) -> DualPathway:
+        """
+        Extract dual pathway analysis from calculated values.
+
+        DUAL PATHWAY REALITY: Every goal can be pursued through:
+        - Separation pathway: Effort-based, initially faster but decays
+        - Unity pathway: Grace-aligned, initially slower but compounds
+
+        The crossover point shows when unity pathway overtakes separation.
+        """
+        v = values.get('values', values)
+
+        # Build separation pathway metrics
+        separation_pathway = PathwayMetrics(
+            initial_success_probability=self._get_value(v, 'pathway_separation_initial_success', default=0.0),
+            sustainability_probability=self._get_value(v, 'pathway_separation_sustainability', default=0.0),
+            fulfillment_quality=self._get_value(v, 'pathway_separation_fulfillment', default=0.0),
+            decay_rate=self._get_value(v, 'pathway_separation_decay_rate', default=0.0),
+            compound_rate=0.0,  # Separation doesn't compound
+            time_to_goal_months=self._get_value(v, 'pathway_separation_time_months', default=0.0),
+            effort_required=self._get_value(v, 'pathway_separation_effort', default=0.0),
+            grace_utilization=0.0  # Separation doesn't use grace
+        )
+
+        # Build unity pathway metrics
+        unity_pathway = PathwayMetrics(
+            initial_success_probability=self._get_value(v, 'pathway_unity_initial_success', default=0.0),
+            sustainability_probability=self._get_value(v, 'pathway_unity_sustainability', default=0.0),
+            fulfillment_quality=self._get_value(v, 'pathway_unity_fulfillment', default=0.0),
+            decay_rate=0.0,  # Unity doesn't decay
+            compound_rate=self._get_value(v, 'pathway_unity_compound_rate', default=0.0),
+            time_to_goal_months=self._get_value(v, 'pathway_unity_time_months', default=0.0),
+            effort_required=self._get_value(v, 'pathway_unity_effort', default=0.0),
+            grace_utilization=self._get_value(v, 'pathway_unity_grace_util', default=0.0)
+        )
+
+        return DualPathway(
+            separation_pathway=separation_pathway,
+            unity_pathway=unity_pathway,
+            crossover_point_months=self._get_value(v, 'pathway_crossover_months', default=0.0),
+            recommended_pathway=v.get('pathway_recommendation', 'unity'),
+            optimal_blend_ratio=self._get_value(v, 'pathway_blend_ratio', default=0.5)
+        )
+
+    def _extract_goal_context(self, tier1_values: Dict[str, Any]) -> GoalContext:
+        """
+        Extract goal context from Call 1 analysis.
+
+        GOAL CONTEXT: Determines which constellation patterns apply
+        - category: achievement, relationship, peace, or transformation
+        - explicit_goal: What the user stated
+        - implicit_goal: What the consciousness state reveals
+        """
+        goal_data = tier1_values.get('goal_context', {})
+
+        return GoalContext(
+            category=goal_data.get('category', 'achievement'),
+            explicit_goal=goal_data.get('explicit_goal', tier1_values.get('goal', '')),
+            implicit_goal=goal_data.get('implicit_goal', ''),
+            why_category=goal_data.get('why_category', ''),
+            death_architecture_required=goal_data.get('death_architecture_required', ''),
+            s_level_requirement=goal_data.get('s_level_requirement', 3.0)
         )
