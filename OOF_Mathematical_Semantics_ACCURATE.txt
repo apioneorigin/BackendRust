@@ -3,6 +3,24 @@
 # Only includes values that backend ACTUALLY computes and returns
 
 ================================================================================
+CRITICAL: BACKEND NAMING INCONSISTENCIES
+================================================================================
+
+The backend codebase has some naming inconsistencies that LLM Call 2 must be aware of:
+
+**Ce Operator Inconsistency:**
+- Some modules use: **Ce_celebration**
+- Other modules use: **Ce_cleaning**
+- Both refer to the SAME operator (purification/celebration capacity)
+- When receiving data, check for BOTH names
+
+**What this means:**
+- Operator extraction (Call 1) may return either Ce_celebration OR Ce_cleaning
+- Backend formulas may reference either name
+- Treat both as semantically identical
+- Use whichever name appears in the input data
+
+================================================================================
 TIER 0: BASE OPERATORS (25 values, 0.0-1.0 scale)
 ================================================================================
 
@@ -117,18 +135,14 @@ TIER 0: BASE OPERATORS (25 values, 0.0-1.0 scale)
 - 1.0 = Pure selfless service
 - NOTE: Backend uses Se_service
 
-**Ce_celebration (Celebration)** - Celebratory Capacity
-- Mathematical meaning: Capacity for celebration and purification
-- 0.0 = No celebration, accumulation
-- 0.5 = Moderate celebration
-- 1.0 = Maximum celebratory capacity
-- NOTE: Backend uses Ce_celebration, not Ce_cleaning
-
-**Ce_center (Centering)** - Centering Capacity
-- Mathematical meaning: Ability to return to center
-- 0.0 = Completely off-center
-- 0.5 = Moderate centering
-- 1.0 = Perfect centering
+**Ce_celebration / Ce_cleaning (Purification/Celebration)** - Purification Capacity
+- Mathematical meaning: Capacity for celebration, purification, and pattern dissolution
+- 0.0 = No celebration/cleaning, accumulation
+- 0.5 = Moderate purification
+- 1.0 = Maximum celebratory/cleaning capacity
+- CRITICAL: Backend uses BOTH Ce_celebration AND Ce_cleaning for this same operator
+- When processing input, accept EITHER name as valid
+- Treat Ce_celebration and Ce_cleaning as semantically identical
 
 **Su (Surrender)** - Control Release Degree
 - Mathematical meaning: Ratio of surrender to control
@@ -328,10 +342,10 @@ DEATH ARCHITECTURE (D1-D7 with intensity/depth)
 - depth: Depth of identity dissolution (0.0-1.0)
 - Mathematical meaning: Personal identity death state
 
-**death_d2_relationship**
-- intensity: Strength of relationship pattern death (0.0-1.0)
-- depth: Depth of relationship dissolution (0.0-1.0)
-- Mathematical meaning: Relationship identity death state
+**death_d2_belief**
+- intensity: Strength of belief system death (0.0-1.0)
+- depth: Depth of belief dissolution (0.0-1.0)
+- Mathematical meaning: Belief system death state
 
 **death_d3_achievement**
 - intensity: Strength of achievement identity death (0.0-1.0)
