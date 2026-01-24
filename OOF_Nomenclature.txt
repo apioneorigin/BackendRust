@@ -73,7 +73,7 @@ Base Operators - Keep Abbreviated
      Hf                  Habitual Fixation, repetitive patterns
      K                   Karma, stored action-consequence patterns
      Shadow              Unconscious rejected aspects
-     Se                  Seeking, external validation dependency
+     Se_service          Service orientation, selfless action (seva)
      Ce                  Cleanliness, purity of consciousness
 
      CATEGORY: Structural Operators (4)
