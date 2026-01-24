@@ -698,10 +698,10 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
 
         # Store goal_context in evidence for downstream use
         evidence['goal_context'] = {
-            'goal_text': goal_context.explicit_goal,
-            'goal_category': goal_context.category,
-            'why_category': goal_context.why_category,
-            'domain': evidence.get('domain', 'general')
+            'goal_text': goal_context.goal_text,
+            'goal_category': goal_context.goal_category,
+            'emotional_undertone': goal_context.emotional_undertone,
+            'domain': goal_context.domain or evidence.get('domain', 'general')
         }
 
         # Identify which operators were extracted vs missing
@@ -758,7 +758,7 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
                 }
 
                 api_logger.info(f"[CONSTELLATION] Question asked: {question.question_id}")
-                api_logger.info(f"[CONSTELLATION] Goal category: {goal_context.category}")
+                api_logger.info(f"[CONSTELLATION] Goal category: {goal_context.goal_category}")
                 api_logger.info(f"[CONSTELLATION] Missing operators: {len(missing_operators)}")
 
                 # Return here - client must call /api/answer and then /api/run/continue
