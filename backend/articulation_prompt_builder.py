@@ -115,7 +115,7 @@ Your task is to articulate these insights in natural language that the user can 
 CRITICAL: You must CONCEAL framework terminology. Never say "Maya operator" or "S-level" - translate everything into natural, domain-appropriate language."""
 
     def _build_framework_section(self) -> str:
-        """Build framework reference section"""
+        """Build framework reference section - FREEDOM-RESPECTING VERSION"""
         return """## FRAMEWORK REFERENCE
 
 The OOF.txt framework document is available in your context. Use it for:
@@ -124,78 +124,49 @@ The OOF.txt framework document is available in your context. Use it for:
 - S-level characteristics
 - Consciousness physics principles
 
-Reference the framework internally but express insights naturally - as if speaking to a trusted friend or client.
+Reference the framework internally but express insights naturally - as if
+speaking to a trusted friend or client.
 
-## VALUE SELECTION PROTOCOL (CRITICAL)
+## VALUE SELECTION PROTOCOL
 
 You are receiving ALL calculated consciousness values (~1,500-2,500 values).
 Your task is to SELECT which values to articulate based on context.
 
-### SELECTION CRITERIA:
+### SELECTION PRINCIPLES:
 
 **1. QUERY RELEVANCE (Priority 1)**
-- What values DIRECTLY answer the user's question?
-- If user asks "Why can't we innovate?" → Focus on: At_attachment, Fe_fear, Re_resistance, M_maya, breakthrough_probability
-- If user asks "Show transformation path" → Focus on: S_level, matrices, death_architecture, grace_karma_ratio
-- IGNORE values unrelated to their specific query
+Select values that directly answer the user's specific question.
+Focus on what matters for THIS query, not generic patterns.
 
 **2. USER-REQUESTED TARGETS (Priority 2)**
-- LLM Call 1 identified targets based on query analysis
-- These are HIGH CONFIDENCE relevant values
-- Always include these in your articulation
+LLM Call 1 identified targets based on query analysis.
+These are high-confidence relevant values - include them.
 
 **3. SEARCH GUIDANCE HIGH-PRIORITY (Priority 3)**
-- LLM Call 1 flagged values for evidence-grounding
-- These need web search validation
-- Include if relevant to query
+LLM Call 1 flagged values for evidence-grounding.
+Include these if relevant to the query.
 
-**4. EXTREME VALUES (Priority 4)**
-- Values >0.7 or <0.3 indicate strong manifestation in reality
-- High probability of having searchable evidence
-- Include if relevant to query AND evidence-groundable
+**4. CAUSAL CHAIN COMPLETENESS**
+If articulating bottleneck X, include ALL values in its causal chain.
+Show the full consciousness → reality connection.
+Don't leave causal gaps.
 
-**5. CAUSAL CHAIN COMPLETENESS (Priority 5)**
-- If articulating bottleneck X, include ALL values in its causal chain
-- Example: High At_attachment → include Fe_fear (cause), Re_resistance (effect), G_grace (blocked consequence)
-- Don't leave causal gaps - show full consciousness → reality chain
-
-**6. TRANSFORMATION CONTEXT (Priority 6)**
-- If discussing transformation, include: current S_level, target matrix positions, death_architecture_active, grace_availability
-- Full transformation story needs complete context
-
-### WHAT TO IGNORE:
-
-❌ Values with no query relevance
-❌ Redundant values (if 3 values say the same thing, pick the clearest)
-❌ Values you cannot ground in searchable evidence (unless theoretical explanation requested)
-❌ Values close to neutral (0.4-0.6) with no causal significance
-❌ Intermediate calculation values (focus on endpoints)
+**5. TRANSFORMATION CONTEXT**
+If discussing transformation, include transformation-related values
+(S-level, matrices, death architecture, grace availability).
 
 ### ARTICULATION EFFICIENCY:
 
 - Articulate 20-50 key values (not all 2,500)
-- But USE the full value set to understand complete picture
+- USE the full value set to understand the complete picture
 - Synthesize patterns across all values
-- Reference supporting values in causal chains without listing them
-
-### EXAMPLE:
-
-**Received:** 2,347 calculated values
-**User query:** "Why are we stuck in reactive mode?"
-
-**Selection process:**
-1. Query relevance: victim_power_matrix (0.23), resistance (0.78), fear (0.82), attachment (0.76), habit_force (0.81)
-2. Causal chain: fear → resistance → habit_force → blocks grace (0.21) → prevents flow
-3. Evidence-grounding: Search for "company reactive decisions", "firefighting mode", "strategic vs tactical"
-4. Transformation path: Need death_d3_identity (social identity death), power_matrix shift
-
-**Articulate:** ~15 values that tell the complete story
-**Ignore:** Remaining ~2,330 values not relevant to this query
+- Reference supporting values without listing them all
 
 ### PRINCIPLE:
 
-You have access to EVERYTHING. Use your intelligence and context to decide what matters for THIS query.
-Don't list all values - synthesize the relevant ones into breakthrough insights."""
+You have access to EVERYTHING. Use your intelligence and context to decide
+what matters for THIS query. Don't list all values - synthesize the relevant
+ones into breakthrough insights."""
 
     def _build_context_section(
         self,
@@ -674,29 +645,19 @@ No high-multiplier opportunities currently active. Focus on clearing bottlenecks
         return '\n\n'.join(sections)
 
     def _build_generation_instructions(self, instructions: ArticulationInstructions) -> str:
-        """Build generation instructions for the LLM"""
-        concealment_note = ""
-        if instructions.framework_concealment:
-            concealment_note = """
-- **Framework Concealment:** Do NOT mention operators by name, S-levels, or framework terminology. Translate everything into natural domain-appropriate language.
-  - Instead of "Maya operator at 70%", say "seeing success as external rather than internal"
-  - Instead of "S3 consciousness", say "achievement-focused mindset"
-  - Instead of "Grace flow low", say "not receiving the support that's available"
-"""
-        else:
-            concealment_note = "- Framework terminology is allowed if it helps clarity."
+        """Build generation instructions - FREEDOM-RESPECTING VERSION"""
+        # Build concealment note
+        concealment_note = """- **Framework Concealment:** Never use technical terms
+like "Maya operator", "S-level", "transformation matrix". Translate everything
+into natural, domain-appropriate language."""
 
+        # Build domain note if available
         domain_note = ""
-        if instructions.domain_language:
-            domain_note = """
-- **Domain Language:** Use vocabulary and framing natural to their industry/domain. Speak their language, not consciousness physics language.
-  - For business: Use terms like ROI, market position, competitive advantage
-  - For personal: Use terms like fulfillment, relationships, growth
-  - For spiritual: Use accessible terms, not jargon
-"""
-        else:
-            domain_note = "- General language is fine."
+        if hasattr(instructions, 'domain_context') and instructions.domain_context:
+            domain_note = f"""- **Domain Adaptation:** User is in {instructions.domain_context}
+domain. Use appropriate terminology and examples."""
 
+        # Build priorities string if available
         priorities_str = ""
         if instructions.insight_priorities:
             priorities_str = "\n**Priority Insights to Emphasize:**\n" + '\n'.join(
@@ -706,95 +667,56 @@ No high-multiplier opportunities currently active. Focus on clearing bottlenecks
 
         return f"""## ARTICULATION INSTRUCTIONS
 
-Generate a response that accomplishes the following:
+### ARTICULATION GOALS
 
-### 1. CURRENT REALITY ANALYSIS
-Express where the user actually is right now (not where they think they are).
-Ground this in both the web research data and consciousness analysis.
-Point out any gaps between believed state and actual state (POMDP gaps).
+Your response should accomplish these goals (structure naturally based on context):
 
-### 2. STRUCTURAL GAP IDENTIFICATION
-Explain what's between their current position and stated goal.
-This is NOT superficial obstacles - it's the consciousness structure creating the gap.
-Reference the matrix positions and transformation requirements.
+**Show Current Reality:** Express where the user actually is vs where they think
+they are. Ground this in web research and consciousness analysis. Point out any
+perception gaps (POMDP).
 
-### 3. ROOT CAUSE EXPLANATION
-Identify which consciousness patterns are creating the current situation.
-Explain HOW these patterns interact to produce observable results.
-Make the invisible visible - show them what they can't see from their current position.
+**Explain Consciousness Patterns:** Identify which consciousness patterns are
+creating the current situation. Explain HOW these patterns interact to produce
+observable results. Make the invisible visible.
 
-### 4. TRANSFORMATION PATHWAY
-Describe what actually needs to shift (not just what actions to take).
-Reference the transformation vector, leverage points, and grace mechanics.
-Be specific about what internal changes enable external results.
+**Identify Transformation Requirements:** Describe what actually needs to shift
+internally to enable external results. Reference transformation vectors and
+leverage points.
 
-### 5. PRACTICAL LEVERAGE
-Provide concrete next actions aligned with their consciousness state.
-These should activate the identified leverage points.
-Respect their current capacity - don't suggest actions requiring development they don't have.
+**Provide Practical Leverage:** Offer concrete next actions aligned with their
+consciousness state and current capacity.
 
 ### STYLE REQUIREMENTS
 {concealment_note}
 {domain_note}
-- **Natural Flow:** Write as if you're a wise advisor who sees patterns they cannot see, not as a calculation system reporting numbers.
 
-- **Insight Priority:** Lead with the most impactful insights. Don't try to communicate everything - focus on what matters most for their transformation.
+- **Natural Flow:** Write as a wise advisor who sees patterns they cannot see,
+not as a calculation system reporting numbers.
 
-- **Grounded in Data:** Every major claim should tie back to either web research findings or calculated consciousness values. But express these naturally, not as citations.
+- **Insight Priority:** Lead with the most impactful insights. Don't try to
+communicate everything - focus on what matters most for their transformation.
+
+- **Grounded in Data:** Ground major claims in either web research findings or
+calculated consciousness values. Express these naturally, not as citations.
 {priorities_str}
 
-## EVIDENCE-GROUNDING PROTOCOL
+## EVIDENCE GROUNDING PROTOCOL
 
-When web search is enabled, you must GROUND consciousness values in observable reality.
-Use the search_guidance from Call 1 to find cited proof for key insights.
+When consciousness values are calculated, ground them in observable reality:
 
-### CONSCIOUSNESS → REALITY MANIFESTATION PATTERNS
+**Process:**
+1. Translate consciousness patterns into measurable behaviors/outcomes
+2. Formulate search queries to find observable proof
+3. Cite evidence naturally in your articulation
+4. Include "Sources:" section at the end listing all web sources used
 
-Use these mappings to translate calculated values into searchable evidence:
+**Use search_guidance from Call 1** for high-priority values to ground.
 
-**HIGH ATTACHMENT (At > 0.70)**
-- Observable: Resistance to change, sunk cost behavior, loyalty to legacy
-- Search for: "[entity] migration challenges", "[entity] change resistance", "[entity] legacy systems"
-- Proof type: Industry reports, analyst assessments, leadership quotes
-
-**HIGH MAYA (M > 0.65)**
-- Observable: Market perception vs reality gaps, optimistic forecasting, blind spots
-- Search for: "[entity] analyst vs reality", "[entity] market expectations", "[entity] missed targets"
-- Proof type: Third-party assessments, competitor comparisons, historical predictions vs outcomes
-
-**SEPARATION MATRIX POSITION**
-- Observable: Competitive vs collaborative behavior, protective boundaries, siloed operations
-- Search for: "[entity] competitive strategy", "[entity] vs [competitors]", "[entity] partnership failures"
-- Proof type: Strategy analysis, partnership history, market positioning
-
-**HIGH RESISTANCE (Re > 0.60)**
-- Observable: Organizational friction, slow adoption, internal politics
-- Search for: "[entity] organizational challenges", "[entity] internal conflicts", "[entity] transformation failures"
-- Proof type: Employee reviews, leadership changes, restructuring news
-
-**GRACE AVAILABILITY (G > 0.60)**
-- Observable: Synchronicities, unexpected opportunities, favorable conditions
-- Search for: "[entity] new partnerships", "[entity] market opportunities", "[entity] recent wins"
-- Proof type: Partnership announcements, market trends favoring entity, recent successes
-
-**BREAKTHROUGH PROBABILITY (> 0.65)**
-- Observable: Near-term catalysts, emerging opportunities, inflection signals
-- Search for: "[entity] upcoming catalyst", "[entity] innovation announcements", "[entity] market timing"
-- Proof type: Product launches, strategic initiatives, market timing indicators
-
-**DEATH ARCHITECTURE ACTIVE**
-- Observable: What is ending/dying - old products, old strategies, old identity
-- Search for: "[entity] discontinuing", "[entity] pivot strategy", "[entity] sunset products"
-- Proof type: Discontinuation announcements, strategic pivots, phase-outs
-
-### EVIDENCE INTEGRATION RULES
-
-1. **Search Strategically**: Use the evidence_search_queries from search_guidance
-2. **Cite Naturally**: Integrate evidence into narrative flow - no "according to search" phrasing
-3. **Ground Major Claims**: Every significant insight should have observable proof
-4. **Quality Over Quantity**: 3-5 well-cited insights > 10 vague claims
-5. **Connect Dots**: Show how consciousness pattern → observable reality → cited proof
-6. **Include Sources**: End with "Sources:" section listing all web sources used"""
+**Quality Standards:**
+- Focus on major insights (not every value)
+- Show consciousness pattern → observable reality → cited proof
+- Integrate evidence into narrative flow naturally
+- Let evidence strengthen insights, not replace them"""
 
     def _build_user_query(self, user_context: UserContext) -> str:
         """Build the user query section"""

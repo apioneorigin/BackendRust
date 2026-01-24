@@ -277,7 +277,7 @@ leverage_identifier = LeverageIdentifier()
 prompt_builder = ArticulationPromptBuilder()
 
 # Load LLM Call 1 context (for operator extraction)
-LLM_CALL1_PATH = Path(__file__).parent.parent / "LLM Call 1.txt"
+LLM_CALL1_PATH = Path(__file__).parent.parent / "LLM_Call_1.txt"
 LLM_CALL1_CONTEXT = ""
 if LLM_CALL1_PATH.exists():
     with open(LLM_CALL1_PATH, 'r', encoding='utf-8') as f:
@@ -286,8 +286,8 @@ if LLM_CALL1_PATH.exists():
 else:
     api_logger.warning(f"LLM Call 1 context not found at {LLM_CALL1_PATH}")
 
-# Load LLM Call 2 context (for articulation) - OOF Mathematical Semantics
-LLM_CALL2_PATH = Path(__file__).parent.parent / "OOF_Mathematical_Semantics_ACCURATE.txt"
+# Load LLM Call 2 context (for articulation) - OOF Mathematical Framework
+LLM_CALL2_PATH = Path(__file__).parent.parent / "OOF_Math.txt"
 LLM_CALL2_CONTEXT = ""
 if LLM_CALL2_PATH.exists():
     with open(LLM_CALL2_PATH, 'r', encoding='utf-8') as f:
