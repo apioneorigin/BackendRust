@@ -334,6 +334,73 @@ CASCADE DYNAMICS (0.0-1.0 per level)
 - 1.0 = Perfectly flowing cascade
 
 ================================================================================
+EMOTIONS PROFILE - NINE RASAS (From EmotionAnalyzer/ExpandedEmotionEngine)
+================================================================================
+
+The backend calculates the Nine Rasas (fundamental emotional states) from operator configurations.
+Each rasa has intensity 0.0-1.0.
+
+**rasa_shringara (Love/Beauty/Romance)**
+- Mathematical meaning: Intensity of love, beauty, romantic emotional state
+- 0.0 = No shringara present
+- 0.5 = Moderate love/beauty/romance
+- 1.0 = Maximum shringara intensity
+
+**rasa_hasya (Joy/Humor/Laughter)**
+- Mathematical meaning: Intensity of joy, humor, playful emotional state
+- 0.0 = No hasya present
+- 0.5 = Moderate joy/humor
+- 1.0 = Maximum hasya intensity
+
+**rasa_karuna (Compassion/Sadness)**
+- Mathematical meaning: Intensity of compassion, pathos, sorrowful emotional state
+- 0.0 = No karuna present
+- 0.5 = Moderate compassion/sadness
+- 1.0 = Maximum karuna intensity
+
+**rasa_raudra (Anger/Fury)**
+- Mathematical meaning: Intensity of anger, fury, wrathful emotional state
+- 0.0 = No raudra present
+- 0.5 = Moderate anger
+- 1.0 = Maximum raudra intensity
+
+**rasa_veera (Courage/Heroism)**
+- Mathematical meaning: Intensity of courage, heroism, valor emotional state
+- 0.0 = No veera present
+- 0.5 = Moderate courage
+- 1.0 = Maximum veera intensity
+
+**rasa_bhayanaka (Fear/Terror)**
+- Mathematical meaning: Intensity of fear, terror, dread emotional state
+- 0.0 = No bhayanaka present
+- 0.5 = Moderate fear
+- 1.0 = Maximum bhayanaka intensity
+
+**rasa_adbhuta (Wonder/Amazement)**
+- Mathematical meaning: Intensity of wonder, amazement, awe emotional state
+- 0.0 = No adbhuta present
+- 0.5 = Moderate wonder
+- 1.0 = Maximum adbhuta intensity
+
+**rasa_shanta (Peace/Tranquility)**
+- Mathematical meaning: Intensity of peace, tranquility, calm emotional state
+- 0.0 = No shanta present
+- 0.5 = Moderate peace
+- 1.0 = Maximum shanta intensity
+
+**rasa_bibhatsa (Disgust/Aversion)**
+- Mathematical meaning: Intensity of disgust, repulsion, revulsion emotional state
+- 0.0 = No bibhatsa present
+- 0.5 = Moderate disgust
+- 1.0 = Maximum bibhatsa intensity
+
+**dominant_rasa**
+- Mathematical meaning: Which of the 9 rasas is currently dominant
+- Type: String
+- Values: One of the 9 rasa names (shringara, hasya, karuna, raudra, veera, bhayanaka, adbhuta, shanta, bibhatsa)
+- Indicates the primary emotional state configuration
+
+================================================================================
 DEATH ARCHITECTURE (D1-D7 with intensity/depth)
 ================================================================================
 
