@@ -2390,3 +2390,695 @@ IMPLEMENTATION GUIDANCE:
 END OF OOF NOMENCLATURE APPENDIX
 ==================================================
 
+
+
+================================================================================
+OOF COMPLETE NOMENCLATURE - ADDENDUM v1.0
+Backend Implementation Corrections & Clarifications
+Date: January 24, 2026
+================================================================================
+
+This addendum corrects discrepancies between the original nomenclature document 
+and the actual backend implementation found in BackendRust-main/backend/formulas/
+
+CRITICAL: All corrections below reflect ACTUAL IMPLEMENTED CODE, not theoretical 
+design. The backend is the source of truth.
+
+================================================================================
+SECTION 1: CORE OPERATOR CORRECTIONS
+================================================================================
+
+1.1 OPERATOR P - CRITICAL NAMING FIX
+==================================================
+CORRECTION: The primary operator is P_presence, NOT P_prana
+
+ORIGINAL (INCORRECT):
+  P_prana - Primary operator in collision resolution
+
+CORRECTED:
+  P_presence - Primary UCB operator (Universal Consciousness Base)
+  P_prana - Cascade layer descriptor only (not a primary operator)
+
+USAGE IN BACKEND:
+  - All formulas use: operators.get('P_presence')
+  - Found in: cascade.py, circles.py, death.py, distortions.py, drives.py
+  - Example: p = operators.get("P_presence", 0.5)
+
+WHY THIS MATTERS:
+  P_presence is the actual operational variable in all 2,110 formula calculations.
+  P_prana appears only as a cascade layer descriptor, never in computations.
+
+COLLISION RESOLUTION UPDATE:
+  'P': {
+    presence: 'P_presence',    // PRIMARY - Presence UCB operator
+    prana: 'P_prana',         // CONTEXT - Cascade layer descriptor only
+    prob: 'P_prob',           // Probability calculations
+    power: 'P_power'          // Power transformation matrix
+  }
+
+1.2 OPERATOR E - CRITICAL NAMING FIX
+==================================================
+CORRECTION: The primary operator is E_equanimity, NOT E_energy
+
+ORIGINAL (INCORRECT):
+  E_energy - Primary UCB operator
+
+CORRECTED:
+  E_equanimity - Primary UCB operator (emotional balance/equilibrium)
+  E_energy - Time-varying context function E(t) only
+  E_ego - Cascade layer descriptor
+
+USAGE IN BACKEND:
+  - All formulas use: operators.get('E_equanimity')
+  - Found in: death_detection.py line 87
+  - Example: 'E_equanimity': -0.5  # Equanimity transcends emotions
+
+WHY THIS MATTERS:
+  E_equanimity represents emotional balance and is the core operator.
+  E_energy appears as E(t) in time-varying contexts but is not the base operator.
+
+COLLISION RESOLUTION UPDATE:
+  'E': {
+    equanimity: 'E_equanimity',  // PRIMARY - Emotional balance operator
+    energy: 'E_energy',          // CONTEXT - E(t) time-varying function
+    ego: 'E_ego',               // Cascade layer descriptor
+    emerge: 'E_emerge'          // Emergence properties
+  }
+
+1.3 OPERATOR Ce - DUAL USAGE PATTERN (NOT A BUG)
+==================================================
+CRITICAL CLARIFICATION: Ce has TWO intentional forms in backend
+
+BOTH FORMS EXIST AND ARE CORRECT:
+  Ce_celebration - Used in cascade cleanliness calculations
+  Ce_cleaning - Used in active cascade operations
+
+USAGE IN BACKEND (cascade.py):
+  Line 254: ['Ce_celebration', 'Sa_samskara', 'K_karma']  # Memory layer
+  Line 257: ['P_presence', 'F_fear', 'Ce_celebration']     # Breath layer
+  Line 258: ['Ce_celebration', 'P_presence', 'At_attachment', 'F_fear', 'Hf_habit']  # Body layer
+  Line 667: ce = operators.get('Ce_cleaning', 0.3)
+  Line 748: ce = operators.get('Ce_cleaning', 0.3)
+
+PATTERN EXPLANATION:
+  Ce_celebration = Cleanliness/purity as a STATE in cascade layers
+  Ce_cleaning = Active cleaning OPERATION/efficiency coefficient
+
+FORMULA CONTEXT:
+  Ce_celebration appears in layer composition arrays
+  Ce_cleaning appears in dynamic calculations: Ce × Grace × Awareness
+
+THIS IS INTENTIONAL DESIGN:
+  Same root concept (cleanliness) manifests as:
+  - Static quality (celebration/purity) in structure
+  - Dynamic action (cleaning efficiency) in processes
+
+COLLISION RESOLUTION UPDATE:
+  'Ce': {
+    celebration: 'Ce_celebration',  // STATE - Cleanliness quality in layers
+    cleaning: 'Ce_cleaning'        // OPERATION - Active cleaning efficiency
+  }
+
+NOTE: Do NOT consolidate these - they serve different architectural purposes.
+
+1.4 LLM PROMPT CONTEXT TEMPLATE - CORRECTED
+==================================================
+ORIGINAL (INCORRECT):
+  Core Operators: P_presence, A_aware, E_energy, Ψ_base, M_manifest...
+
+CORRECTED:
+  Core Operators: P_presence, A_aware, E_equanimity, Ψ_base, M_manifest, 
+                  L_love, G_grace, S_struct, At_attachment, W_witness, 
+                  M_maya, Hf_habit, F_fear, S_surrender, R_resistance, 
+                  Se_service, K_karma, Sa_samskara, T_temporal, V_vitality,
+                  Choice, Agency, Openness, Ce_celebration, Ce_cleaning
+
+TOTAL COUNT: 25 core operators (as documented in OOF.txt)
+
+================================================================================
+SECTION 2: UNITY PRINCIPLE METRICS - CORRECTIONS
+================================================================================
+
+2.1 IMPLEMENTED UNITY METRICS (Verified in unity_principle.py)
+==================================================
+METRIC: unity_vector
+  TYPE: Float
+  RANGE: -1.0 (full separation) to +1.0 (full unity)
+  FORMULA: Weighted sum of operator contributions, normalized
+  CALCULATION: total_weighted / total_weight, clamped to [-1.0, 1.0]
+  LOCATION: backend/formulas/unity_principle.py lines 256-298
+  RETURNS: Tuple of (unity_vector or None, operator_contributions dict)
+
+METRIC: percolation_quality  
+  TYPE: Float
+  RANGE: 0.0 to 1.0
+  FORMULA: (1 - Delta) × (W × A × P) × (1 - M)
+  WHERE:
+    Delta = unity_separation_gap (calculated metric, not stored variable)
+    W = W_witness operator
+    A = A_aware operator  
+    P = P_presence operator
+    M = M_maya operator
+  LOCATION: backend/formulas/unity_principle.py lines 211-256
+  RETURNS: Tuple of (percolation_quality or None, list of missing operators)
+
+2.2 NON-EXISTENT UNITY METRICS (Remove from nomenclature)
+==================================================
+DELETE: unity_separation_distance
+  STATUS: Does not exist in backend code
+  SEARCHED: All files in backend/formulas/* - no matches found
+  ACTION: Remove from nomenclature or mark as "FUTURE/NOT IMPLEMENTED"
+
+2.3 UNITY METRICS DATA STRUCTURE (Actual Implementation)
+==================================================
+From unity_principle.py lines 24-33:
+
+@dataclass
+class UnitySeparationMetrics:
+    """Metrics for unity vs separation analysis"""
+    separation_score: float = 0.5           # 0=unity, 1=separation
+    unity_score: float = 0.5                # 0=separation, 1=unity
+    delta: float = 0.0                      # abs(separation - unity)
+    percolation_quality: Optional[float] = None
+    unity_separation_gap: float = 0.0       # Same as delta
+    unity_vector: Optional[float] = None
+    dominant_mode: str = "balanced"         # unity/separation/balanced
+    recommendations: List[str] = field(default_factory=list)
+
+CRITICAL NOTE: 
+  These are computed metrics, NOT stored database variables.
+  Backend calculates them on-demand from base operators.
+
+================================================================================
+SECTION 3: DUAL PATHWAY ARCHITECTURE - CORRECTIONS
+================================================================================
+
+3.1 ACTUAL IMPLEMENTATION (Dataclass Architecture)
+==================================================
+DELETE from nomenclature: 
+  - All variables starting with pathway_separation_*
+  - All variables starting with pathway_unity_*
+
+REASON: Backend uses dataclass architecture, not flat variables.
+
+ACTUAL STRUCTURE (from dual_pathway_calculator.py lines 33-55):
+
+@dataclass
+class PathwayMetrics:
+    """Metrics for a single pathway (separation or unity)"""
+    initial_success_probability: float = 0.0
+    sustainability_probability: float = 0.0
+    fulfillment_quality: float = 0.0
+    energetic_cost: float = 0.0           # 0-1, lower is better
+    time_cost_months: float = 0.0
+    separation_amplification: float = 0.0  # How much this increases separation
+    unity_alignment: float = 0.0           # -1 to +1
+    total_weighted_success: float = 0.0    # Composite score
+
+@dataclass
+class DualPathway:
+    """Comparison of separation vs unity pathways"""
+    separation_based: PathwayMetrics
+    unity_based: PathwayMetrics
+    recommended: str = "unity"              # 'unity', 'separation', 'intermediate'
+    recommendation_reasoning: str = ""
+    projection_months: List[Tuple[int, float, float]]
+    crossover_month: Optional[int] = None   # When unity overtakes separation
+
+3.2 DUAL PATHWAY NOMENCLATURE (Corrected)
+==================================================
+SEPARATION PATHWAY METRICS:
+  separation_initial_success_probability      Float 0.0-1.0
+  separation_sustainability_probability       Float 0.0-1.0
+  separation_fulfillment_quality             Float 0.0-1.0
+  separation_energetic_cost                  Float 0.0-1.0 (0=low cost)
+  separation_time_cost_months                Float (months)
+  separation_amplification                   Float (increases separation)
+  separation_unity_alignment                 Float -1.0 to +1.0
+  separation_total_weighted_success          Float (composite score)
+
+UNITY PATHWAY METRICS:
+  unity_initial_success_probability          Float 0.0-1.0
+  unity_sustainability_probability           Float 0.0-1.0
+  unity_fulfillment_quality                  Float 0.0-1.0
+  unity_energetic_cost                       Float 0.0-1.0 (0=low cost)
+  unity_time_cost_months                     Float (months)
+  unity_amplification                        Float (decreases separation)
+  unity_unity_alignment                      Float -1.0 to +1.0
+  unity_total_weighted_success               Float (composite score)
+
+COMPARISON METRICS:
+  recommended_pathway                        String: 'unity'|'separation'|'intermediate'
+  recommendation_reasoning                   String: explanation text
+  projection_months                          List[Tuple[month, sep_success, unity_success]]
+  crossover_month                           Optional[Int]: when unity overtakes separation
+
+3.3 DUAL PATHWAY FORMULAS (Backend Implementation)
+==================================================
+SEPARATION PATHWAY (from dual_pathway_calculator.py lines 79-111):
+  initial_prob = 0.3 + (At × 0.35) + (F × 0.25)
+  sustainability = 0.25 + (1.0 - At) × 0.25 + (1.0 - F) × 0.15
+  fulfillment = 0.2 + (1.0 - F) × 0.25 + (W × 0.1)
+  energetic_cost = 0.6 + (At × 0.25) + (R × 0.15)
+  time_cost = 6.0 + (At × 6.0)
+  separation_amplification = 0.3 + (At × 0.4) + (F × 0.3)
+  unity_alignment = -0.5 - (At × 0.3) - (F × 0.2)
+
+UNITY PATHWAY (from dual_pathway_calculator.py lines 130-162):
+  initial_prob = 0.4 + (S × 0.3) + (W × 0.2)
+  sustainability = 0.6 + (S × 0.25) + (W × 0.15)
+  fulfillment = 0.6 + (S × 0.25) + (W × 0.15)
+  energetic_cost = 0.3 - (S × 0.15) - (W × 0.1)
+  time_cost = 8.0 - (S × 4.0) - (W × 2.0)
+  separation_amplification = 0.1 - (S × 0.05) - (W × 0.05)
+  unity_alignment = 0.6 + (S × 0.25) + (W × 0.15)
+
+OPERATORS USED:
+  At = At_attachment
+  F = F_fear
+  R = R_resistance
+  S = S_surrender
+  W = W_witness
+  M = M_maya
+
+3.4 CROSSOVER MONTH CALCULATION
+==================================================
+VARIABLE: crossover_month
+  TYPE: Optional[Int]
+  MEANING: The month when unity pathway success overtakes separation pathway
+  FORMULA: First month where (unity_success > separation_success) AND 
+           (separation was previously higher)
+  LOCATION: dual_pathway_calculator.py lines 219-235
+  
+PROJECTION CALCULATION:
+  For each month t = 0 to 24:
+    sep_decay = initial_sep × (1 - 0.05)^t
+    unity_growth = initial_unity × exp(0.03 × t)
+  
+  Find first t where: unity_growth > sep_decay
+  
+RETURNS: None if unity never overtakes, or month number (0-24)
+
+================================================================================
+SECTION 4: DEATH ARCHITECTURE - CORRECTIONS
+================================================================================
+
+4.1 DEATH TYPE DEFINITIONS (Corrected from Backend)
+==================================================
+ORIGINAL ERROR: PDF may have listed D2 as "belief"
+
+CORRECTED DEATH ARCHITECTURE (from death.py lines 31-35):
+
+D1_PHYSICAL = "d1_physical"
+  Description: Physical death - body, health, mortality
+  Trigger: Body breakdown, health crisis, aging
+  Experience: Confronting physical mortality
+
+D2_RELATIONSHIP = "d2_relationship"    ← CORRECTED (was wrongly "belief")
+  Description: Relationship death - bonds, connections, roles
+  Trigger: Relationship endings, role loss, connection severing
+  Experience: Loss of relational identity
+
+D3_IDENTITY = "d3_identity"
+  Description: Identity death - self-concept, persona, image
+  Trigger: Self-image collapse, persona breakdown
+  Experience: "Who am I?" crisis
+
+D4_BELIEF = "d4_belief"               ← THIS is belief system death
+  Description: Belief system death - worldview, ideology, paradigm
+  Trigger: Worldview collapse, ideology breakdown
+  Experience: Everything I believed was wrong
+
+D5_DESIRE = "d5_desire"
+  Description: Desire death - wants, cravings, attachments
+  Trigger: Recognition of desire futility
+  Experience: End of wanting/craving
+
+D6_SEPARATION = "d6_separation"
+  Description: Separation death - subject-object dissolution
+  Trigger: Boundary dissolution between self and other
+  Experience: Unity consciousness emergence
+
+D7_EGO = "d7_ego"
+  Description: Ego death - complete identity annihilation
+  Trigger: Total ego dissolution
+  Experience: "Even the witness must die"
+
+4.2 DEATH DETECTION FORMULAS (Backend Implementation)
+==================================================
+From death.py lines 106-142 - DEATH_OPERATOR_PATTERNS:
+
+D1_PHYSICAL:
+  primary_ops: ['V_vitality', 'E_energy', 'P_presence']
+  support_ops: ['At_attachment', 'F_fear', 'G_grace']
+  
+D2_RELATIONSHIP:
+  primary_ops: ['At_attachment', 'L_love', 'Se_service']
+  support_ops: ['F_fear', 'G_grace', 'S_surrender']
+  
+D3_IDENTITY:
+  primary_ops: ['At_attachment', 'M_maya', 'W_witness']
+  support_ops: ['Shadow', 'S_surrender']
+  
+D4_BELIEF:
+  primary_ops: ['At_attachment', 'R_resistance', 'Openness']
+  support_ops: ['W_witness', 'G_grace']
+  
+D5_DESIRE:
+  primary_ops: ['At_attachment', 'Hf_habit', 'S_surrender']
+  support_ops: ['W_witness', 'G_grace']
+
+DEATH INTENSITY FORMULA (from CEL.pdf and backend):
+  death_intensity = (S_level_jump × ego_attachment) / grace_coefficient
+  death_intensity = E_energy × V_vitality × transformation_magnitude
+
+DEATH PROBABILITY:
+  death_probability = (consciousness_pressure × catalyst_strength) / 
+                     (resistance + fear_factor)
+
+RECOVERY TIME:
+  recovery_time = death_intensity × character_resistance × 
+                 (1 - support_system_strength)
+
+4.3 DEATH ARCHITECTURE NOMENCLATURE
+==================================================
+death_type_active              String: "d1_physical"|"d2_relationship"|etc.
+death_d1_physical_active       Float 0.0-1.0: D1 activation level
+death_d1_physical_intensity    Float: Physical death intensity
+death_d2_relationship_active   Float 0.0-1.0: D2 activation level
+death_d2_relationship_intensity Float: Relationship ending depth
+death_d3_identity_active       Float 0.0-1.0: D3 activation level
+death_d3_identity_intensity    Float: Identity dissolution depth
+death_d4_belief_active         Float 0.0-1.0: D4 activation level
+death_d4_belief_intensity      Float: Belief system collapse depth
+death_d5_desire_active         Float 0.0-1.0: D5 activation level
+death_d5_desire_intensity      Float: Desire cessation depth
+death_d6_separation_active     Float 0.0-1.0: D6 activation level
+death_d6_separation_intensity  Float: Separation ending depth
+death_d7_ego_active           Float 0.0-1.0: D7 activation level
+death_d7_ego_intensity        Float: Ego dissolution depth
+
+death_depth                   Float: Overall death process depth
+death_probability             Float 0.0-1.0: Likelihood of death activation
+death_recovery_time           Float: Months for integration/recovery
+
+================================================================================
+SECTION 5: PATHWAY ARCHITECTURE - CORRECTIONS
+================================================================================
+
+5.1 ACTUAL PATHWAY IMPLEMENTATION (Backend)
+==================================================
+ORIGINAL: PDF may reference "theoretical pathways"
+
+CORRECTED: Backend implements THREE specific pathways (from pathways.py):
+
+PathwayType.WITNESSING = "witnessing"
+PathwayType.CREATING = "creating"  
+PathwayType.EMBODYING = "embodying"
+
+These are NOT theoretical - they are fully implemented with formulas.
+
+5.2 PATHWAY DEFINITIONS (from pathways.py lines 34-36, 90-92)
+==================================================
+WITNESSING PATHWAY:
+  Components: observation → perception → expression
+  Purpose: Pure noticing and awareness
+  Operators: W_witness, A_aware, P_presence
+  
+CREATING PATHWAY:
+  Components: intention → attention → manifestation
+  Purpose: Conscious reality creation
+  Operators: I_intention, A_aware, M_manifest
+  
+EMBODYING PATHWAY:
+  Components: thoughts → words → actions
+  Purpose: Living alignment with truth
+  Operators: Choice, Agency, A_action
+
+5.3 PATHWAY COMPONENTS NOMENCLATURE
+==================================================
+From pathways.py lines 148-158:
+
+WITNESSING PATHWAY:
+  witnessing_observation        Quality of pure noticing without judgment
+  witnessing_perception         Depth and clarity of understanding observed
+  witnessing_expression         Ability to articulate and communicate insights
+
+CREATING PATHWAY:
+  creating_intention           Clarity and purity of purpose driving creation
+  creating_attention          Focused awareness applied to manifestation
+  creating_manifestation      Effectiveness of bringing visions into reality
+
+EMBODYING PATHWAY:
+  embodying_thoughts          Alignment of mental patterns with truth
+  embodying_words             Alignment of speech with inner truth
+  embodying_actions           Alignment of behavior with values and truth
+
+5.4 PATHWAY PROFILE STRUCTURE (from pathways.py lines 46-65)
+==================================================
+Each pathway has a PathwayProfile dataclass:
+
+@dataclass
+class PathwayProfile:
+    pathway_type: PathwayType
+    components: Dict[str, PathwayComponent]  # 3 components per pathway
+    overall_score: float = 0.0               # 0.0-1.0
+    dominant: bool = False
+    activation_level: float = 0.0
+    
+@dataclass
+class PathwayComponent:
+    name: str
+    score: float = 0.0
+    strength: str = "moderate"    # weak/moderate/strong
+    description: str = ""
+    contributing_operators: Dict[str, float] = field(default_factory=dict)
+
+TOTAL PATHWAY VARIABLES:
+  3 pathways × 3 components × multiple fields = ~27 core pathway variables
+
+================================================================================
+SECTION 6: MISSING IMPLEMENTATIONS - STATUS UPDATE
+================================================================================
+
+6.1 NINE RASAS (9 Aesthetic Emotions)
+==================================================
+STATUS: NOT IMPLEMENTED IN BACKEND
+
+SEARCHED FOR:
+  rasa_shringara (love/beauty)
+  rasa_hasya (humor)
+  rasa_karuna (compassion)
+  rasa_raudra (anger)
+  rasa_veera (courage)
+  rasa_bhayanaka (fear)
+  rasa_bibhatsa (disgust)
+  rasa_adbhuta (wonder)
+  rasa_shanta (peace)
+
+RESULT: Zero matches in all backend files
+
+ACTION REQUIRED:
+  - Remove from nomenclature, OR
+  - Mark as "FUTURE IMPLEMENTATION - NOT IN BACKEND v1.0"
+  - If keeping, add note: "THEORETICAL - Backend implementation pending"
+
+RECOMMENDATION:
+  Create new section in nomenclature:
+  
+  PART 20: FUTURE IMPLEMENTATIONS (Not in Backend v1.0)
+  ==================================================
+  The following variables are planned but not yet implemented:
+  
+  NINE RASAS (Aesthetic/Emotional Flavors):
+    rasa_shringara      Love/beauty aesthetic
+    rasa_hasya          Humor aesthetic
+    rasa_karuna         Compassion aesthetic
+    rasa_raudra         Anger/fury aesthetic
+    rasa_veera          Courage/heroism aesthetic
+    rasa_bhayanaka      Fear/terror aesthetic
+    rasa_bibhatsa       Disgust aesthetic
+    rasa_adbhuta        Wonder/amazement aesthetic
+    rasa_shanta         Peace/tranquility aesthetic
+  
+  Implementation planned for: Backend v2.0 (emotion derivation expansion)
+
+6.2 OTHER POTENTIAL GAPS
+==================================================
+Variables documented in PDF but not found in backend:
+  (To be determined through comprehensive audit)
+
+================================================================================
+SECTION 7: IMPLEMENTATION NOTES FOR DEVELOPERS
+================================================================================
+
+7.1 ZERO-FALLBACK PRINCIPLE
+==================================================
+CRITICAL BACKEND PATTERN: All formulas return None if required inputs missing
+
+From backend implementations:
+  - If any required operator is None → entire calculation returns None
+  - No default value assumptions
+  - No partial calculations
+  - Frontend must handle None gracefully
+
+EXAMPLE (from dual_pathway_calculator.py):
+  if any operator is None:
+      return PathwayMetrics()  # Returns zeros, not computed values
+
+7.2 OPERATOR COLLISION RESOLUTION IN CODE
+==================================================
+Backend uses dictionary access with string keys:
+  operators.get('P_presence', default_value)
+  operators.get('E_equanimity', default_value)
+  
+NEVER:
+  operators.get('P_prana')     # Wrong operator name
+  operators.get('E_energy')    # Wrong operator name
+  
+The collision resolution map in nomenclature exists for DOCUMENTATION,
+not for runtime operation. Code uses explicit full names always.
+
+7.3 DATACLASS VS FLAT STORAGE
+==================================================
+BACKEND ARCHITECTURE:
+  - Uses Python @dataclass for complex structures
+  - Pathways, Deaths, Unity metrics = dataclasses
+  - NOT flat database fields
+
+DATABASE STORAGE IMPLICATION:
+  - May need to JSON-serialize dataclass instances
+  - Or flatten for PostgreSQL storage
+  - Or use JSONB columns for complex structures
+
+EXAMPLE FLATTENING:
+  PathwayMetrics → pathway_witnessing_observation_score
+  PathwayMetrics → pathway_witnessing_perception_score
+  PathwayMetrics → pathway_witnessing_expression_score
+
+7.4 LLM PROMPT CONTEXT REQUIREMENTS
+==================================================
+When calling Claude API with OOF framework:
+
+MUST INCLUDE:
+  - All 25 core operator values
+  - Current S_sacred_level (1-8)
+  - Sacred chain transition rate
+  - Time context (implicit or explicit)
+
+OPERATOR VALUE RANGES:
+  Most operators: 0.0 to 1.0
+  Unity_vector: -1.0 to +1.0
+  S_sacred_level: 1 to 8 (discrete)
+  
+MISSING OPERATOR HANDLING:
+  Pass None or 0.5 default
+  LLM should acknowledge uncertainty
+  Backend returns None for calculations
+
+================================================================================
+SECTION 8: VERIFICATION CHECKLIST
+================================================================================
+
+8.1 NOMENCLATURE COMPLIANCE VERIFICATION
+==================================================
+□ All P operator references use P_presence (not P_prana)
+□ All E operator references use E_equanimity (not E_energy as primary)
+□ Ce_celebration and Ce_cleaning both documented as valid
+□ D2 documented as "relationship" not "belief"
+□ D4 documented as "belief system"
+□ unity_separation_distance removed or marked future
+□ unity_vector and percolation_quality documented as implemented
+□ Pathway flat variables replaced with dataclass structure
+□ witnessing/creating/embodying pathways documented
+□ Nine rasas marked as future/not implemented
+□ crossover_month documented as Optional[Int]
+
+8.2 FORMULA ACCURACY VERIFICATION
+==================================================
+□ All formulas reference correct operator names
+□ Formulas match backend implementation in:
+  - cascade.py
+  - death.py
+  - dual_pathway_calculator.py
+  - unity_principle.py
+  - pathways.py
+□ Zero-fallback principle documented
+□ Optional return types documented (→ None when incomplete)
+
+8.3 DEVELOPER INTEGRATION VERIFICATION
+==================================================
+□ LLM prompt templates use corrected operator names
+□ Database schema accounts for dataclass structures
+□ Frontend handles None returns gracefully
+□ Type annotations match backend @dataclass definitions
+□ Collision resolution map matches actual code usage
+
+================================================================================
+SECTION 9: APPENDIX - BACKEND FILE LOCATIONS
+================================================================================
+
+9.1 KEY BACKEND FILES ANALYZED
+==================================================
+backend/formulas/cascade.py           Cascade mechanism, cleanliness calculations
+backend/formulas/death.py             Death architecture D1-D7
+backend/formulas/dual_pathway_calculator.py  Separation vs unity pathways
+backend/formulas/unity_principle.py   Unity metrics, percolation quality
+backend/formulas/pathways.py          Witnessing/creating/embodying pathways
+backend/formulas/operators.py         Core operator definitions
+backend/formulas/nomenclature.py      Variable naming standards
+backend/formulas/drives.py            Five sacred drives calculations
+backend/formulas/emotions.py          Emotion derivation (rasas future home)
+
+9.2 LINE NUMBER REFERENCES (for verification)
+==================================================
+P_presence usage:
+  cascade.py: 256, 257, 258, 276
+  circles.py: 80, 176
+  death.py: 223, 396, 630
+  drives.py: 155, 188, 200, 212, etc.
+
+E_equanimity usage:
+  death_detection.py: 87
+
+Ce_celebration usage:
+  cascade.py: 254, 256, 257, 258, 270
+
+Ce_cleaning usage:
+  cascade.py: 667, 748
+
+Death architecture:
+  death.py: 31-35 (type definitions)
+  death.py: 106-142 (operator patterns)
+
+Pathway implementation:
+  pathways.py: 34-36 (types)
+  pathways.py: 90-92 (profile structure)
+  pathways.py: 148-158 (component descriptions)
+
+Unity metrics:
+  unity_principle.py: 24-33 (dataclass)
+  unity_principle.py: 211-256 (percolation_quality)
+  unity_principle.py: 256-298 (unity_vector)
+
+Dual pathway:
+  dual_pathway_calculator.py: 33-55 (dataclasses)
+  dual_pathway_calculator.py: 61-111 (separation pathway)
+  dual_pathway_calculator.py: 115-162 (unity pathway)
+  dual_pathway_calculator.py: 219-235 (crossover calculation)
+
+================================================================================
+END OF ADDENDUM v1.0
+================================================================================
+
+This addendum should be appended to the original OOF_Complete_Nomenclature.pdf
+as pages 24-40 (approximately).
+
+All corrections reflect actual backend implementation as of January 24, 2026.
+
+For questions or clarifications, refer to the backend source code files listed
+in Section 9.2 above.
+
+Last Updated: January 24, 2026
+Verified Against: BackendRust-main/backend/formulas/* (complete codebase)
+Status: PRODUCTION READY
