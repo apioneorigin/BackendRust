@@ -63,7 +63,6 @@ DISAMBIGUATION: Dict[str, str] = {
     "S_surrender": "Surrender operator",
 
     "P_presence": "Present moment operator",
-    "P_prana": "Prana/life force",
     "P_prob": "Probability measure",
     "P_power": "Power available"
 }
@@ -299,7 +298,7 @@ REGISTRY_TO_NOMENCLATURE = {
     "Ch": "Ch_chitta",
     "Cleaning": "Cl_cleaning",
     "Cl": "Cl_cleaning",
-    "Prana": "P_prana",
+    "Presence": "P_presence",
     "Entropy": "En_entropy",
     "Love": "L_love",
     "L": "L_love",

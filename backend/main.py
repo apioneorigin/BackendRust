@@ -3086,7 +3086,7 @@ def _extract_operators_from_consciousness_state(consciousness_state: Consciousne
         'W_witness': core.W_witness,
         # Awareness and energy operators
         'A_awareness': core.A_aware,
-        'P_prana': core.Sh_shakti,  # Shakti/Prana energy
+        'P_presence': core.P_presence,  # Presence in moment
         'E_entropy': core.E_equanimity,  # Maps to equanimity
         'V_void': core.V_void,
         'L_love': consciousness_state.tier1.drives.love_strength,  # From drives
@@ -3134,7 +3134,7 @@ def _extract_operators_from_evidence(evidence: dict) -> Tuple[Dict[str, float], 
         'W': 'W_witness', 'Witness': 'W_witness',
         # Awareness and energy operators
         'A': 'A_awareness', 'Awareness': 'A_awareness',
-        'P': 'P_prana', 'Prana': 'P_prana',  # Fixed: Prana maps to P_prana
+        'P': 'P_presence', 'Presence': 'P_presence',  # Presence in moment
         'E': 'E_entropy', 'Entropy': 'E_entropy',
         'V': 'V_void', 'Void': 'V_void',
         'L': 'L_love', 'Love': 'L_love',  # Added

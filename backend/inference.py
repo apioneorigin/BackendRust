@@ -14,63 +14,36 @@ from typing import Dict, List, Any, Optional, Set, Tuple
 from collections import defaultdict
 from dataclasses import dataclass, field
 
-# Import logging (handle both relative and absolute imports)
-try:
-    from .logging_config import (
-        inference_logger as logger,
-        formula_logger,
-        CalculationLogger
-    )
-except ImportError:
-    from logging_config import (
-        inference_logger as logger,
-        formula_logger,
-        CalculationLogger
-    )
+# Logging
+from logging_config import (
+    inference_logger as logger,
+    formula_logger,
+    CalculationLogger
+)
 
-# Import advanced formula modules
-try:
-    from .formulas import (
-        MatrixDetector,
-        CascadeCalculator,
-        EmotionAnalyzer,
-        DeathArchitectureDetector,
-        GraceKarmaDynamics,
-        NetworkEmergenceCalculator,
-        QuantumMechanics,
-        RealismEngine,
-        OOFInferenceEngine
-    )
-    from .formulas.unity_principle import (
-        get_unity_metrics,
-        calculate_unity_vector,
-        calculate_separation_distance,
-        UNITY_DIRECTION,
-    )
-    from .formulas.dual_pathway_calculator import (
-        calculate_dual_pathways,
-    )
-except ImportError:
-    from formulas import (
-        MatrixDetector,
-        CascadeCalculator,
-        EmotionAnalyzer,
-        DeathArchitectureDetector,
-        GraceKarmaDynamics,
-        NetworkEmergenceCalculator,
-        QuantumMechanics,
-        RealismEngine,
-        OOFInferenceEngine
-    )
-    from formulas.unity_principle import (
-        get_unity_metrics,
-        calculate_unity_vector,
-        calculate_separation_distance,
-        UNITY_DIRECTION,
-    )
-    from formulas.dual_pathway_calculator import (
-        calculate_dual_pathways,
-    )
+# Advanced formula modules
+from formulas import (
+    MatrixDetector,
+    CascadeCalculator,
+    EmotionAnalyzer,
+    DeathArchitectureDetector,
+    GraceKarmaDynamics,
+    NetworkEmergenceCalculator,
+    QuantumMechanics,
+    RealismEngine,
+    OOFInferenceEngine
+)
+
+# Unity Principle modules
+from formulas.unity_principle import (
+    get_unity_metrics,
+    calculate_unity_vector,
+    calculate_separation_distance,
+    UNITY_DIRECTION,
+)
+from formulas.dual_pathway_calculator import (
+    calculate_dual_pathways,
+)
 
 
 @dataclass
@@ -95,7 +68,7 @@ CORE_TIER0_OPERATORS = {
     'Samskara', 'Buddhi', 'Manas', 'Chitta',
     # Internal canonical names
     'Psi_consciousness', 'K_karma', 'M_maya', 'G_grace', 'W_witness',
-    'A_aware', 'P_prana', 'E_entropy', 'V_void', 'L_love', 'R_resonance',
+    'A_aware', 'P_presence', 'E_equanimity', 'V_void', 'L_love', 'Co_coherence',
     'At_attachment', 'Av_aversion', 'Se_seva', 'Ce_celebration', 'Su_surrender',
     'As_aspiration', 'Fe_fear', 'De_desire', 'Re_resistance', 'Hf_habit',
     'Sa_samskara', 'Bu_buddhi', 'Ma_manas', 'Ch_chitta'
