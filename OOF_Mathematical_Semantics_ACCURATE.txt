@@ -1,0 +1,742 @@
+# OOF MATHEMATICAL SEMANTICS REFERENCE (BACKEND-ACCURATE)
+# Based on actual backend InferenceEngine calculations
+# Only includes values that backend ACTUALLY computes and returns
+
+================================================================================
+TIER 0: BASE OPERATORS (25 values, 0.0-1.0 scale)
+================================================================================
+
+## Core Consciousness
+
+**Ψ (Psi)** - Consciousness Quality
+- Mathematical meaning: Degree of awareness present
+- 0.0 = Complete unconsciousness, pure reaction
+- 0.5 = Partial awareness, intermittent presence
+- 1.0 = Full witnessing consciousness, complete awareness
+
+**K (Karma)** - Cause/Effect Pattern Strength
+- Mathematical meaning: Constraint coefficient from past actions
+- 0.0 = Maximum freedom, zero constraints
+- 0.5 = Moderate constraint load
+- 1.0 = Maximum constraint, zero freedom
+
+**M (Maya)** - Illusion/Perception Gap
+- Mathematical meaning: Distance between perceived reality and actual reality
+- 0.0 = Perfect perception alignment
+- 0.5 = Moderate perception gap
+- 1.0 = Complete delusion, maximum gap
+
+**G (Grace)** - Non-Earned Support Flow
+- Mathematical meaning: Ratio of unearned support to earned effort
+- 0.0 = Zero synchronicity, pure effort
+- 0.5 = Balanced support and effort
+- 1.0 = Maximum flow, effortless movement
+
+**W (Witness)** - Observer Consciousness Capacity
+- Mathematical meaning: Separation distance between observer and observed
+- 0.0 = Complete identification, zero separation
+- 0.5 = Partial witnessing capacity
+- 1.0 = Complete observer separation
+
+**A (Awareness)** - Present Moment Attention Quality
+- Mathematical meaning: Concentration of attention in present moment
+- 0.0 = Zero presence, complete distraction
+- 0.5 = Partial presence
+- 1.0 = Total presence, zero time-displacement
+
+**P_presence (Presence)** - Present Moment Embodiment
+- Mathematical meaning: Degree of embodied presence
+- 0.0 = Complete absence, disconnection
+- 0.5 = Intermittent presence
+- 1.0 = Total embodied presence
+- NOTE: Backend uses P_presence, not P_prana
+
+**E_equanimity (Equanimity)** - Emotional Balance
+- Mathematical meaning: Stability of emotional state
+- 0.0 = Complete reactivity, zero balance
+- 0.5 = Moderate equanimity
+- 1.0 = Perfect equanimity
+- NOTE: Backend uses E_equanimity, not E_entropy
+
+**V (Void)** - Emptiness Tolerance Capacity
+- Mathematical meaning: Capacity to sustain in non-manifest state
+- 0.0 = Zero tolerance for emptiness
+- 0.5 = Moderate tolerance
+- 1.0 = Complete comfort with void
+
+**L (Love)** - Unconditional Connection Quality
+- Mathematical meaning: Degree of conditionality in connection
+- 0.0 = Pure conditionality, transactional
+- 0.5 = Mixed conditional/unconditional
+- 1.0 = Pure unconditional love
+
+**R (Resonance)** - Harmonic Alignment Coefficient
+- Mathematical meaning: Phase coherence with environment
+- 0.0 = Complete dissonance
+- 0.5 = Partial alignment
+- 1.0 = Perfect resonance
+
+## Emotional/Behavioral
+
+**At (Attachment)** - Clinging Intensity
+- Mathematical meaning: Strength of holding pattern
+- 0.0 = Zero attachment, complete flow
+- 0.5 = Moderate holding
+- 1.0 = Maximum clinging, cannot release
+
+**Av (Aversion)** - Rejection Force
+- Mathematical meaning: Strength of pushing-away force
+- 0.0 = Complete acceptance
+- 0.5 = Moderate rejection
+- 1.0 = Maximum aversion
+
+**Fe (Fear)** - Fear Response Magnitude
+- Mathematical meaning: Intensity of fear activation
+- 0.0 = Zero fear, complete trust
+- 0.5 = Moderate fear
+- 1.0 = Maximum fear, paralysis
+
+**De (Desire)** - Craving Intensity
+- Mathematical meaning: Strength of wanting force
+- 0.0 = Complete contentment
+- 0.5 = Moderate desire
+- 1.0 = Maximum craving, insatiable
+
+**Re (Resistance)** - Opposition Force to Reality
+- Mathematical meaning: Magnitude of force against what-is
+- 0.0 = Complete acceptance
+- 0.5 = Moderate resistance
+- 1.0 = Maximum fighting of reality
+
+## Practice/Action
+
+**Se_service (Selfless Service)** - Service Orientation
+- Mathematical meaning: Ratio of selfless to selfish action
+- 0.0 = Pure self-interest
+- 0.5 = Mixed motivation
+- 1.0 = Pure selfless service
+- NOTE: Backend uses Se_service
+
+**Ce_celebration (Celebration)** - Celebratory Capacity
+- Mathematical meaning: Capacity for celebration and purification
+- 0.0 = No celebration, accumulation
+- 0.5 = Moderate celebration
+- 1.0 = Maximum celebratory capacity
+- NOTE: Backend uses Ce_celebration, not Ce_cleaning
+
+**Ce_center (Centering)** - Centering Capacity
+- Mathematical meaning: Ability to return to center
+- 0.0 = Completely off-center
+- 0.5 = Moderate centering
+- 1.0 = Perfect centering
+
+**Su (Surrender)** - Control Release Degree
+- Mathematical meaning: Ratio of surrender to control
+- 0.0 = Total control, zero surrender
+- 0.5 = Mixed control/surrender
+- 1.0 = Complete surrender
+
+**As (Aspiration)** - Upward Movement Force
+- Mathematical meaning: Magnitude of growth vector
+- 0.0 = Zero aspiration, stagnation
+- 0.5 = Moderate growth drive
+- 1.0 = Maximum aspiration
+
+## Mind Structure
+
+**Hf (Habit Force)** - Pattern Momentum
+- Mathematical meaning: Inertia of habitual patterns
+- 0.0 = Zero inertia, complete flexibility
+- 0.5 = Moderate pattern momentum
+- 1.0 = Maximum inertia, locked patterns
+
+**Sa (Samskara)** - Subconscious Impression Depth
+- Mathematical meaning: Depth of conditioning layer
+- 0.0 = No conditioning
+- 0.5 = Moderate conditioning depth
+- 1.0 = Maximum conditioning depth
+
+**Bu (Buddhi)** - Discriminating Intellect Clarity
+- Mathematical meaning: Precision of discriminating function
+- 0.0 = Zero discrimination, complete confusion
+- 0.5 = Partial clarity
+- 1.0 = Perfect discrimination
+
+**Ma (Manas)** - Reactive Mind Activity Level
+- Mathematical meaning: Frequency of reactive thought patterns
+- 0.0 = Complete stillness
+- 0.5 = Moderate mental activity
+- 1.0 = Maximum reactivity
+
+**Ch (Chitta)** - Memory Field Disturbance
+- Mathematical meaning: Turbulence in subconscious field
+- 0.0 = Perfect calm
+- 0.5 = Moderate disturbance
+- 1.0 = Maximum turbulence
+
+================================================================================
+DERIVED OPERATOR VALUES (From OperatorEngine)
+================================================================================
+
+**klesha_total**
+- Mathematical meaning: Total affliction load
+- Calculated from: At + Av + Fe + De + Re (sum of afflictions)
+- Higher = More afflicted state
+
+**maya_effective**
+- Mathematical meaning: Effective illusion strength
+- Calculated from: M × (1 - W) (maya amplified by lack of witnessing)
+- Higher = Stronger effective delusion
+
+**consciousness_quality**
+- Mathematical meaning: Overall consciousness quality
+- Calculated from: Ψ × W × A (consciousness × witnessing × awareness)
+- Higher = Better consciousness quality
+
+**grace_availability**
+- Mathematical meaning: Available grace magnitude
+- Calculated from: G × (1 - K) (grace amplified by freedom from karma)
+- Higher = More grace available
+
+**karma_binding**
+- Mathematical meaning: Degree of karmic binding
+- Calculated from: K × (At + Hf) / 2 (karma amplified by attachment and habits)
+- Higher = More bound by karma
+
+**ego_separation**
+- Mathematical meaning: Strength of ego boundary
+- Calculated from operators
+- Higher = Stronger ego separation
+
+**resistance_total**
+- Mathematical meaning: Total resistance force
+- Calculated from: Re + Av (resistance plus aversion)
+- Higher = More resistance to reality
+
+**evolution_rate**
+- Mathematical meaning: Speed of consciousness evolution
+- Calculated from: As × (1 - Hf) × W (aspiration minus habits plus witnessing)
+- Higher = Faster evolution
+
+**love_fear_balance**
+- Mathematical meaning: Balance between love and fear
+- Calculated from: L - Fe (love minus fear)
+- Range: -1.0 (pure fear) to +1.0 (pure love)
+
+================================================================================
+MATRIX POSITIONS (-1.0 to +1.0 scale)
+================================================================================
+
+**matrix_truth_position**
+- Mathematical meaning: Position on maya-witness axis
+- -1.0 = Maximum illusion, zero truth perception
+- 0.0 = Balanced truth/illusion
+- +1.0 = Maximum clarity, perfect truth perception
+
+**matrix_power_position**
+- Mathematical meaning: Position on victim-creator axis
+- -1.0 = Complete powerlessness, victim consciousness
+- 0.0 = Balanced empowerment
+- +1.0 = Complete empowerment, creator consciousness
+
+**matrix_love_position**
+- Mathematical meaning: Position on fear-love axis
+- -1.0 = Pure fear-based operation
+- 0.0 = Mixed fear and love
+- +1.0 = Pure love-based operation
+
+**matrix_creation_position**
+- Mathematical meaning: Position on consumption-creation axis
+- -1.0 = Pure consumption/destruction
+- 0.0 = Balanced creation and consumption
+- +1.0 = Pure creation, maximum innovation
+
+**matrix_time_position**
+- Mathematical meaning: Temporal attention distribution
+- -1.0 = Past-dominated attention
+- 0.0 = Present-centered attention
+- +1.0 = Future-dominated attention
+
+================================================================================
+CASCADE DYNAMICS (0.0-1.0 per level)
+================================================================================
+
+**cascade_self** (Physical/Body Level)
+- Mathematical meaning: Cleanliness of self/physical level
+- 0.0 = Maximum blockage
+- 0.5 = Partial flow
+- 1.0 = Complete cleanliness
+
+**cascade_ego** (Vital/Energy Level)
+- Mathematical meaning: Cleanliness of ego/vital level
+- 0.0 = Maximum blockage
+- 0.5 = Partial flow
+- 1.0 = Complete cleanliness
+
+**cascade_memory** (Mental Level)
+- Mathematical meaning: Cleanliness of memory/mental level
+- 0.0 = Maximum blockage
+- 0.5 = Partial flow
+- 1.0 = Complete cleanliness
+
+**cascade_intellect** (Intellectual Level)
+- Mathematical meaning: Cleanliness of intellect/buddhi level
+- 0.0 = Maximum blockage
+- 0.5 = Partial flow
+- 1.0 = Complete cleanliness
+
+**cascade_mind** (Intuitive/Mind Level)
+- Mathematical meaning: Cleanliness of higher mind level
+- 0.0 = Maximum blockage
+- 0.5 = Partial flow
+- 1.0 = Complete cleanliness
+
+**cascade_breath** (Breath/Prana Level)
+- Mathematical meaning: Cleanliness of breath/prana level
+- 0.0 = Maximum blockage
+- 0.5 = Partial flow
+- 1.0 = Complete cleanliness
+
+**cascade_body** (Physical Container Level)
+- Mathematical meaning: Cleanliness of body container level
+- 0.0 = Maximum blockage
+- 0.5 = Partial flow
+- 1.0 = Complete cleanliness
+
+**cascade_flow_rate**
+- Mathematical meaning: Overall velocity of energy cascade
+- Unit: Flow units per time
+- Higher = Faster cascade flow
+
+**cascade_blockage_points**
+- Mathematical meaning: Count of blockage locations in cascade
+- Unit: Count
+- Higher = More blockages
+
+**cascade_total_cleanliness**
+- Mathematical meaning: Average cleanliness across all 7 levels
+- 0.0 = Completely blocked cascade
+- 0.5 = Partially flowing
+- 1.0 = Perfectly flowing cascade
+
+================================================================================
+DEATH ARCHITECTURE (D1-D7 with intensity/depth)
+================================================================================
+
+**death_d1_identity**
+- intensity: Strength of identity death process (0.0-1.0)
+- depth: Depth of identity dissolution (0.0-1.0)
+- Mathematical meaning: Personal identity death state
+
+**death_d2_relationship**
+- intensity: Strength of relationship pattern death (0.0-1.0)
+- depth: Depth of relationship dissolution (0.0-1.0)
+- Mathematical meaning: Relationship identity death state
+
+**death_d3_achievement**
+- intensity: Strength of achievement identity death (0.0-1.0)
+- depth: Depth of achiever dissolution (0.0-1.0)
+- Mathematical meaning: Achievement identity death state
+
+**death_d4_attachment**
+- intensity: Strength of attachment release (0.0-1.0)
+- depth: Depth of attachment dissolution (0.0-1.0)
+- Mathematical meaning: Major attachment release state
+
+**death_d5_knowledge**
+- intensity: Strength of knowledge framework collapse (0.0-1.0)
+- depth: Depth of epistemic dissolution (0.0-1.0)
+- Mathematical meaning: Knowledge framework death state
+
+**death_d6_separation**
+- intensity: Strength of separation dissolution (0.0-1.0)
+- depth: Depth of boundary dissolution (0.0-1.0)
+- Mathematical meaning: Separation consciousness death state
+
+**death_d7_ego**
+- intensity: Strength of ego surrender (0.0-1.0)
+- depth: Depth of ego dissolution (0.0-1.0)
+- Mathematical meaning: Ego structure death state
+
+**death_overall_intensity**
+- Mathematical meaning: Overall death process intensity
+- 0.0 = No death processes active
+- 0.5 = Moderate death intensity
+- 1.0 = Maximum death intensity
+
+**death_depth_average**
+- Mathematical meaning: Average depth across active death processes
+- 0.0 = Surface level
+- 0.5 = Moderate depth
+- 1.0 = Complete depth
+
+================================================================================
+GRACE MECHANICS (Various scales)
+================================================================================
+
+**grace_availability**
+- Mathematical meaning: Magnitude of unearned support present
+- 0.0 = Zero grace, pure effort required
+- 0.5 = Moderate grace available
+- 1.0 = Maximum grace, effortless flow
+
+**grace_receptivity**
+- Mathematical meaning: Capacity to receive non-earned support
+- 0.0 = Zero receptivity, cannot receive
+- 0.5 = Partial receptivity
+- 1.0 = Complete receptivity
+
+**grace_flow_rate**
+- Mathematical meaning: Velocity of grace manifestation
+- Unit: Grace units per time
+- Higher = Faster grace flow
+
+**grace_multiplier_effect**
+- Mathematical meaning: Amplification coefficient of grace on effort
+- 1.0 = No amplification (effort = result)
+- 2.5 = Each unit of effort yields 2.5 units of result
+- 5.0 = 5x amplification of effort
+
+**grace_intervention_probability**
+- Mathematical meaning: Probability of grace intervention occurring
+- 0.0 = Zero probability
+- 0.5 = 50% probability
+- 1.0 = Grace intervention certain
+
+================================================================================
+KARMA DYNAMICS (Various scales)
+================================================================================
+
+**karma_burn_rate**
+- Mathematical meaning: Rate of karmic debt dissolution
+- Unit: Karma units per time
+- Negative = Accumulating karma
+- Zero = Stable karma
+- Positive = Burning karma
+
+**karma_accumulation_rate**
+- Mathematical meaning: Rate of new karmic constraint creation
+- Unit: Karma units per time
+- Higher = Faster constraint accumulation
+
+**karma_net_change**
+- Mathematical meaning: karma_burn_rate - karma_accumulation_rate
+- Negative = Net accumulation
+- Zero = Stable
+- Positive = Net reduction
+
+================================================================================
+TRANSFORMATION METRICS (Various scales)
+================================================================================
+
+**breakthrough_probability**
+- Mathematical meaning: Probability of breakthrough event occurring
+- 0.0 = Zero probability
+- 0.5 = 50% probability
+- 1.0 = Breakthrough certain/imminent
+
+**transformation_readiness_score**
+- Mathematical meaning: System readiness for deep transformation
+- 0.0 = Zero readiness, high resistance
+- 0.5 = Moderate readiness
+- 1.0 = Complete readiness
+
+**transformation_potential**
+- Mathematical meaning: Potential for transformation
+- 0.0 = Zero potential
+- 0.5 = Moderate potential
+- 1.0 = Maximum potential
+
+**transformation_vector_magnitude**
+- Mathematical meaning: Strength of transformation force
+- 0.0 = No transformation momentum
+- Higher = Stronger transformation force
+
+**transformation_vector_direction**
+- Mathematical meaning: Direction of transformation in consciousness space
+- Indicates which dimension transformation is moving toward
+
+**transformation_vector_coherence**
+- Mathematical meaning: Alignment of transformation forces
+- 0.0 = Contradictory transformation vectors
+- 0.5 = Partial alignment
+- 1.0 = Perfect alignment of all transformation forces
+
+================================================================================
+NETWORK/COLLECTIVE EFFECTS (Various scales)
+================================================================================
+
+**network_size**
+- Mathematical meaning: Number of nodes in network
+- Unit: Count of connections
+- Range: 0 to N
+
+**network_density**
+- Mathematical meaning: Actual connections / possible connections
+- 0.0 = Zero connectivity
+- 0.5 = Half-connected network
+- 1.0 = Fully connected network
+
+**network_coherence**
+- Mathematical meaning: Phase alignment across network nodes
+- 0.0 = Complete network dissonance
+- 0.5 = Partial network alignment
+- 1.0 = Perfect network coherence
+
+**network_bandwidth**
+- Mathematical meaning: Information flow capacity through network
+- 0.0 = Zero flow capacity
+- 0.5 = Moderate bandwidth
+- 1.0 = Maximum bandwidth
+
+**network_value_multiplier**
+- Mathematical meaning: Network effect amplification coefficient
+- 1.0 = No network effect (linear)
+- 5.0 = 5x amplification from network
+- 10.0 = 10x amplification from network
+
+**we_space_coherence**
+- Mathematical meaning: Collective consciousness coherence
+- 0.0 = Fragmented collective
+- 0.5 = Partial collective coherence
+- 1.0 = Unified collective field
+
+================================================================================
+QUANTUM CONSCIOUSNESS (0.0-1.0)
+================================================================================
+
+**quantum_superposition_degree**
+- Mathematical meaning: Capacity to hold multiple states simultaneously
+- 0.0 = Classical binary state only
+- 0.5 = Partial superposition capacity
+- 1.0 = Full superposition capacity
+
+**quantum_entanglement_strength**
+- Mathematical meaning: Non-local connection strength
+- 0.0 = Zero entanglement, pure locality
+- 0.5 = Moderate entanglement
+- 1.0 = Maximum entanglement
+
+**quantum_tunneling_probability**
+- Mathematical meaning: Probability of barrier penetration without classical path
+- 0.0 = Zero tunneling probability
+- 0.5 = Moderate tunneling capacity
+- 1.0 = High tunneling probability
+
+**quantum_decoherence_rate**
+- Mathematical meaning: Rate of quantum state collapse to classical
+- Unit: Decoherence events per time
+- Higher = Faster collapse to classical state
+
+**consciousness_field_strength**
+- Mathematical meaning: Magnitude of consciousness field
+- 0.0 = Zero field strength
+- 0.5 = Moderate field
+- 1.0 = Maximum field strength
+
+**morphogenetic_field_resonance**
+- Mathematical meaning: Coherence with collective consciousness field
+- 0.0 = Zero resonance with collective
+- 0.5 = Partial resonance
+- 1.0 = Complete resonance
+
+**collective_field_coherence**
+- Mathematical meaning: Coherence of collective consciousness field
+- 0.0 = Fragmented collective field
+- 0.5 = Partial collective coherence
+- 1.0 = Unified collective field
+
+================================================================================
+DRIVES PROFILE (From DrivesEngine)
+================================================================================
+
+Each drive has: internal, external, total, fulfillment
+
+**love_drive**
+- love_internal: Internal love drive (0.0-1.0)
+- love_external: External love manifestation (0.0-1.0)
+- love_total: Combined love drive
+- love_fulfillment: Degree of love fulfillment (0.0-1.0)
+
+**peace_drive**
+- peace_internal: Internal peace drive (0.0-1.0)
+- peace_external: External peace manifestation (0.0-1.0)
+- peace_total: Combined peace drive
+- peace_fulfillment: Degree of peace fulfillment (0.0-1.0)
+
+**overall_fulfillment**
+- Mathematical meaning: Overall drive fulfillment
+- 0.0 = Complete unfulfillment
+- 0.5 = Partial fulfillment
+- 1.0 = Complete fulfillment
+
+================================================================================
+PATHWAYS PROFILE (From PathwaysEngine)
+================================================================================
+
+**pathway_truth_progress**
+- Mathematical meaning: Progress on truth pathway
+- 0.0 = No progress
+- 0.5 = Halfway
+- 1.0 = Complete mastery
+
+**pathway_power_progress**
+- Mathematical meaning: Progress on power pathway
+- 0.0 = No progress
+- 0.5 = Halfway
+- 1.0 = Complete mastery
+
+**pathway_love_progress**
+- Mathematical meaning: Progress on love pathway
+- 0.0 = No progress
+- 0.5 = Halfway
+- 1.0 = Complete mastery
+
+**overall_pathway_progress**
+- Mathematical meaning: Average progress across all pathways
+- 0.0 = No progress
+- 0.5 = Moderate progress
+- 1.0 = Complete mastery
+
+================================================================================
+CIRCLES PROFILE (From CirclesEngine)
+================================================================================
+
+**circle_<name>_balance**
+- Mathematical meaning: Balance within each circle of being
+- 0.0 = Complete imbalance
+- 0.5 = Moderate balance
+- 1.0 = Perfect balance
+
+**circles_overall_balance**
+- Mathematical meaning: Overall balance across all circles
+- 0.0 = Complete imbalance
+- 0.5 = Moderate balance
+- 1.0 = Perfect balance
+
+================================================================================
+KOSHA PROFILE (From KoshaEngine)
+================================================================================
+
+**kosha_<name>_integration**
+- Mathematical meaning: Integration level of each kosha layer
+- 0.0 = No integration
+- 0.5 = Partial integration
+- 1.0 = Complete integration
+
+**kosha_overall_integration**
+- Mathematical meaning: Overall integration across all koshas
+- 0.0 = Fragmented
+- 0.5 = Partially integrated
+- 1.0 = Fully integrated
+
+================================================================================
+OSAFC PROFILE (From OSAFCEngine - 8 Layers)
+================================================================================
+
+**osafc_layer_<name>_activity**
+- Mathematical meaning: Activity level of each OSAFC layer
+- 0.0 = Completely dormant
+- 0.5 = Partially active
+- 1.0 = Fully active
+
+**osafc_integration_score**
+- Mathematical meaning: Integration across all 8 layers
+- 0.0 = Fragmented
+- 0.5 = Partially integrated
+- 1.0 = Fully integrated
+
+================================================================================
+DISTORTION PROFILE (From DistortionEngine)
+================================================================================
+
+**klesha_<type>** (5 Kleshas: ignorance, egoism, attachment, aversion, fear)
+- Mathematical meaning: Strength of each klesha/affliction
+- 0.0 = No affliction
+- 0.5 = Moderate affliction
+- 1.0 = Maximum affliction
+
+**guna_<type>** (3 Gunas: sattva, rajas, tamas)
+- Mathematical meaning: Dominance of each guna quality
+- 0.0 = No presence
+- 0.5 = Moderate presence
+- 1.0 = Complete dominance
+
+**liberation_index**
+- Mathematical meaning: Overall liberation from distortions
+- 0.0 = Complete bondage
+- 0.5 = Partial liberation
+- 1.0 = Complete liberation
+
+================================================================================
+PANCHAKRITYA PROFILE (From PanchakrityaEngine - 5 Acts)
+================================================================================
+
+**kritya_<type>_activity** (5 Acts: creation, preservation, destruction, concealment, grace)
+- Mathematical meaning: Activity level of each divine act
+- 0.0 = Inactive
+- 0.5 = Partially active
+- 1.0 = Fully active
+
+**panchakritya_grace_receptivity**
+- Mathematical meaning: Receptivity to grace act
+- 0.0 = Closed to grace
+- 0.5 = Partially receptive
+- 1.0 = Fully receptive
+
+================================================================================
+BOTTLENECK STRUCTURE
+================================================================================
+
+**bottleneck (list of objects)**
+Each bottleneck contains:
+- operator: Which operator is blocking
+- severity: Blocking strength (0.0-1.0)
+- impact_description: Natural language description
+
+================================================================================
+LEVERAGE STRUCTURE
+================================================================================
+
+**leverage_point (list of objects)**
+Each leverage point contains:
+- description: What the leverage is
+- multiplier: Amplification coefficient (1.0-10.0+)
+- activation_requirement: What's needed to activate
+- confidence: Probability of leverage being accessible (0.0-1.0)
+
+================================================================================
+SUMMARY METRICS (Calculated from all modules)
+================================================================================
+
+**overall_health**
+- Mathematical meaning: Overall consciousness health
+- 0.0 = Maximum dysfunction
+- 0.5 = Moderate health
+- 1.0 = Perfect health
+
+**liberation_index**
+- Mathematical meaning: Degree of liberation from conditioning
+- 0.0 = Complete bondage
+- 0.5 = Partial liberation
+- 1.0 = Complete liberation
+
+**integration_score**
+- Mathematical meaning: Overall system integration
+- 0.0 = Complete fragmentation
+- 0.5 = Partial integration
+- 1.0 = Perfect integration
+
+**transformation_potential**
+- Mathematical meaning: Potential for transformation
+- 0.0 = Zero potential
+- 0.5 = Moderate potential
+- 1.0 = Maximum potential
+
+================================================================================
+END OF BACKEND-ACCURATE MATHEMATICAL SEMANTICS
+================================================================================
+
+This document contains ONLY values that the backend InferenceEngine actually calculates and returns to LLM Call 2.
+
+All theoretical values from OOF_Math.txt that are NOT calculated have been removed.
