@@ -61,14 +61,6 @@ class NamespaceCategory(Enum):
     LIBERATE = "liberate"   # L_liberate - Liberation/freedom
     LEVEL = "level"         # L_level - Consciousness levels
 
-    PRESENCE = "presence"   # P_presence - Being/presence
-    PROB = "prob"           # P_prob - Probability
-    POWER = "power"         # P_power - Shakti/power
-
-    LOVE = "love"           # L_love - Bhakti/devotion
-    LIBERATE = "liberate"   # L_liberate - Moksha/freedom
-    LEVEL = "level"         # L_level - Tier/rank
-
 
 class VariableSuffix(Enum):
     """Standardized variable suffixes."""
