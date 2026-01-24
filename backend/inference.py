@@ -317,6 +317,9 @@ class InferenceEngine:
         logger.info("[ADVANCED FORMULAS] Running Python formula modules (null-aware)")
         # Filter out None values for advanced modules - they need clean operator dict
         non_null_state = {k: v for k, v in state.items() if v is not None}
+        # Pass goal_context from evidence to enable dual pathway calculation
+        if 'goal_context' in evidence:
+            non_null_state['_goal_context'] = evidence['goal_context']
         advanced_results = self._run_advanced_formulas(non_null_state, metadata)
         advanced_count = len(advanced_results.get('values', {}))
         state.update(advanced_results.get('values', {}))
