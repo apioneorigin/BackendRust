@@ -10,7 +10,9 @@ from typing import List, Optional, Any
 from consciousness_state import (
     ArticulationContext, ConsciousnessState, Bottleneck, LeveragePoint,
     UserContext, WebResearch, ArticulationInstructions, InferenceMetadataState,
-    SearchGuidance, EvidenceSearchQuery, ConsciousnessRealityMapping
+    SearchGuidance, EvidenceSearchQuery, ConsciousnessRealityMapping,
+    # Unity Principle dataclasses
+    UnitySeparationMetrics, DualPathway, PathwayMetrics, GoalContext
 )
 
 
@@ -40,18 +42,25 @@ class ArticulationPromptBuilder:
     def build_prompt(self, context: ArticulationContext) -> str:
         """
         Build the complete articulation prompt from organized values.
+
+        UNITY PRINCIPLE: Now includes unity metrics and dual pathway sections.
         """
         sections = [
             self._build_header(),
             self._build_framework_section(),
             self._build_context_section(context.user_context, context.web_research),
             self._build_consciousness_state_section(context.consciousness_state),
+            self._build_unity_metrics_section(context.consciousness_state),
+            self._build_dual_pathway_section(context.consciousness_state),
             self._build_bottleneck_section(context.consciousness_state.bottlenecks),
             self._build_leverage_section(context.consciousness_state.leverage_points),
             self._build_search_guidance_section(context.search_guidance),
             self._build_generation_instructions(context.instructions),
             self._build_user_query(context.user_context)
         ]
+
+        # Filter out empty sections
+        sections = [s for s in sections if s and s.strip()]
 
         return '\n\n---\n\n'.join(sections)
 
@@ -423,6 +432,122 @@ to articulate. Don't list all values - synthesize the relevant ones.
 - Primary enabler: {transform.primary_enabler or "Not identified"}
 - Leverage point: {transform.leverage_point or "See leverage section"}"""
 
+    def _build_unity_metrics_section(self, state: ConsciousnessState) -> str:
+        """
+        Build the Unity Principle metrics section.
+
+        FRAMEWORK CONCEALMENT: Express Jeevatma-Paramatma dynamics in natural language.
+        User never sees terms like "separation distance" - translate to accessible concepts.
+        """
+        # Check if unity metrics are available
+        if not hasattr(state, 'unity_metrics') or state.unity_metrics is None:
+            return ""
+
+        um = state.unity_metrics
+
+        # Skip if all default values (not calculated)
+        if um.separation_distance == 0.5 and um.unity_vector == 0.0:
+            return ""
+
+        # Translate unity_vector to direction description
+        if um.unity_vector > 0.3:
+            direction_desc = "strongly moving toward alignment and flow"
+        elif um.unity_vector > 0.1:
+            direction_desc = "gradually moving toward alignment"
+        elif um.unity_vector > -0.1:
+            direction_desc = "in a neutral holding pattern"
+        elif um.unity_vector > -0.3:
+            direction_desc = "experiencing some resistance and contraction"
+        else:
+            direction_desc = "in a pattern of effort-based striving"
+
+        # Translate separation distance to experience description
+        if um.separation_distance < 0.2:
+            separation_desc = "deep sense of connection and support"
+        elif um.separation_distance < 0.4:
+            separation_desc = "periodic access to flow states and synchronicity"
+        elif um.separation_distance < 0.6:
+            separation_desc = "fluctuating between effort and ease"
+        elif um.separation_distance < 0.8:
+            separation_desc = "primarily effort-based with occasional breakthroughs"
+        else:
+            separation_desc = "strong sense of separation and struggle"
+
+        # Translate percolation quality
+        if um.percolation_quality > 0.7:
+            percolation_desc = "Support and resources flow easily when needed"
+        elif um.percolation_quality > 0.5:
+            percolation_desc = "Support is available but sometimes blocked"
+        elif um.percolation_quality > 0.3:
+            percolation_desc = "Resources often feel scarce or delayed"
+        else:
+            percolation_desc = "Feeling of having to generate everything through effort"
+
+        return f"""### CONSCIOUSNESS DYNAMICS
+
+**Current Experience Pattern:**
+- {separation_desc.capitalize()}
+- Direction: {direction_desc}
+
+**Resource Flow:**
+- {percolation_desc}
+- Distortion factor: {_fmt(um.distortion_field)} (how much perception is filtered)
+
+**Net Movement:** {um.net_direction.replace('_', ' ').title() if um.net_direction else 'Neutral'}"""
+
+    def _build_dual_pathway_section(self, state: ConsciousnessState) -> str:
+        """
+        Build the dual pathway analysis section.
+
+        FRAMEWORK CONCEALMENT: Express separation vs unity pathways as
+        "effort-based" vs "flow-based" approaches to goals.
+        """
+        # Check if dual pathways are available
+        if not hasattr(state, 'dual_pathways') or state.dual_pathways is None:
+            return ""
+
+        dp = state.dual_pathways
+
+        # Skip if all default values
+        if dp.separation_pathway.initial_success_probability == 0.0 and dp.unity_pathway.initial_success_probability == 0.0:
+            return ""
+
+        # Build comparison
+        sep = dp.separation_pathway
+        uni = dp.unity_pathway
+
+        # Translate recommended pathway
+        if dp.recommended_pathway == 'unity':
+            recommendation = "The flow-based approach is recommended - it may start slower but creates lasting results"
+        elif dp.recommended_pathway == 'separation':
+            recommendation = "The effort-based approach may be needed initially to build momentum"
+        else:
+            recommendation = f"A blend is recommended - {_fmt(dp.optimal_blend_ratio)} effort with {_fmt(1 - dp.optimal_blend_ratio)} flow"
+
+        # Crossover description
+        if dp.crossover_point_months and dp.crossover_point_months > 0:
+            crossover_desc = f"Flow-based approach overtakes effort-based around month {dp.crossover_point_months:.0f}"
+        else:
+            crossover_desc = "Timeline depends on current state and goal complexity"
+
+        return f"""### TWO PATHS TO YOUR GOAL
+
+**Effort-Based Approach (Pushing Through):**
+- Initial success probability: {_fmt(sep.initial_success_probability)}
+- Long-term sustainability: {_fmt(sep.sustainability_probability)}
+- Fulfillment quality if achieved: {_fmt(sep.fulfillment_quality)}
+- Tendency: Results may fade over time (decay: {_fmt(sep.decay_rate)}/year)
+
+**Flow-Based Approach (Aligned Action):**
+- Initial success probability: {_fmt(uni.initial_success_probability)}
+- Long-term sustainability: {_fmt(uni.sustainability_probability)}
+- Fulfillment quality if achieved: {_fmt(uni.fulfillment_quality)}
+- Tendency: Results compound over time (growth: {_fmt(uni.compound_rate)}/year)
+
+**Comparison:**
+- {crossover_desc}
+- {recommendation}"""
+
     def _build_data_quality_section(self, state: ConsciousnessState) -> str:
         """Build data quality/metadata section showing what's missing."""
         # Check if we have inference metadata
@@ -459,7 +584,12 @@ to articulate. Don't list all values - synthesize the relevant ones.
         return '\n'.join(sections) + "\n"
 
     def _build_bottleneck_section(self, bottlenecks: List[Bottleneck]) -> str:
-        """Build the bottleneck analysis section"""
+        """
+        Build the bottleneck analysis section with Unity Principle enhancement.
+
+        UNITY PRINCIPLE: Show both separation-based and unity-aligned interventions.
+        Identify root separation patterns vs surface symptoms.
+        """
         if not bottlenecks:
             return """## BOTTLENECK ANALYSIS
 
@@ -468,22 +598,46 @@ No major bottlenecks detected. Transformation pathway is relatively clear."""
         high_impact = [b for b in bottlenecks if b.impact == 'high']
         medium_impact = [b for b in bottlenecks if b.impact == 'medium']
 
+        # Identify root separation patterns
+        root_patterns = [b for b in bottlenecks if getattr(b, 'is_root_separation_pattern', False)]
+
         sections = ["## BOTTLENECK ANALYSIS\n"]
+
+        # Highlight root patterns first
+        if root_patterns:
+            sections.append("**ROOT PATTERNS (Address These First):**")
+            for b in root_patterns[:2]:
+                sections.append(f"- {b.description}")
+                if getattr(b, 'unity_aligned_intervention', ''):
+                    sections.append(f"  → Flow approach: {b.unity_aligned_intervention}")
+            sections.append("")
 
         if high_impact:
             sections.append("**HIGH IMPACT BOTTLENECKS:**")
             for b in high_impact[:3]:
-                sections.append(f"- [{b.category.upper()}] {b.description}")
+                sep_score = getattr(b, 'separation_amplification_score', 0)
+                root_marker = " [ROOT]" if getattr(b, 'is_root_separation_pattern', False) else ""
+                sections.append(f"- [{b.category.upper()}]{root_marker} {b.description}")
+                # Show both intervention types if available
+                if getattr(b, 'unity_aligned_intervention', '') and getattr(b, 'separation_based_intervention', ''):
+                    sections.append(f"  → Flow approach: {b.unity_aligned_intervention}")
+                    sections.append(f"  → Effort approach: {b.separation_based_intervention}")
 
         if medium_impact:
             sections.append("\n**MEDIUM IMPACT BOTTLENECKS:**")
             for b in medium_impact[:3]:
                 sections.append(f"- [{b.category}] {b.description}")
+                if getattr(b, 'unity_aligned_intervention', ''):
+                    sections.append(f"  → Flow approach: {b.unity_aligned_intervention}")
 
         return '\n'.join(sections)
 
     def _build_leverage_section(self, leverage_points: List[LeveragePoint]) -> str:
-        """Build the leverage opportunities section"""
+        """
+        Build the leverage opportunities section with Unity Principle enhancement.
+
+        UNITY PRINCIPLE: Show pathway type and effective impact for each leverage point.
+        """
         if not leverage_points:
             return """## LEVERAGE OPPORTUNITIES
 
@@ -492,9 +646,30 @@ No high-multiplier opportunities currently active. Focus on clearing bottlenecks
         sections = ["## LEVERAGE OPPORTUNITIES\n"]
 
         for i, lp in enumerate(leverage_points[:3], 1):
+            # Get enhanced fields with defaults
+            pathway_type = getattr(lp, 'pathway_type', 'neutral')
+            unity_alignment = getattr(lp, 'unity_alignment', 0.0)
+            effective_impact = getattr(lp, 'effective_impact', lp.multiplier)
+            approach_desc = getattr(lp, 'approach_description', '')
+
+            # Translate pathway type
+            if pathway_type == 'unity':
+                pathway_label = "Flow-based"
+            elif pathway_type == 'separation':
+                pathway_label = "Effort-based"
+            else:
+                pathway_label = "Balanced"
+
             sections.append(f"""**{i}. {lp.description}** ({lp.multiplier}x multiplier)
-   Activation: {lp.activation_requirement}
-   Operators: {', '.join(lp.operators_involved)}""")
+   Type: {pathway_label} leverage
+   Activation: {lp.activation_requirement}""")
+
+            if approach_desc:
+                sections.append(f"   Approach: {approach_desc}")
+
+            if unity_alignment != 0.0:
+                alignment_desc = "aligned with natural flow" if unity_alignment > 0.2 else "requires sustained effort" if unity_alignment < -0.2 else "neutral"
+                sections.append(f"   Dynamics: {alignment_desc.capitalize()}")
 
         return '\n\n'.join(sections)
 
