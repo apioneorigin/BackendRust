@@ -286,8 +286,8 @@ if LLM_CALL1_PATH.exists():
 else:
     api_logger.warning(f"LLM Call 1 context not found at {LLM_CALL1_PATH}")
 
-# Load LLM Call 2 context (for articulation) - OOF Mathematical Framework
-LLM_CALL2_PATH = Path(__file__).parent.parent / "OOF_Math.txt"
+# Load LLM Call 2 context (for articulation) - OOF Mathematical Semantics
+LLM_CALL2_PATH = Path(__file__).parent.parent / "LLM_Call_2.txt"
 LLM_CALL2_CONTEXT = ""
 if LLM_CALL2_PATH.exists():
     with open(LLM_CALL2_PATH, 'r', encoding='utf-8') as f:
@@ -698,10 +698,10 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
 
         # Store goal_context in evidence for downstream use
         evidence['goal_context'] = {
-            'goal_text': goal_context.goal_text,
-            'goal_category': goal_context.goal_category,
-            'emotional_undertone': goal_context.emotional_undertone,
-            'domain': goal_context.domain or evidence.get('domain', 'general')
+            'goal_text': goal_context.explicit_goal,
+            'goal_category': goal_context.category,
+            'why_category': goal_context.why_category,
+            'domain': evidence.get('domain', 'general')
         }
 
         # Identify which operators were extracted vs missing
@@ -758,7 +758,7 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
                 }
 
                 api_logger.info(f"[CONSTELLATION] Question asked: {question.question_id}")
-                api_logger.info(f"[CONSTELLATION] Goal category: {goal_context.goal_category}")
+                api_logger.info(f"[CONSTELLATION] Goal category: {goal_context.category}")
                 api_logger.info(f"[CONSTELLATION] Missing operators: {len(missing_operators)}")
 
                 # Return here - client must call /api/answer and then /api/run/continue
@@ -1923,6 +1923,8 @@ SECTION 5: FIRST STEPS
                     # Anthropic Claude streaming API with prompt caching
                     # Build system prompt with cache_control for the static framework
                     # LLM_CALL2_CONTEXT (OOF Mathematical Semantics) is static - perfect for caching
+                    # Static content MUST be truly static (no variables that change per request)
+                    # This enables Anthropic prompt caching to work properly
                     static_system_content = f"""You are Reality Transformer, a consciousness-based transformation engine.
 
 CRITICAL - READ FIRST:
@@ -1934,8 +1936,6 @@ CRITICAL - READ FIRST:
 
 You are receiving a STRUCTURED ANALYSIS from the One Origin Framework (OOF).
 Your task is to ARTICULATE these insights in NATURAL, DOMAIN-APPROPRIATE language.
-
-=== RESPONSE MODE: {response_mode} ===
 
 === OOF FRAMEWORK KNOWLEDGE ===
 {LLM_CALL2_CONTEXT}
@@ -2018,6 +2018,8 @@ HIGH BREAKTHROUGH PROBABILITY (0.70+):
                     section4_title = "SECTION 4: TRANSFORMATION PATH" if reverse_mapping else "SECTION 4: DIRECTION"
 
                     dynamic_system_content = f"""
+=== RESPONSE MODE: {response_mode} ===
+
 {operator_interpretation_section}
 
 === CRITICAL ARTICULATION RULES ===
