@@ -758,7 +758,7 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
                 }
 
                 api_logger.info(f"[CONSTELLATION] Question asked: {question.question_id}")
-                api_logger.info(f"[CONSTELLATION] Goal category: {goal_context.category}")
+                api_logger.info(f"[CONSTELLATION] Goal category: {goal_context.goal_category}")
                 api_logger.info(f"[CONSTELLATION] Missing operators: {len(missing_operators)}")
 
                 # Return here - client must call /api/answer and then /api/run/continue
