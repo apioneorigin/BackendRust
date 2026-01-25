@@ -23,15 +23,11 @@ from logging_config import (
 
 # Advanced formula modules
 from formulas import (
-    MatrixDetector,
-    CascadeCalculator,
-    EmotionAnalyzer,
-    DeathArchitectureDetector,
     GraceKarmaDynamics,
     NetworkEmergenceCalculator,
     QuantumMechanics,
     RealismEngine,
-    OOFInferenceEngine
+    OOFInferenceEngine  # Handles matrices, cascade, emotions, death, and 10+ other modules
 )
 
 # Unity Principle modules
@@ -115,17 +111,14 @@ class InferenceEngine:
         self.formula_count = 0
         self.advanced_formula_count = sum(self.ADVANCED_FORMULA_COUNTS.values())
 
-        # Initialize advanced formula modules
-        self.matrix_detector = MatrixDetector()
-        self.cascade_calculator = CascadeCalculator()
-        self.emotion_analyzer = EmotionAnalyzer()
-        self.death_detector = DeathArchitectureDetector()
+        # Initialize advanced formula modules (non-duplicated with OOFInferenceEngine)
         self.dynamics_calculator = GraceKarmaDynamics()
         self.network_calculator = NetworkEmergenceCalculator()
         self.quantum_calculator = QuantumMechanics()
         self.realism_engine = RealismEngine()
 
-        # Initialize master OOF inference engine (integrates 13 additional modules)
+        # Master OOF inference engine handles: cascade, emotions, death, drives,
+        # matrices, pathways, circles, kosha, osafc, distortions, panchakritya
         self.oof_engine = OOFInferenceEngine()
 
         self._load_registry()
@@ -637,72 +630,8 @@ class InferenceEngine:
         s_level = operators.get('S_level', operators.get('s_level', 3.0))
         logger.debug(f"[ADVANCED] Input operators: {len(operators)} non-null values")
 
-        # Matrix Detection (7 matrices) - returns Dict[str, MatrixPosition]
-        logger.debug("[ADVANCED] Running MatrixDetector...")
-        matrices = self.matrix_detector.detect_all(operators)
-        for name, position in matrices.items():
-            if position is None or position.score is None:
-                continue
-            key = f"matrix_{name}"
-            values[key] = position.score  # MatrixPosition.score is the numeric value
-            values[f"matrix_{name}_stage"] = position.stage
-            confidence[key] = 0.8
-            logger.debug(f"  [MATRIX] {name}: stage={position.stage}, score={position.score:.3f}, position={position.position}")
-        logger.info(f"[ADVANCED] MatrixDetector: {len(matrices)} matrices computed")
-
-        # Cascade Cleanliness (7 levels) - returns CascadeState
-        logger.debug("[ADVANCED] Running CascadeCalculator...")
-        try:
-            cascade = self.cascade_calculator.calculate_cascade(operators)
-            if cascade and cascade.overall_cleanliness is not None:
-                values['cascade_overall'] = cascade.overall_cleanliness
-                values['cascade_flow'] = cascade.flow_efficiency
-                confidence['cascade_overall'] = 0.85
-                confidence['cascade_flow'] = 0.85
-                logger.info(f"[ADVANCED] Cascade: overall={cascade.overall_cleanliness:.3f}, flow={cascade.flow_efficiency:.3f}")
-                for level in cascade.levels:
-                    if level and level.cleanliness is not None:
-                        key = f"cascade_{level.name.lower()}"
-                        values[key] = level.cleanliness
-                        confidence[key] = 0.8
-                        logger.debug(f"  [CASCADE] {level.name}: cleanliness={level.cleanliness:.3f}")
-        except Exception as e:
-            logger.warning(f"[ADVANCED] CascadeCalculator error: {e}")
-
-        # Emotion Analysis (29 emotions) - returns EmotionalProfile
-        logger.debug("[ADVANCED] Running EmotionAnalyzer...")
-        try:
-            emotions = self.emotion_analyzer.analyze(operators)
-            dominant_rasa = emotions.dominant_rasa
-            if dominant_rasa and dominant_rasa in emotions.rasas:
-                dominant_intensity = emotions.rasas[dominant_rasa].intensity
-                values['emotion_dominant'] = dominant_intensity
-                values['emotion_coherence'] = emotions.emotional_coherence
-                confidence['emotion_dominant'] = 0.75
-                confidence['emotion_coherence'] = 0.75
-                logger.info(f"[ADVANCED] Emotions: dominant={dominant_rasa}, intensity={dominant_intensity:.3f}, coherence={emotions.emotional_coherence:.3f}")
-        except Exception as e:
-            logger.warning(f"[ADVANCED] EmotionAnalyzer error: {e}")
-
-        # Death Architecture Detection (7 types) - returns DeathArchitectureState
-        logger.debug("[ADVANCED] Running DeathArchitectureDetector...")
-        try:
-            death = self.death_detector.detect_all(operators)
-            if death:
-                death_is_active = len(death.active_deaths) > 0 if death.active_deaths else False
-                values['death_active'] = 1.0 if death_is_active else 0.0
-                if death.overall_transformation_depth is not None:
-                    values['death_integration'] = death.overall_transformation_depth
-                    values['void_tolerance'] = death.void_tolerance
-                    values['rebirth_readiness'] = death.rebirth_readiness
-                    confidence['death_active'] = 0.9
-                    confidence['death_integration'] = 0.8
-                    confidence['void_tolerance'] = 0.8
-                    confidence['rebirth_readiness'] = 0.8
-                    active_type = death.primary_death if death.primary_death else 'none'
-                    logger.info(f"[ADVANCED] Death: active={death_is_active}, type={active_type}, integration={death.overall_transformation_depth:.3f}")
-        except Exception as e:
-            logger.warning(f"[ADVANCED] DeathArchitectureDetector error: {e}")
+        # NOTE: Matrix, Cascade, Emotion, and Death calculations are handled by OOFInferenceEngine
+        # to avoid duplicate calculations. See oof_engine.calculate_full_profile() below.
 
         # Grace/Karma Dynamics (12 formulas) - returns DynamicsState
         logger.debug("[ADVANCED] Running GraceKarmaDynamics...")

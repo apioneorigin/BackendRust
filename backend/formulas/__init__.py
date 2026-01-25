@@ -3,10 +3,8 @@ OOF Formula Implementations
 Advanced consciousness physics calculations
 """
 
-from .matrix_detection import MatrixDetector
 from .cascade import CascadeCalculator
 from .emotions import EmotionAnalyzer, ExpandedEmotionEngine
-from .death_detection import DeathArchitectureDetector
 from .dynamics import GraceKarmaDynamics
 from .network import NetworkEmergenceCalculator
 from .quantum import QuantumMechanics
@@ -49,17 +47,15 @@ from .constants import (
 )
 
 __all__ = [
-    # Original 8
-    'MatrixDetector',
+    # Core calculation modules
     'CascadeCalculator',
     'EmotionAnalyzer',
     'ExpandedEmotionEngine',
-    'DeathArchitectureDetector',
     'GraceKarmaDynamics',
     'NetworkEmergenceCalculator',
     'QuantumMechanics',
     'RealismEngine',
-    # New modules
+    # Integrated modules (used by OOFInferenceEngine)
     'OperatorEngine',
     'CANONICAL_OPERATOR_NAMES',
     'SHORT_TO_CANONICAL',
