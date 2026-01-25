@@ -31,7 +31,8 @@ from .constants import (
     S_LEVEL_BASE_FREQUENCIES,
     PLATONIC_CORRESPONDENCES,
     EVOLUTION_COEFFICIENTS,
-    interpolate_s_level_frequency
+    interpolate_s_level_frequency,
+    psi_power
 )
 
 
@@ -71,7 +72,7 @@ def calculate_consciousness_field_density(
         # Gaussian approximation of delta function
         delta_approx = math.exp(-dist_sq / (2 * sigma ** 2)) / (sigma * math.sqrt(2 * math.pi))
         # Ψ^Ψ contribution
-        psi_psi = psi ** psi if psi > 0 else 0
+        psi_psi = psi_power(psi)
         density += psi_psi * delta_approx * temporal_persistence
 
     return density
@@ -789,15 +790,10 @@ def calculate_consciousness_vibration_frequency(
     Consciousness_Vibration_Frequency = ν = (Ψ^Ψ × BN × P) / reference_frequency
     Range: [0, ∞] Hz
     """
-    # Interpolate base frequency from S-level
-    s_floor = max(1, min(7, int(s_level)))
-    s_ceil = min(8, s_floor + 1)
-    frac = s_level - s_floor
+    # Interpolate base frequency from S-level using centralized function
+    base_freq = interpolate_s_level_frequency(s_level)
 
-    base_freq = (1 - frac) * S_LEVEL_BASE_FREQUENCIES[s_floor] + \
-                frac * S_LEVEL_BASE_FREQUENCIES[s_ceil]
-
-    psi_psi = psi ** psi if psi > 0 else 0
+    psi_psi = psi_power(psi)
     reference = 1.0
 
     frequency = (psi_psi * belief_network * presence * base_freq) / reference

@@ -20,7 +20,7 @@ import re
 import math
 
 # Import shared constants (single source of truth)
-from .constants import S_LEVEL_BASE_FREQUENCIES, interpolate_s_level_frequency
+from .constants import S_LEVEL_BASE_FREQUENCIES, interpolate_s_level_frequency, psi_power
 
 
 class HLevel(Enum):
@@ -628,16 +628,11 @@ def calculate_base_frequency(
 
     From OOF_Math.txt lines 1729-1765
     """
-    # Interpolate S-level base frequency
-    s_floor = max(1, min(7, int(s_level)))
-    s_ceil = min(8, s_floor + 1)
-    frac = s_level - s_floor
-
-    s_level_base = (1 - frac) * S_LEVEL_BASE_FREQUENCIES[s_floor] + \
-                   frac * S_LEVEL_BASE_FREQUENCIES[s_ceil]
+    # Interpolate S-level base frequency using centralized function
+    s_level_base = interpolate_s_level_frequency(s_level)
 
     # Consciousness multiplier
-    consciousness_multiplier = psi ** psi if psi > 0 else 0
+    consciousness_multiplier = psi_power(psi)
 
     # Purity factor
     purity_factor = (1 - maya) * (1 - attachment) * cleanliness_avg

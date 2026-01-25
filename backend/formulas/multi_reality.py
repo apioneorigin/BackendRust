@@ -96,7 +96,7 @@ class MultiRealityState:
 
 
 # Import shared constants (single source of truth)
-from .constants import PLANCK_CONSTANT_REDUCED, BOLTZMANN_CONSTANT
+from .constants import PLANCK_CONSTANT_REDUCED, BOLTZMANN_CONSTANT, psi_power
 
 
 class MultiRealityEngine:
@@ -545,7 +545,7 @@ class MultiRealityEngine:
         """
         weights = []
         for psi, c_exp in zip(consciousness_levels, creator_exponents):
-            psi_psi = psi ** psi if psi > 0 else 0
+            psi_psi = psi_power(psi)
             weight = psi_psi ** c_exp if psi_psi > 0 else 0
             weights.append(weight)
 

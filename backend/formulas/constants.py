@@ -94,6 +94,22 @@ INTERFERENCE_PAIRS = {
 }
 
 
+def psi_power(psi: float) -> float:
+    """
+    Calculate Ψ^Ψ (consciousness self-reference).
+
+    From OOF_Math.txt: Ψ^Ψ represents consciousness observing itself,
+    the fundamental self-referential nature of awareness.
+
+    Args:
+        psi: Consciousness level (0.0-1.0)
+
+    Returns:
+        Ψ^Ψ value, or 0 if psi <= 0
+    """
+    return psi ** psi if psi > 0 else 0.0
+
+
 def interpolate_s_level_frequency(s_level: float) -> float:
     """
     Interpolate frequency for fractional S-levels.
