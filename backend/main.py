@@ -67,9 +67,8 @@ from fastapi.responses import HTMLResponse, FileResponse
 from sse_starlette.sse import EventSourceResponse
 from dotenv import load_dotenv
 
-from inference import InferenceEngine
+from formulas import OOFInferenceEngine, CANONICAL_OPERATOR_NAMES
 from value_organizer import ValueOrganizer
-from formulas import CANONICAL_OPERATOR_NAMES
 from bottleneck_detector import BottleneckDetector
 from leverage_identifier import LeverageIdentifier
 from articulation_prompt_builder import ArticulationPromptBuilder, build_articulation_context
@@ -271,8 +270,8 @@ def get_model_config(model: str) -> dict:
         model = DEFAULT_MODEL
     return {"model": model, **MODEL_CONFIGS[model]}
 
-# Initialize inference engine (pure Python - no JSON registry needed)
-inference_engine = InferenceEngine()
+# Initialize inference engine (single unified engine)
+inference_engine = OOFInferenceEngine()
 
 # Initialize Articulation Bridge components
 value_organizer = ValueOrganizer()
