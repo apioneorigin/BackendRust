@@ -32,8 +32,11 @@ class DeathPhase:
 
 
 @dataclass
-class DeathProcess:
-    """Status of a single death process"""
+class SequencedDeathProcess:
+    """
+    Status of a single death process for sequencing.
+    Note: Distinct from formulas.death_detection.DeathProcess which is for detection.
+    """
     death_type: str  # D1-D7
     name: str
     current_phase: DeathPhase
@@ -49,7 +52,7 @@ class DeathProcess:
 @dataclass
 class DeathSequence:
     """Complete death sequencing for a transformation"""
-    deaths_required: List[DeathProcess]
+    deaths_required: List[SequencedDeathProcess]
     sequence_order: List[str]  # Order to work on deaths
     total_death_work: float  # 0-1 overall death work needed
     void_tolerance_required: float
@@ -189,7 +192,7 @@ class DeathSequencer:
                 # Calculate duration
                 duration = self._estimate_duration(gap, death_info['intensity_default'])
 
-                death_process = DeathProcess(
+                death_process = SequencedDeathProcess(
                     death_type=death_id,
                     name=death_info['name'],
                     current_phase=phase,
@@ -408,7 +411,7 @@ class DeathSequencer:
 
     def _determine_sequence_order(
         self,
-        deaths: List[DeathProcess],
+        deaths: List[SequencedDeathProcess],
         operators: Dict[str, float]
     ) -> List[str]:
         """
@@ -453,7 +456,7 @@ class DeathSequencer:
 
     def _identify_parallel_deaths(
         self,
-        deaths: List[DeathProcess]
+        deaths: List[SequencedDeathProcess]
     ) -> List[str]:
         """
         Identify deaths that can be worked on simultaneously.
@@ -474,7 +477,7 @@ class DeathSequencer:
 
     def _calculate_void_tolerance_needed(
         self,
-        deaths: List[DeathProcess]
+        deaths: List[SequencedDeathProcess]
     ) -> float:
         """
         Calculate void tolerance needed for the death work.
@@ -495,7 +498,7 @@ class DeathSequencer:
 
     def _estimate_total_timeline(
         self,
-        deaths: List[DeathProcess]
+        deaths: List[SequencedDeathProcess]
     ) -> str:
         """
         Estimate total timeline for all death work.
@@ -533,7 +536,7 @@ class DeathSequencer:
     def _recommend_intensity(
         self,
         operators: Dict[str, float],
-        deaths: List[DeathProcess]
+        deaths: List[SequencedDeathProcess]
     ) -> str:
         """
         Recommend overall intensity approach.
@@ -557,7 +560,7 @@ class DeathSequencer:
 
     def _generate_support_recommendations(
         self,
-        deaths: List[DeathProcess],
+        deaths: List[SequencedDeathProcess],
         operators: Dict[str, float]
     ) -> List[str]:
         """

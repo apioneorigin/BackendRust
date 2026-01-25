@@ -117,9 +117,13 @@ app = FastAPI(title="Reality Transformer", version="4.1.0")
 import threading
 import uuid
 
-class SessionStore:
+class APISessionStore:
     """
     Thread-safe session storage for constellation Q&A flow.
+    Simple key-value store for FastAPI endpoints.
+
+    Note: This is distinct from session_store.SessionStore which handles
+    operator canonicalization and complex session state management.
 
     In production, replace with Redis or database-backed storage.
     """
@@ -156,8 +160,8 @@ class SessionStore:
                 del self._sessions[sid]
         return len(expired)
 
-# Global session store instance
-session_store = SessionStore()
+# Global session store instance for API endpoints
+api_session_store = APISessionStore()
 
 # =====================================================================
 # END SESSION STORAGE
@@ -360,7 +364,7 @@ async def process_constellation_answer(
     It maps the constellation selection to operators and triggers the rest of the pipeline.
     """
     # Retrieve pending session data
-    session_data = session_store.get(session_id)
+    session_data = api_session_store.get(session_id)
     if not session_data:
         raise HTTPException(status_code=404, detail="Session not found")
 
@@ -407,7 +411,7 @@ async def process_constellation_answer(
     # Clear pending question and update session
     session_data['_pending_question'] = None
     session_data['evidence'] = evidence
-    session_store.update(session_id, session_data)
+    api_session_store.update(session_id, session_data)
 
     api_logger.info(f"[CONSTELLATION] Answer processed: {selected_option} -> {selected_constellation.pattern_name}")
     api_logger.info(f"[CONSTELLATION] Added {len(mapping_result.mapped_values)} operator values")
@@ -430,7 +434,7 @@ async def continue_inference(
 
     This endpoint picks up where /api/run left off, with the new operator values.
     """
-    session_data = session_store.get(session_id)
+    session_data = api_session_store.get(session_id)
     if not session_data:
         raise HTTPException(status_code=404, detail="Session not found")
 
@@ -562,7 +566,7 @@ async def inference_stream_continue(
             yield token_data
 
         # Cleanup session
-        session_store.delete(session_id)
+        api_session_store.delete(session_id)
 
         elapsed = time.time() - start_time
         api_logger.info(f"[PIPELINE COMPLETE] Total time: {elapsed:.2f}s")
@@ -591,7 +595,7 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
 
     # Create session for constellation Q&A flow
     session_id = str(uuid.uuid4())
-    session_store.create(session_id, {
+    api_session_store.create(session_id, {
         '_created_at': start_time,
         'prompt': prompt,
         'model_config': model_config,
@@ -732,11 +736,11 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
 
             if question:
                 # Store session data for answer processing
-                session_data = session_store.get(session_id)
+                session_data = api_session_store.get(session_id)
                 session_data['evidence'] = evidence
                 session_data['_pending_question'] = question
                 session_data['_question_asked'] = True
-                session_store.update(session_id, session_data)
+                api_session_store.update(session_id, session_data)
 
                 # Yield question to user and wait for answer
                 yield {
@@ -774,10 +778,10 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
 
         # No question needed - continue with existing operators
         api_logger.info(f"[CONSTELLATION] No question needed - {len(extracted_operators)} operators extracted")
-        session_data = session_store.get(session_id)
+        session_data = api_session_store.get(session_id)
         session_data['evidence'] = evidence
         session_data['_question_asked'] = False
-        session_store.update(session_id, session_data)
+        api_session_store.update(session_id, session_data)
 
         # =====================================================================
         # END CONSTELLATION QUESTION FLOW

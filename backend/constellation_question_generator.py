@@ -37,14 +37,8 @@ from question_archetypes import (
     PEACE_CONSTELLATIONS, TRANSFORMATION_CONSTELLATIONS
 )
 
-
-@dataclass
-class GoalContext:
-    """Parsed context from user query"""
-    goal_text: str = ""
-    goal_category: str = "achievement"  # 'achievement', 'relationship', 'peace', 'transformation'
-    emotional_undertone: str = "neutral"  # 'urgency', 'curiosity', 'desperation', 'openness', 'neutral'
-    domain: str = "general"  # 'business', 'personal', 'health', 'spiritual'
+# Import GoalContext from consciousness_state to avoid duplication
+from consciousness_state import GoalContext
 
 
 @dataclass

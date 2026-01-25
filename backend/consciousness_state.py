@@ -27,11 +27,12 @@ class DataQualityMetadata:
 # =============================================================================
 
 @dataclass
-class UnitySeparationMetrics:
+class UnityMetricsSnapshot:
     """
-    Unity-separation analysis metrics from unity_principle.py calculations.
+    Snapshot of unity-separation metrics for state storage.
+    Note: For full calculations, use formulas.unity_principle.UnitySeparationMetrics.
 
-    Core metric for understanding Jeevatma-Paramatma relationship.
+    This is a simplified data container for consciousness state tracking.
     """
     separation_distance: Optional[float] = None  # d(S) = d_initial * e^(-k*S)
     distortion_field: Optional[float] = None     # Delta(d) = 1 - e^(-d/d0)
@@ -592,8 +593,11 @@ class TransformationVectors:
 
 
 @dataclass
-class QuantumMechanics:
-    """Quantum consciousness dynamics"""
+class QuantumMetricsSnapshot:
+    """
+    Snapshot of quantum consciousness metrics for state storage.
+    Note: For full calculations, use formulas.quantum.QuantumMechanics engine.
+    """
     wave_function_amplitude: float = 0.5
     collapse_probability: Dict[str, float] = field(default_factory=dict)
     tunneling_probability: float = 0.1
@@ -615,7 +619,7 @@ class Tier5:
     """Tier 5: Predictions & advanced"""
     timeline_predictions: TimelinePredictions = field(default_factory=TimelinePredictions)
     transformation_vectors: TransformationVectors = field(default_factory=TransformationVectors)
-    quantum_mechanics: QuantumMechanics = field(default_factory=QuantumMechanics)
+    quantum_mechanics: QuantumMetricsSnapshot = field(default_factory=QuantumMetricsSnapshot)
     frequency_analysis: FrequencyAnalysis = field(default_factory=FrequencyAnalysis)
 
 
@@ -711,7 +715,7 @@ class ConsciousnessState:
     leverage_points: List[LeveragePoint] = field(default_factory=list)
 
     # NEW: Unity principle metrics
-    unity_metrics: Optional[UnitySeparationMetrics] = None
+    unity_metrics: Optional[UnityMetricsSnapshot] = None
     dual_pathways: Optional[DualPathway] = None
     goal_context: Optional[GoalContext] = None
     constellation_metadata: Optional[ConstellationMetadata] = None
