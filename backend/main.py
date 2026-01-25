@@ -69,6 +69,7 @@ from dotenv import load_dotenv
 
 from inference import InferenceEngine
 from value_organizer import ValueOrganizer
+from formulas import CANONICAL_OPERATOR_NAMES
 from bottleneck_detector import BottleneckDetector
 from leverage_identifier import LeverageIdentifier
 from articulation_prompt_builder import ArticulationPromptBuilder, build_articulation_context
@@ -711,15 +712,8 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
             if isinstance(obs, dict) and 'var' in obs and 'value' in obs:
                 extracted_operators[obs['var']] = obs['value']
 
-        # Get set of missing operators (core operators)
-        CORE_OPERATORS = {
-            'P_presence', 'A_aware', 'E_equanimity', 'Psi_quality', 'M_maya',
-            'W_witness', 'I_intention', 'At_attachment', 'Se_service', 'Sh_shakti',
-            'G_grace', 'S_surrender', 'D_dharma', 'K_karma', 'Hf_habit',
-            'V_void', 'Ce_cleaning', 'Co_coherence', 'R_resistance',
-            'F_fear', 'J_joy', 'Tr_trust', 'O_openness', 'L_love'
-        }
-        missing_operators = CORE_OPERATORS - set(extracted_operators.keys())
+        # Get set of missing operators (use centralized canonical names)
+        missing_operators = CANONICAL_OPERATOR_NAMES - set(extracted_operators.keys())
 
         # Determine if question should be asked (only if significant operators missing)
         should_ask_question = len(missing_operators) >= 5  # Threshold: ask if 5+ operators missing

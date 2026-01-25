@@ -16,6 +16,8 @@ from typing import Dict, Any, List, Tuple, Optional, Set
 from dataclasses import dataclass, field
 import math
 
+from formulas import CANONICAL_OPERATOR_NAMES
+
 
 @dataclass
 class ValidationResult:
@@ -51,15 +53,8 @@ class Validator:
     Validate OOF values at each stage of the pipeline.
     """
 
-    # Required tier-1 operators
-    REQUIRED_OPERATORS = [
-        'P_presence', 'A_aware', 'E_equanimity', 'Psi_quality',
-        'M_maya', 'W_witness', 'I_intention', 'At_attachment',
-        'Se_service', 'Sh_shakti', 'G_grace', 'S_surrender',
-        'D_dharma', 'K_karma', 'Hf_habit', 'V_void',
-        'Ce_cleaning', 'Co_coherence', 'R_resistance',
-        'F_fear', 'J_joy', 'Tr_trust', 'O_openness'
-    ]
+    # Use centralized canonical operator names
+    REQUIRED_OPERATORS = list(CANONICAL_OPERATOR_NAMES)
 
     # Operator aliases (alternative names)
     OPERATOR_ALIASES = {

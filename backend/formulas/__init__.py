@@ -13,7 +13,7 @@ from .quantum import QuantumMechanics
 from .realism import RealismEngine
 
 # New integrated modules
-from .operators import OperatorEngine
+from .operators import OperatorEngine, CANONICAL_OPERATOR_NAMES, SHORT_TO_CANONICAL
 from .drives import DrivesEngine
 from .matrices import MatricesEngine
 from .pathways import PathwaysEngine
@@ -61,6 +61,8 @@ __all__ = [
     'RealismEngine',
     # New modules
     'OperatorEngine',
+    'CANONICAL_OPERATOR_NAMES',
+    'SHORT_TO_CANONICAL',
     'DrivesEngine',
     'MatricesEngine',
     'PathwaysEngine',

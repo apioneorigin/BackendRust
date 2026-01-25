@@ -40,6 +40,9 @@ from question_archetypes import (
 # Import GoalContext from consciousness_state to avoid duplication
 from consciousness_state import GoalContext
 
+# Import canonical operator names from central source
+from formulas import CANONICAL_OPERATOR_NAMES
+
 
 @dataclass
 class MultiDimensionalQuestion:
@@ -53,14 +56,8 @@ class MultiDimensionalQuestion:
     goal_context: GoalContext = field(default_factory=GoalContext)
 
 
-# Core operators that define unity-separation
-CORE_OPERATORS = {
-    'P_presence', 'A_aware', 'E_equanimity', 'Psi_quality', 'M_maya',
-    'W_witness', 'I_intention', 'At_attachment', 'Se_service', 'Sh_shakti',
-    'G_grace', 'S_surrender', 'D_dharma', 'K_karma', 'Hf_habit',
-    'V_void', 'Ce_cleaning', 'Co_coherence', 'R_resistance',
-    'F_fear', 'J_joy', 'Tr_trust', 'O_openness', 'L_love'
-}
+# Use centralized canonical operator names
+CORE_OPERATORS = CANONICAL_OPERATOR_NAMES
 
 # Pivot operators by goal category - these are most diagnostic for unity-separation
 CATEGORY_PIVOT_OPERATORS = {

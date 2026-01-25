@@ -941,6 +941,31 @@ def validate_operator_values(values: Dict[str, float]) -> Tuple[bool, List[str]]
 
 
 # =============================================================================
+# CANONICAL OPERATOR NAMES (for import by other modules)
+# =============================================================================
+
+# Single source of truth for the 24 canonical operator names
+CANONICAL_OPERATOR_NAMES = {
+    'P_presence', 'A_aware', 'E_equanimity', 'Psi_quality', 'M_maya',
+    'W_witness', 'I_intention', 'At_attachment', 'Se_service', 'Sh_shakti',
+    'G_grace', 'S_surrender', 'D_dharma', 'K_karma', 'Hf_habit',
+    'V_void', 'Ce_cleaning', 'Co_coherence', 'R_resistance',
+    'F_fear', 'J_joy', 'Tr_trust', 'O_openness', 'L_love'
+}
+
+# Short name to canonical name mapping
+SHORT_TO_CANONICAL = {
+    'Psi': 'Psi_quality', 'K': 'K_karma', 'M': 'M_maya', 'G': 'G_grace',
+    'W': 'W_witness', 'A': 'A_aware', 'P': 'P_presence', 'E': 'E_equanimity',
+    'V': 'V_void', 'L': 'L_love', 'R': 'R_resistance', 'At': 'At_attachment',
+    'Av': 'Av_aversion', 'Se': 'Se_service', 'Ce': 'Ce_cleaning',
+    'Su': 'S_surrender', 'As': 'As_aspiration', 'Fe': 'F_fear',
+    'De': 'De_desire', 'Re': 'R_resistance', 'Hf': 'Hf_habit',
+    'Sa': 'Sa_samskara', 'Bu': 'Bu_buddhi', 'Ma': 'Ma_manas', 'Ch': 'Ch_chitta'
+}
+
+
+# =============================================================================
 # TESTING
 # =============================================================================
 
