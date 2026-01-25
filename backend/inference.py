@@ -69,7 +69,7 @@ CORE_TIER0_OPERATORS = {
     # Internal canonical names
     'Psi_consciousness', 'K_karma', 'M_maya', 'G_grace', 'W_witness',
     'A_aware', 'P_presence', 'E_equanimity', 'V_void', 'L_love', 'Co_coherence',
-    'At_attachment', 'Av_aversion', 'Se_seva', 'Ce_celebration', 'Su_surrender',
+    'At_attachment', 'Av_aversion', 'Se_seva', 'Ce_cleaning', 'Su_surrender',
     'As_aspiration', 'Fe_fear', 'De_desire', 'Re_resistance', 'Hf_habit',
     'Sa_samskara', 'Bu_buddhi', 'Ma_manas', 'Ch_chitta'
 }

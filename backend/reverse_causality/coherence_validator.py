@@ -81,7 +81,7 @@ class CoherenceValidator:
         ('Co_coherence', 'Rs_resonance'),
         ('Se_service', 'D_dharma'),
         ('V_void', 'S_surrender'),
-        ('J_joy', 'Ce_celebration'),
+        ('J_joy', 'Ce_cleaning'),
     ]
 
     # S-level characteristic ranges

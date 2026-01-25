@@ -91,7 +91,7 @@ class SessionStore:
         'At': 'At', 'At_attachment': 'At', 'attachment': 'At',
         'Av': 'Av', 'Av_aversion': 'Av', 'aversion': 'Av',
         'Se': 'Se', 'Se_service': 'Se', 'service': 'Se',
-        'Ce': 'Ce', 'Ce_celebration': 'Ce', 'celebration': 'Ce', 'cleaning': 'Ce',
+        'Ce': 'Ce', 'Ce_cleaning': 'Ce', 'celebration': 'Ce', 'cleaning': 'Ce',
         'Su': 'Su', 'Su_suffering': 'Su', 'suffering': 'Su',
         'As': 'As', 'As_aspiration': 'As', 'aspiration': 'As',
         'Fe': 'Fe', 'Fe_faith': 'Fe', 'faith': 'Fe',

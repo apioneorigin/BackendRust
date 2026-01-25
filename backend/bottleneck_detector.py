@@ -61,7 +61,7 @@ class BottleneckDetector:
         ('F_fear', 'Tr_trust', 'Fear blocks trust'),
         ('R_resistance', 'O_openness', 'Resistance blocks openness'),
         ('K_karma', 'G_grace', 'Heavy karma limits grace reception'),
-        ('Hf_habit', 'Ce_celebration', 'Habit patterns block celebration'),
+        ('Hf_habit', 'Ce_cleaning', 'Habit patterns block celebration'),
     ]
 
     # Negative matrix positions that indicate blockages
@@ -110,7 +110,7 @@ class BottleneckDetector:
             'T_time_past': ops.T_time_past,
             'T_time_present': ops.T_time_present,
             'T_time_future': ops.T_time_future,
-            'Ce_celebration': ops.Ce_celebration,
+            'Ce_cleaning': ops.Ce_cleaning,
             'Co_coherence': ops.Co_coherence,
             'R_resistance': ops.R_resistance,
             'F_fear': ops.F_fear,

@@ -56,7 +56,7 @@ UNITY_DIRECTION: Dict[str, float] = {
     'S_surrender': +1.0,
     'E_equanimity': +1.0,
     'V_void': +1.0,
-    'Ce_celebration': +1.0,
+    'Ce_cleaning': +1.0,
     'Se_service': +1.0,
     'L_love': +1.0,
     'O_openness': +1.0,
@@ -103,7 +103,7 @@ UNITY_IMPACT_WEIGHTS: Dict[str, float] = {
 
     # Moderate impact
     'Co_coherence': 0.65,
-    'Ce_celebration': 0.60,
+    'Ce_cleaning': 0.60,
     'Se_service': 0.60,
     'J_joy': 0.60,
     'D_dharma': 0.60,
@@ -144,7 +144,7 @@ UNITY_AMPLIFYING_OPERATORS: Dict[str, float] = {
     'O_openness': 0.70,
     'Tr_trust': 0.70,
     'Co_coherence': 0.70,
-    'Ce_celebration': 0.60,
+    'Ce_cleaning': 0.60,
     'Se_service': 0.65,
     'L_love': 0.75,
     'J_joy': 0.60,
@@ -316,7 +316,7 @@ def calculate_dharmic_karma(
         Tuple of (dharmic_score, adharmic_score, net_score) or (None, None, None)
     """
     # Operators that indicate dharmic action
-    dharmic_ops = ['Se_service', 'G_grace', 'S_surrender', 'Ce_celebration', 'D_dharma']
+    dharmic_ops = ['Se_service', 'G_grace', 'S_surrender', 'Ce_cleaning', 'D_dharma']
     # Operators that indicate adharmic patterns
     adharmic_ops = ['At_attachment', 'F_fear', 'M_maya', 'Av_aversion']
 

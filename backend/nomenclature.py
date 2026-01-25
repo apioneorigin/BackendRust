@@ -38,7 +38,7 @@ CORE_OPERATORS: Dict[str, str] = {
     "T_time_past": "Past orientation percentage",
     "T_time_present": "Present orientation percentage",
     "T_time_future": "Future orientation percentage",
-    "Ce_celebration": "Celebration capacity",
+    "Ce_cleaning": "Celebration capacity",
 
     # Coherence & resistance
     "Co_coherence": "Internal coherence",
@@ -260,8 +260,8 @@ REGISTRY_TO_NOMENCLATURE = {
     "T_past": "T_time_past",
     "T_present": "T_time_present",
     "T_future": "T_time_future",
-    "Celebration": "Ce_celebration",
-    "Ce": "Ce_celebration",
+    "Celebration": "Ce_cleaning",
+    "Ce": "Ce_cleaning",
 
     # Coherence operators
     "Coherence": "Co_coherence",

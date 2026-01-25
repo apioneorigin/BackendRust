@@ -251,11 +251,11 @@ class CascadeCalculator:
         level_requirements = {
             1: ['W_witness', 'M_maya', 'A_aware'],  # Self
             2: ['At_attachment', 'M_maya', 'W_witness'],  # Ego
-            3: ['Ce_celebration', 'Sa_samskara', 'K_karma'],  # Memory
+            3: ['Ce_cleaning', 'Sa_samskara', 'K_karma'],  # Memory
             4: ['A_aware', 'M_maya', 'W_witness'],  # Intellect
             5: ['Hf_habit', 'P_presence', 'F_fear'],  # Mind
-            6: ['P_presence', 'F_fear', 'Ce_celebration'],  # Breath
-            7: ['Ce_celebration', 'P_presence', 'At_attachment', 'F_fear', 'Hf_habit'],  # Body
+            6: ['P_presence', 'F_fear', 'Ce_cleaning'],  # Breath
+            7: ['Ce_cleaning', 'P_presence', 'At_attachment', 'F_fear', 'Hf_habit'],  # Body
         }
 
         required = level_requirements.get(level, [])
@@ -267,7 +267,7 @@ class CascadeCalculator:
         # Get operator values - ZERO-FALLBACK: only access if present
         W = operators.get('W_witness')
         A = operators.get('A_aware')
-        Ce = operators.get('Ce_celebration')
+        Ce = operators.get('Ce_cleaning')
         At = operators.get('At_attachment')
         M = operators.get('M_maya')
         Hf = operators.get('Hf_habit')

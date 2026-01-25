@@ -58,7 +58,7 @@ CORE_OPERATORS = {
     'P_presence', 'A_aware', 'E_equanimity', 'Psi_quality', 'M_maya',
     'W_witness', 'I_intention', 'At_attachment', 'Se_service', 'Sh_shakti',
     'G_grace', 'S_surrender', 'D_dharma', 'K_karma', 'Hf_habit',
-    'V_void', 'Ce_celebration', 'Co_coherence', 'R_resistance',
+    'V_void', 'Ce_cleaning', 'Co_coherence', 'R_resistance',
     'F_fear', 'J_joy', 'Tr_trust', 'O_openness', 'L_love'
 }
 

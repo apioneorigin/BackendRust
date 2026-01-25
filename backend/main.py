@@ -719,7 +719,7 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
             'P_presence', 'A_aware', 'E_equanimity', 'Psi_quality', 'M_maya',
             'W_witness', 'I_intention', 'At_attachment', 'Se_service', 'Sh_shakti',
             'G_grace', 'S_surrender', 'D_dharma', 'K_karma', 'Hf_habit',
-            'V_void', 'Ce_celebration', 'Co_coherence', 'R_resistance',
+            'V_void', 'Ce_cleaning', 'Co_coherence', 'R_resistance',
             'F_fear', 'J_joy', 'Tr_trust', 'O_openness', 'L_love'
         }
         missing_operators = CORE_OPERATORS - set(extracted_operators.keys())
@@ -3115,7 +3115,7 @@ def _extract_operators_from_consciousness_state(consciousness_state: Consciousne
         'Av_aversion': core.R_resistance,  # Resistance as aversion proxy
         # Service and practice operators
         'Se_seva': core.Se_service,
-        'Ce_cleaning': core.Ce_celebration,  # Celebration/cleaning practice
+        'Ce_cleaning': core.Ce_cleaning,  # Celebration/cleaning practice
         'Su_surrender': core.S_surrender,
         # Aspiration and desire operators
         'As_aspiration': core.I_intention,  # Intention as aspiration
@@ -3163,7 +3163,7 @@ def _extract_operators_from_evidence(evidence: dict) -> Tuple[Dict[str, float], 
         'Av': 'Av_aversion', 'Aversion': 'Av_aversion',  # Added
         # Service and practice operators
         'Se': 'Se_seva', 'Seva': 'Se_seva',
-        'Ce': 'Ce_cleaning', 'Cleaning': 'Ce_cleaning',  # Fixed: was Ce_celebration
+        'Ce': 'Ce_cleaning', 'Cleaning': 'Ce_cleaning',  # Fixed: was Ce_cleaning
         'Su': 'Su_surrender', 'Surrender': 'Su_surrender',
         # Aspiration and desire operators
         'As': 'As_aspiration', 'Aspiration': 'As_aspiration',  # Added

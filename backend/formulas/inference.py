@@ -191,12 +191,12 @@ class OOFInferenceEngine:
                 "network_effect": self.collective_engine.calculate_network_effect(
                     network_size=10,
                     base_resonance=operators.get("Se_service", 0.3),
-                    coherence=operators.get("Ce_center", 0.5),
+                    coherence=operators.get("Ce_cleaning", 0.5),
                     population=1000
                 ),
                 "we_space": self.collective_engine.calculate_we_space(
                     operators=operators,
-                    network_coherence=operators.get("Ce_center", 0.5),
+                    network_coherence=operators.get("Ce_cleaning", 0.5),
                     shared_s_level=s_level
                 )
             }
@@ -251,7 +251,7 @@ class OOFInferenceEngine:
 
         if "multi_reality" in include_modules:
             profile.multi_reality_profile = self.multi_reality_engine.calculate_full_multi_reality_state(
-                shared_beliefs=operators.get("Ce_center", 0.5),
+                shared_beliefs=operators.get("Ce_cleaning", 0.5),
                 shared_consciousness=s_level / 8.0,
                 interaction_frequency=0.5,
                 num_participants=1,
@@ -513,7 +513,7 @@ def get_operator_defaults() -> Dict[str, float]:
         "M_maya": 0.5,
         "I_intention": 0.5,
         "Hf_habit": 0.5,
-        "Ce_cleaning": 0.5,  # Canonical name (not Ce_center)
+        "Ce_cleaning": 0.5,  # Canonical name (not Ce_cleaning)
         "K_karma": 0.5,
         "Lf_lovefear": 0.5,  # Canonical name (not Lf_lifeforce)
         # Extended commonly-used operators

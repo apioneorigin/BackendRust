@@ -238,7 +238,7 @@ def calculate_phase_space_trajectory(
         trajectory.append(current.copy())
 
         # Simplified evolution equations
-        psi = current.get('psi', 0.5)
+        psi = current.get('Psi_quality', 0.5)
         maya = current.get('M_maya', 0.5)
         witness = current.get('W_witness', 0.5)
         karma = current.get('K_karma', 0.5)

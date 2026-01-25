@@ -69,7 +69,7 @@ class GraceKarmaDynamics:
         'surrender': {'op': 'S_surrender', 'threshold': 0.5},
         'service': {'op': 'Se_service', 'threshold': 0.4},
         'devotion': {'op': 'D_dharma', 'threshold': 0.4},
-        'cleaning': {'op': 'Ce_celebration', 'threshold': 0.4},
+        'cleaning': {'op': 'Ce_cleaning', 'threshold': 0.4},
         'presence': {'op': 'P_presence', 'threshold': 0.5},
         'openness': {'op': 'O_openness', 'threshold': 0.5}
     }
@@ -116,7 +116,7 @@ class GraceKarmaDynamics:
 
         ZERO-FALLBACK: Returns None for calculable fields if operators missing.
         """
-        required_ops = ['G_grace', 'S_surrender', 'Ce_celebration', 'At_attachment',
+        required_ops = ['G_grace', 'S_surrender', 'Ce_cleaning', 'At_attachment',
                         'R_resistance', 'Se_service', 'D_dharma', 'P_presence']
         missing = [op for op in required_ops if op not in operators or operators.get(op) is None]
 
@@ -147,7 +147,7 @@ class GraceKarmaDynamics:
 
         G = operators.get('G_grace')
         S = operators.get('S_surrender')
-        Ce = operators.get('Ce_celebration')
+        Ce = operators.get('Ce_cleaning')
         At = operators.get('At_attachment')
         R = operators.get('R_resistance')
         Se = operators.get('Se_service')
@@ -209,7 +209,7 @@ class GraceKarmaDynamics:
 
         ZERO-FALLBACK: Returns None for calculable fields if operators missing.
         """
-        required_ops = ['K_karma', 'At_attachment', 'A_aware', 'Ce_celebration',
+        required_ops = ['K_karma', 'At_attachment', 'A_aware', 'Ce_cleaning',
                         'G_grace', 'Hf_habit', 'I_intention']
         missing = [op for op in required_ops if op not in operators or operators.get(op) is None]
 
@@ -229,7 +229,7 @@ class GraceKarmaDynamics:
         K = operators.get('K_karma')
         At = operators.get('At_attachment')
         A = operators.get('A_aware')
-        Ce = operators.get('Ce_celebration')
+        Ce = operators.get('Ce_cleaning')
         G = operators.get('G_grace')
         Hf = operators.get('Hf_habit')
         I = operators.get('I_intention')

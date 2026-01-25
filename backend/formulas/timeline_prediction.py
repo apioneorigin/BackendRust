@@ -453,7 +453,7 @@ class EvolutionDynamicsEngine:
         resistance = operators.get('R_resistance', 0.5)
         fear = operators.get('F_fear', 0.5)
         presence = operators.get('P_presence', 0.5)
-        coherence = operators.get('Ce_coherence', 0.5)
+        coherence = operators.get('Co_coherence', 0.5)
 
         # Context
         if context is None:

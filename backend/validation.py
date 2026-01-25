@@ -57,7 +57,7 @@ class Validator:
         'M_maya', 'W_witness', 'I_intention', 'At_attachment',
         'Se_service', 'Sh_shakti', 'G_grace', 'S_surrender',
         'D_dharma', 'K_karma', 'Hf_habit', 'V_void',
-        'Ce_celebration', 'Co_coherence', 'R_resistance',
+        'Ce_cleaning', 'Co_coherence', 'R_resistance',
         'F_fear', 'J_joy', 'Tr_trust', 'O_openness'
     ]
 
@@ -97,8 +97,8 @@ class Validator:
         'HabitForce': 'Hf_habit',
         'V': 'V_void',
         'Void': 'V_void',
-        'Ce': 'Ce_celebration',
-        'Celebration': 'Ce_celebration',
+        'Ce': 'Ce_cleaning',
+        'Celebration': 'Ce_cleaning',
         'Co': 'Co_coherence',
         'Coherence': 'Co_coherence',
         'Re': 'R_resistance',

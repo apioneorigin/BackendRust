@@ -128,7 +128,7 @@ class CoreOperators:
     T_time_past: Optional[float] = None
     T_time_present: Optional[float] = None
     T_time_future: Optional[float] = None
-    Ce_celebration: Optional[float] = None
+    Ce_cleaning: Optional[float] = None
     Co_coherence: Optional[float] = None
     R_resistance: Optional[float] = None
     F_fear: Optional[float] = None

@@ -94,7 +94,7 @@ class ReverseCausalityEngine:
         'J_joy': {'default': 0.5, 'difficulty': 0.3, 'category': 'emotional'},
         'Tr_trust': {'default': 0.5, 'difficulty': 0.4, 'category': 'emotional'},
         'O_openness': {'default': 0.5, 'difficulty': 0.3, 'category': 'awareness'},
-        'Ce_celebration': {'default': 0.5, 'difficulty': 0.3, 'category': 'practice'},
+        'Ce_cleaning': {'default': 0.5, 'difficulty': 0.3, 'category': 'practice'},
         'T_time_present': {'default': 0.34, 'difficulty': 0.4, 'category': 'temporal'},
         'Rs_resonance': {'default': 0.5, 'difficulty': 0.5, 'category': 'connection'},
     }
@@ -134,9 +134,9 @@ class ReverseCausalityEngine:
                 ops.get('A_aware', 0.5) * 0.15 +
                 (1 - ops.get('Hf_habit', 0.5)) * 0.15 +
                 (1 - ops.get('K_karma', 0.5)) * 0.15 +
-                ops.get('Ce_celebration', 0.5) * 0.15
+                ops.get('Ce_cleaning', 0.5) * 0.15
             ),
-            'operators': ['G_grace', 'S_surrender', 'A_aware', 'Hf_habit', 'K_karma', 'Ce_celebration'],
+            'operators': ['G_grace', 'S_surrender', 'A_aware', 'Hf_habit', 'K_karma', 'Ce_cleaning'],
             'inverse': ['Hf_habit', 'K_karma']
         },
         'peace_depth': {
@@ -189,9 +189,9 @@ class ReverseCausalityEngine:
                 ops.get('Se_service', 0.5) * 0.2 +
                 ops.get('D_dharma', 0.5) * 0.2 +
                 (1 - ops.get('At_attachment', 0.5)) * 0.15 +
-                ops.get('Ce_celebration', 0.5) * 0.15
+                ops.get('Ce_cleaning', 0.5) * 0.15
             ),
-            'operators': ['S_surrender', 'Se_service', 'D_dharma', 'At_attachment', 'Ce_celebration'],
+            'operators': ['S_surrender', 'Se_service', 'D_dharma', 'At_attachment', 'Ce_cleaning'],
             'inverse': ['At_attachment']
         },
         's_level_potential': {
@@ -208,12 +208,12 @@ class ReverseCausalityEngine:
         },
         'karma_burn_rate': {
             'formula': lambda ops: (
-                ops.get('Ce_celebration', 0.5) * 0.3 +
+                ops.get('Ce_cleaning', 0.5) * 0.3 +
                 ops.get('G_grace', 0.5) * 0.3 +
                 ops.get('A_aware', 0.5) * 0.2 +
                 (1 - ops.get('At_attachment', 0.5)) * 0.2
             ),
-            'operators': ['Ce_celebration', 'G_grace', 'A_aware', 'At_attachment'],
+            'operators': ['Ce_cleaning', 'G_grace', 'A_aware', 'At_attachment'],
             'inverse': ['At_attachment']
         }
     }

@@ -90,7 +90,7 @@ class EmotionAnalyzer:
             'valence': 'positive',
             'operators': {
                 'J_joy': 1.0,
-                'Ce_celebration': 0.8,
+                'Ce_cleaning': 0.8,
                 'O_openness': 0.6,
                 'P_presence': 0.5,
                 'F_fear': -0.4  # Fear diminishes joy
@@ -233,7 +233,7 @@ class EmotionAnalyzer:
             'valence': 'negative'
         },
         'grief': {
-            'operators': {'At_attachment': 0.6, 'V_void': 0.5, 'Ce_celebration': -0.4},
+            'operators': {'At_attachment': 0.6, 'V_void': 0.5, 'Ce_cleaning': -0.4},
             'valence': 'negative'
         },
         'relief': {

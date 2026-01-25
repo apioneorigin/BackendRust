@@ -105,7 +105,7 @@ class ValueOrganizer:
             T_time_past=self._get_value(obs_dict, 'T_past', default=None),
             T_time_present=self._get_value(obs_dict, 'T_present', default=None),
             T_time_future=self._get_value(obs_dict, 'T_future', default=None),
-            Ce_celebration=self._get_value(obs_dict, 'Ce', 'Celebration', default=None),
+            Ce_cleaning=self._get_value(obs_dict, 'Ce', 'Celebration', default=None),
             Co_coherence=self._get_value(obs_dict, 'Co', 'Coherence', default=None),
             R_resistance=self._get_value(obs_dict, 'R', 'Re', 'Resistance', default=None),
             F_fear=self._get_value(obs_dict, 'F', 'Fe', 'Fear', default=None),

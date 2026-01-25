@@ -83,11 +83,11 @@ class DeathArchitectureDetector:
             'indicators': {
                 'F_fear': 0.5,           # Fear-based emotions
                 'At_attachment': 0.4,    # Emotional attachment
-                'Ce_celebration': -0.4,  # Cleaning releases emotions
+                'Ce_cleaning': -0.4,  # Cleaning releases emotions
                 'E_equanimity': -0.5     # Equanimity transcends emotions
             },
             'resistance_ops': ['F_fear', 'At_attachment', 'R_resistance'],
-            'support_ops': ['Ce_celebration', 'E_equanimity', 'S_surrender']
+            'support_ops': ['Ce_cleaning', 'E_equanimity', 'S_surrender']
         },
         'D4': {
             'name': 'Attachment Death',
