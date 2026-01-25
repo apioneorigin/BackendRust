@@ -153,18 +153,6 @@ start_backend() {
     fi
 }
 
-# Function to verify registry
-check_registry() {
-    if [ -f "$PROJECT_ROOT/registry.json" ]; then
-        local formula_count=$(python3 -c "import json; print(len(json.load(open('$PROJECT_ROOT/registry.json'))['formulas']))" 2>/dev/null || echo "0")
-        echo -e "  ${GREEN}Registry loaded: $formula_count formulas${NC}"
-        return 0
-    else
-        echo -e "  ${RED}Registry not found! Run formula_compiler.py first${NC}"
-        return 1
-    fi
-}
-
 # Function to show status
 show_status() {
     echo ""
@@ -186,10 +174,6 @@ show_status() {
 # Main execution
 main() {
     cd "$PROJECT_ROOT"
-
-    # Check for required files
-    echo -e "${BLUE}Checking prerequisites...${NC}"
-    check_registry
 
     # Stop any existing services
     stop_existing

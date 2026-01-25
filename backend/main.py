@@ -271,9 +271,8 @@ def get_model_config(model: str) -> dict:
         model = DEFAULT_MODEL
     return {"model": model, **MODEL_CONFIGS[model]}
 
-# Initialize inference engine
-REGISTRY_PATH = Path(__file__).parent.parent / "registry.json"
-inference_engine = InferenceEngine(str(REGISTRY_PATH))
+# Initialize inference engine (pure Python - no JSON registry needed)
+inference_engine = InferenceEngine()
 
 # Initialize Articulation Bridge components
 value_organizer = ValueOrganizer()
