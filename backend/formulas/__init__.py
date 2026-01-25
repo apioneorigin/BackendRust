@@ -28,6 +28,18 @@ from .panchakritya import PanchakrityaEngine
 # Master inference engine
 from .inference import OOFInferenceEngine, IntegratedProfile
 
+# New Part XI Advanced Math and missing formulas
+from .advanced_math import AdvancedMathEngine, get_advanced_math_profile
+from .hierarchical import HierarchicalResolutionEngine, detect_h_level, HLevel
+from .platform_specific import PlatformSpecificEngine, IntelligenceAdaptationEngine, Platform
+from .multi_reality import MultiRealityEngine, RealityWave, RealitySuperposition
+from .timeline_prediction import (
+    BreakthroughDynamicsEngine,
+    TimelinePredictionEngine,
+    EvolutionDynamicsEngine,
+    get_evolution_dynamics
+)
+
 __all__ = [
     # Original 8
     'MatrixDetector',
@@ -54,4 +66,24 @@ __all__ = [
     # Master engine
     'OOFInferenceEngine',
     'IntegratedProfile',
+    # Part XI Advanced Math
+    'AdvancedMathEngine',
+    'get_advanced_math_profile',
+    # Hierarchical Resolution (H1-H8)
+    'HierarchicalResolutionEngine',
+    'detect_h_level',
+    'HLevel',
+    # Platform-Specific
+    'PlatformSpecificEngine',
+    'IntelligenceAdaptationEngine',
+    'Platform',
+    # Multi-Reality
+    'MultiRealityEngine',
+    'RealityWave',
+    'RealitySuperposition',
+    # Timeline Prediction & Breakthrough
+    'BreakthroughDynamicsEngine',
+    'TimelinePredictionEngine',
+    'EvolutionDynamicsEngine',
+    'get_evolution_dynamics',
 ]
