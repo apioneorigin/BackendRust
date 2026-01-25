@@ -32,7 +32,7 @@ from .drives import DrivesEngine, DriveType
 from .matrices import MatricesEngine, MatrixType
 from .pathways import PathwaysEngine, PathwayType
 from .cascade import CascadeCalculator, CascadeLevel, CleanlinessZone
-from .emotions import EmotionAnalyzer, ExpandedEmotionEngine
+from .emotions import EmotionAnalyzer
 from .death import DeathEngine, DeathType
 from .collective import CollectiveEngine
 from .circles import CirclesEngine, CircleType
@@ -100,7 +100,6 @@ class OOFInferenceEngine:
         self.pathways_engine = PathwaysEngine()
         self.cascade_calculator = CascadeCalculator()
         self.emotion_analyzer = EmotionAnalyzer()
-        self.expanded_emotion_engine = ExpandedEmotionEngine()
         self.death_engine = DeathEngine()
         self.collective_engine = CollectiveEngine()
         self.circles_engine = CirclesEngine()

@@ -4,7 +4,7 @@ Advanced consciousness physics calculations
 """
 
 from .cascade import CascadeCalculator
-from .emotions import EmotionAnalyzer, ExpandedEmotionEngine
+from .emotions import EmotionAnalyzer
 from .dynamics import GraceKarmaDynamics
 from .network import NetworkEmergenceCalculator
 from .quantum import QuantumMechanics
@@ -50,7 +50,6 @@ __all__ = [
     # Core calculation modules
     'CascadeCalculator',
     'EmotionAnalyzer',
-    'ExpandedEmotionEngine',
     'GraceKarmaDynamics',
     'NetworkEmergenceCalculator',
     'QuantumMechanics',
