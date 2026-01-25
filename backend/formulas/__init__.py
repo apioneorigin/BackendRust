@@ -13,7 +13,7 @@ from .quantum import QuantumMechanics
 from .realism import RealismEngine
 
 # New integrated modules
-from .operators import OperatorEngine, OPERATOR_ALIASES, resolve_operator_name, get_operator_value
+from .operators import OperatorEngine
 from .drives import DrivesEngine
 from .matrices import MatricesEngine
 from .pathways import PathwaysEngine
@@ -59,11 +59,8 @@ __all__ = [
     'NetworkEmergenceCalculator',
     'QuantumMechanics',
     'RealismEngine',
-    # New 11
+    # New modules
     'OperatorEngine',
-    'OPERATOR_ALIASES',
-    'resolve_operator_name',
-    'get_operator_value',
     'DrivesEngine',
     'MatricesEngine',
     'PathwaysEngine',

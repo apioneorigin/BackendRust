@@ -196,16 +196,8 @@ class Validator:
             if op not in obs_dict:
                 missing_operators.append(op)
 
-                if zero_fallback_mode:
-                    # In zero-fallback mode, missing is not an error, just tracked
-                    warnings.append(f"Operator {op} not extracted - will be collected")
-                elif auto_correct:
-                    # Legacy behavior (deprecated)
-                    obs_dict[op] = {'value': 0.5, 'confidence': 0.3}
-                    corrections[op] = 'Added with default value 0.5'
-                    warnings.append(f"Missing operator {op} - defaulted to 0.5 (DEPRECATED)")
-                else:
-                    errors.append(f"Missing required operator: {op}")
+                # Zero-fallback mode: missing is not an error, just tracked
+                warnings.append(f"Operator {op} not extracted - will be collected")
 
         # Validate value ranges for populated operators
         for op, data in obs_dict.items():

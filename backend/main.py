@@ -300,9 +300,6 @@ if LLM_CALL2_PATH.exists():
 else:
     api_logger.warning(f"LLM Call 2 context not found at {LLM_CALL2_PATH}")
 
-# Legacy alias for backward compatibility (will be removed)
-OOF_FRAMEWORK = LLM_CALL2_CONTEXT
-
 api_logger.info("Articulation Bridge initialized: ValueOrganizer, BottleneckDetector, LeverageIdentifier, PromptBuilder")
 
 # Initialize Reverse Causality Mapping components
@@ -2328,137 +2325,6 @@ SECTION 5: FIRST STEPS
         await asyncio.sleep(0.02)
 
 
-async def format_results_streaming(prompt: str, evidence: dict, posteriors: dict) -> AsyncGenerator[str, None]:
-    """Legacy function - kept for backwards compatibility. Use format_results_streaming_bridge instead."""
-
-    # Log what's being sent to LLM for articulation
-    obs_count = len(evidence.get('observations', []))
-    posteriors_count = len(posteriors.get('values', {}))
-    formula_count = posteriors.get('formula_count', 0)
-    print(f"[LLM ARTICULATION - LEGACY] Sending to gpt-5.2: {obs_count} observations, {posteriors_count} posteriors from {formula_count} formulas")
-
-    if not OPENAI_API_KEY:
-        # Fallback: format results without OpenAI
-        fallback_text = format_results_fallback(prompt, evidence, posteriors)
-        for word in fallback_text.split():
-            yield word + " "
-            await asyncio.sleep(0.02)
-        return
-
-    instructions = f"""You are Reality Transformer, a consciousness-based transformation engine powered by the One Origin Framework (OOF).
-
-=== OOF FRAMEWORK KNOWLEDGE ===
-{LLM_CALL2_CONTEXT}
-=== END OOF FRAMEWORK ===
-
-=== ARTICULATION STYLE ===
-Write with NATURAL CADENCE, METAPHOR, and CONVERSATIONAL RHYTHM.
-Speak as a wise guide who sees deeply into consciousness patterns.
-Use poetic precision - every word chosen for resonance.
-Let insights flow organically, not as rigid bullet points.
-Vary sentence length. Use rhetorical questions. Create moments of pause.
-Honor the human before you with warmth and genuine presence.
-
-Your response should feel like sitting with a master who truly sees you -
-not like reading a diagnostic report.
-=== END ARTICULATION STYLE ===
-
-Structure your response around these movements (but let them flow naturally):
-
-1. RECOGNITION - Where they are on the Sacred Chain (S1-S8), what's alive in them
-2. DIAGNOSIS - The operators at play, the patterns creating their reality
-3. MECHANISM - How OOF physics explains what they're experiencing
-4. PATH - The transformation available, the opening that exists
-5. ACTION - Concrete next steps that honor their current capacity
-6. GRACE - What support is available, what wants to emerge
-
-Guidelines:
-- Use OOF terminology naturally (Karma, Maya, Witness, Grace, etc.)
-- Reference specific formulas when explaining mechanisms
-- Translate technical terms accessibly (e.g., "Maya" = "the fog that keeps you from seeing")
-- Be profound yet practical - insight without action is incomplete
-- Speak to the soul, not just the mind
-- Honor both shadow and light
-- Weave in the web research context where it illuminates their situation"""
-
-    user_content = f"""Original query: {prompt}
-
-=== CONSCIOUSNESS ANALYSIS (with web research) ===
-User Identity: {evidence.get('user_identity', 'User')}
-Goal: {evidence.get('goal', prompt)}
-Estimated S-Level: {evidence.get('s_level', 'Unknown')}
-Web Research Summary: {evidence.get('web_research_summary', 'N/A')}
-Relevant OOF Components: {evidence.get('relevant_oof_components', [])}
-
-Operator Observations (all 25 tier-1 values):
-{json.dumps(evidence.get('observations', []), indent=2)}
-
-=== INFERENCE ENGINE RESULTS ===
-{json.dumps(posteriors, indent=2)}
-
-=== TASK ===
-Provide a deep, transformative response that:
-1. Explains their current reality through OOF consciousness physics
-2. Identifies the key operators creating their situation
-3. Uses the web research context to make insights more relevant
-4. Maps the transformation path available to them
-5. Gives specific, actionable next steps
-6. Speaks with wisdom and compassion"""
-
-    request_body = {
-        "model": OPENAI_MODEL,
-        "instructions": instructions,
-        "input": [{
-            "type": "message",
-            "role": "user",
-            "content": [{"type": "input_text", "text": user_content}]
-        }],
-        "temperature": 0.85,  # Higher for natural articulation, not agent rigidity
-        "stream": True
-        # NOTE: No response_format/schema - free-form natural language
-    }
-
-    try:
-        async with httpx.AsyncClient(timeout=180.0) as client:
-            async with client.stream(
-                "POST",
-                OPENAI_RESPONSES_URL,
-                headers={
-                    "Authorization": f"Bearer {OPENAI_API_KEY}",
-                    "Content-Type": "application/json"
-                },
-                json=request_body
-            ) as response:
-                if response.status_code != 200:
-                    error_text = await response.aread()
-                    api_logger.error(f"OpenAI streaming error: {response.status_code} - {error_text}")
-                    raise Exception(f"OpenAI API error: {response.status_code}")
-
-                async for line in response.aiter_lines():
-                    if line.startswith("data: "):
-                        data_str = line[6:]
-                        if data_str == "[DONE]":
-                            break
-                        try:
-                            data = json.loads(data_str)
-                            # ONLY handle delta events to avoid duplication
-                            event_type = data.get("type", "") if isinstance(data, dict) else ""
-                            if event_type == "response.output_text.delta" and "delta" in data:
-                                yield data["delta"]
-                            elif event_type == "response.content_part.delta":
-                                if "delta" in data and "text" in data["delta"]:
-                                    yield data["delta"]["text"]
-                        except json.JSONDecodeError:
-                            continue
-
-    except Exception as e:
-        api_logger.error(f"OpenAI streaming error: {e}")
-        fallback_text = format_results_fallback(prompt, evidence, posteriors)
-        for word in fallback_text.split():
-            yield word + " "
-            await asyncio.sleep(0.02)
-
-
 def format_results_fallback(prompt: str, evidence: dict, posteriors: dict) -> str:
     """Format results without OpenAI (legacy fallback)"""
 
@@ -3357,8 +3223,8 @@ async def health_check():
         "registry_loaded": inference_engine.is_loaded,
         "formula_count": inference_engine.formula_count,
         "openai_configured": OPENAI_API_KEY is not None,
-        "oof_framework_loaded": len(OOF_FRAMEWORK) > 0,
-        "oof_framework_size": len(OOF_FRAMEWORK),
+        "oof_framework_loaded": len(LLM_CALL2_CONTEXT) > 0,
+        "oof_framework_size": len(LLM_CALL2_CONTEXT),
         "web_research_enabled": True,
         "articulation_bridge": {
             "enabled": True,
