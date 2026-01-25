@@ -22,11 +22,13 @@ from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass, field
 import math
 
+from formulas.death import DeathPhase
+
 
 @dataclass
 class DeathPhaseProgress:
     """Current phase progress within a death process"""
-    phase: str  # "not_started", "initiation", "dissolution", "void", "rebirth", "complete"
+    phase: DeathPhase  # Uses canonical DeathPhase enum
     completion: float  # 0-1 completion of this phase
     description: str
 
@@ -335,39 +337,45 @@ class DeathSequencer:
         """
         if completion < 0.1:
             return DeathPhaseProgress(
-                phase="not_started",
+                phase=DeathPhase.DENIAL,
                 completion=completion,
                 description="Death process not yet initiated"
             )
-        elif completion < 0.3:
+        elif completion < 0.2:
             return DeathPhaseProgress(
-                phase="initiation",
+                phase=DeathPhase.CLINGING,
                 completion=completion,
                 description="Beginning of dissolution process"
             )
-        elif completion < 0.6:
+        elif completion < 0.35:
             return DeathPhaseProgress(
-                phase="dissolution",
+                phase=DeathPhase.BARGAINING,
                 completion=completion,
-                description="Active letting go in progress"
+                description="Negotiating with the change"
             )
-        elif completion < 0.8:
+        elif completion < 0.5:
             return DeathPhaseProgress(
-                phase="void",
+                phase=DeathPhase.GRIEF,
                 completion=completion,
-                description="In the void between old and new"
+                description="Mourning what is passing"
             )
-        elif completion < 0.95:
+        elif completion < 0.7:
             return DeathPhaseProgress(
-                phase="rebirth",
+                phase=DeathPhase.ACCEPTANCE,
                 completion=completion,
-                description="New structure emerging"
+                description="Accepting the transformation"
+            )
+        elif completion < 0.9:
+            return DeathPhaseProgress(
+                phase=DeathPhase.SURRENDER,
+                completion=completion,
+                description="Surrendering to the process"
             )
         else:
             return DeathPhaseProgress(
-                phase="complete",
+                phase=DeathPhase.REBIRTH,
                 completion=completion,
-                description="Death process complete"
+                description="New structure emerging"
             )
 
     def _determine_intensity(self, gap: float, death_id: str) -> str:
