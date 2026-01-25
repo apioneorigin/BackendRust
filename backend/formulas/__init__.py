@@ -13,7 +13,7 @@ from .quantum import QuantumMechanics
 from .realism import RealismEngine
 
 # New integrated modules
-from .operators import OperatorEngine
+from .operators import OperatorEngine, OPERATOR_ALIASES, resolve_operator_name, get_operator_value
 from .drives import DrivesEngine
 from .matrices import MatricesEngine
 from .pathways import PathwaysEngine
@@ -26,7 +26,7 @@ from .distortions import DistortionEngine
 from .panchakritya import PanchakrityaEngine
 
 # Master inference engine
-from .inference import OOFInferenceEngine, IntegratedProfile
+from .inference import OOFInferenceEngine, IntegratedProfile, get_operator_defaults
 
 # Part XI Advanced Math and additional OOF formulas (from OOF_Math.txt)
 from .advanced_math import AdvancedMathEngine, get_advanced_math_profile
@@ -61,6 +61,9 @@ __all__ = [
     'RealismEngine',
     # New 11
     'OperatorEngine',
+    'OPERATOR_ALIASES',
+    'resolve_operator_name',
+    'get_operator_value',
     'DrivesEngine',
     'MatricesEngine',
     'PathwaysEngine',
@@ -74,6 +77,7 @@ __all__ = [
     # Master engine
     'OOFInferenceEngine',
     'IntegratedProfile',
+    'get_operator_defaults',
     # Part XI Advanced Math (from OOF_Math.txt)
     'AdvancedMathEngine',
     'get_advanced_math_profile',

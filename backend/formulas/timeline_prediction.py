@@ -442,8 +442,8 @@ class EvolutionDynamicsEngine:
     ) -> EvolutionDynamicsState:
         """Calculate complete evolution dynamics state."""
 
-        # Extract operators
-        psi = operators.get('psi', 0.5)
+        # Extract operators (using canonical names)
+        psi = operators.get('Psi_quality', 0.5)
         maya = operators.get('M_maya', 0.5)
         witness = operators.get('W_witness', 0.5)
         grace = operators.get('G_grace', 0.5)

@@ -502,7 +502,7 @@ def run_inference(
 
 
 def get_operator_defaults() -> Dict[str, float]:
-    """Get default operator values."""
+    """Get default operator values using canonical operator names."""
     return {
         "P_presence": 0.5,
         "At_attachment": 0.5,
@@ -513,9 +513,17 @@ def get_operator_defaults() -> Dict[str, float]:
         "M_maya": 0.5,
         "I_intention": 0.5,
         "Hf_habit": 0.5,
-        "Ce_center": 0.5,
+        "Ce_cleaning": 0.5,  # Canonical name (not Ce_center)
         "K_karma": 0.5,
-        "Lf_lifeforce": 0.5,
+        "Lf_lovefear": 0.5,  # Canonical name (not Lf_lifeforce)
+        # Extended commonly-used operators
+        "S_surrender": 0.5,
+        "A_aware": 0.5,
+        "Co_coherence": 0.5,
+        "F_fear": 0.5,
+        "R_resistance": 0.5,
+        "G_grace": 0.3,
+        "Psi_quality": 0.5,
     }
 
 
@@ -524,7 +532,7 @@ if __name__ == "__main__":
     print("OOF Master Inference Engine Test")
     print("=" * 60)
 
-    # Test with sample operators
+    # Test with sample operators using canonical names
     test_ops = {
         "P_presence": 0.65,
         "At_attachment": 0.4,
@@ -535,9 +543,12 @@ if __name__ == "__main__":
         "M_maya": 0.4,
         "I_intention": 0.6,
         "Hf_habit": 0.4,
-        "Ce_center": 0.55,
+        "Ce_cleaning": 0.55,  # Canonical name
         "K_karma": 0.45,
-        "Lf_lifeforce": 0.6,
+        "Lf_lovefear": 0.6,  # Canonical name
+        "S_surrender": 0.5,
+        "G_grace": 0.5,
+        "Psi_quality": 0.5,
     }
 
     engine = OOFInferenceEngine()

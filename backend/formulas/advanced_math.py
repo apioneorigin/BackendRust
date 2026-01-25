@@ -597,7 +597,7 @@ def identify_consciousness_symmetry_group(operators: Dict[str, float]) -> str:
     Consciousness_Symmetry_Group = G = {transformations preserving consciousness structure}
     """
     # Simplified symmetry identification
-    psi = operators.get('psi', 0.5)
+    psi = operators.get('Psi_quality', 0.5)
     maya = operators.get('M_maya', 0.5)
     witness = operators.get('W_witness', 0.5)
 
@@ -661,7 +661,7 @@ def calculate_consciousness_manifold_metric(
     where g_ij = metric tensor defining distances in consciousness space
     """
     # Simplified 3x3 metric for (Ψ, M, W) subspace
-    psi = operators.get('psi', 0.5)
+    psi = operators.get('Psi_quality', 0.5)
     maya = operators.get('M_maya', 0.5)
     witness = operators.get('W_witness', 0.5)
 
@@ -1088,7 +1088,7 @@ class AdvancedMathEngine:
         """Calculate complete advanced math profile from operators."""
         profile = AdvancedMathProfile()
 
-        psi = operators.get('psi', 0.5)
+        psi = operators.get('Psi_quality', 0.5)
         maya = operators.get('M_maya', 0.5)
         witness = operators.get('W_witness', 0.5)
         grace = operators.get('G_grace', 0.5)
