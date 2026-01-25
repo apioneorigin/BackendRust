@@ -23,11 +23,16 @@ from dataclasses import dataclass, field
 import math
 import cmath
 
-
-# Constants
-GOLDEN_RATIO = (1 + math.sqrt(5)) / 2  # φ ≈ 1.618
-PLANCK_CONSTANT_REDUCED = 1.0  # Normalized ℏ for consciousness calculations
-BOLTZMANN_CONSTANT = 1.0  # Normalized k_B for consciousness
+# Import shared constants (single source of truth)
+from .constants import (
+    GOLDEN_RATIO,
+    PLANCK_CONSTANT_REDUCED,
+    BOLTZMANN_CONSTANT,
+    S_LEVEL_BASE_FREQUENCIES,
+    PLATONIC_CORRESPONDENCES,
+    EVOLUTION_COEFFICIENTS,
+    interpolate_s_level_frequency
+)
 
 
 # ==========================================================================
@@ -771,17 +776,7 @@ class VibrationalState:
     harmony_score: float
 
 
-# S-level base frequencies from OOF_Math.txt
-S_LEVEL_BASE_FREQUENCIES = {
-    1: 0.5,
-    2: 2.0,
-    3: 10.0,
-    4: 20.0,
-    5: 50.0,
-    6: 80.0,
-    7: 120.0,
-    8: 200.0
-}
+# S-level base frequencies imported from constants.py
 
 
 def calculate_consciousness_vibration_frequency(

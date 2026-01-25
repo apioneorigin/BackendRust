@@ -19,6 +19,9 @@ from enum import Enum
 import re
 import math
 
+# Import shared constants (single source of truth)
+from .constants import S_LEVEL_BASE_FREQUENCIES, interpolate_s_level_frequency
+
 
 class HLevel(Enum):
     """Hierarchical resolution levels."""
@@ -593,17 +596,7 @@ def calculate_creator_exponent(
 # FREQUENCY CALCULATION (from OOF_Math.txt 12.4)
 # ==========================================================================
 
-# S-level base frequencies from OOF_Math.txt
-S_LEVEL_FREQUENCIES = {
-    1: 0.5,   # S1: 0.5 Hz
-    2: 2.0,   # S2: 2 Hz
-    3: 10.0,  # S3: 10 Hz
-    4: 20.0,  # S4: 20 Hz
-    5: 50.0,  # S5: 50 Hz
-    6: 80.0,  # S6: 80 Hz
-    7: 120.0, # S7: 120 Hz
-    8: 200.0  # S8: 200+ Hz
-}
+# S-level base frequencies imported from constants.py
 
 
 @dataclass
@@ -640,8 +633,8 @@ def calculate_base_frequency(
     s_ceil = min(8, s_floor + 1)
     frac = s_level - s_floor
 
-    s_level_base = (1 - frac) * S_LEVEL_FREQUENCIES[s_floor] + \
-                   frac * S_LEVEL_FREQUENCIES[s_ceil]
+    s_level_base = (1 - frac) * S_LEVEL_BASE_FREQUENCIES[s_floor] + \
+                   frac * S_LEVEL_BASE_FREQUENCIES[s_ceil]
 
     # Consciousness multiplier
     consciousness_multiplier = psi ** psi if psi > 0 else 0

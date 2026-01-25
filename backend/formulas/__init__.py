@@ -28,7 +28,7 @@ from .panchakritya import PanchakrityaEngine
 # Master inference engine
 from .inference import OOFInferenceEngine, IntegratedProfile
 
-# New Part XI Advanced Math and missing formulas
+# Part XI Advanced Math and additional OOF formulas (from OOF_Math.txt)
 from .advanced_math import AdvancedMathEngine, get_advanced_math_profile
 from .hierarchical import HierarchicalResolutionEngine, detect_h_level, HLevel
 from .platform_specific import PlatformSpecificEngine, IntelligenceAdaptationEngine, Platform
@@ -38,6 +38,14 @@ from .timeline_prediction import (
     TimelinePredictionEngine,
     EvolutionDynamicsEngine,
     get_evolution_dynamics
+)
+
+# Shared constants
+from .constants import (
+    GOLDEN_RATIO,
+    S_LEVEL_BASE_FREQUENCIES,
+    PLANCK_CONSTANT_REDUCED,
+    BOLTZMANN_CONSTANT
 )
 
 __all__ = [
@@ -66,7 +74,7 @@ __all__ = [
     # Master engine
     'OOFInferenceEngine',
     'IntegratedProfile',
-    # Part XI Advanced Math
+    # Part XI Advanced Math (from OOF_Math.txt)
     'AdvancedMathEngine',
     'get_advanced_math_profile',
     # Hierarchical Resolution (H1-H8)
@@ -86,4 +94,9 @@ __all__ = [
     'TimelinePredictionEngine',
     'EvolutionDynamicsEngine',
     'get_evolution_dynamics',
+    # Shared constants
+    'GOLDEN_RATIO',
+    'S_LEVEL_BASE_FREQUENCIES',
+    'PLANCK_CONSTANT_REDUCED',
+    'BOLTZMANN_CONSTANT',
 ]

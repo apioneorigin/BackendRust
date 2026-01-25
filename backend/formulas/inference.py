@@ -41,6 +41,17 @@ from .osafc import OSAFCEngine, OSAFCLayer
 from .distortions import DistortionEngine, Klesha, Guna
 from .panchakritya import PanchakrityaEngine, KrityaType
 
+# Part XI Advanced Math and additional OOF formulas
+from .advanced_math import AdvancedMathEngine
+from .hierarchical import HierarchicalResolutionEngine, HLevel
+from .platform_specific import PlatformSpecificEngine, IntelligenceAdaptationEngine
+from .multi_reality import MultiRealityEngine
+from .timeline_prediction import (
+    BreakthroughDynamicsEngine,
+    TimelinePredictionEngine,
+    EvolutionDynamicsEngine
+)
+
 
 @dataclass
 class IntegratedProfile:
@@ -63,6 +74,13 @@ class IntegratedProfile:
     osafc_profile: Optional[Any] = None
     distortion_profile: Optional[Any] = None
     panchakritya_profile: Optional[Any] = None
+
+    # Part XI Advanced Math modules
+    advanced_math_profile: Optional[Any] = None
+    hierarchical_profile: Optional[Any] = None
+    platform_profile: Optional[Any] = None
+    multi_reality_profile: Optional[Any] = None
+    timeline_profile: Optional[Any] = None
 
     # Summary metrics
     overall_health: float = 0.0
@@ -91,6 +109,16 @@ class OOFInferenceEngine:
         self.distortion_engine = DistortionEngine()
         self.panchakritya_engine = PanchakrityaEngine()
 
+        # Part XI Advanced Math engines
+        self.advanced_math_engine = AdvancedMathEngine()
+        self.hierarchical_engine = HierarchicalResolutionEngine()
+        self.platform_engine = PlatformSpecificEngine()
+        self.intelligence_adaptation_engine = IntelligenceAdaptationEngine()
+        self.multi_reality_engine = MultiRealityEngine()
+        self.breakthrough_engine = BreakthroughDynamicsEngine()
+        self.timeline_engine = TimelinePredictionEngine()
+        self.evolution_engine = EvolutionDynamicsEngine()
+
     def calculate_full_profile(
         self,
         operators: Dict[str, float],
@@ -114,7 +142,8 @@ class OOFInferenceEngine:
             include_modules = [
                 "operators", "drives", "matrices", "pathways",
                 "cascade", "emotions", "death", "collective",
-                "circles", "kosha", "osafc", "distortions", "panchakritya"
+                "circles", "kosha", "osafc", "distortions", "panchakritya",
+                "advanced_math", "hierarchical", "platform", "multi_reality", "timeline"
             ]
 
         profile = IntegratedProfile(
@@ -194,6 +223,46 @@ class OOFInferenceEngine:
 
         if "panchakritya" in include_modules:
             profile.panchakritya_profile = self.panchakritya_engine.calculate_panchakritya_profile(
+                operators, s_level
+            )
+
+        # Part XI Advanced Math modules
+        if "advanced_math" in include_modules:
+            profile.advanced_math_profile = self.advanced_math_engine.calculate_full_profile(
+                operators, s_level
+            )
+
+        if "hierarchical" in include_modules:
+            # H-level detection requires text context - use operator-based defaults
+            profile.hierarchical_profile = self.hierarchical_engine.get_h_level_info(
+                HLevel.H1_PERSONAL  # Default to personal level without text
+            )
+
+        if "platform" in include_modules:
+            # Platform profiles for common platforms
+            from .platform_specific import Platform
+            profile.platform_profile = {
+                "intelligence_level": self.intelligence_adaptation_engine.detect_intelligence_level(
+                    complexity_handled=operators.get("W_witness", 0.5),
+                    abstraction_comfort=s_level / 8.0,
+                    technical_literacy=operators.get("D_dharma", 0.5)
+                )
+            }
+
+        if "multi_reality" in include_modules:
+            profile.multi_reality_profile = self.multi_reality_engine.calculate_full_multi_reality_state(
+                shared_beliefs=operators.get("Ce_center", 0.5),
+                shared_consciousness=s_level / 8.0,
+                interaction_frequency=0.5,
+                num_participants=1,
+                individual_realities=[s_level / 8.0],
+                consciousness_levels=[s_level / 8.0],
+                attachments=[operators.get("At_attachment", 0.5)],
+                resonance=operators.get("P_presence", 0.5)
+            )
+
+        if "timeline" in include_modules:
+            profile.timeline_profile = self.evolution_engine.calculate_full_evolution_dynamics(
                 operators, s_level
             )
 

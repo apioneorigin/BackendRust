@@ -95,9 +95,8 @@ class MultiRealityState:
     stability: float
 
 
-# Constants
-PLANCK_REDUCED = 1.0  # Normalized ℏ
-BOLTZMANN = 1.0  # Normalized k_B
+# Import shared constants (single source of truth)
+from .constants import PLANCK_CONSTANT_REDUCED, BOLTZMANN_CONSTANT
 
 
 class MultiRealityEngine:
@@ -208,7 +207,7 @@ class MultiRealityEngine:
 
         # Calculate decoherence time
         if temperature * coupling_to_environment > 0:
-            decoherence_time = PLANCK_REDUCED / (BOLTZMANN * temperature * coupling_to_environment)
+            decoherence_time = PLANCK_CONSTANT_REDUCED / (BOLTZMANN_CONSTANT * temperature * coupling_to_environment)
         else:
             decoherence_time = float('inf')
 
@@ -344,7 +343,7 @@ class MultiRealityEngine:
         # Tunneling time
         delta_E = grace_factor * consciousness_energy
         if delta_E > 0:
-            tunneling_time = PLANCK_REDUCED / delta_E
+            tunneling_time = PLANCK_CONSTANT_REDUCED / delta_E
         else:
             tunneling_time = float('inf')
 
