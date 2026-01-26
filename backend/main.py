@@ -1283,7 +1283,7 @@ JSON structure:
     {{"var": "Ma", "value": 0.50, "confidence": 0.6, "reasoning": "..."}},
     {{"var": "Ch", "value": 0.45, "confidence": 0.5, "reasoning": "..."}}
   ],
-  "targets": ["At_attachment", "Fe_fear", "Re_resistance", "M_maya", "breakthrough_probability", "bottleneck_primary", "leverage_highest", "matrix_truth", "matrix_power", "cascade_cleanliness", "grace_availability", "karma_burn_rate", "death_d1_identity", "transformation_vector", "pipeline_flow_rate", "network_coherence", "quantum_tunneling_prob"],
+  "targets": ["At_attachment", "F_fear", "R_resistance", "M_maya", "breakthrough_probability", "bottleneck_primary", "leverage_highest", "matrix_truth", "matrix_power", "cascade_cleanliness", "grace_availability", "karma_burn_rate", "death_d1_identity", "transformation_vector", "pipeline_flow_rate", "network_coherence", "quantum_tunneling_prob"],
   "relevant_oof_components": ["Sacred Chain", "Cascade", "UCB", "Seven Matrices", "Death Architecture"]
 }}
 
@@ -1373,7 +1373,7 @@ JSON structure:
     {{"var": "K", "value": 0.45, "confidence": 0.7, "reasoning": "..."}},
     ... (all 25 operators)
   ],
-  "targets": ["At_attachment", "Fe_fear", "Re_resistance", ...],
+  "targets": ["At_attachment", "F_fear", "R_resistance", ...],
   "relevant_oof_components": ["Sacred Chain", "Cascade", "UCB", "Seven Matrices", "Death Architecture"]
 }}
 
@@ -2844,7 +2844,7 @@ async def run_reverse_mapping_for_articulation(
     # This uses properly computed tier-1 values after formula execution
     current_operators = _extract_operators_from_consciousness_state(consciousness_state)
     reverse_logger.debug(f"[REVERSE MAPPING] Extracted {len(current_operators)} operators from consciousness state")
-    reverse_logger.debug(f"[REVERSE MAPPING] Sample operators: Psi={current_operators.get('Psi_consciousness', 0):.2f}, G={current_operators.get('G_grace', 0):.2f}, K={current_operators.get('K_karma', 0):.2f}")
+    reverse_logger.debug(f"[REVERSE MAPPING] Sample operators: Psi={current_operators.get('Psi_quality', 0):.2f}, G={current_operators.get('G_grace', 0):.2f}, K={current_operators.get('K_karma', 0):.2f}")
 
     # Get current S-level from consciousness state
     current_s_level = consciousness_state.tier1.s_level.current
@@ -3051,35 +3051,41 @@ def _extract_operators_from_consciousness_state(consciousness_state: Consciousne
     """
     core = consciousness_state.tier1.core_operators
 
-    # Map CoreOperators fields to canonical internal operator names
+    # Map CoreOperators fields to canonical operator names per OOF_Nomenclature.txt
+    # Keys MUST match CANONICAL_OPERATOR_NAMES used by reverse_causality engine
     operators = {
-        # Core consciousness operators
-        'Psi_consciousness': core.Psi_quality,
+        # Core consciousness operators (canonical names)
+        'Psi_quality': core.Psi_quality,
         'K_karma': core.K_karma,
         'M_maya': core.M_maya,
         'G_grace': core.G_grace,
         'W_witness': core.W_witness,
-        # Awareness and energy operators
-        'A_awareness': core.A_aware,
-        'P_presence': core.P_presence,  # Presence in moment
-        'E_entropy': core.E_equanimity,  # Maps to equanimity
+        # Awareness and energy operators (canonical names)
+        'A_aware': core.A_aware,
+        'P_presence': core.P_presence,
+        'E_equanimity': core.E_equanimity,
         'V_void': core.V_void,
-        'L_love': consciousness_state.tier1.drives.love_strength,  # From drives
-        'R_resonance': core.Co_coherence,  # Resonance/coherence
-        # Attachment and aversion operators
+        'L_love': consciousness_state.tier1.drives.love_strength,
+        'Co_coherence': core.Co_coherence,
+        # Attachment and binding operators (canonical names)
         'At_attachment': core.At_attachment,
-        'Av_aversion': core.R_resistance,  # Resistance as aversion proxy
-        # Service and practice operators
-        'Se_seva': core.Se_service,
-        'Ce_cleaning': core.Ce_cleaning,  # Celebration/cleaning practice
-        'Su_surrender': core.S_surrender,
-        # Aspiration and desire operators
-        'As_aspiration': core.I_intention,  # Intention as aspiration
-        'Fe_fear': core.F_fear,
-        'De_desire': 1.0 - core.V_void,  # Desire inversely related to void
-        'Re_resistance': core.R_resistance,
+        'R_resistance': core.R_resistance,
+        # Service and practice operators (canonical names)
+        'Se_service': core.Se_service,
+        'Ce_cleaning': core.Ce_cleaning,
+        'S_surrender': core.S_surrender,
+        # Will, emotion, and pattern operators (canonical names)
+        'I_intention': core.I_intention,
+        'F_fear': core.F_fear,
         'Hf_habit': core.Hf_habit,
-        # Mind operators (derived from existing)
+        # Extended operators (SHORT_TO_CANONICAL names)
+        'D_dharma': core.D_dharma,
+        'Sh_shakti': core.Sh_shakti,
+        'O_openness': core.O_openness,
+        'J_joy': core.J_joy,
+        'Tr_trust': core.Tr_trust,
+        # Derived operators (computed from canonical operators)
+        'De_desire': 1.0 - core.V_void,  # Desire inversely related to void
         'Sa_samskara': core.Hf_habit * core.M_manifest,  # Impressions from habits and manifestation
         'Bu_buddhi': core.A_aware * core.W_witness,  # Discrimination from awareness and witness
         'Ma_manas': core.P_presence,  # Mind-presence
@@ -3099,39 +3105,47 @@ def _extract_operators_from_evidence(evidence: dict) -> Tuple[Dict[str, float], 
     confidence = {}
 
     # Unified mapping for the 25 core operators
-    # Maps both short and long forms to canonical internal names
+    # Maps both short and long forms to CANONICAL names per OOF_Nomenclature.txt
     var_to_op = {
-        # Core consciousness operators
-        'Ψ': 'Psi_consciousness', 'Consciousness': 'Psi_consciousness',
+        # Core consciousness operators (canonical names)
+        'Ψ': 'Psi_quality', 'Psi': 'Psi_quality', 'Consciousness': 'Psi_quality',
         'K': 'K_karma', 'Karma': 'K_karma',
         'M': 'M_maya', 'Maya': 'M_maya',
         'G': 'G_grace', 'Grace': 'G_grace',
         'W': 'W_witness', 'Witness': 'W_witness',
-        # Awareness and energy operators
-        'A': 'A_awareness', 'Awareness': 'A_awareness',
-        'P': 'P_presence', 'Presence': 'P_presence',  # Presence in moment
-        'E': 'E_entropy', 'Entropy': 'E_entropy',
+        # Awareness and energy operators (canonical names)
+        'A': 'A_aware', 'Awareness': 'A_aware',
+        'P': 'P_presence', 'Presence': 'P_presence',
+        'E': 'E_equanimity', 'Equanimity': 'E_equanimity',
         'V': 'V_void', 'Void': 'V_void',
-        'L': 'L_love', 'Love': 'L_love',  # Added
-        'R': 'R_resonance', 'Resonance': 'R_resonance',  # Added
-        # Attachment and aversion operators
+        'L': 'L_love', 'Love': 'L_love',
+        'Co': 'Co_coherence', 'Coherence': 'Co_coherence',
+        # Attachment and binding operators (canonical names)
         'At': 'At_attachment', 'Attachment': 'At_attachment',
-        'Av': 'Av_aversion', 'Aversion': 'Av_aversion',  # Added
-        # Service and practice operators
-        'Se': 'Se_seva', 'Seva': 'Se_seva',
-        'Ce': 'Ce_cleaning', 'Cleaning': 'Ce_cleaning',  # Fixed: was Ce_cleaning
-        'Su': 'Su_surrender', 'Surrender': 'Su_surrender',
-        # Aspiration and desire operators
-        'As': 'As_aspiration', 'Aspiration': 'As_aspiration',  # Added
-        'Fe': 'Fe_fear', 'Fear': 'Fe_fear',
-        'De': 'De_desire', 'Desire': 'De_desire',  # Added
-        'Re': 'Re_resistance', 'Resistance': 'Re_resistance',
+        'R': 'R_resistance', 'Resistance': 'R_resistance',
+        # Service and practice operators (canonical names)
+        'Se': 'Se_service', 'Seva': 'Se_service', 'Service': 'Se_service',
+        'Ce': 'Ce_cleaning', 'Cleaning': 'Ce_cleaning',
+        'S': 'S_surrender', 'Su': 'S_surrender', 'Surrender': 'S_surrender',
+        # Will, emotion, and pattern operators (canonical names)
+        'I': 'I_intention', 'Intention': 'I_intention',
+        'F': 'F_fear', 'Fe': 'F_fear', 'Fear': 'F_fear',
+        'D': 'D_dharma', 'Dharma': 'D_dharma',
         'Hf': 'Hf_habit', 'Habit Force': 'Hf_habit', 'Habit_Force': 'Hf_habit',
+        'Sh': 'Sh_shakti', 'Shakti': 'Sh_shakti',
+        'O': 'O_openness', 'Openness': 'O_openness',
+        'J': 'J_joy', 'Joy': 'J_joy',
+        'Tr': 'Tr_trust', 'Trust': 'Tr_trust',
+        # Extended operators (SHORT_TO_CANONICAL names)
+        'De': 'De_desire', 'Desire': 'De_desire',
+        'Re': 'R_resistance',
+        'As': 'I_intention', 'Aspiration': 'I_intention',
+        'Av': 'R_resistance', 'Aversion': 'R_resistance',
         # Mind operators (Antahkarana)
-        'Sa': 'Sa_samskara', 'Samskara': 'Sa_samskara',  # Added
-        'Bu': 'Bu_buddhi', 'Buddhi': 'Bu_buddhi',  # Added
-        'Ma': 'Ma_manas', 'Manas': 'Ma_manas',  # Added
-        'Ch': 'Ch_chitta', 'Chitta': 'Ch_chitta',  # Added
+        'Sa': 'Sa_samskara', 'Samskara': 'Sa_samskara',
+        'Bu': 'Bu_buddhi', 'Buddhi': 'Bu_buddhi',
+        'Ma': 'Ma_manas', 'Manas': 'Ma_manas',
+        'Ch': 'Ch_chitta', 'Chitta': 'Ch_chitta',
     }
 
     for obs in evidence.get('observations', []):

@@ -95,11 +95,11 @@ class SessionStore:
         'Av': 'Av', 'Av_aversion': 'Av', 'aversion': 'Av',
         'Se': 'Se', 'Se_service': 'Se', 'service': 'Se',
         'Ce': 'Ce', 'Ce_cleaning': 'Ce', 'celebration': 'Ce', 'cleaning': 'Ce',
-        'Su': 'Su', 'Su_suffering': 'Su', 'suffering': 'Su',
+        'Su': 'Su',  # Su → S_surrender per SHORT_TO_CANONICAL
         'As': 'As', 'As_aspiration': 'As', 'aspiration': 'As',
-        'Fe': 'Fe', 'Fe_faith': 'Fe', 'faith': 'Fe',
-        'De': 'De', 'De_devotion': 'De', 'devotion': 'De',
-        'Re': 'Re', 'Re_receptivity': 'Re', 'receptivity': 'Re',
+        'Fe': 'Fe',  # Fe → F_fear per SHORT_TO_CANONICAL
+        'De': 'De', 'De_desire': 'De', 'desire': 'De',
+        'Re': 'Re',  # Re → R_resistance per SHORT_TO_CANONICAL
         'Hf': 'Hf', 'Hf_habit': 'Hf', 'habit': 'Hf',
         'Sa': 'Sa', 'Sa_samskara': 'Sa', 'samskara': 'Sa',
         'Bu': 'Bu', 'Bu_buddhi': 'Bu', 'buddhi': 'Bu',
