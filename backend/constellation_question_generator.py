@@ -43,6 +43,8 @@ from consciousness_state import GoalContext
 # Import canonical operator names from central source
 from formulas import CANONICAL_OPERATOR_NAMES
 
+from logging_config import question_logger as logger
+
 
 @dataclass
 class MultiDimensionalQuestion:
@@ -167,12 +169,14 @@ class ConstellationQuestionGenerator:
         else:
             domain = 'personal'
 
-        return GoalContext(
+        gc = GoalContext(
             goal_text=query[:200],  # First 200 chars
             goal_category=category,
             emotional_undertone=undertone,
             domain=domain
         )
+        logger.info(f"[QUESTION_GEN] Parsed goal: category={category} undertone={undertone} domain={domain}")
+        return gc
 
     def identify_pivot_operators(
         self,
@@ -332,9 +336,11 @@ class ConstellationQuestionGenerator:
         """
         # Check if we should even ask
         if not self.should_ask_question(missing_operators, known_operators, goal_context):
+            logger.info(f"[QUESTION_GEN] Skipping question: sufficient operators known ({len(known_operators)}/{len(CORE_OPERATORS)})")
             return None
 
         self._question_counter += 1
+        logger.info(f"[QUESTION_GEN] Generating question #{self._question_counter} for category={goal_context.goal_category}")
 
         # Get constellation options for this goal category
         constellations = get_constellations_for_goal(goal_context.goal_category)
@@ -360,7 +366,7 @@ class ConstellationQuestionGenerator:
             'emotional_undertone',   # Reveals emotional quality
         ]
 
-        return MultiDimensionalQuestion(
+        question = MultiDimensionalQuestion(
             question_id=f"constellation_{self._question_counter}",
             question_text=question_text,
             answer_options=constellations,
@@ -369,6 +375,12 @@ class ConstellationQuestionGenerator:
             purposes_served=purposes,
             goal_context=goal_context
         )
+        logger.info(
+            f"[QUESTION_GEN] Generated question: id={question.question_id} "
+            f"diagnostic_power={diagnostic_power:.2f} pivot_ops={pivot_ops} "
+            f"options={len(constellations)}"
+        )
+        return question
 
     def generate_response_validation_question(
         self,

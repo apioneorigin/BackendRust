@@ -10,6 +10,7 @@ UNITY PRINCIPLE ENHANCEMENT:
 
 from typing import List, Dict, Any, Tuple, Optional
 from consciousness_state import ConsciousnessState, Bottleneck
+from logging_config import consciousness_logger as logger
 
 # Import unity principle constants and functions
 from formulas.unity_principle import (
@@ -85,6 +86,7 @@ class BottleneckDetector:
         Detect all bottlenecks in the consciousness state.
         Returns list of bottlenecks sorted by impact (high first).
         """
+        logger.info("[BOTTLENECK] Starting bottleneck detection")
         bottlenecks: List[Bottleneck] = []
 
         # Get core operators as dict
@@ -138,6 +140,15 @@ class BottleneckDetector:
         impact_order = {'high': 0, 'medium': 1, 'low': 2}
         bottlenecks.sort(key=lambda b: (impact_order.get(b.impact, 3), -b.value))
 
+        high_count = sum(1 for b in bottlenecks if b.impact == 'high')
+        root_count = sum(1 for b in bottlenecks if b.is_root_separation_pattern)
+        logger.info(
+            f"[BOTTLENECK] Detection complete: {len(bottlenecks)} bottlenecks "
+            f"({high_count} high impact, {root_count} root separation patterns)"
+        )
+        for b in bottlenecks[:3]:
+            logger.debug(f"[BOTTLENECK] Top: {b.variable} val={b.value:.2f} impact={b.impact} sep_amp={b.separation_amplification_score:.2f}")
+
         return bottlenecks
 
     def _check_attachment_operators(self, ops: Dict[str, float]) -> List[Bottleneck]:
@@ -147,6 +158,7 @@ class BottleneckDetector:
         for var, name, category in self.ATTACHMENT_OPERATORS:
             value = ops.get(var, 0.5)
             if value > self.HIGH_THRESHOLD:
+                logger.debug(f"[BOTTLENECK] Attachment bottleneck: {var}={value:.2f} > {self.HIGH_THRESHOLD}")
                 impact = 'high' if value > 0.85 else 'medium'
 
                 # Calculate separation amplification
@@ -178,6 +190,7 @@ class BottleneckDetector:
         for var, name, category in self.FLOW_OPERATORS:
             value = ops.get(var, 0.5)
             if value < self.LOW_THRESHOLD:
+                logger.debug(f"[BOTTLENECK] Flow bottleneck: {var}={value:.2f} < {self.LOW_THRESHOLD}")
                 impact = 'high' if value < 0.15 else 'medium'
 
                 # Low flow operators indicate reduced unity capacity
@@ -213,6 +226,7 @@ class BottleneckDetector:
 
             # Check if first is high AND second is low
             if high_val > 0.6 and low_val < 0.4 and (high_val - low_val) > self.INVERSE_PAIR_DIFF:
+                logger.debug(f"[BOTTLENECK] Inverse pair: {high_var}={high_val:.2f} vs {low_var}={low_val:.2f} (diff={high_val-low_val:.2f})")
                 impact = 'high' if (high_val - low_val) > 0.5 else 'medium'
 
                 # Inverse pairs are root separation patterns by definition

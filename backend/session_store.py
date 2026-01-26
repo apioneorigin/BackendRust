@@ -18,6 +18,7 @@ import json
 import uuid
 
 from formulas import CANONICAL_OPERATOR_NAMES
+from logging_config import session_store_logger as logger
 
 
 class OperatorSource(Enum):
@@ -138,6 +139,7 @@ class SessionStore:
         """
         session_id = str(uuid.uuid4())
         now = datetime.utcnow()
+        logger.info(f"[SESSION] Creating new session {session_id[:8]}... for query: '{query[:60]}...'")
 
         context = SessionContext(
             original_query=query,
@@ -158,6 +160,7 @@ class SessionStore:
         )
 
         self.sessions[session_id] = session
+        logger.debug(f"[SESSION] Session {session_id[:8]} created with {len(self.CORE_OPERATORS)} missing operators")
         return session
 
     def get_session(self, session_id: str) -> Optional[SessionState]:
@@ -172,10 +175,12 @@ class SessionStore:
         """
         session = self.sessions.get(session_id)
         if session is None:
+            logger.debug(f"[SESSION] Session {session_id[:8]} not found")
             return None
 
         # Check if session has expired
         if datetime.utcnow() - session.last_updated > self.session_timeout:
+            logger.info(f"[SESSION] Session {session_id[:8]} expired, removing")
             del self.sessions[session_id]
             return None
 
@@ -252,6 +257,7 @@ class SessionStore:
         session.missing_operators.discard(canonical)
         session.last_updated = datetime.utcnow()
 
+        logger.debug(f"[SESSION] Set {canonical}={value:.3f} conf={confidence:.2f} src={source.value} remaining_missing={len(session.missing_operators)}")
         return True
 
     def set_operators_batch(
@@ -284,6 +290,7 @@ class SessionStore:
             else:
                 rejected += 1
 
+        logger.info(f"[SESSION] Batch set: {successful} accepted, {rejected} rejected (src={source.value})")
         return successful, rejected
 
     def get_operator(self, session_id: str, operator_name: str) -> Optional[OperatorValue]:
@@ -563,6 +570,8 @@ class SessionStore:
         for sid in expired:
             del self.sessions[sid]
 
+        if expired:
+            logger.info(f"[SESSION] Cleaned up {len(expired)} expired sessions")
         return len(expired)
 
 

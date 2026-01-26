@@ -11,6 +11,7 @@ UNITY PRINCIPLE ENHANCEMENT:
 
 from typing import List, Dict, Any
 from consciousness_state import ConsciousnessState, LeveragePoint
+from logging_config import consciousness_logger as logger
 
 # Import unity principle constants and functions
 from formulas.unity_principle import (
@@ -45,6 +46,7 @@ class LeverageIdentifier:
         Identify all leverage points in the consciousness state.
         Returns list sorted by multiplier (highest first).
         """
+        logger.info("[LEVERAGE] Starting leverage point identification")
         leverage_points: List[LeveragePoint] = []
 
         # Get core operators
@@ -75,7 +77,17 @@ class LeverageIdentifier:
         leverage_points.sort(key=lambda lp: lp.multiplier, reverse=True)
 
         # Return top leverage points (limit to avoid overwhelming)
-        return leverage_points[:5]
+        top_points = leverage_points[:5]
+        unity_count = sum(1 for lp in top_points if lp.pathway_type == 'unity')
+        max_mult = max((lp.multiplier for lp in top_points), default=1.0)
+        logger.info(
+            f"[LEVERAGE] Identification complete: {len(top_points)} points "
+            f"(max_mult={max_mult:.2f}, unity_aligned={unity_count})"
+        )
+        for lp in top_points:
+            logger.debug(f"[LEVERAGE] {lp.description}: mult={lp.multiplier:.2f} pathway={lp.pathway_type} unity_align={lp.unity_alignment:.3f}")
+
+        return top_points
 
     def _check_grace_coherence_leverage(
         self,

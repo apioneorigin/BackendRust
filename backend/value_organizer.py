@@ -6,6 +6,8 @@ Transforms flat backend calculations into semantic structure
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 
+from logging_config import articulation_logger as logger
+
 from consciousness_state import (
     ConsciousnessState, Tier1, Tier2, Tier3, Tier4, Tier5, Tier6,
     CoreOperators, SLevel, Drives,
@@ -45,7 +47,10 @@ class ValueOrganizer:
         PURE ARCHITECTURE: Pass context from Call 1 to guide Call 2 value selection.
         UNITY PRINCIPLE: Extract unity metrics and dual pathways for Jeevatma-Paramatma analysis.
         """
-        return ConsciousnessState(
+        logger.info(f"[VALUE_ORGANIZER] Organizing {len(raw_values)} raw values into consciousness state")
+        logger.debug(f"[VALUE_ORGANIZER] Tier1 keys: {len(tier1_values)} | Targets: {len(tier1_values.get('targets', []))}")
+
+        state = ConsciousnessState(
             timestamp=datetime.now().isoformat(),
             user_id=user_id,
             session_id=session_id,
@@ -65,6 +70,16 @@ class ValueOrganizer:
             dual_pathways=self._extract_dual_pathways(raw_values),
             goal_context=self._extract_goal_context(tier1_values)
         )
+
+        logger.info(
+            f"[VALUE_ORGANIZER] Organization complete: "
+            f"S-level={state.tier1.s_level.current} "
+            f"unity_metrics={'present' if state.unity_metrics else 'None'} "
+            f"dual_pathways={'present' if state.dual_pathways else 'None'} "
+            f"goal_context={'present' if state.goal_context else 'None'}"
+        )
+
+        return state
 
     def _get_value(self, values: Dict[str, Any], *keys, default: Optional[float] = None) -> Optional[float]:
         """Get value from dict, trying multiple key names. Returns None if not found (ZERO-FALLBACK)."""
@@ -497,13 +512,19 @@ class ValueOrganizer:
         """
         v = values.get('values', values)
 
-        return UnitySeparationMetrics(
+        metrics = UnitySeparationMetrics(
             separation_distance=self._get_value(v, 'unity_separation_distance', default=None),
             distortion_field=self._get_value(v, 'unity_distortion_field', default=None),
             percolation_quality=self._get_value(v, 'unity_percolation_quality', default=None),
             unity_vector=self._get_value(v, 'unity_vector', default=None),
             net_direction=v.get('unity_net_direction', 'neutral')
         )
+        logger.debug(
+            f"[VALUE_ORGANIZER] Unity metrics extracted: sep_dist={metrics.separation_distance} "
+            f"distortion={metrics.distortion_field} percolation={metrics.percolation_quality} "
+            f"vector={metrics.unity_vector} direction={metrics.net_direction}"
+        )
+        return metrics
 
     def _extract_dual_pathways(self, values: Dict[str, Any]) -> DualPathway:
         """
@@ -541,13 +562,18 @@ class ValueOrganizer:
             grace_utilization=self._get_value(v, 'pathway_unity_grace_util', default=None)
         )
 
-        return DualPathway(
+        dp = DualPathway(
             separation_pathway=separation_pathway,
             unity_pathway=unity_pathway,
             crossover_point_months=self._get_value(v, 'pathway_crossover_months', default=None),
             recommended_pathway=v.get('pathway_recommendation', 'unity'),
             optimal_blend_ratio=self._get_value(v, 'pathway_blend_ratio', default=None)
         )
+        logger.debug(
+            f"[VALUE_ORGANIZER] Dual pathways extracted: recommended={dp.recommended_pathway} "
+            f"crossover={dp.crossover_point_months} blend_ratio={dp.optimal_blend_ratio}"
+        )
+        return dp
 
     def _extract_goal_context(self, tier1_values: Dict[str, Any]) -> GoalContext:
         """
@@ -560,7 +586,7 @@ class ValueOrganizer:
         """
         goal_data = tier1_values.get('goal_context', {})
 
-        return GoalContext(
+        gc = GoalContext(
             category=goal_data.get('category', 'achievement'),
             explicit_goal=goal_data.get('explicit_goal', tier1_values.get('goal', '')),
             implicit_goal=goal_data.get('implicit_goal', ''),
@@ -568,3 +594,9 @@ class ValueOrganizer:
             death_architecture_required=goal_data.get('death_architecture_required', ''),
             s_level_requirement=goal_data.get('s_level_requirement', 3.0)
         )
+        logger.debug(
+            f"[VALUE_ORGANIZER] Goal context extracted: category={gc.category} "
+            f"why={gc.why_category} s_req={gc.s_level_requirement} "
+            f"explicit='{gc.explicit_goal[:50]}...'"
+        )
+        return gc

@@ -32,6 +32,7 @@ from typing import Dict, List, Optional, Tuple
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from consciousness_state import UnitySeparationMetrics, PathwayMetrics, DualPathway
+from logging_config import dual_pathway_logger as logger
 
 
 # =============================================================================
@@ -64,6 +65,8 @@ def calculate_separation_pathway(
     S = operators.get('S_surrender') or 0.5
     W = operators.get('W_witness') or 0.5
 
+    logger.debug(f"[SEP_PATHWAY] goal={goal_category} At={At:.2f} F={F:.2f} R={R:.2f} M={M:.2f} S={S:.2f} W={W:.2f}")
+
     # Separation pathway: high attachment/fear -> higher initial probability but poor sustainability
     # The more attached/fearful, the more likely to force short-term success
     initial_prob = 0.3 + (At * 0.35) + (F * 0.25)
@@ -86,7 +89,7 @@ def calculate_separation_pathway(
     # Higher attachment = more forcing = faster timeline
     time_months = max(2, 12 - (At * 4) - (F * 3))
 
-    return PathwayMetrics(
+    pathway = PathwayMetrics(
         initial_success_probability=initial_prob,
         sustainability_probability=sustainability,
         fulfillment_quality=fulfillment,
@@ -96,6 +99,11 @@ def calculate_separation_pathway(
         effort_required=energetic_cost,
         grace_utilization=0.0          # Separation doesn't utilize grace
     )
+    logger.debug(
+        f"[SEP_PATHWAY] Result: init={initial_prob:.2f} sustain={sustainability:.2f} "
+        f"fulfill={fulfillment:.2f} cost={energetic_cost:.2f} time={time_months:.0f}mo"
+    )
+    return pathway
 
 
 def calculate_unity_pathway(
@@ -125,6 +133,8 @@ def calculate_unity_pathway(
     E = operators.get('E_equanimity') or 0.5
     P = operators.get('P_presence') or 0.5
 
+    logger.debug(f"[UNITY_PATHWAY] goal={goal_category} S={S:.2f} W={W:.2f} G={G:.2f} E={E:.2f} P={P:.2f}")
+
     # Unity pathway: moderate initial probability but excellent sustainability
     # Depends on surrender, witness, and grace
     initial_prob = 0.35 + (S * 0.25) + (W * 0.15) + (G * 0.15)
@@ -148,7 +158,7 @@ def calculate_unity_pathway(
     # Grace utilization for unity pathway
     grace_util = G * 0.7 + S * 0.3  # Weighted combination of grace and surrender
 
-    return PathwayMetrics(
+    pathway = PathwayMetrics(
         initial_success_probability=initial_prob,
         sustainability_probability=sustainability,
         fulfillment_quality=fulfillment,
@@ -158,6 +168,11 @@ def calculate_unity_pathway(
         effort_required=energetic_cost,
         grace_utilization=grace_util
     )
+    logger.debug(
+        f"[UNITY_PATHWAY] Result: init={initial_prob:.2f} sustain={sustainability:.2f} "
+        f"fulfill={fulfillment:.2f} cost={energetic_cost:.2f} time={time_months:.0f}mo grace_util={grace_util:.2f}"
+    )
+    return pathway
 
 
 def project_pathway_over_time(
@@ -292,16 +307,25 @@ def calculate_dual_pathways(
     Returns:
         DualPathway with both pathways, recommendation, and projections
     """
+    logger.info(f"[DUAL_PATHWAYS] Calculating for goal='{goal[:60]}...' category={goal_category}")
+
     # Calculate both pathways
     sep_pathway = calculate_separation_pathway(goal_category, operators, unity_metrics)
     unity_pathway = calculate_unity_pathway(goal_category, operators, unity_metrics)
 
     # Project over time
     projections, crossover_month = project_pathway_over_time(sep_pathway, unity_pathway)
+    logger.debug(f"[DUAL_PATHWAYS] Projections: {len(projections)} points, crossover_month={crossover_month}")
 
     # Generate recommendation
     recommendation, reasoning = generate_recommendation_reasoning(
         sep_pathway, unity_pathway, crossover_month, goal_category
+    )
+    logger.info(
+        f"[DUAL_PATHWAYS] Recommendation: {recommendation} | "
+        f"Sep init={sep_pathway.initial_success_probability:.2f} sustain={sep_pathway.sustainability_probability:.2f} | "
+        f"Unity init={unity_pathway.initial_success_probability:.2f} sustain={unity_pathway.sustainability_probability:.2f} | "
+        f"Crossover month={crossover_month}"
     )
 
     return DualPathway(

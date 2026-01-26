@@ -17,6 +17,7 @@ from dataclasses import dataclass, field
 import math
 
 from formulas import CANONICAL_OPERATOR_NAMES
+from logging_config import validation_logger as logger
 
 
 @dataclass
@@ -160,6 +161,8 @@ class Validator:
         missing_operators = []
         populated_operators = []
 
+        logger.info(f"[VALIDATION] Extraction validation: auto_correct={auto_correct} zero_fallback={zero_fallback_mode}")
+
         # Extract observations
         observations = tier1_values.get('observations', [])
 
@@ -233,6 +236,14 @@ class Validator:
         # In zero-fallback mode, validation is valid even with missing operators
         # as long as no actual errors (invalid values) exist
         is_valid = len(errors) == 0
+
+        logger.info(
+            f"[VALIDATION] Extraction result: valid={is_valid} populated={len(populated_operators)} "
+            f"missing={len(missing_operators)} errors={len(errors)} warnings={len(warnings)}"
+        )
+        if errors:
+            for e in errors:
+                logger.error(f"[VALIDATION] Extraction error: {e}")
 
         return ValidationResult(
             valid=is_valid,
@@ -341,6 +352,11 @@ class Validator:
         # Report blocked calculations
         if blocked:
             warnings.append(f"{len(blocked)} calculations blocked due to missing inputs")
+
+        logger.info(
+            f"[VALIDATION] Calculation result: valid={len(errors)==0} populated={len(populated)} "
+            f"blocked={len(blocked)} corrections={len(corrections)}"
+        )
 
         return ValidationResult(
             valid=len(errors) == 0,
@@ -667,6 +683,13 @@ class Validator:
         # In zero-fallback mode, low coverage is a warning, not an error
         coverage_penalty = (1 - operator_coverage) * 0.3 if zero_fallback_mode else 0
         quality_score = max(0.0, 1.0 - error_penalty - warning_penalty - coverage_penalty)
+
+        logger.info(
+            f"[VALIDATION] Comprehensive result: overall_valid={overall_valid} quality={quality_score:.2f} "
+            f"coverage={operator_coverage:.1%} errors={len(all_errors)} warnings={len(all_warnings)} "
+            f"(extract={extraction_result.valid} calc={calculation_result.valid} "
+            f"coherence={coherence_result.valid} semantic={semantic_result.valid})"
+        )
 
         return ComprehensiveValidation(
             extraction_valid=extraction_result.valid,

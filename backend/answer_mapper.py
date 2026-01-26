@@ -12,6 +12,7 @@ ZERO-FALLBACK MODE: Only confirmed mappings are stored.
 from typing import Any, Dict, List, Optional, Tuple, Set, TYPE_CHECKING
 from dataclasses import dataclass, field
 from enum import Enum
+from logging_config import answer_mapper_logger as logger
 
 if TYPE_CHECKING:
     from question_archetypes import OperatorConstellation
@@ -77,6 +78,7 @@ class AnswerMapper:
         Returns:
             MappingResult with all operator values from constellation
         """
+        logger.info(f"[ANSWER_MAPPER] Mapping constellation '{selected_constellation.pattern_name}' ({len(selected_constellation.operators)} operators)")
         mapped_values = []
 
         for operator, (value, confidence_score) in selected_constellation.operators.items():
@@ -96,6 +98,11 @@ class AnswerMapper:
                 question_id=None,
                 raw_response=selected_constellation.pattern_name
             ))
+
+        high_conf = sum(1 for mv in mapped_values if mv.confidence == MappingConfidence.HIGH)
+        logger.info(f"[ANSWER_MAPPER] Mapped {len(mapped_values)} operators ({high_conf} high confidence)")
+        for mv in mapped_values:
+            logger.debug(f"[ANSWER_MAPPER]   {mv.operator}={mv.value:.2f} conf={mv.confidence.value}")
 
         return MappingResult(
             success=True,
@@ -138,6 +145,13 @@ class AnswerMapper:
                     )
 
         is_valid = len(conflicts) == 0
+
+        if conflicts:
+            logger.warning(f"[ANSWER_MAPPER] Constellation consistency check: {len(conflicts)} conflicts found")
+            for c in conflicts:
+                logger.warning(f"[ANSWER_MAPPER]   Conflict: {c}")
+        else:
+            logger.debug(f"[ANSWER_MAPPER] Constellation consistent with {len(existing_operators)} existing operators")
 
         return is_valid, conflicts
 

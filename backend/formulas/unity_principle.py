@@ -25,6 +25,7 @@ from typing import Dict, List, Optional, Tuple
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from consciousness_state import UnitySeparationMetrics
+from logging_config import unity_principle_logger as logger
 
 
 # =============================================================================
@@ -163,9 +164,12 @@ def calculate_separation_distance(
         Separation distance (0.0 to 1.0) or None if s_level missing
     """
     if s_level is None:
+        logger.debug("[SEPARATION] s_level is None, returning None")
         return None
 
-    return d_initial * math.exp(-k * s_level)
+    result = d_initial * math.exp(-k * s_level)
+    logger.debug(f"[SEPARATION] S={s_level:.1f} -> d(S)={result:.4f}")
+    return result
 
 
 def calculate_distortion_field(
@@ -188,9 +192,12 @@ def calculate_distortion_field(
         Distortion field (0.0 to 1.0) or None if separation missing
     """
     if separation is None:
+        logger.debug("[DISTORTION] separation is None, returning None")
         return None
 
-    return 1.0 - math.exp(-separation / d_zero)
+    result = 1.0 - math.exp(-separation / d_zero)
+    logger.debug(f"[DISTORTION] sep={separation:.4f} -> Delta={result:.4f}")
+    return result
 
 
 def calculate_percolation_quality(
@@ -225,6 +232,7 @@ def calculate_percolation_quality(
             missing.append(op)
 
     if missing or distortion is None:
+        logger.debug(f"[PERCOLATION] Cannot calculate - missing: {missing}, distortion_none={distortion is None}")
         return None, missing
 
     W = operators['W_witness']
@@ -234,6 +242,7 @@ def calculate_percolation_quality(
 
     # Percolation = (1 - Distortion) * (W * A * P) * (1 - M)
     quality = (1.0 - distortion) * (W * A * P) * (1.0 - M)
+    logger.debug(f"[PERCOLATION] W={W:.2f} A={A:.2f} P={P:.2f} M={M:.2f} -> quality={quality:.4f}")
 
     return quality, []
 
@@ -274,6 +283,7 @@ def calculate_unity_vector(
         total_weight += weight
 
     if total_weight == 0:
+        logger.debug("[UNITY_VECTOR] No operators with values, returning None")
         return None, {}
 
     # Normalize to -1.0 to +1.0 range
@@ -281,6 +291,9 @@ def calculate_unity_vector(
 
     # Clamp to valid range
     unity_vector = max(-1.0, min(1.0, unity_vector))
+
+    direction = "toward_unity" if unity_vector > 0.1 else "toward_separation" if unity_vector < -0.1 else "neutral"
+    logger.debug(f"[UNITY_VECTOR] {len(contributions)} operators -> vector={unity_vector:.4f} ({direction})")
 
     return unity_vector, contributions
 
@@ -318,11 +331,13 @@ def calculate_dharmic_karma(
             adharmic_values.append(val)
 
     if not dharmic_values and not adharmic_values:
+        logger.debug("[DHARMIC_KARMA] No dharmic or adharmic values available")
         return None, None, None
 
     dharmic = sum(dharmic_values) / len(dharmic_values) if dharmic_values else 0.0
     adharmic = sum(adharmic_values) / len(adharmic_values) if adharmic_values else 0.0
     net = dharmic - adharmic
+    logger.debug(f"[DHARMIC_KARMA] dharmic={dharmic:.3f} adharmic={adharmic:.3f} net={net:.3f}")
 
     return dharmic, adharmic, net
 
@@ -428,6 +443,9 @@ def get_unity_metrics(
     Returns:
         UnitySeparationMetrics with all calculated values
     """
+    populated_count = sum(1 for v in operators.values() if v is not None)
+    logger.info(f"[UNITY_METRICS] Starting calculation: S={s_level}, operators={populated_count}/{len(operators)}")
+
     # Calculate separation distance from S-level
     sep_distance = calculate_separation_distance(s_level)
 
@@ -462,7 +480,7 @@ def get_unity_metrics(
         if operators.get(op) is None:
             all_missing.add(op)
 
-    return UnitySeparationMetrics(
+    metrics = UnitySeparationMetrics(
         separation_distance=sep_distance,
         distortion_field=distortion,
         percolation_quality=percolation,
@@ -474,6 +492,16 @@ def get_unity_metrics(
         missing_operators=list(all_missing),
         operator_contributions=contributions
     )
+
+    logger.info(
+        f"[UNITY_METRICS] Complete: sep_dist={sep_distance}, "
+        f"distortion={distortion}, percolation={percolation}, "
+        f"unity_vector={unity_vector}, unity_realization={unity_realization}, "
+        f"grace_mult={grace_mult}, confidence={confidence:.2f}, "
+        f"missing={len(all_missing)}"
+    )
+
+    return metrics
 
 
 # =============================================================================

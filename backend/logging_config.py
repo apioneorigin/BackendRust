@@ -29,6 +29,9 @@ COMPONENT_LEVELS = {
     'context_assembler': logging.DEBUG,
     # Evidence-grounding components
     'evidence_grounding': logging.INFO,
+    # Unity Principle components
+    'unity_principle': logging.DEBUG,
+    'dual_pathway': logging.DEBUG,
 }
 
 
@@ -224,3 +227,7 @@ context_logger = get_logger('context_assembler')
 
 # Evidence-grounding logger
 evidence_grounding_logger = get_logger('evidence_grounding')
+
+# Unity Principle loggers
+unity_principle_logger = get_logger('unity_principle')
+dual_pathway_logger = get_logger('dual_pathway')

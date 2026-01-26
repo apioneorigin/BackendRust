@@ -14,6 +14,7 @@ from consciousness_state import (
     # Unity Principle dataclasses
     UnitySeparationMetrics, DualPathway, PathwayMetrics, GoalContext
 )
+from logging_config import articulation_logger as logger
 
 
 def _fmt(value: Optional[float], as_percent: bool = True, decimals: int = 0) -> str:
@@ -45,6 +46,8 @@ class ArticulationPromptBuilder:
 
         UNITY PRINCIPLE: Now includes unity metrics and dual pathway sections.
         """
+        logger.info("[PROMPT_BUILDER] Building articulation prompt")
+
         sections = [
             self._build_header(),
             self._build_framework_section(),
@@ -60,9 +63,16 @@ class ArticulationPromptBuilder:
         ]
 
         # Filter out empty sections
+        all_count = len(sections)
         sections = [s for s in sections if s and s.strip()]
+        prompt = '\n\n---\n\n'.join(sections)
 
-        return '\n\n---\n\n'.join(sections)
+        logger.info(
+            f"[PROMPT_BUILDER] Prompt built: {len(sections)}/{all_count} sections, "
+            f"{len(prompt)} chars total"
+        )
+
+        return prompt
 
     def _build_search_guidance_section(self, search_guidance: SearchGuidance) -> str:
         """Build the search guidance section for evidence grounding in Call 2"""
@@ -790,6 +800,19 @@ def build_articulation_context(
                         proof_search=crm.get('proof_search', '')
                     )
                 )
+
+    logger.info(
+        f"[ARTICULATION_CONTEXT] Building context: domain={domain} "
+        f"goal='{goal[:60]}...' "
+        f"search_guidance={'present' if search_guidance_data else 'None'} "
+        f"web_research={'yes' if web_research_summary else 'no'}"
+    )
+    logger.debug(
+        f"[ARTICULATION_CONTEXT] State: S-level={consciousness_state.tier1.s_level.current} "
+        f"bottlenecks={len(consciousness_state.bottlenecks)} "
+        f"leverage_points={len(consciousness_state.leverage_points)} "
+        f"unity_metrics={'present' if consciousness_state.unity_metrics else 'None'}"
+    )
 
     return ArticulationContext(
         user_context=UserContext(
