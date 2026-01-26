@@ -85,6 +85,7 @@ class DeathProfile:
                     "depth": d.depth,
                     "phase": d.phase.value,
                     "indicators": d.indicators,
+                    "description": d.description,
                     "s_level_readiness": d.s_level_readiness,
                 }
                 for name, d in self.deaths.items()

@@ -21,7 +21,7 @@ Provides unified interface for:
 Formula: Integrated_Profile = f(operators, s_level, context)
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from typing import Dict, List, Optional, Any, Tuple
 import json
 
@@ -591,11 +591,17 @@ class OOFInferenceEngine:
             (profile.cascade_profile, "cascade"),
             (profile.emotion_profile, "emotion"),
             (profile.death_profile, "death"),
+            (profile.collective_profile, "collective"),
             (profile.circles_profile, "circles"),
             (profile.kosha_profile, "kosha"),
             (profile.osafc_profile, "osafc"),
             (profile.distortion_profile, "distortion"),
             (profile.panchakritya_profile, "panchakritya"),
+            (profile.advanced_math_profile, "advmath"),
+            (profile.hierarchical_profile, "hierarchical"),
+            (profile.platform_profile, "platform"),
+            (profile.multi_reality_profile, "multi_reality"),
+            (profile.timeline_profile, "timeline"),
         ]
 
         for obj, prefix in profile_mappings:
@@ -727,6 +733,24 @@ class OOFInferenceEngine:
                 "cycle_phase": profile.panchakritya_profile.cycle_phase,
                 "grace_receptivity": profile.panchakritya_profile.grace_receptivity,
             }
+
+        if profile.collective_profile:
+            result["collective"] = profile.collective_profile
+
+        if profile.advanced_math_profile:
+            result["advanced_math"] = asdict(profile.advanced_math_profile)
+
+        if profile.hierarchical_profile:
+            result["hierarchical"] = profile.hierarchical_profile
+
+        if profile.platform_profile:
+            result["platform"] = profile.platform_profile
+
+        if profile.multi_reality_profile:
+            result["multi_reality"] = asdict(profile.multi_reality_profile)
+
+        if profile.timeline_profile:
+            result["timeline"] = asdict(profile.timeline_profile)
 
         return result
 
