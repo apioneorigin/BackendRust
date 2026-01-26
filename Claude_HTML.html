@@ -256,6 +256,70 @@
       background: #2a2a2a;
       border-color: #3a3a3a;
     }
+
+    .constellation-question {
+      background: #1a1a2e;
+      border: 1px solid #4a9eff;
+      border-radius: 12px;
+      padding: 24px;
+      margin-top: 16px;
+    }
+
+    .question-text {
+      font-size: 16px;
+      color: #e0e0e0;
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+
+    .question-options {
+      display: grid;
+      gap: 12px;
+    }
+
+    .option-btn {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 16px;
+      background: #0a0a1a;
+      border: 1px solid #333;
+      border-radius: 8px;
+      color: #e0e0e0;
+      font-size: 14px;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .option-btn:hover:not(:disabled) {
+      border-color: #4a9eff;
+      background: #141428;
+    }
+
+    .option-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .option-label {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 28px;
+      height: 28px;
+      background: #4a9eff;
+      color: white;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+
+    .option-text {
+      padding-top: 3px;
+      line-height: 1.5;
+    }
   </style>
 </head>
 <body>
@@ -350,6 +414,8 @@
     let startTime = null;
     let firstTokenTime = null;
     let tokenCount = 0;
+    let sessionId = null;
+    let awaitingAnswer = false;
 
     function setExample(index) {
       document.getElementById('prompt').value = examples[index];
@@ -375,37 +441,20 @@
       return `${(ms / 1000).toFixed(1)}s`;
     }
 
-    async function runQuery() {
-      const prompt = document.getElementById('prompt').value.trim();
-      if (!prompt) {
-        setStatus('Please enter a query', 'error');
-        return;
-      }
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
 
-      // Reset state
-      document.getElementById('output').textContent = '';
-      document.getElementById('output').className = '';
-      startTime = Date.now();
-      firstTokenTime = null;
-      tokenCount = 0;
-      updateMetric('ttft', '—');
-      updateMetric('totalTime', '—');
-      updateMetric('inputTokens', '—');
-      updateMetric('outputTokens', '—');
-      updateMetric('totalTokens', '—');
-      updateMetric('cost', '—');
+    function setupEventSource(url) {
+      awaitingAnswer = false;
+      eventSource = new EventSource(url);
 
-      // Update UI
-      document.getElementById('runBtn').disabled = true;
-      document.getElementById('stopBtn').disabled = false;
-      setStatus('Initializing...', 'active');
-
-      // Start SSE stream
-      const encodedPrompt = encodeURIComponent(prompt);
-      const selectedModel = document.getElementById('modelSelect').value;
-      const webSearchData = document.getElementById('webSearchData').checked;
-      const webSearchInsights = document.getElementById('webSearchInsights').checked;
-      eventSource = new EventSource(`/api/run?prompt=${encodedPrompt}&model=${selectedModel}&web_search_data=${webSearchData}&web_search_insights=${webSearchInsights}`);
+      eventSource.addEventListener('session', (e) => {
+        const data = JSON.parse(e.data);
+        sessionId = data.session_id;
+      });
 
       eventSource.addEventListener('status', (e) => {
         const data = JSON.parse(e.data);
@@ -415,19 +464,16 @@
       eventSource.addEventListener('token', (e) => {
         const data = JSON.parse(e.data);
 
-        // Record first token time
         if (!firstTokenTime) {
           firstTokenTime = Date.now();
           const ttft = firstTokenTime - startTime;
           updateMetric('ttft', formatTime(ttft));
         }
 
-        // Append token
         const outputEl = document.getElementById('output');
         outputEl.textContent += data.text;
         tokenCount++;
 
-        // Update total time
         const elapsed = Date.now() - startTime;
         updateMetric('totalTime', formatTime(elapsed));
       });
@@ -437,7 +483,6 @@
         updateMetric('inputTokens', data.input_tokens.toLocaleString());
         updateMetric('outputTokens', data.output_tokens.toLocaleString());
         updateMetric('totalTokens', data.total_tokens.toLocaleString());
-        // Format cost - show appropriate precision based on value
         const cost = data.cost || 0;
         const costStr = cost < 0.01 ? `$${cost.toFixed(4)}` : `$${cost.toFixed(2)}`;
         updateMetric('cost', costStr);
@@ -456,10 +501,136 @@
         cleanup();
       });
 
+      eventSource.addEventListener('question', (e) => {
+        const data = JSON.parse(e.data);
+        showQuestion(data);
+      });
+
+      eventSource.addEventListener('validation_question', (e) => {
+        const data = JSON.parse(e.data);
+        showQuestion(data);
+      });
+
+      eventSource.addEventListener('awaiting_answer', (e) => {
+        awaitingAnswer = true;
+        if (eventSource) {
+          eventSource.close();
+          eventSource = null;
+        }
+      });
+
       eventSource.onerror = () => {
+        if (awaitingAnswer) {
+          if (eventSource) {
+            eventSource.close();
+            eventSource = null;
+          }
+          return;
+        }
         setStatus('Stream error - check backend connection', 'error');
         cleanup();
       };
+    }
+
+    function showQuestion(data) {
+      const outputEl = document.getElementById('output');
+      const labels = ['A', 'B', 'C', 'D'];
+      let html = '';
+
+      const existingText = outputEl.textContent;
+      if (existingText && !outputEl.classList.contains('empty-state')) {
+        html += `<div style="white-space:pre-wrap;margin-bottom:16px">${escapeHtml(existingText)}</div>`;
+      }
+
+      html += '<div class="constellation-question">';
+      html += `<div class="question-text">${escapeHtml(data.question_text)}</div>`;
+      html += '<div class="question-options">';
+
+      data.options.forEach((opt, i) => {
+        html += `<button class="option-btn" onclick="submitAnswer('${opt.id}')">`;
+        html += `<span class="option-label">${labels[i] || (i + 1)}</span>`;
+        html += `<span class="option-text">${escapeHtml(opt.text)}</span>`;
+        html += '</button>';
+      });
+
+      html += '</div></div>';
+
+      outputEl.className = '';
+      outputEl.innerHTML = html;
+      setStatus('Select a constellation pattern to continue...', 'active');
+    }
+
+    async function submitAnswer(optionId) {
+      document.querySelectorAll('.option-btn').forEach(btn => btn.disabled = true);
+      setStatus('Processing selection...', 'active');
+
+      try {
+        const resp = await fetch(
+          `/api/answer?session_id=${encodeURIComponent(sessionId)}&selected_option=${encodeURIComponent(optionId)}`,
+          { method: 'POST' }
+        );
+
+        if (!resp.ok) {
+          const err = await resp.json();
+          setStatus(`Error: ${err.detail || 'Failed to submit answer'}`, 'error');
+          document.getElementById('runBtn').disabled = false;
+          document.getElementById('stopBtn').disabled = true;
+          return;
+        }
+
+        const result = await resp.json();
+        setStatus(`Pattern selected: ${result.pattern_name} (+${result.operators_added} operators)`, 'active');
+
+        continueStream(result.continue_url);
+      } catch (err) {
+        setStatus(`Network error: ${err.message}`, 'error');
+        document.getElementById('runBtn').disabled = false;
+        document.getElementById('stopBtn').disabled = true;
+      }
+    }
+
+    function continueStream(url) {
+      const outputEl = document.getElementById('output');
+      outputEl.textContent = '';
+      outputEl.className = '';
+      setupEventSource(url);
+    }
+
+    async function runQuery() {
+      const prompt = document.getElementById('prompt').value.trim();
+      if (!prompt) {
+        setStatus('Please enter a query', 'error');
+        return;
+      }
+
+      // Reset state
+      document.getElementById('output').textContent = '';
+      document.getElementById('output').className = '';
+      startTime = Date.now();
+      firstTokenTime = null;
+      tokenCount = 0;
+      sessionId = null;
+      awaitingAnswer = false;
+      updateMetric('ttft', '—');
+      updateMetric('totalTime', '—');
+      updateMetric('inputTokens', '—');
+      updateMetric('outputTokens', '—');
+      updateMetric('totalTokens', '—');
+      updateMetric('cost', '—');
+
+      // Update UI
+      document.getElementById('runBtn').disabled = true;
+      document.getElementById('stopBtn').disabled = false;
+      setStatus('Initializing...', 'active');
+
+      // Start SSE stream
+      const encodedPrompt = encodeURIComponent(prompt);
+      const selectedModel = document.getElementById('modelSelect').value;
+      const webSearchData = document.getElementById('webSearchData').checked;
+      const webSearchInsights = document.getElementById('webSearchInsights').checked;
+      const url = `/api/run?prompt=${encodedPrompt}&model=${selectedModel}&web_search_data=${webSearchData}&web_search_insights=${webSearchInsights}`;
+
+      setupEventSource(url);
     }
 
     function stopQuery() {
@@ -475,6 +646,7 @@
         eventSource.close();
         eventSource = null;
       }
+      awaitingAnswer = false;
       document.getElementById('runBtn').disabled = false;
       document.getElementById('stopBtn').disabled = true;
     }
