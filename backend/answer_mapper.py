@@ -9,7 +9,7 @@ CONSTELLATION-ONLY ARCHITECTURE:
 ZERO-FALLBACK MODE: Only confirmed mappings are stored.
 """
 
-from typing import Dict, Any, List, Optional, Tuple, Set, TYPE_CHECKING
+from typing import Any, Dict, List, Optional, Tuple, Set, TYPE_CHECKING
 from dataclasses import dataclass, field
 from enum import Enum
 
@@ -265,6 +265,72 @@ class AnswerMapper:
         Used for passing to inference engine.
         """
         return {mv.operator: mv.value for mv in mapped_values}
+
+    def map_validation_answer(
+        self,
+        selected_option: str,
+        validation_question: Any,
+        current_operators: Dict[str, float]
+    ) -> MappingResult:
+        """
+        Map validation answer to:
+        1. New/corrected operator values
+        2. Response accuracy assessment
+        3. Operators to recalculate
+
+        Args:
+            selected_option: User's selected answer option ID
+            validation_question: The question that was asked
+            current_operators: Currently known operator values
+
+        Returns:
+            MappingResult with new values AND metadata about response accuracy
+        """
+        # Get the selected constellation from the validation question
+        selected_constellation = validation_question.answer_options.get(selected_option)
+        if not selected_constellation:
+            return MappingResult(
+                success=False,
+                mapped_values=[],
+                unmapped_operators=[],
+                needs_clarification=True,
+                clarification_prompt="Invalid option selected",
+                warnings=["Selected option not found in validation question"]
+            )
+
+        # Map constellation to operator values (reuse existing mapping)
+        mapping_result = self.map_constellation_to_operators(
+            selected_constellation=selected_constellation,
+            session_id=""
+        )
+
+        # Identify which operators are corrections vs new
+        corrections = []
+        new_values = []
+        for mv in mapping_result.mapped_values:
+            mv.source = 'validation_selection'
+            if mv.operator in current_operators:
+                existing_val = current_operators[mv.operator]
+                if abs(mv.value - existing_val) > 0.3:
+                    corrections.append(mv.operator)
+            else:
+                new_values.append(mv.operator)
+
+        # Add metadata about what changed
+        warnings = []
+        if corrections:
+            warnings.append(f"Corrected operators: {', '.join(corrections)}")
+        if new_values:
+            warnings.append(f"New operators: {', '.join(new_values)}")
+
+        return MappingResult(
+            success=True,
+            mapped_values=mapping_result.mapped_values,
+            unmapped_operators=[],
+            needs_clarification=False,
+            clarification_prompt=None,
+            warnings=warnings
+        )
 
     def merge_with_existing(
         self,

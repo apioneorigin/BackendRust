@@ -100,6 +100,7 @@ class ArticulationPromptBuilder:
 
         sections.append("""**Evidence Integration Instructions:**
 When web search is enabled, use these search queries to find CITED PROOF for the calculated consciousness values.
+Ground evidence searches in calculated values; if a suggested search targets a blocked calculation, skip it or adapt to a related calculated value.
 Each major insight should connect: Consciousness Pattern → Observable Reality → Cited Evidence.""")
 
         return '\n'.join(sections)
@@ -166,7 +167,15 @@ If discussing transformation, include transformation-related values
 
 You have access to EVERYTHING. Use your intelligence and context to decide
 what matters for THIS query. Don't list all values - synthesize the relevant
-ones into breakthrough insights."""
+ones into breakthrough insights.
+
+### CALCULATED VS NON-CALCULATED VALUES:
+
+- Values showing actual numbers = successfully calculated from user's data
+- Values showing "N/A" or "Not calculated" = blocked due to missing input operators
+- Base your insights on calculated values
+- Non-calculated values can be referenced when it enhances response (e.g., "to assess X, I'd need more context about Y")
+- Never fabricate or estimate blocked values"""
 
     def _build_context_section(
         self,
