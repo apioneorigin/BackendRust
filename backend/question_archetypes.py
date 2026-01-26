@@ -456,6 +456,82 @@ TRANSFORMATION_CONSTELLATIONS = {
 
 
 # =============================================================================
+# RESPONSE VALIDATION CONSTELLATIONS
+# Universal patterns for validating articulated insights
+# =============================================================================
+
+VALIDATION_CONSTELLATIONS = {
+    'full_resonance': OperatorConstellation(
+        pattern_name='full_validation',
+        description="This feels deeply accurate - I recognize these patterns clearly and the insights reveal what I couldn't see before",
+        operators={
+            'W_witness': (0.8, 0.9),
+            'M_maya': (0.2, 0.8),
+            'Tr_trust': (0.8, 0.85),
+            'Co_coherence': (0.75, 0.85),
+            'O_openness': (0.7, 0.8),
+            'R_resistance': (0.2, 0.7),
+        },
+        unity_vector=0.6,
+        s_level_range=(4.5, 6.0),
+        why_category='validation',
+        emotional_undertone='recognition_clarity'
+    ),
+
+    'partial_agreement': OperatorConstellation(
+        pattern_name='partial_validation',
+        description="Parts of this land strongly, but other aspects don't quite capture my reality - there's truth here mixed with some misses",
+        operators={
+            'W_witness': (0.5, 0.8),
+            'M_maya': (0.5, 0.8),
+            'R_resistance': (0.4, 0.75),
+            'Tr_trust': (0.5, 0.75),
+            'Co_coherence': (0.4, 0.7),
+            'O_openness': (0.6, 0.8),
+        },
+        unity_vector=0.1,
+        s_level_range=(3.5, 5.0),
+        why_category='partial_validation',
+        emotional_undertone='mixed_recognition'
+    ),
+
+    'disagreement_with_openness': OperatorConstellation(
+        pattern_name='open_disagreement',
+        description="This doesn't match my experience - I'm willing to consider I might have blind spots, but the analysis feels off",
+        operators={
+            'R_resistance': (0.7, 0.85),
+            'M_maya': (0.6, 0.85),
+            'O_openness': (0.5, 0.8),
+            'Tr_trust': (0.3, 0.7),
+            'W_witness': (0.4, 0.7),
+            'Co_coherence': (0.3, 0.7),
+        },
+        unity_vector=-0.2,
+        s_level_range=(3.0, 4.5),
+        why_category='open_invalidation',
+        emotional_undertone='skeptical_open'
+    ),
+
+    'strong_disagreement': OperatorConstellation(
+        pattern_name='strong_invalidation',
+        description="This completely misses the mark and doesn't understand my situation at all",
+        operators={
+            'R_resistance': (0.85, 0.9),
+            'M_maya': (0.8, 0.9),
+            'Tr_trust': (0.2, 0.7),
+            'W_witness': (0.3, 0.7),
+            'O_openness': (0.2, 0.7),
+            'F_fear': (0.6, 0.8),
+        },
+        unity_vector=-0.5,
+        s_level_range=(2.0, 3.5),
+        why_category='strong_invalidation',
+        emotional_undertone='defensive_closed'
+    ),
+}
+
+
+# =============================================================================
 # CATEGORY MAPPING
 # =============================================================================
 

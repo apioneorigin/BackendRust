@@ -87,6 +87,8 @@ class GoalContext:
     goal_category: str = ""  # 'achievement', 'relationship', 'peace', 'transformation'
     emotional_undertone: str = ""  # 'urgency', 'curiosity', 'desperation', 'openness', 'neutral'
     domain: str = ""  # 'business', 'personal', 'health', 'spiritual'
+    question_type: str = "pre_articulation"  # 'pre_articulation' or 'response_validation'
+    response_themes: List[str] = field(default_factory=list)  # Themes from articulated response
 
 
 @dataclass

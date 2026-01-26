@@ -267,9 +267,12 @@ class ConstellationQuestionGenerator:
             'relationship': "When you imagine this relationship unfolding, which pattern feels most true?",
             'peace': "As you seek peace, what's the felt experience underneath?",
             'transformation': "As you consider this change, what's really moving you toward it?",
+            'response_validation': "Looking at the path forward, what feels most true about how to move from here?",
         }
 
-        return templates.get(goal_context.goal_category, templates['achievement'])
+        # Use question_type for validation questions, otherwise use goal_category
+        lookup_key = goal_context.question_type if goal_context.question_type == 'response_validation' else goal_context.goal_category
+        return templates.get(lookup_key, templates['achievement'])
 
     def should_ask_question(
         self,
@@ -365,6 +368,74 @@ class ConstellationQuestionGenerator:
             pivot_operators=pivot_ops,
             purposes_served=purposes,
             goal_context=goal_context
+        )
+
+    def generate_response_validation_question(
+        self,
+        response_themes: List[str],
+        missing_operators: Set[str],
+        known_operators: Dict[str, float],
+        articulated_insights: Dict[str, Any]
+    ) -> Optional[MultiDimensionalQuestion]:
+        """
+        Generate question that validates response AND captures missing data.
+
+        Question asks about USER'S REALITY going forward.
+        Answer options encode both:
+        - Missing operator values (any tier)
+        - Validation/invalidation of response elements
+
+        Args:
+            response_themes: Key themes from articulated response
+            missing_operators: Still-missing operators after articulation
+            known_operators: Currently known operator values
+            articulated_insights: Key insights that were articulated
+
+        Returns:
+            MultiDimensionalQuestion or None
+        """
+        from question_archetypes import VALIDATION_CONSTELLATIONS
+
+        self._question_counter += 1
+
+        # Use response_validation template
+        question_text = self.generate_question_text(
+            GoalContext(question_type='response_validation')
+        )
+
+        # Build answer options from validation constellations
+        constellation_keys = list(VALIDATION_CONSTELLATIONS.keys())
+        answer_options = {}
+        for i, key in enumerate(constellation_keys[:4], 1):
+            answer_options[f'option_{i}'] = VALIDATION_CONSTELLATIONS[key]
+
+        # Identify which operators this would capture
+        pivot_ops = [op for op in missing_operators if op in CORE_OPERATORS][:5]
+
+        diagnostic_power = self.calculate_diagnostic_power(
+            GoalContext(question_type='response_validation'),
+            pivot_ops,
+            known_operators
+        )
+
+        purposes = [
+            'response_validation',      # Validates articulated insights
+            'tier0_values',             # Captures remaining missing operators
+            'accuracy_assessment',      # Reveals response accuracy
+            'recalculation_trigger',    # Flags operators to recalculate
+        ]
+
+        return MultiDimensionalQuestion(
+            question_id=f"validation_{self._question_counter}",
+            question_text=question_text,
+            answer_options=answer_options,
+            diagnostic_power=diagnostic_power,
+            pivot_operators=pivot_ops,
+            purposes_served=purposes,
+            goal_context=GoalContext(
+                question_type='response_validation',
+                response_themes=response_themes
+            )
         )
 
 
