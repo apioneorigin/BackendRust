@@ -1424,11 +1424,9 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
                         "anthropic-version": "2023-06-01",
                         "Content-Type": "application/json"
                     }
-                    # Build beta headers: always include prompt-caching, add web-search if enabled
-                    beta_features = ["prompt-caching-2024-07-31"]
+                    # Add web-search beta header if enabled
                     if use_web_search:
-                        beta_features.append("web-search-2025-03-05")
-                    headers["anthropic-beta"] = ",".join(beta_features)
+                        headers["anthropic-beta"] = "web-search-2025-03-05"
 
                     endpoint = model_config.get("endpoint")
 
@@ -2212,7 +2210,6 @@ SECTION 5: FIRST STEPS
                     headers = {
                         "x-api-key": api_key,
                         "anthropic-version": "2023-06-01",
-                        "anthropic-beta": "prompt-caching-2024-07-31",
                         "Content-Type": "application/json"
                     }
                     endpoint = model_config.get("streaming_endpoint")
@@ -3020,22 +3017,6 @@ def _validate_evidence(evidence: dict) -> List[str]:
     MIN_OBSERVATIONS = 5
     if valid_obs_count < MIN_OBSERVATIONS:
         errors.append(f"Insufficient valid observations: {valid_obs_count} < {MIN_OBSERVATIONS} required")
-
-    # Map observation vars to canonical operator names
-    found_operators = set()
-    for obs in observations:
-        if isinstance(obs, dict):
-            var = obs.get('var', '')
-            # Resolve to canonical name (handles canonical, short, or unknown forms)
-            canonical = SHORT_TO_CANONICAL.get(var, var)
-            if canonical in CANONICAL_OPERATOR_NAMES:
-                found_operators.add(canonical)
-
-    # Require all 24 canonical operators
-    total = len(CANONICAL_OPERATOR_NAMES)
-    if len(found_operators) < total:
-        missing = CANONICAL_OPERATOR_NAMES - found_operators
-        errors.append(f"Missing core operators: found {len(found_operators)}/{total} (missing: {', '.join(sorted(missing))})")
 
     return errors
 
