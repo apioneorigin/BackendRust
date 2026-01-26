@@ -3212,7 +3212,7 @@ async def health_check():
         "status": "healthy",
         "version": "4.1.0",
         "model": OPENAI_MODEL,
-        "registry_loaded": inference_engine.is_loaded,
+        "engine_loaded": inference_engine.is_loaded,
         "formula_count": inference_engine.formula_count,
         "openai_configured": OPENAI_API_KEY is not None,
         "oof_framework_loaded": len(LLM_CALL2_CONTEXT) > 0,

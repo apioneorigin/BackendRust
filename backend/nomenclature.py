@@ -209,8 +209,8 @@ def get_dominant(values: Dict[str, float]) -> str:
     return max(values.items(), key=lambda x: x[1])[0]
 
 
-# Variable mapping from registry names to nomenclature names
-REGISTRY_TO_NOMENCLATURE = {
+# Variable mapping from short/alternate names to canonical names
+SHORT_TO_CANONICAL = {
     # Core operators
     "Consciousness": "Psi_quality",
     "Ψ": "Psi_quality",
@@ -307,6 +307,6 @@ REGISTRY_TO_NOMENCLATURE = {
 }
 
 
-def map_to_nomenclature(registry_name: str) -> str:
-    """Map a registry variable name to nomenclature standard"""
-    return REGISTRY_TO_NOMENCLATURE.get(registry_name, registry_name)
+def map_to_canonical(name: str) -> str:
+    """Map a short/alternate variable name to canonical name."""
+    return SHORT_TO_CANONICAL.get(name, name)
