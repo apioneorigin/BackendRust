@@ -3,7 +3,7 @@ Nomenclature System for Articulation Bridge
 Self-documenting variable names that LLMs understand without translation
 """
 
-from typing import Dict
+from typing import Dict, Optional
 
 # Core operator naming (25 operators) - maps internal names to descriptive names
 CORE_OPERATORS: Dict[str, str] = {
@@ -172,8 +172,11 @@ def get_s_level_label(level: float) -> str:
         return S_LEVEL_LABELS[8]
 
 
-def get_matrix_position(matrix_type: str, score: float) -> str:
+def get_matrix_position(matrix_type: str, score: Optional[float]) -> str:
     """Convert numeric matrix score to categorical position"""
+    if score is None:
+        return "unknown"
+
     if matrix_type not in MATRIX_POSITIONS:
         return "unknown"
 
