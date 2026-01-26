@@ -228,7 +228,7 @@ class ValueOrganizer:
         )
 
         cascade_cleanliness = CascadeCleanliness(
-            self=self._get_value(v, 'cascade_1', 'cascade_self', default=None),
+            self_level=self._get_value(v, 'cascade_1', 'cascade_self', default=None),
             ego=self._get_value(v, 'cascade_2', 'cascade_ego', default=None),
             memory=self._get_value(v, 'cascade_3', 'cascade_memory', default=None),
             intellect=self._get_value(v, 'cascade_4', 'cascade_intellect', default=None),
