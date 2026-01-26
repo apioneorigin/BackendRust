@@ -24,7 +24,7 @@ The 7 Namespace Collisions - MANDATORY Disambiguation
      M → M_mind                (mind cascade layer)
 
      S → S_sacred              (Sacred Chain S1-S8 level)
-     S → S_struct              (structure from UCB)
+     S → Ss_struct             (structure from UCB; renamed from S_struct)
      S → S_self                (self cascade layer)
 
      E → E_energy              (energy from UCB)
@@ -60,7 +60,7 @@ Base Operators - Keep Abbreviated
      M_manifest          Manifestation power, reality creation
      L_love              Love field strength, heart connection
      G_grace             Grace, divine flow, surrender receptivity
-     S_struct            Structure, organizational coherence
+     Ss_struct           Structure, organizational coherence
 
      CATEGORY: Distortion Operators (3 Main)
      ==================================================
@@ -1155,7 +1155,7 @@ PART 18: TIME-VARYING VARIABLES (Context-Based Per Edge Case)
   M_manifest                      M(t) - manifestation at time t (context)
   L_love                          L(f,g) - love field (context)
   G_grace                         G(t) - grace at time t (context)
-  S_struct                        S(t) - structure at time t (context)
+  Ss_struct                       Ss(t) - structure at time t (context)
 
   TIME DERIVATIVES (Explicit Rates)
   ==================================================
@@ -1252,7 +1252,7 @@ Collision Resolution Map
         },
         'S': {
           sacred: 'S_sacred',               // Sacred Chain S1-S8
-          struct: 'S_struct',               // Structure UCB
+          struct: 'Ss_struct',              // Structure UCB (renamed from S_struct)
           self: 'S_self'                   // Self cascade layer
         },
         'E': {
@@ -1284,7 +1284,7 @@ Collision Resolution Map
 LLM Prompt Context Template
      When processing OOF calculations, use this variable nomenclature:
 
-     Core Operators: P_presence, A_aware, E_energy, Ψ_base, M_manifest, L_love, G_grace, S_struct, At, W, M_maya, Hf
+     Core Operators: P_presence, A_aware, E_energy, Ψ_base, M_manifest, L_love, G_grace, Ss_struct, At, W, M_maya, Hf
 
      Sacred Chain: S_sacred_level (1-8), S_sacred_transition_rate
 

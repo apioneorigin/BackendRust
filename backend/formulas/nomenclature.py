@@ -7,7 +7,7 @@ for the complete OOF (Ontological Operating Framework) implementation.
 
 7 Critical Namespace Collisions:
 - M → M_maya (distortion), M_manifest (creation), M_mind (mental)
-- S → S_sacred (chain S1-S8), S_struct (structural), S_self (ego/identity)
+- S → S_sacred (chain S1-S8), Ss_struct (structural), S_self (ego/identity)
 - E → E_energy (prana), E_ego (self-construct), E_emerge (emergence)
 - A → A_aware (awareness), A_action (karma/action)
 - C → C_base (consciousness base), C_creator (divine), C_cultural (cultural)
@@ -38,7 +38,7 @@ class NamespaceCategory(Enum):
     MIND = "mind"           # M_mind - Mental processes
 
     SACRED = "sacred"       # S_sacred - S1-S8 consciousness levels
-    STRUCT = "struct"       # S_struct - Structural components
+    STRUCT = "struct"       # Ss_struct - Structural components
     SELF = "self"           # S_self - Ego/identity constructs
 
     ENERGY = "energy"       # E_energy - Prana/vital force
@@ -124,9 +124,9 @@ M_COLLISION_MAP = {
 
 # S Namespace Resolution
 S_COLLISION_MAP = {
-    "S": "AMBIGUOUS - use S_sacred, S_struct, or S_self",
+    "S": "AMBIGUOUS - use S_sacred, Ss_struct, or S_self",
     "S_sacred": "Sacred chain level S1-S8",
-    "S_struct": "Structural component",
+    "Ss_struct": "Structural component (renamed from S_struct to avoid S_surrender collision)",
     "S_self": "Self/ego identity construct",
     "S1": "S_sacred level 1 (survival/biological)",
     "S2": "S_sacred level 2 (tribal/belonging)",

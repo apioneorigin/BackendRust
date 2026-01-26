@@ -115,8 +115,8 @@ CORE_OPERATORS: Dict[str, OperatorDefinition] = {
     # -------------------------------------------------------------------------
     # 5. S (Structural) - Form Integrity
     # -------------------------------------------------------------------------
-    "S_struct": OperatorDefinition(
-        symbol="S",
+    "Ss_struct": OperatorDefinition(
+        symbol="Ss",
         name="Structural Integrity",
         category=OperatorCategory.STRUCTURAL,
         description="Form and structure coherence; organizational stability",
@@ -1120,6 +1120,8 @@ CANONICAL_OPERATOR_NAMES = {
     'Av_avidya', 'As_asmita', 'Ra_raga', 'Dv_dvesha', 'Ab_abhinivesha',
     # Composite and extended operators
     'Lf_lovefear', 'Sa_samskara', 'Rs_resonance', 'Av_aversion',
+    # Structural
+    'Ss_struct',
     # Suffering and temporal variants
     'Su_suffering', 'T_time_past', 'T_time_present', 'T_time_future',
     # Derived/mind operators
@@ -1135,7 +1137,7 @@ SHORT_TO_CANONICAL = {
     'Se': 'Se_service', 'Ce': 'Ce_cleaning', 'Hf': 'Hf_habit',
     'I': 'I_intention', 'D': 'D_dharma', 'F': 'F_fear', 'J': 'J_joy',
     'O': 'O_openness', 'Tr': 'Tr_trust', 'Co': 'Co_coherence',
-    'S': 'S_surrender', 'Sh': 'Sh_shakti',
+    'S': 'S_surrender', 'Ss': 'Ss_struct', 'Sh': 'Sh_shakti',
     # Kleshas (use full names for specific Kleshas; Av maps to general aversion)
     'Av': 'Av_aversion', 'As': 'As_asmita', 'Ra': 'Ra_raga',
     'Dv': 'Dv_dvesha', 'Ab': 'Ab_abhinivesha',

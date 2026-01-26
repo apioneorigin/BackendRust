@@ -58,7 +58,7 @@ DISAMBIGUATION: Dict[str, str] = {
     "M_mind": "Mind activity level",
 
     "S_sacred": "Sacred chain S-level",
-    "S_struct": "Structural integrity",
+    "Ss_struct": "Structural integrity",
     "S_self": "Self-awareness dimension",
     "S_surrender": "Surrender operator",
 

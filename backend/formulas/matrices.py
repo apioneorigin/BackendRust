@@ -590,7 +590,7 @@ class MatricesEngine:
         g = ops.get("G_grace")
         at = ops.get("At_attachment")
         ce = ops.get("Ce_cleaning")
-        s_struct = ops.get("S_struct")
+        s_struct = ops.get("Ss_struct")
         vit = ops.get("V_void")
         if any(v is None for v in [m, i, psi, g, at, ce, s_struct, vit]):
             return None
@@ -908,7 +908,7 @@ if __name__ == "__main__":
         "Ab_abhinivesha": 0.35,
         "KL_klesha": 0.35,
         "T_temporal": 0.33,
-        "S_struct": 0.5,
+        "Ss_struct": 0.5,
     }
 
     # Calculate matrices

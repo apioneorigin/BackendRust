@@ -147,7 +147,7 @@ def build_articulation_prompt(
 ```python
 COLLISION_RESOLUTION = {
     'M': {'maya': 'M_maya', 'manifest': 'M_manifest', 'mind': 'M_mind'},
-    'S': {'sacred': 'S_sacred', 'struct': 'S_struct', 'self': 'S_self'},
+    'S': {'sacred': 'S_sacred', 'struct': 'Ss_struct', 'self': 'S_self'},
     'E': {'energy': 'E_energy', 'ego': 'E_ego', 'emerge': 'E_emerge'},
     'A': {'aware': 'A_aware', 'action': 'A_action'},
     'C': {'base': 'C_base', 'creator': 'C_creator', 'cultural': 'C_cultural'},

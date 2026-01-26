@@ -82,7 +82,7 @@ All 450 variables must use self-documenting names that LLMs understand without t
 **Resolution of naming collisions:**
 
 - M: `M_maya`, `M_manifest`, `M_mind`
-- S: `S_sacred_level`, `S_surrender`, `S_struct`
+- S: `S_sacred_level`, `S_surrender`, `Ss_struct`
 - P: `P_presence`, `P_prana`, `P_prob`, `P_power`
 
 ---
@@ -588,7 +588,7 @@ export const DISAMBIGUATION = {
   M_mind: "Mind activity level",
   
   S_sacred: "Sacred chain S-level",
-  S_struct: "Structural integrity",
+  Ss_struct: "Structural integrity",
   S_self: "Self-awareness dimension",
   
   P_presence: "Present moment operator",
