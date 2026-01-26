@@ -157,7 +157,9 @@ class BottleneckDetector:
         bottlenecks = []
 
         for var, name, category in self.ATTACHMENT_OPERATORS:
-            value = ops.get(var, 0.5)
+            value = ops.get(var)
+            if value is None:
+                continue
             if value > self.HIGH_THRESHOLD:
                 logger.debug(f"[BOTTLENECK] Attachment bottleneck: {var}={value:.2f} > {self.HIGH_THRESHOLD}")
                 impact = 'high' if value > 0.85 else 'medium'
@@ -191,7 +193,9 @@ class BottleneckDetector:
         bottlenecks = []
 
         for var, name, category in self.FLOW_OPERATORS:
-            value = ops.get(var, 0.5)
+            value = ops.get(var)
+            if value is None:
+                continue
             if value < self.LOW_THRESHOLD:
                 logger.debug(f"[BOTTLENECK] Flow bottleneck: {var}={value:.2f} < {self.LOW_THRESHOLD}")
                 impact = 'high' if value < 0.15 else 'medium'
@@ -226,8 +230,10 @@ class BottleneckDetector:
         bottlenecks = []
 
         for high_var, low_var, description in self.INVERSE_PAIRS:
-            high_val = ops.get(high_var, 0.5)
-            low_val = ops.get(low_var, 0.5)
+            high_val = ops.get(high_var)
+            low_val = ops.get(low_var)
+            if high_val is None or low_val is None:
+                continue
 
             # Check if first is high AND second is low
             if high_val > 0.6 and low_val < 0.4 and (high_val - low_val) > self.INVERSE_PAIR_DIFF:
