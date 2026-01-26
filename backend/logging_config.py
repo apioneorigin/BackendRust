@@ -14,7 +14,6 @@ COMPONENT_LEVELS = {
     'formulas': logging.DEBUG,
     'articulation': logging.INFO,
     'reverse_causality': logging.DEBUG,
-    'validation': logging.DEBUG,
     'consciousness': logging.DEBUG,
     'value_organizer': logging.DEBUG,
     'bottleneck': logging.DEBUG,
@@ -22,7 +21,6 @@ COMPONENT_LEVELS = {
     'api': logging.INFO,
     # Zero-fallback components
     'zero_fallback': logging.INFO,
-    'session_store': logging.DEBUG,
     'priority_detector': logging.DEBUG,
     'question_generator': logging.DEBUG,
     'answer_mapper': logging.DEBUG,
@@ -212,14 +210,12 @@ inference_logger = get_logger('inference')
 formula_logger = CalculationLogger('formulas')
 articulation_logger = get_logger('articulation')
 reverse_logger = get_logger('reverse_causality')
-validation_logger = get_logger('validation')
 consciousness_logger = get_logger('consciousness')
 api_logger = get_logger('api')
 pipeline_logger = PipelineLogger()
 
 # Zero-fallback component loggers
 zero_fallback_logger = get_logger('zero_fallback')
-session_store_logger = get_logger('session_store')
 priority_logger = get_logger('priority_detector')
 question_logger = get_logger('question_generator')
 answer_mapper_logger = get_logger('answer_mapper')
