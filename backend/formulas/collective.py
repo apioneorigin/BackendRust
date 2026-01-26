@@ -189,7 +189,7 @@ class CollectiveEngine:
         """Calculate complete collective consciousness profile."""
         # Base values from operators
         psi = operators.get("Psi_quality")
-        r = operators.get("R_resonance")
+        r = operators.get("Rs_resonance")
         g = operators.get("G_grace")
         if any(v is None for v in [psi, r, g]):
             return None
@@ -233,7 +233,7 @@ if __name__ == "__main__":
     engine = CollectiveEngine()
 
     test_ops = {
-        "Psi_quality": 0.6, "R_resonance": 0.5, "Se_service": 0.55,
+        "Psi_quality": 0.6, "Rs_resonance": 0.5, "Se_service": 0.55,
         "At_attachment": 0.35, "W_witness": 0.5, "G_grace": 0.45,
     }
 

@@ -188,26 +188,25 @@ CORE_OPERATORS: Dict[str, OperatorDefinition] = {
     ),
 
     # -------------------------------------------------------------------------
-    # 11. V (Vitality) - Life Force/Vulnerability
+    # 11. V → V_void (canonical; V_vitality REMOVED - was dead code overwritten by KLESHA V_void)
+    # See KLESHA_OPERATORS for V_void definition
     # -------------------------------------------------------------------------
-    "V_vitality": OperatorDefinition(
-        symbol="V",
-        name="Vitality",
-        category=OperatorCategory.UCB,
-        description="Life force strength; ojas/tejas/prana integration",
-        formula="P × Energy_reserves × Health_baseline",
-        extraction_method="semantic"
-    ),
 
     # -------------------------------------------------------------------------
-    # 12. R (Resonance) - Harmonic Resonance
+    # 12. R → R_resistance (canonical; R_resonance REMOVED - was dead code overwritten by KLESHA R_resistance)
+    # See KLESHA_OPERATORS for R_resistance definition
+    # Resonance concept formalized as Rs_resonance (two-letter prefix) below
     # -------------------------------------------------------------------------
-    "R_resonance": OperatorDefinition(
-        symbol="R",
-        name="Resonance",
-        category=OperatorCategory.RELATIONSHIP,
-        description="Harmonic resonance with others/environment",
-        formula="∫ Φ₁(f) × Φ₂(f) df",
+
+    # -------------------------------------------------------------------------
+    # 12b. Rs (Resonance Field) - Harmonic Resonance (formalized from Rs_ usage)
+    # -------------------------------------------------------------------------
+    "Rs_resonance": OperatorDefinition(
+        symbol="Rs",
+        name="Resonance Field",
+        category=OperatorCategory.PATTERN,
+        description="Harmonic resonance field strength for pathway alignment",
+        formula="∫ Φ₁(f) × Φ₂(f) × alignment_factor df",
         extraction_method="semantic"
     ),
 
@@ -238,17 +237,9 @@ CORE_OPERATORS: Dict[str, OperatorDefinition] = {
     ),
 
     # -------------------------------------------------------------------------
-    # 15. Sh (Shadow) - Shadow Content
+    # 15. Sh → Sh_shakti (canonical; Sh_shadow REMOVED - was dead code overwritten by KLESHA Sh_shakti)
+    # See KLESHA_OPERATORS for Sh_shakti definition
     # -------------------------------------------------------------------------
-    "Sh_shadow": OperatorDefinition(
-        symbol="Sh",
-        name="Shadow Content",
-        category=OperatorCategory.DISTORTION,
-        description="Unintegrated shadow material; repressed content",
-        formula="Repressed × (1 - Integration) × (1 - W)",
-        extraction_method="semantic",
-        s_level_weight={1: 0.8, 2: 0.7, 3: 0.65, 4: 0.5, 5: 0.35, 6: 0.2, 7: 0.1, 8: 0.0}
-    ),
 
     # -------------------------------------------------------------------------
     # 16. BN (Belief Network) - Belief System Strength
@@ -514,6 +505,132 @@ KLESHA_OPERATORS: Dict[str, OperatorDefinition] = {
         formula="Energy × Intention × Flow",
         extraction_method="semantic",
         s_level_weight={1: 0.3, 2: 0.4, 3: 0.5, 4: 0.55, 5: 0.6, 6: 0.7, 7: 0.85, 8: 1.0}
+    ),
+
+    # -------------------------------------------------------------------------
+    # Av (Aversion) - General Aversion Patterns
+    # -------------------------------------------------------------------------
+    "Av_aversion": OperatorDefinition(
+        symbol="Av",
+        name="Aversion",
+        category=OperatorCategory.DISTORTION,
+        description="General aversion patterns; resistance to unpleasant experience",
+        formula="Dv_dvesha × Fear × Avoidance_behavior",
+        extraction_method="semantic",
+        s_level_weight={1: 0.9, 2: 0.8, 3: 0.7, 4: 0.55, 5: 0.4, 6: 0.25, 7: 0.1, 8: 0.0}
+    ),
+
+    # -------------------------------------------------------------------------
+    # Su (Suffering) - Dukkha Intensity
+    # -------------------------------------------------------------------------
+    "Su_suffering": OperatorDefinition(
+        symbol="Su",
+        name="Suffering",
+        category=OperatorCategory.DISTORTION,
+        description="Mental/emotional suffering intensity; dukkha",
+        formula="At × Av × (1 - W)",
+        extraction_method="semantic",
+        s_level_weight={1: 0.9, 2: 0.8, 3: 0.7, 4: 0.55, 5: 0.4, 6: 0.25, 7: 0.1, 8: 0.0}
+    ),
+
+    # -------------------------------------------------------------------------
+    # T_time variants - Temporal Focus Distribution
+    # -------------------------------------------------------------------------
+    "T_time_past": OperatorDefinition(
+        symbol="T_past",
+        name="Past Temporal Focus",
+        category=OperatorCategory.PATTERN,
+        description="Past temporal focus; orientation toward memory and history",
+        formula="Memory_salience × Nostalgia × (1 - Presence)",
+        extraction_method="semantic"
+    ),
+
+    "T_time_present": OperatorDefinition(
+        symbol="T_present",
+        name="Present Temporal Focus",
+        category=OperatorCategory.PATTERN,
+        description="Present moment focus; now-awareness",
+        formula="P × Embodiment × Engagement",
+        extraction_method="semantic",
+        default=0.34
+    ),
+
+    "T_time_future": OperatorDefinition(
+        symbol="T_future",
+        name="Future Temporal Focus",
+        category=OperatorCategory.PATTERN,
+        description="Future temporal focus; orientation toward planning and anticipation",
+        formula="Anticipation × Planning × (1 - Presence)",
+        extraction_method="semantic"
+    ),
+
+    # -------------------------------------------------------------------------
+    # De (Desire) - Desire/Wanting
+    # -------------------------------------------------------------------------
+    "De_desire": OperatorDefinition(
+        symbol="De",
+        name="Desire",
+        category=OperatorCategory.DISTORTION,
+        description="Desire intensity; wanting and craving",
+        formula="1 - V_void",
+        extraction_method="semantic",
+        s_level_weight={1: 0.9, 2: 0.8, 3: 0.7, 4: 0.55, 5: 0.4, 6: 0.25, 7: 0.1, 8: 0.0}
+    ),
+
+    # -------------------------------------------------------------------------
+    # Antahkarana (Inner Instrument) Operators
+    # -------------------------------------------------------------------------
+    "Bu_buddhi": OperatorDefinition(
+        symbol="Bu",
+        name="Buddhi (Discrimination)",
+        category=OperatorCategory.CONSCIOUSNESS,
+        description="Discriminative faculty; wisdom-intelligence",
+        formula="A_aware × W_witness",
+        extraction_method="semantic"
+    ),
+
+    "Ma_manas": OperatorDefinition(
+        symbol="Ma",
+        name="Manas (Mind)",
+        category=OperatorCategory.CONSCIOUSNESS,
+        description="Mind faculty; thinking and processing",
+        formula="P_presence × Attention",
+        extraction_method="semantic"
+    ),
+
+    "Ch_chitta": OperatorDefinition(
+        symbol="Ch",
+        name="Chitta (Consciousness Field)",
+        category=OperatorCategory.CONSCIOUSNESS,
+        description="Consciousness field clarity; memory and impression store",
+        formula="1 - M_maya",
+        extraction_method="semantic"
+    ),
+
+    # -------------------------------------------------------------------------
+    # J (Joy) - Joy/Bliss
+    # -------------------------------------------------------------------------
+    "J_joy": OperatorDefinition(
+        symbol="J",
+        name="Joy",
+        category=OperatorCategory.UCB,
+        description="Joy and bliss; ananda expression",
+        formula="Love × Presence × (1 - Suffering) × Gratitude",
+        extraction_method="semantic",
+        s_level_weight={1: 0.1, 2: 0.2, 3: 0.3, 4: 0.45, 5: 0.6, 6: 0.75, 7: 0.9, 8: 1.0}
+    ),
+
+    # -------------------------------------------------------------------------
+    # L (Love) - Love Drive
+    # -------------------------------------------------------------------------
+    "L_love": OperatorDefinition(
+        symbol="L",
+        name="Love",
+        category=OperatorCategory.UCB,
+        description="Love capacity and expression; heart opening",
+        formula="Compassion × Connection × (1 - Fear)",
+        extraction_method="semantic",
+        s_level_weight={1: 0.2, 2: 0.3, 3: 0.4, 4: 0.5, 5: 0.65, 6: 0.8, 7: 0.9, 8: 1.0}
     ),
 }
 
@@ -990,24 +1107,45 @@ def validate_operator_values(values: Dict[str, float]) -> Tuple[bool, List[str]]
 # CANONICAL OPERATOR NAMES (for import by other modules)
 # =============================================================================
 
-# Single source of truth for the 24 canonical operator names
+# Single source of truth for canonical operator names
+# Includes the 24 original + Kleshas + formalized operators
 CANONICAL_OPERATOR_NAMES = {
+    # 24 core operational operators
     'P_presence', 'A_aware', 'E_equanimity', 'Psi_quality', 'M_maya',
     'W_witness', 'I_intention', 'At_attachment', 'Se_service', 'Sh_shakti',
     'G_grace', 'S_surrender', 'D_dharma', 'K_karma', 'Hf_habit',
     'V_void', 'Ce_cleaning', 'Co_coherence', 'R_resistance',
-    'F_fear', 'J_joy', 'Tr_trust', 'O_openness', 'L_love'
+    'F_fear', 'J_joy', 'Tr_trust', 'O_openness', 'L_love',
+    # Klesha sub-operators (5)
+    'Av_avidya', 'As_asmita', 'Ra_raga', 'Dv_dvesha', 'Ab_abhinivesha',
+    # Composite and extended operators
+    'Lf_lovefear', 'Sa_samskara', 'Rs_resonance', 'Av_aversion',
+    # Suffering and temporal variants
+    'Su_suffering', 'T_time_past', 'T_time_present', 'T_time_future',
+    # Derived/mind operators
+    'De_desire', 'Bu_buddhi', 'Ma_manas', 'Ch_chitta',
 }
 
 # Short name to canonical name mapping
 SHORT_TO_CANONICAL = {
+    # Core consciousness
     'Psi': 'Psi_quality', 'K': 'K_karma', 'M': 'M_maya', 'G': 'G_grace',
     'W': 'W_witness', 'A': 'A_aware', 'P': 'P_presence', 'E': 'E_equanimity',
     'V': 'V_void', 'L': 'L_love', 'R': 'R_resistance', 'At': 'At_attachment',
-    'Av': 'Av_aversion', 'Se': 'Se_service', 'Ce': 'Ce_cleaning',
-    'Su': 'S_surrender', 'As': 'As_aspiration', 'Fe': 'F_fear',
-    'De': 'De_desire', 'Re': 'R_resistance', 'Hf': 'Hf_habit',
-    'Sa': 'Sa_samskara', 'Bu': 'Bu_buddhi', 'Ma': 'Ma_manas', 'Ch': 'Ch_chitta'
+    'Se': 'Se_service', 'Ce': 'Ce_cleaning', 'Hf': 'Hf_habit',
+    'I': 'I_intention', 'D': 'D_dharma', 'F': 'F_fear', 'J': 'J_joy',
+    'O': 'O_openness', 'Tr': 'Tr_trust', 'Co': 'Co_coherence',
+    'S': 'S_surrender', 'Sh': 'Sh_shakti',
+    # Kleshas (use full names for specific Kleshas; Av maps to general aversion)
+    'Av': 'Av_aversion', 'As': 'As_asmita', 'Ra': 'Ra_raga',
+    'Dv': 'Dv_dvesha', 'Ab': 'Ab_abhinivesha',
+    # Extended operators
+    'Lf': 'Lf_lovefear', 'Sa': 'Sa_samskara', 'Rs': 'Rs_resonance',
+    'Su': 'Su_suffering',
+    # Antahkarana (mind operators)
+    'Bu': 'Bu_buddhi', 'Ma': 'Ma_manas', 'Ch': 'Ch_chitta',
+    # Legacy short-code aliases (map to canonical equivalents)
+    'Fe': 'F_fear', 'Re': 'R_resistance', 'De': 'De_desire',
 }
 
 

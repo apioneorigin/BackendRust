@@ -427,7 +427,7 @@ class MatricesEngine:
         i = ops.get("I_intention")
         w = ops.get("W_witness")
         d = ops.get("D_dharma")
-        vit = ops.get("V_vitality")
+        vit = ops.get("V_void")
         hf = ops.get("Hf_habit")
         ce = ops.get("Ce_cleaning")
         ab = ops.get("Ab_abhinivesha")
@@ -591,7 +591,7 @@ class MatricesEngine:
         at = ops.get("At_attachment")
         ce = ops.get("Ce_cleaning")
         s_struct = ops.get("S_struct")
-        vit = ops.get("V_vitality")
+        vit = ops.get("V_void")
         if any(v is None for v in [m, i, psi, g, at, ce, s_struct, vit]):
             return None
 
@@ -902,7 +902,7 @@ if __name__ == "__main__":
         "D_dharma": 0.5,
         "Ce_cleaning": 0.5,
         "Hf_habit": 0.4,
-        "V_vitality": 0.6,
+        "V_void": 0.6,
         "I_intention": 0.55,
         "As_asmita": 0.4,
         "Ab_abhinivesha": 0.35,

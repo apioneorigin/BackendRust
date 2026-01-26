@@ -158,7 +158,7 @@ LOVE_COMPONENTS: Dict[str, DriveComponent] = {
         name="Self Love",
         description="Healthy self-regard without narcissism",
         formula="W × (1 - Shadow_Projection) × Self_Acceptance",
-        dependencies=["W_witness", "Sh_shadow", "M_maya"]
+        dependencies=["W_witness", "Sh_shakti", "M_maya"]
     ),
     "unconditional_capacity": DriveComponent(
         name="Unconditional Capacity",
@@ -242,7 +242,7 @@ BLISS_COMPONENTS: Dict[str, DriveComponent] = {
         name="Rapture",
         description="Intense joy surge",
         formula="Spiritual_Ecstasy × Energy_Peak × Openness",
-        dependencies=["V_vitality", "P_presence"]
+        dependencies=["V_void", "P_presence"]
     ),
 }
 
@@ -365,7 +365,7 @@ class DrivesEngine:
         e = ops.get("E_equanimity")
         p = ops.get("P_presence")
         w = ops.get("W_witness")
-        sh = ops.get("Sh_shadow")
+        sh = ops.get("Sh_shakti")
         m = ops.get("M_maya")
         ra = ops.get("Ra_raga")
         dv = ops.get("Dv_dvesha")
@@ -494,7 +494,7 @@ class DrivesEngine:
     def calculate_peace_drive(self, ops: Dict[str, float], s_level: float) -> DriveProfile:
         """Calculate complete Peace drive profile."""
         p = ops.get("P_presence")
-        v = ops.get("V_vitality")
+        v = ops.get("V_void")
         if any(val is None for val in [p, v]):
             return None
 
@@ -541,7 +541,7 @@ class DrivesEngine:
         g = ops.get("G_grace")
         w = ops.get("W_witness")
         kl = ops.get("KL_klesha")
-        v = ops.get("V_vitality")
+        v = ops.get("V_void")
         p = ops.get("P_presence")
         i_intention = ops.get("I_intention")
         if any(val is None for val in [psi, at, m, g, w, kl, v, p, i_intention]):
@@ -760,7 +760,7 @@ class DrivesEngine:
         k = ops.get("K_karma")
         hf = ops.get("Hf_habit")
         at = ops.get("At_attachment")
-        v = ops.get("V_vitality")
+        v = ops.get("V_void")
         if any(val is None for val in [k, hf, at, v]):
             return None
 
@@ -946,12 +946,12 @@ if __name__ == "__main__":
         "D_dharma": 0.5,
         "Ce_cleaning": 0.5,
         "Hf_habit": 0.4,
-        "V_vitality": 0.6,
+        "V_void": 0.6,
         "I_intention": 0.55,
         "Ra_raga": 0.35,
         "Dv_dvesha": 0.3,
         "As_asmita": 0.4,
-        "Sh_shadow": 0.35,
+        "Sh_shakti": 0.35,
         "Sa_samskara": 0.4,
         "KL_klesha": 0.35,
         "T_temporal": 0.33,

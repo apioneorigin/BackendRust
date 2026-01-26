@@ -304,7 +304,7 @@ class PathwaysEngine:
         m = ops.get("M_maya")
         psi = ops.get("Psi_quality")
         at = ops.get("At_attachment")
-        v = ops.get("V_vitality")
+        v = ops.get("V_void")
         d = ops.get("D_dharma")
         se = ops.get("Se_service")
         ce = ops.get("Ce_cleaning")
@@ -611,7 +611,7 @@ if __name__ == "__main__":
         "D_dharma": 0.5,
         "Ce_cleaning": 0.5,
         "Hf_habit": 0.4,
-        "V_vitality": 0.6,
+        "V_void": 0.6,
         "I_intention": 0.55,
     }
 

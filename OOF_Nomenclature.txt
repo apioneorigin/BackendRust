@@ -2507,11 +2507,18 @@ ORIGINAL (INCORRECT):
   Core Operators: P_presence, A_aware, E_energy, Ψ_base, M_manifest...
 
 CORRECTED:
-  Core Operators: P_presence, A_aware, E_equanimity, Ψ_base, M_manifest, 
-                  L_love, G_grace, S_struct, At_attachment, W_witness, 
-                  M_maya, Hf_habit, F_fear, S_surrender, R_resistance, 
-                  Se_service, K_karma, Sa_samskara, T_temporal, V_vitality,
-                  Choice, Agency, Openness, Ce_celebration, Ce_cleaning
+  Core Operators: P_presence, A_aware, E_equanimity, Psi_quality, M_maya,
+                  L_love, G_grace, S_surrender, At_attachment, W_witness,
+                  K_karma, Hf_habit, F_fear, R_resistance, V_void,
+                  Se_service, Sa_samskara, T_temporal, D_dharma,
+                  I_intention, O_openness, Ce_cleaning, Co_coherence,
+                  Sh_shakti, J_joy, Tr_trust, Lf_lovefear
+  Klesha Operators: Av_avidya, As_asmita, Ra_raga, Dv_dvesha, Ab_abhinivesha
+  Extended: Rs_resonance, Su_suffering, T_time_past, T_time_present, T_time_future
+
+  NOTE (2026-01-26): V_vitality, R_resonance, Sh_shadow REMOVED as dead code.
+  V → V_void, R → R_resistance, Sh → Sh_shakti are the canonical winners.
+  R_resonance concept formalized as Rs_resonance (two-letter prefix).
 
 TOTAL COUNT: 25 core operators (as documented in OOF.txt)
 
@@ -2729,7 +2736,7 @@ D7_EGO = "d7_ego"
 From death.py lines 106-142 - DEATH_OPERATOR_PATTERNS:
 
 D1_PHYSICAL:
-  primary_ops: ['V_vitality', 'E_energy', 'P_presence']
+  primary_ops: ['V_void', 'E_equanimity', 'P_presence']
   support_ops: ['At_attachment', 'F_fear', 'G_grace']
   
 D2_RELATIONSHIP:
@@ -2750,7 +2757,7 @@ D5_DESIRE:
 
 DEATH INTENSITY FORMULA (from CEL.pdf and backend):
   death_intensity = (S_level_jump × ego_attachment) / grace_coefficient
-  death_intensity = E_energy × V_vitality × transformation_magnitude
+  death_intensity = E_equanimity × V_void × transformation_magnitude
 
 DEATH PROBABILITY:
   death_probability = (consciousness_pressure × catalyst_strength) / 
@@ -4070,12 +4077,20 @@ J_joy                   Joy
 Tr_trust                Trust
 O_openness              Openness, receptivity
 
+KLESHA OPERATORS (5 sub-components of KL_klesha):
+Av_avidya               Avidya, root ignorance
+As_asmita               Asmita, ego-identification
+Ra_raga                 Raga, attachment to pleasure
+Dv_dvesha               Dvesha, aversion to pain
+Ab_abhinivesha          Abhinivesha, clinging to life
+
 ADDITIONAL OPERATORS (used in specific contexts):
 L_love                  Love field strength
-Av_aversion             Aversion patterns
-Su_suffering            Suffering intensity
+Lf_lovefear             Love-fear balance composite
+Rs_resonance            Resonance field strength (harmonic pathway alignment)
+Su_suffering            Suffering intensity (dukkha)
 Sa_samskara             Samskaras, deep impressions
-Shadow                  Unconscious rejected aspects
+Shadow                  Unconscious rejected aspects (see: Sh_shakti as canonical)
 C_base                  Consciousness^Consciousness (Ψ^Ψ)
 Choice                  Decision-making capacity
 Agency                  Self-directed action capability

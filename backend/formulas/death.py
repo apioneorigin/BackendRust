@@ -221,7 +221,7 @@ class DeathEngine:
         Active when mortality awareness is high, body changes significant.
         """
         ab = ops.get("Ab_abhinivesha")  # Fear of death
-        v = ops.get("V_vitality")
+        v = ops.get("V_void")
         p = ops.get("P_presence")
         g = ops.get("G_grace")
         at = ops.get("At_attachment")
@@ -666,7 +666,7 @@ if __name__ == "__main__":
         "G_grace": 0.45,
         "P_presence": 0.65,
         "E_equanimity": 0.6,
-        "V_vitality": 0.6,
+        "V_void": 0.6,
         "As_asmita": 0.4,
         "Ab_abhinivesha": 0.35,
         "Ra_raga": 0.35,
