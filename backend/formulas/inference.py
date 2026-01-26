@@ -27,7 +27,7 @@ import json
 
 # Import all OOF modules
 from .nomenclature import resolve_ambiguous, CORE_VARIABLES
-from .operators import OperatorEngine, CORE_OPERATORS, CANONICAL_OPERATOR_NAMES
+from .operators import OperatorEngine, CORE_OPERATORS, CANONICAL_OPERATOR_NAMES, SHORT_TO_CANONICAL
 from .drives import DrivesEngine, DriveType
 from .matrices import MatricesEngine, MatrixType
 from .pathways import PathwaysEngine, PathwayType
@@ -518,9 +518,12 @@ class OOFInferenceEngine:
             if not isinstance(value, (int, float)):
                 continue
 
-            operators[var_name] = float(value)
-            confidence[var_name] = float(conf) if conf is not None else 0.8
-            populated_operators.add(var_name)
+            # Map short names (K, M, W) to canonical names (K_karma, M_maya, W_witness)
+            canonical_name = SHORT_TO_CANONICAL.get(var_name, var_name)
+
+            operators[canonical_name] = float(value)
+            confidence[canonical_name] = float(conf) if conf is not None else 0.8
+            populated_operators.add(canonical_name)
 
         # Track missing operators
         for op in CANONICAL_OPERATOR_NAMES:
@@ -562,6 +565,7 @@ class OOFInferenceEngine:
             "values": values,
             "confidence": {k: confidence.get(k, 0.8) for k in values},
             "formula_count": 287,  # Total formulas across all modules
+            "tiers_executed": len([m for m in ["oof_engine", "dynamics", "network", "quantum", "realism", "unity"] if values]),
             "metadata": {
                 "populated_operators": list(populated_operators),
                 "missing_operators": list(missing_operators),

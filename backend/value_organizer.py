@@ -47,7 +47,8 @@ class ValueOrganizer:
         PURE ARCHITECTURE: Pass context from Call 1 to guide Call 2 value selection.
         UNITY PRINCIPLE: Extract unity metrics and dual pathways for Jeevatma-Paramatma analysis.
         """
-        logger.info(f"[VALUE_ORGANIZER] Organizing {len(raw_values)} raw values into consciousness state")
+        values_count = len(raw_values.get('values', {})) if isinstance(raw_values, dict) and 'values' in raw_values else len(raw_values)
+        logger.info(f"[VALUE_ORGANIZER] Organizing {values_count} computed values into consciousness state")
         logger.debug(f"[VALUE_ORGANIZER] Tier1 keys: {len(tier1_values)} | Targets: {len(tier1_values.get('targets', []))}")
 
         state = ConsciousnessState(
