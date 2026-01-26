@@ -27,12 +27,11 @@ class DataQualityMetadata:
 # =============================================================================
 
 @dataclass
-class UnityMetricsSnapshot:
+class UnitySeparationMetrics:
     """
-    Snapshot of unity-separation metrics for state storage.
-    Note: For full calculations, use formulas.unity_principle.UnitySeparationMetrics.
+    Complete unity-separation analysis metrics.
 
-    This is a simplified data container for consciousness state tracking.
+    Used for both state storage and calculation results.
     """
     separation_distance: Optional[float] = None  # d(S) = d_initial * e^(-k*S)
     distortion_field: Optional[float] = None     # Delta(d) = 1 - e^(-d/d0)
@@ -42,7 +41,15 @@ class UnityMetricsSnapshot:
     dharmic_karma_net: Optional[float] = None    # Dharmic - Adharmic
     grace_multiplier: Optional[float] = None     # Based on unity alignment (0.3x to 2.5x)
     confidence: float = 0.0                      # 0-1 based on operator coverage
-    missing_operators: List[str] = field(default_factory=list)
+    missing_operators: List[str] = None          # Which operators were missing
+    operator_contributions: Dict[str, float] = None  # Individual contributions to unity vector
+    net_direction: str = "neutral"               # Net movement direction
+
+    def __post_init__(self):
+        if self.missing_operators is None:
+            self.missing_operators = []
+        if self.operator_contributions is None:
+            self.operator_contributions = {}
 
 
 @dataclass
@@ -72,12 +79,13 @@ class DualPathway:
     - Separation: Control, force, fear-driven - decays over time
     - Unity: Surrender, clarity, flow - compounds over time
     """
-    separation_based: PathwayMetrics = field(default_factory=PathwayMetrics)
-    unity_based: PathwayMetrics = field(default_factory=PathwayMetrics)
-    recommended: str = "unity"  # 'unity', 'separation', 'intermediate'
+    separation_pathway: PathwayMetrics = field(default_factory=PathwayMetrics)
+    unity_pathway: PathwayMetrics = field(default_factory=PathwayMetrics)
+    recommended_pathway: str = "unity"  # 'unity', 'separation', 'intermediate'
     recommendation_reasoning: str = ""
+    optimal_blend_ratio: float = 0.5  # Effort-to-flow ratio (0=all flow, 1=all effort)
     projection_months: List[tuple] = field(default_factory=list)  # List of (month, sep_success, unity_success)
-    crossover_month: Optional[int] = None  # When unity overtakes separation
+    crossover_point_months: Optional[int] = None  # When unity overtakes separation
 
 
 @dataclass
@@ -85,10 +93,16 @@ class GoalContext:
     """Context about user's stated goal from query parsing"""
     goal_text: str = ""
     goal_category: str = ""  # 'achievement', 'relationship', 'peace', 'transformation'
+    category: str = ""  # Alias for goal_category used by value_organizer
     emotional_undertone: str = ""  # 'urgency', 'curiosity', 'desperation', 'openness', 'neutral'
     domain: str = ""  # 'business', 'personal', 'health', 'spiritual'
     question_type: str = "pre_articulation"  # 'pre_articulation' or 'response_validation'
     response_themes: List[str] = field(default_factory=list)  # Themes from articulated response
+    explicit_goal: str = ""  # What the user stated
+    implicit_goal: str = ""  # What the consciousness state reveals
+    why_category: str = ""  # Why-type classification
+    death_architecture_required: str = ""  # Required death architecture
+    s_level_requirement: float = 3.0  # Required S-level
 
 
 @dataclass
@@ -717,7 +731,7 @@ class ConsciousnessState:
     leverage_points: List[LeveragePoint] = field(default_factory=list)
 
     # NEW: Unity principle metrics
-    unity_metrics: Optional[UnityMetricsSnapshot] = None
+    unity_metrics: Optional[UnitySeparationMetrics] = None
     dual_pathways: Optional[DualPathway] = None
     goal_context: Optional[GoalContext] = None
     constellation_metadata: Optional[ConstellationMetadata] = None

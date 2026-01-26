@@ -31,8 +31,7 @@ from typing import Dict, List, Optional, Tuple
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from .unity_principle import UnitySeparationMetrics
-from consciousness_state import PathwayMetrics, DualPathway
+from consciousness_state import UnitySeparationMetrics, PathwayMetrics, DualPathway
 
 
 # =============================================================================
@@ -306,12 +305,12 @@ def calculate_dual_pathways(
     )
 
     return DualPathway(
-        separation_based=sep_pathway,
-        unity_based=unity_pathway,
-        recommended=recommendation,
+        separation_pathway=sep_pathway,
+        unity_pathway=unity_pathway,
+        recommended_pathway=recommendation,
         recommendation_reasoning=reasoning,
         projection_months=projections,
-        crossover_month=crossover_month
+        crossover_point_months=crossover_month
     )
 
 

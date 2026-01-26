@@ -17,29 +17,14 @@ ZERO-FALLBACK: All calculations return None if required inputs missing.
 """
 
 import math
+import sys
+import os
 from typing import Dict, List, Optional, Tuple
-from dataclasses import dataclass
 
+# Add parent directory to path for imports
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-@dataclass
-class UnitySeparationMetrics:
-    """Complete unity-separation analysis metrics"""
-    separation_distance: Optional[float] = None  # d(S) = d_initial * e^(-k*S)
-    distortion_field: Optional[float] = None     # Delta(d) = 1 - e^(-d/d0)
-    percolation_quality: Optional[float] = None  # (1-Delta) * (W*A*P) * (1-M)
-    unity_realization_percent: Optional[float] = None  # 100 * (1 - d(S))
-    unity_vector: Optional[float] = None         # Net direction: -1.0 to +1.0
-    dharmic_karma_net: Optional[float] = None    # Dharmic - Adharmic
-    grace_multiplier: Optional[float] = None     # Based on unity alignment
-    confidence: float = 0.0                      # 0-1 based on available operators
-    missing_operators: List[str] = None          # Which operators were missing
-    operator_contributions: Dict[str, float] = None  # Individual contributions to unity vector
-
-    def __post_init__(self):
-        if self.missing_operators is None:
-            self.missing_operators = []
-        if self.operator_contributions is None:
-            self.operator_contributions = {}
+from consciousness_state import UnitySeparationMetrics
 
 
 # =============================================================================

@@ -18,9 +18,8 @@ from consciousness_state import (
     TimelinePredictions, TransformationVectors, QuantumMetricsSnapshot, FrequencyAnalysis,
     Bottleneck, LeveragePoint,
     # Unity Principle dataclasses
-    DualPathway, PathwayMetrics, GoalContext
+    UnitySeparationMetrics, DualPathway, PathwayMetrics, GoalContext
 )
-from formulas.unity_principle import UnitySeparationMetrics
 from nomenclature import (
     get_s_level_label, get_matrix_position, get_manifestation_time_label, get_dominant
 )
