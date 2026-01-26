@@ -19,6 +19,7 @@ COMPONENT_LEVELS = {
     'bottleneck': logging.DEBUG,
     'leverage': logging.DEBUG,
     'api': logging.INFO,
+    'pipeline': logging.INFO,
     # Zero-fallback components
     'zero_fallback': logging.INFO,
     'priority_detector': logging.DEBUG,
