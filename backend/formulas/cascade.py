@@ -29,10 +29,10 @@ ZERO-FALLBACK MODE: No default 0.5 values. Missing operators result in None calc
 from typing import Dict, Any, List, Tuple, Optional, Set, Union
 from dataclasses import dataclass, field
 from enum import Enum
+import logging
 import math
 
-from logging_config import get_logger
-logger = get_logger('formulas.cascade')
+logger = logging.getLogger('oof.formulas.cascade')
 
 
 class CleanlinessZone(Enum):
@@ -159,6 +159,7 @@ class CascadeCalculator:
             level_num = level_def['level']
             cleanliness, cleanliness_missing = self._calculate_level_cleanliness(level_num, operators)
             all_missing_operators.update(cleanliness_missing)
+            logger.debug(f"[_calculate_level_cleanliness] result: level={level_num}, cleanliness={cleanliness:.3f}" if cleanliness is not None else f"[_calculate_level_cleanliness] result: level={level_num}, cleanliness=None")
 
             blockage = (1.0 - cleanliness) if cleanliness is not None else None
             flow_rate, flow_missing = self._calculate_flow_rate(level_num, cleanliness, operators)
@@ -267,6 +268,7 @@ class CascadeCalculator:
             7: ['Ce_cleaning', 'P_presence', 'At_attachment', 'F_fear', 'Hf_habit'],  # Body
         }
 
+        logger.debug(f"[_calculate_level_cleanliness] inputs: level={level}, operator_count={len(operators)}")
         required = level_requirements.get(level, [])
         missing = [op for op in required if op not in operators or operators.get(op) is None]
 
@@ -354,7 +356,7 @@ class CascadeCalculator:
         ZERO-FALLBACK: Returns (None, missing_operators) if cleanliness is None
         or required operators (R_resistance, G_grace) are missing.
         """
-        logger.debug(f"[_calculate_flow] inputs: level={level}, cleanliness={cleanliness:.3f if cleanliness is not None else 'None'}")
+        logger.debug(f"[_calculate_flow_rate] inputs: level={level}, cleanliness={cleanliness:.3f}" if cleanliness is not None else f"[_calculate_flow_rate] inputs: level={level}, cleanliness=None")
         if cleanliness is None:
             logger.warning(f"[_calculate_flow] missing required: cleanliness is None for level {level}")
             return None, ['cleanliness_required']
