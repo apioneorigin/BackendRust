@@ -67,7 +67,7 @@ from fastapi.responses import HTMLResponse, FileResponse
 from sse_starlette.sse import EventSourceResponse
 from dotenv import load_dotenv
 
-from formulas import OOFInferenceEngine, CANONICAL_OPERATOR_NAMES
+from formulas import OOFInferenceEngine, CANONICAL_OPERATOR_NAMES, SHORT_TO_CANONICAL
 from value_organizer import ValueOrganizer
 from bottleneck_detector import BottleneckDetector
 from leverage_identifier import LeverageIdentifier
@@ -604,7 +604,9 @@ async def inference_stream_continue(
         extracted_operators = {}
         for obs in evidence.get('observations', []):
             if isinstance(obs, dict) and 'var' in obs and 'value' in obs:
-                extracted_operators[obs['var']] = obs['value']
+                canonical = SHORT_TO_CANONICAL.get(obs['var'], obs['var'])
+                if canonical in CANONICAL_OPERATOR_NAMES:
+                    extracted_operators[canonical] = obs['value']
 
         remaining_missing = CANONICAL_OPERATOR_NAMES - set(extracted_operators.keys())
 
@@ -815,7 +817,9 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
         extracted_operators = {}
         for obs in evidence.get('observations', []):
             if isinstance(obs, dict) and 'var' in obs and 'value' in obs:
-                extracted_operators[obs['var']] = obs['value']
+                canonical = SHORT_TO_CANONICAL.get(obs['var'], obs['var'])
+                if canonical in CANONICAL_OPERATOR_NAMES:
+                    extracted_operators[canonical] = obs['value']
 
         missing_operators = CANONICAL_OPERATOR_NAMES - set(extracted_operators.keys())
         api_logger.info(f"[OPERATORS] Extracted: {len(extracted_operators)} | Missing: {len(missing_operators)}")
@@ -3017,31 +3021,21 @@ def _validate_evidence(evidence: dict) -> List[str]:
     if valid_obs_count < MIN_OBSERVATIONS:
         errors.append(f"Insufficient valid observations: {valid_obs_count} < {MIN_OBSERVATIONS} required")
 
-    # All 25 core operators - both symbol and full name forms
-    CORE_OPERATORS_25 = {
-        # Symbol forms
-        'Ψ', 'K', 'M', 'G', 'W', 'A', 'P', 'E', 'V', 'L', 'R',
-        'At', 'Av', 'Se', 'Ce', 'Su', 'As', 'Fe', 'De', 'Re', 'Hf', 'Sa', 'Bu', 'Ma', 'Ch',
-        # Full name forms
-        'Consciousness', 'Karma', 'Maya', 'Grace', 'Witness', 'Awareness', 'Prana', 'Entropy',
-        'Void', 'Love', 'Resonance', 'Attachment', 'Aversion', 'Seva', 'Cleaning', 'Surrender',
-        'Aspiration', 'Fear', 'Desire', 'Resistance', 'Habit Force', 'HabitForce',
-        'Samskara', 'Buddhi', 'Manas', 'Chitta'
-    }
-
     # Map observation vars to canonical operator names
     found_operators = set()
     for obs in observations:
         if isinstance(obs, dict):
             var = obs.get('var', '')
-            if var in CORE_OPERATORS_25:
-                # Normalize to canonical form
-                found_operators.add(var)
+            # Resolve to canonical name (handles canonical, short, or unknown forms)
+            canonical = SHORT_TO_CANONICAL.get(var, var)
+            if canonical in CANONICAL_OPERATOR_NAMES:
+                found_operators.add(canonical)
 
-    # Require ALL 25 operators
-    if len(found_operators) < 25:
-        missing_count = 25 - len(found_operators)
-        errors.append(f"Missing core operators: found {len(found_operators)}/25 (missing {missing_count})")
+    # Require all 24 canonical operators
+    total = len(CANONICAL_OPERATOR_NAMES)
+    if len(found_operators) < total:
+        missing = CANONICAL_OPERATOR_NAMES - found_operators
+        errors.append(f"Missing core operators: found {len(found_operators)}/{total} (missing: {', '.join(sorted(missing))})")
 
     return errors
 
