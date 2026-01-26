@@ -110,14 +110,16 @@ class PanchakrityaEngine:
         manifestations = []
 
         # Extract relevant operators
-        i = operators.get("I_intention", 0.5)
-        p = operators.get("P_presence", 0.5)
-        w = operators.get("W_witness", 0.3)
-        at = operators.get("At_attachment", 0.5)
-        m = operators.get("M_maya", 0.5)
-        e = operators.get("E_emotional", 0.5)
-        d = operators.get("D_dharma", 0.3)
-        se = operators.get("Se_service", 0.3)
+        i = operators.get("I_intention")
+        p = operators.get("P_presence")
+        w = operators.get("W_witness")
+        at = operators.get("At_attachment")
+        m = operators.get("M_maya")
+        e = operators.get("E_emotional")
+        d = operators.get("D_dharma")
+        se = operators.get("Se_service")
+        if any(v is None for v in [i, p, w, at, m, e, d, se]):
+            return None
 
         # S-level factor
         s_factor = (s_level - 3) / 5 if s_level > 3 else 0.2
@@ -203,7 +205,10 @@ class PanchakrityaEngine:
         """Calculate complete five acts profile."""
         acts = {}
         for kritya in KrityaType:
-            acts[kritya.value] = self.calculate_kritya(kritya, operators, s_level)
+            result = self.calculate_kritya(kritya, operators, s_level)
+            if result is None:
+                return None
+            acts[kritya.value] = result
 
         # Find dominant and suppressed
         dominant_act = max(acts.values(), key=lambda a: a.intensity).kritya

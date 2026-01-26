@@ -205,9 +205,9 @@ class GraceCalculator:
         primary_blocker = blockers[0].name if blockers else None
 
         # Calculate specific requirements
-        surrender_req = required_operators.get('S_surrender', 0.5)
-        service_req = required_operators.get('Se_service', 0.5)
-        dharma_req = required_operators.get('D_dharma', 0.5)
+        surrender_req = required_operators.get('S_surrender')
+        service_req = required_operators.get('Se_service')
+        dharma_req = required_operators.get('D_dharma')
 
         # Calculate timing probability
         timing_prob = self._calculate_timing_probability(
@@ -259,9 +259,12 @@ class GraceCalculator:
         Calculate how much the goal depends on grace vs effort.
         """
         # Check required grace-related operators
-        grace = required.get('G_grace', 0.5)
-        surrender = required.get('S_surrender', 0.5)
-        void = required.get('V_void', 0.5)
+        grace = required.get('G_grace')
+        surrender = required.get('S_surrender')
+        void = required.get('V_void')
+
+        if any(v is None for v in [grace, surrender, void]):
+            return None
 
         # Higher values indicate more grace dependency
         base_dependency = (grace * 0.4 + surrender * 0.35 + void * 0.25)
@@ -293,13 +296,17 @@ class GraceCalculator:
         availability = 0.0
 
         for channel_name, config in self.GRACE_CHANNELS.items():
-            op_value = operators.get(config['operator'], 0.5)
+            op_value = operators.get(config['operator'])
+            if op_value is None:
+                return None
             availability += op_value * config['weight']
 
         # Reduce by blockers
         blocker_reduction = 0.0
         for blocker_name, config in self.GRACE_BLOCKERS.items():
-            op_value = operators.get(config['operator'], 0.5)
+            op_value = operators.get(config['operator'])
+            if op_value is None:
+                return None
             if op_value > config['threshold']:
                 excess = op_value - config['threshold']
                 blocker_reduction += excess * config['weight']
@@ -315,7 +322,10 @@ class GraceCalculator:
         Calculate required grace availability based on goal.
         """
         # Base requirement from grace operator
-        base = required.get('G_grace', 0.5)
+        base = required.get('G_grace')
+
+        if base is None:
+            return None
 
         # Adjust for dependency
         return base * (0.5 + dependency * 0.5)
@@ -332,8 +342,10 @@ class GraceCalculator:
 
         for channel_name, config in self.GRACE_CHANNELS.items():
             op = config['operator']
-            current_val = current.get(op, 0.5)
-            required_val = required.get(op, 0.5)
+            current_val = current.get(op)
+            required_val = required.get(op)
+            if current_val is None or required_val is None:
+                return None
             gap = required_val - current_val
 
             channels.append(GraceChannel(
@@ -361,7 +373,10 @@ class GraceCalculator:
 
         for blocker_name, config in self.GRACE_BLOCKERS.items():
             op = config['operator']
-            value = current.get(op, 0.5)
+            value = current.get(op)
+
+            if value is None:
+                return None
 
             if value > config['threshold'] * 0.8:  # Include near-threshold
                 intensity = (value - config['threshold'] * 0.8) / (1 - config['threshold'] * 0.8)
@@ -388,10 +403,13 @@ class GraceCalculator:
         """
         Calculate probability of grace intervention at right time.
         """
-        surrender = current.get('S_surrender', 0.5)
-        dharma = current.get('D_dharma', 0.5)
-        service = current.get('Se_service', 0.5)
-        attachment = current.get('At_attachment', 0.5)
+        surrender = current.get('S_surrender')
+        dharma = current.get('D_dharma')
+        service = current.get('Se_service')
+        attachment = current.get('At_attachment')
+
+        if any(v is None for v in [surrender, dharma, service, attachment]):
+            return None
 
         # Base timing probability
         base = (surrender * 0.4 + dharma * 0.3 + service * 0.3)
@@ -402,7 +420,9 @@ class GraceCalculator:
         # Alignment with required increases probability
         alignment = 0
         for op, req_val in required.items():
-            curr_val = current.get(op, 0.5)
+            curr_val = current.get(op)
+            if curr_val is None:
+                return None
             if abs(req_val - curr_val) < 0.2:
                 alignment += 0.05
 
@@ -417,19 +437,24 @@ class GraceCalculator:
         """
         conditions = []
 
-        if operators.get('P_presence', 0.5) > 0.6:
+        p_presence = operators.get('P_presence')
+        if p_presence is not None and p_presence > 0.6:
             conditions.append("During meditation when presence is strong")
 
-        if operators.get('S_surrender', 0.5) > 0.5:
+        s_surrender = operators.get('S_surrender')
+        if s_surrender is not None and s_surrender > 0.5:
             conditions.append("Moments of genuine letting go")
 
-        if operators.get('Se_service', 0.5) > 0.5:
+        se_service = operators.get('Se_service')
+        if se_service is not None and se_service > 0.5:
             conditions.append("While engaged in selfless service")
 
-        if operators.get('J_joy', 0.5) > 0.6:
+        j_joy = operators.get('J_joy')
+        if j_joy is not None and j_joy > 0.6:
             conditions.append("States of natural joy and celebration")
 
-        if operators.get('O_openness', 0.5) > 0.6:
+        o_openness = operators.get('O_openness')
+        if o_openness is not None and o_openness > 0.6:
             conditions.append("When feeling open and receptive")
 
         if not conditions:
@@ -446,9 +471,12 @@ class GraceCalculator:
         Calculate potential grace multiplication factor.
         """
         # Grace multiplication formula: 1 + (G × S × D × 3)
-        grace = required.get('G_grace', 0.5)
-        surrender = required.get('S_surrender', 0.5)
-        dharma = required.get('D_dharma', 0.5)
+        grace = required.get('G_grace')
+        surrender = required.get('S_surrender')
+        dharma = required.get('D_dharma')
+
+        if any(v is None for v in [grace, surrender, dharma]):
+            return None
 
         multiplication = 1.0 + (grace * surrender * dharma * 3)
 
@@ -476,10 +504,12 @@ class GraceCalculator:
                 steps.append(f"Open {channel.name} channel: {channel.activation_practices[0]}")
 
         # General recommendations
-        if current.get('Ce_cleaning', 0.5) < 0.6:
+        ce_cleaning = current.get('Ce_cleaning')
+        if ce_cleaning is not None and ce_cleaning < 0.6:
             steps.append("Establish daily cleaning practice (morning meditation)")
 
-        if current.get('S_surrender', 0.5) < 0.5:
+        s_surrender = current.get('S_surrender')
+        if s_surrender is not None and s_surrender < 0.5:
             steps.append("Deepen surrender through trust exercises and letting go")
 
         return steps[:6]

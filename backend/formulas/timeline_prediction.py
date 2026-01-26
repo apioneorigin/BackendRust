@@ -443,27 +443,35 @@ class EvolutionDynamicsEngine:
         """Calculate complete evolution dynamics state."""
 
         # Extract operators (using canonical names)
-        psi = operators.get('Psi_quality', 0.5)
-        maya = operators.get('M_maya', 0.5)
-        witness = operators.get('W_witness', 0.5)
-        grace = operators.get('G_grace', 0.5)
-        surrender = operators.get('S_surrender', 0.5)
-        karma = operators.get('K_karma', 0.5)
-        attachment = operators.get('At_attachment', 0.5)
-        resistance = operators.get('R_resistance', 0.5)
-        fear = operators.get('F_fear', 0.5)
-        presence = operators.get('P_presence', 0.5)
-        coherence = operators.get('Co_coherence', 0.5)
+        psi = operators.get('Psi_quality')
+        maya = operators.get('M_maya')
+        witness = operators.get('W_witness')
+        grace = operators.get('G_grace')
+        surrender = operators.get('S_surrender')
+        karma = operators.get('K_karma')
+        attachment = operators.get('At_attachment')
+        resistance = operators.get('R_resistance')
+        fear = operators.get('F_fear')
+        presence = operators.get('P_presence')
+        coherence = operators.get('Co_coherence')
+
+        if any(v is None for v in [psi, maya, witness, grace, surrender, karma,
+                                    attachment, resistance, fear, presence, coherence]):
+            return None
 
         # Context
         if context is None:
             context = {}
 
-        crisis_intensity = context.get('crisis_intensity', 0.0)
-        teaching_transmission = context.get('teaching_transmission', 0.0)
-        network_breakthrough = context.get('network_breakthrough', 0.0)
-        practice_intensity = context.get('practice_intensity', 0.5)
-        aspiration = context.get('aspiration', 0.5)
+        crisis_intensity = context.get('crisis_intensity')
+        teaching_transmission = context.get('teaching_transmission')
+        network_breakthrough = context.get('network_breakthrough')
+        practice_intensity = context.get('practice_intensity')
+        aspiration = context.get('aspiration')
+
+        if any(v is None for v in [crisis_intensity, teaching_transmission,
+                                    network_breakthrough, practice_intensity, aspiration]):
+            return None
 
         # Calculate breakthrough analysis
         breakthrough = self.breakthrough_engine.calculate_quantum_leap_probability(
@@ -549,23 +557,43 @@ def calculate_breakthrough_probability(
     context: Dict[str, Any]
 ) -> BreakthroughAnalysis:
     """Convenience function for breakthrough calculation."""
+    surrender = operators.get('S_surrender')
+    grace = operators.get('G_grace')
+    karma = operators.get('K_karma')
+    resistance = operators.get('R_resistance')
+    fear = operators.get('F_fear')
+    attachment = operators.get('At_attachment')
+    witness = operators.get('W_witness')
+
+    purification_level = context.get('purification_level')
+    capacity_developed = context.get('capacity_developed')
+    aspiration = context.get('aspiration')
+    crisis_intensity = context.get('crisis_intensity')
+    teaching_transmission = context.get('teaching_transmission')
+    network_breakthrough = context.get('network_breakthrough')
+
+    if any(v is None for v in [surrender, grace, karma, resistance, fear, attachment, witness,
+                                purification_level, capacity_developed, aspiration,
+                                crisis_intensity, teaching_transmission, network_breakthrough]):
+        return None
+
     return breakthrough_engine.calculate_quantum_leap_probability(
-        purification_level=context.get('purification_level', 0.5),
-        capacity_developed=context.get('capacity_developed', 0.5),
-        surrender_depth=operators.get('S_surrender', 0.5),
-        aspiration_intensity=context.get('aspiration', 0.5),
-        crisis_intensity=context.get('crisis_intensity', 0.0),
-        teaching_transmission=context.get('teaching_transmission', 0.0),
-        grace_intervention=operators.get('G_grace', 0.5),
-        network_breakthrough=context.get('network_breakthrough', 0.0),
-        karmic_readiness=1 - operators.get('K_karma', 0.5),
+        purification_level=purification_level,
+        capacity_developed=capacity_developed,
+        surrender_depth=surrender,
+        aspiration_intensity=aspiration,
+        crisis_intensity=crisis_intensity,
+        teaching_transmission=teaching_transmission,
+        grace_intervention=grace,
+        network_breakthrough=network_breakthrough,
+        karmic_readiness=1 - karma,
         astrological_support=0.5,
         life_phase_appropriateness=0.7,
-        resistance=operators.get('R_resistance', 0.5),
-        fear=operators.get('F_fear', 0.5),
-        surrender=operators.get('S_surrender', 0.5),
-        attachment=operators.get('At_attachment', 0.5),
-        witness=operators.get('W_witness', 0.5)
+        resistance=resistance,
+        fear=fear,
+        surrender=surrender,
+        attachment=attachment,
+        witness=witness
     )
 
 
@@ -576,12 +604,20 @@ def predict_timeline(
     aspiration: float = 0.5
 ) -> TimelinePrediction:
     """Convenience function for timeline prediction."""
+    karma = operators.get('K_karma')
+    grace = operators.get('G_grace')
+    resistance = operators.get('R_resistance')
+    surrender = operators.get('S_surrender')
+
+    if any(v is None for v in [karma, grace, resistance, surrender]):
+        return None
+
     return timeline_engine.predict_time_to_next_s_level(
         current_s_level=s_level,
-        karma_load=operators.get('K_karma', 0.5),
-        grace_availability=operators.get('G_grace', 0.5),
-        resistance=operators.get('R_resistance', 0.5),
-        grace_flow=operators.get('G_grace', 0.5) * operators.get('S_surrender', 0.5),
+        karma_load=karma,
+        grace_availability=grace,
+        resistance=resistance,
+        grace_flow=grace * surrender,
         aspiration=aspiration,
         practice_intensity=practice_intensity
     )

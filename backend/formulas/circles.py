@@ -77,17 +77,22 @@ class CirclesEngine:
         defn = CIRCLE_DEFINITIONS[circle_type]
 
         # Extract relevant operators
-        p = operators.get("P_presence", 0.5)
-        at = operators.get("At_attachment", 0.5)
-        se = operators.get("Se_service", 0.3)
-        w = operators.get("W_witness", 0.3)
-        e = operators.get("E_emotional", 0.5)
-        d = operators.get("D_dharma", 0.3)
+        p = operators.get("P_presence")
+        at = operators.get("At_attachment")
+        se = operators.get("Se_service")
+        w = operators.get("W_witness")
+        e = operators.get("E_emotional")
+        d = operators.get("D_dharma")
+        if any(v is None for v in [p, at, se, w, e, d]):
+            return None
 
         # Circle-specific calculations
         if circle_type == CircleType.PERSONAL:
             radius = p * w * (1 - at * 0.3)
-            quality = w * (1 - operators.get("M_maya", 0.5))
+            m_maya = operators.get("M_maya")
+            if m_maya is None:
+                return None
+            quality = w * (1 - m_maya)
             energy = p
             time_alloc = 0.3  # Base allocation
 
@@ -104,8 +109,12 @@ class CirclesEngine:
             time_alloc = 0.2
 
         elif circle_type == CircleType.PROFESSIONAL:
-            radius = d * operators.get("I_intention", 0.5)
-            quality = d * (1 - operators.get("Hf_habit", 0.5) * 0.3)
+            i_intention = operators.get("I_intention")
+            hf_habit = operators.get("Hf_habit")
+            if any(v is None for v in [i_intention, hf_habit]):
+                return None
+            radius = d * i_intention
+            quality = d * (1 - hf_habit * 0.3)
             energy = d
             time_alloc = 0.2
 
@@ -134,7 +143,10 @@ class CirclesEngine:
         """Calculate complete five circles profile."""
         circles = {}
         for circle_type in CircleType:
-            circles[circle_type.value] = self.calculate_circle(circle_type, operators, s_level)
+            result = self.calculate_circle(circle_type, operators, s_level)
+            if result is None:
+                return None
+            circles[circle_type.value] = result
 
         # Calculate balance
         radii = [c.radius for c in circles.values()]

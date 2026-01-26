@@ -215,15 +215,15 @@ class OOFInferenceEngine:
             profile.collective_profile = {
                 "network_effect": self.collective_engine.calculate_network_effect(
                     network_size=10,
-                    base_resonance=operators.get("Se_service", 0.3),
-                    coherence=operators.get("Ce_cleaning", 0.5),
+                    base_resonance=operators.get("Se_service"),
+                    coherence=operators.get("Ce_cleaning"),
                     population=1000
-                ),
+                ) if operators.get("Se_service") is not None and operators.get("Ce_cleaning") is not None else None,
                 "we_space": self.collective_engine.calculate_we_space(
                     operators=operators,
-                    network_coherence=operators.get("Ce_cleaning", 0.5),
+                    network_coherence=operators.get("Ce_cleaning"),
                     shared_s_level=s_level
-                )
+                ) if operators.get("Ce_cleaning") is not None else None
             }
 
         if "circles" in include_modules:
@@ -268,23 +268,27 @@ class OOFInferenceEngine:
             from .platform_specific import Platform
             profile.platform_profile = {
                 "intelligence_level": self.intelligence_adaptation_engine.detect_intelligence_level(
-                    complexity_handled=operators.get("W_witness", 0.5),
+                    complexity_handled=operators.get("W_witness"),
                     abstraction_comfort=s_level / 8.0,
-                    technical_literacy=operators.get("D_dharma", 0.5)
-                )
+                    technical_literacy=operators.get("D_dharma")
+                ) if operators.get("W_witness") is not None and operators.get("D_dharma") is not None else None
             }
 
         if "multi_reality" in include_modules:
-            profile.multi_reality_profile = self.multi_reality_engine.calculate_full_multi_reality_state(
-                shared_beliefs=operators.get("Ce_cleaning", 0.5),
-                shared_consciousness=s_level / 8.0,
-                interaction_frequency=0.5,
-                num_participants=1,
-                individual_realities=[s_level / 8.0],
-                consciousness_levels=[s_level / 8.0],
-                attachments=[operators.get("At_attachment", 0.5)],
-                resonance=operators.get("P_presence", 0.5)
-            )
+            ce = operators.get("Ce_cleaning")
+            at_val = operators.get("At_attachment")
+            p_val = operators.get("P_presence")
+            if ce is not None and at_val is not None and p_val is not None:
+                profile.multi_reality_profile = self.multi_reality_engine.calculate_full_multi_reality_state(
+                    shared_beliefs=ce,
+                    shared_consciousness=s_level / 8.0,
+                    interaction_frequency=0.5,
+                    num_participants=1,
+                    individual_realities=[s_level / 8.0],
+                    consciousness_levels=[s_level / 8.0],
+                    attachments=[at_val],
+                    resonance=p_val
+                )
 
         if "timeline" in include_modules:
             profile.timeline_profile = self.evolution_engine.calculate_full_evolution_dynamics(
@@ -296,12 +300,13 @@ class OOFInferenceEngine:
             profile.dynamics_profile = self.dynamics_engine.calculate_all(operators)
 
         if "network" in include_modules:
-            coherence = operators.get('Co_coherence', 0.5)
-            profile.network_profile = self.network_engine.calculate_network_state(
-                individual_coherence=coherence,
-                individual_s_level=s_level,
-                connected_nodes=1
-            )
+            coherence = operators.get('Co_coherence')
+            if coherence is not None:
+                profile.network_profile = self.network_engine.calculate_network_state(
+                    individual_coherence=coherence,
+                    individual_s_level=s_level,
+                    connected_nodes=1
+                )
 
         if "quantum" in include_modules:
             profile.quantum_profile = self.quantum_engine.calculate_quantum_state(operators, s_level)
@@ -511,7 +516,7 @@ class OOFInferenceEngine:
         for obs in observations:
             var_name = obs.get('var', '')
             value = obs.get('value')
-            conf = obs.get('confidence', 0.8)
+            conf = obs.get('confidence')
 
             if not var_name or value is None:
                 continue
@@ -522,7 +527,7 @@ class OOFInferenceEngine:
             canonical_name = SHORT_TO_CANONICAL.get(var_name, var_name)
 
             operators[canonical_name] = float(value)
-            confidence[canonical_name] = float(conf) if conf is not None else 0.8
+            confidence[canonical_name] = float(conf) if conf is not None else None
             populated_operators.add(canonical_name)
 
         # Track missing operators
@@ -745,31 +750,6 @@ def run_inference(
     profile = engine.calculate_full_profile(operators, s_level)
     return engine.to_dict(profile)
 
-
-def get_operator_defaults() -> Dict[str, float]:
-    """Get default operator values using canonical operator names."""
-    return {
-        "P_presence": 0.5,
-        "At_attachment": 0.5,
-        "Se_service": 0.3,
-        "W_witness": 0.3,
-        "E_emotional": 0.5,
-        "D_dharma": 0.3,
-        "M_maya": 0.5,
-        "I_intention": 0.5,
-        "Hf_habit": 0.5,
-        "Ce_cleaning": 0.5,  # Canonical name (not Ce_cleaning)
-        "K_karma": 0.5,
-        "Lf_lovefear": 0.5,  # Canonical name (not Lf_lifeforce)
-        # Extended commonly-used operators
-        "S_surrender": 0.5,
-        "A_aware": 0.5,
-        "Co_coherence": 0.5,
-        "F_fear": 0.5,
-        "R_resistance": 0.5,
-        "G_grace": 0.3,
-        "Psi_quality": 0.5,
-    }
 
 
 if __name__ == "__main__":

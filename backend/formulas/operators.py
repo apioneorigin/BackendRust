@@ -712,186 +712,241 @@ class OperatorEngine:
         return [name for name, op in self.operators.items()
                 if op.category == category]
 
-    def calculate_klesha_total(self, values: Dict[str, float]) -> float:
+    def calculate_klesha_total(self, values: Dict[str, float]) -> Optional[float]:
         """
         Calculate total Klesha (KL) from five sub-components.
 
         Formula: KL = (Av + As + Ra + Dv + Ab) / 5
+        Returns None if all sub-components are missing.
         """
-        av = values.get("Av_avidya", 0.5)
-        as_ = values.get("As_asmita", 0.5)
-        ra = values.get("Ra_raga", 0.5)
-        dv = values.get("Dv_dvesha", 0.5)
-        ab = values.get("Ab_abhinivesha", 0.5)
+        components = {
+            'Av_avidya': values.get("Av_avidya"),
+            'As_asmita': values.get("As_asmita"),
+            'Ra_raga': values.get("Ra_raga"),
+            'Dv_dvesha': values.get("Dv_dvesha"),
+            'Ab_abhinivesha': values.get("Ab_abhinivesha"),
+        }
+        available = {k: v for k, v in components.items() if v is not None}
+        if not available:
+            return None
+        return sum(available.values()) / len(available)
 
-        return (av + as_ + ra + dv + ab) / 5
-
-    def calculate_maya_effective(self, values: Dict[str, float]) -> float:
+    def calculate_maya_effective(self, values: Dict[str, float]) -> Optional[float]:
         """
         Calculate effective Maya distortion.
 
         Formula: M_eff = M × (1 - W) × (1 + KL) / 2
+        Returns None if M is missing.
         """
-        m = values.get("M_maya", 0.5)
-        w = values.get("W_witness", 0.3)
+        m = values.get("M_maya")
+        if m is None:
+            return None
+        w = values.get("W_witness")
+        if w is None:
+            return None
         kl = self.calculate_klesha_total(values)
+        if kl is None:
+            kl = 0.0  # Klesha sub-components are rarely provided; treat as zero contribution
 
         return m * (1 - w) * (1 + kl) / 2
 
-    def calculate_consciousness_quality(self, values: Dict[str, float]) -> float:
+    def calculate_consciousness_quality(self, values: Dict[str, float]) -> Optional[float]:
         """
         Calculate Psi^Psi (consciousness quality).
 
         Formula: Ψ^Ψ = P × W × (1 - M_eff) × (1 - At)
+        Returns None if any core operator is missing.
         """
-        p = values.get("P_presence", 0.5)
-        w = values.get("W_witness", 0.3)
+        p = values.get("P_presence")
+        w = values.get("W_witness")
+        at = values.get("At_attachment")
+        if any(v is None for v in [p, w, at]):
+            return None
         m_eff = self.calculate_maya_effective(values)
-        at = values.get("At_attachment", 0.5)
+        if m_eff is None:
+            return None
 
         return p * w * (1 - m_eff) * (1 - at)
 
-    def calculate_grace_availability(self, values: Dict[str, float]) -> float:
+    def calculate_grace_availability(self, values: Dict[str, float]) -> Optional[float]:
         """
         Calculate Grace availability.
 
         Formula: G = Surrender × Ce × Readiness × (1 - At)
+        Returns None if required operators are missing.
         """
-        surrender = 1 - values.get("At_attachment", 0.5)  # Surrender = 1 - Attachment
-        ce = values.get("Ce_cleaning", 0.3)
-        readiness = values.get("P_presence", 0.5) * values.get("W_witness", 0.3)
-        at = values.get("At_attachment", 0.5)
+        at = values.get("At_attachment")
+        ce = values.get("Ce_cleaning")
+        p = values.get("P_presence")
+        w = values.get("W_witness")
+        if any(v is None for v in [at, ce, p, w]):
+            return None
+
+        surrender = 1 - at
+        readiness = p * w
 
         return surrender * ce * readiness * (1 - at)
 
-    def calculate_karma_binding(self, values: Dict[str, float]) -> float:
+    def calculate_karma_binding(self, values: Dict[str, float]) -> Optional[float]:
         """
         Calculate karmic binding strength.
 
         Formula: K_bind = K × Hf × (1 - Ce × G)
+        Returns None if required operators are missing.
         """
-        k = values.get("K_karma", 0.5)
-        hf = values.get("Hf_habit", 0.5)
-        ce = values.get("Ce_cleaning", 0.3)
+        k = values.get("K_karma")
+        hf = values.get("Hf_habit")
+        ce = values.get("Ce_cleaning")
+        if any(v is None for v in [k, hf, ce]):
+            return None
         g = self.calculate_grace_availability(values)
+        if g is None:
+            return None
 
         return k * hf * (1 - ce * g)
 
-    def calculate_ego_separation(self, values: Dict[str, float]) -> float:
+    def calculate_ego_separation(self, values: Dict[str, float]) -> Optional[float]:
         """
         Calculate ego separation factor.
 
         Formula: Ego_Sep = At × (1 - Se) × As × (1 - W)
+        Returns None if required operators are missing.
         """
-        at = values.get("At_attachment", 0.5)
-        se = values.get("Se_service", 0.3)
-        as_ = values.get("As_asmita", 0.5)
-        w = values.get("W_witness", 0.3)
+        at = values.get("At_attachment")
+        se = values.get("Se_service")
+        as_ = values.get("As_asmita")
+        w = values.get("W_witness")
+        if any(v is None for v in [at, se, as_, w]):
+            return None
 
         return at * (1 - se) * as_ * (1 - w)
 
-    def calculate_resistance(self, values: Dict[str, float]) -> float:
+    def calculate_resistance(self, values: Dict[str, float]) -> Optional[float]:
         """
         Calculate resistance to evolution.
 
-        Formula: Resistance = At + Hf + E_incoherence
+        Formula: Resistance = (At + Hf + (1 - E)) / 3
+        Returns None if required operators are missing.
         """
-        at = values.get("At_attachment", 0.5)
-        hf = values.get("Hf_habit", 0.5)
-        e_incoh = 1 - values.get("E_emotional", 0.5)
+        at = values.get("At_attachment")
+        hf = values.get("Hf_habit")
+        e = values.get("E_equanimity")
+        if any(v is None for v in [at, hf, e]):
+            return None
 
-        return (at + hf + e_incoh) / 3  # Normalized
+        return (at + hf + (1 - e)) / 3
 
-    def calculate_evolution_rate(self, values: Dict[str, float]) -> float:
+    def calculate_evolution_rate(self, values: Dict[str, float]) -> Optional[float]:
         """
         Calculate consciousness evolution rate (dS/dt).
 
         Formula: dS/dt = k₁(Awareness) + k₂(Practice) + k₃(Grace) - k₄(Resistance)
+        Returns None if required operators are missing.
         """
-        k1, k2, k3, k4 = 0.3, 0.25, 0.35, 0.4
-
-        awareness = values.get("W_witness", 0.3) * values.get("P_presence", 0.5)
-        practice = values.get("Ce_cleaning", 0.3)
+        w = values.get("W_witness")
+        p = values.get("P_presence")
+        ce = values.get("Ce_cleaning")
+        if any(v is None for v in [w, p, ce]):
+            return None
         grace = self.calculate_grace_availability(values)
         resistance = self.calculate_resistance(values)
+        if grace is None or resistance is None:
+            return None
+
+        k1, k2, k3, k4 = 0.3, 0.25, 0.35, 0.4
+        awareness = w * p
+        practice = ce
 
         return k1 * awareness + k2 * practice + k3 * grace - k4 * resistance
 
-    def calculate_love_fear_balance(self, values: Dict[str, float]) -> float:
+    def calculate_love_fear_balance(self, values: Dict[str, float]) -> Optional[float]:
         """
         Calculate love/fear balance.
 
         Formula: Lf = Love / (Love + Fear)
+        Returns None if required operators are missing.
         """
-        love = 1 - values.get("At_attachment", 0.5)  # Love correlates with non-attachment
-        fear = values.get("Ab_abhinivesha", 0.5) * (1 - values.get("P_presence", 0.5))
+        at = values.get("At_attachment")
+        ab = values.get("Ab_abhinivesha")
+        p = values.get("P_presence")
+        if any(v is None for v in [at, ab, p]):
+            return None
+
+        love = 1 - at
+        fear = ab * (1 - p)
 
         if love + fear == 0:
-            return 0.5
+            return None
         return love / (love + fear)
 
     def calculate_all_derived(self, base_values: Dict[str, float]) -> Dict[str, float]:
         """
         Calculate all derived operators from base values.
 
-        Returns complete operator set with computed values.
+        Returns operator set with computed values. Derived values that
+        cannot be calculated (missing inputs) are omitted, not defaulted.
         """
         derived = base_values.copy()
 
-        # Calculate derived values
-        derived["KL_klesha"] = self.calculate_klesha_total(base_values)
-        derived["M_maya_effective"] = self.calculate_maya_effective(base_values)
-        derived["Psi_quality_computed"] = self.calculate_consciousness_quality(base_values)
-        derived["G_grace_computed"] = self.calculate_grace_availability(base_values)
-        derived["K_binding"] = self.calculate_karma_binding(base_values)
-        derived["Ego_separation"] = self.calculate_ego_separation(base_values)
-        derived["Resistance"] = self.calculate_resistance(base_values)
-        derived["Evolution_rate"] = self.calculate_evolution_rate(base_values)
-        derived["Lf_lovefear_computed"] = self.calculate_love_fear_balance(base_values)
+        # Calculate derived values — only include if calculable
+        calculations = {
+            "KL_klesha": self.calculate_klesha_total,
+            "M_maya_effective": self.calculate_maya_effective,
+            "Psi_quality_computed": self.calculate_consciousness_quality,
+            "G_grace_computed": self.calculate_grace_availability,
+            "K_binding": self.calculate_karma_binding,
+            "Ego_separation": self.calculate_ego_separation,
+            "Resistance": self.calculate_resistance,
+            "Evolution_rate": self.calculate_evolution_rate,
+            "Lf_lovefear_computed": self.calculate_love_fear_balance,
+        }
+
+        for key, calc_fn in calculations.items():
+            result = calc_fn(base_values)
+            if result is not None:
+                derived[key] = result
 
         return derived
 
-    def get_operator_signature(self, values: Dict[str, float]) -> Dict[str, float]:
+    def get_operator_signature(self, values: Dict[str, float]) -> Dict[str, Optional[float]]:
         """
         Get normalized operator signature for realism matching.
 
-        Returns key operators normalized to [0, 1] for pattern matching.
+        Returns key operators for pattern matching. Missing operators are None.
         """
-        return {
-            "Psi": values.get("Psi_quality", 0.5),
-            "M": values.get("M_maya", 0.5),
-            "W": values.get("W_witness", 0.3),
-            "At": values.get("At_attachment", 0.5),
-            "Se": values.get("Se_service", 0.3),
-            "G": values.get("G_grace", 0.3),
-            "P": values.get("P_presence", 0.5),
-            "E": values.get("E_emotional", 0.5),
-            "K": values.get("K_karma", 0.5),
-            "D": values.get("D_dharma", 0.3),
+        keys = {
+            "Psi": "Psi_quality", "M": "M_maya", "W": "W_witness",
+            "At": "At_attachment", "Se": "Se_service", "G": "G_grace",
+            "P": "P_presence", "E": "E_equanimity", "K": "K_karma",
+            "D": "D_dharma",
         }
+        return {short: values.get(canonical) for short, canonical in keys.items()}
 
-    def estimate_s_level(self, values: Dict[str, float]) -> float:
+    def estimate_s_level(self, values: Dict[str, float]) -> Optional[float]:
         """
         Estimate S-level from operator configuration.
 
-        Uses weighted operator signature to determine consciousness level.
+        Returns None if no relevant operators are available.
         """
-        psi = values.get("Psi_quality", 0.5)
-        w = values.get("W_witness", 0.3)
-        m = values.get("M_maya", 0.5)
-        at = values.get("At_attachment", 0.5)
-        se = values.get("Se_service", 0.3)
-        g = values.get("G_grace", 0.3)
+        weights = {
+            "Psi_quality": 2.5, "W_witness": 2.0, "M_maya": -1.5,
+            "At_attachment": -1.5, "Se_service": 1.0, "G_grace": 0.5,
+        }
+        available = {}
+        for op, weight in weights.items():
+            val = values.get(op)
+            if val is not None:
+                available[op] = (val, weight)
 
-        # S-level formula: weighted combination
-        s = 1.0 + (
-            psi * 2.5 +
-            w * 2.0 +
-            (1 - m) * 1.5 +
-            (1 - at) * 1.5 +
-            se * 1.0 +
-            g * 0.5
-        )
+        if not available:
+            return None
+
+        s = 1.0
+        for op, (val, weight) in available.items():
+            if weight < 0:
+                s += (1 - val) * abs(weight)
+            else:
+                s += val * weight
 
         return min(8.0, max(1.0, s))
 

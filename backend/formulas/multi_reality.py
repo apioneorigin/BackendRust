@@ -474,8 +474,10 @@ class MultiRealityEngine:
         # Calculate weights
         raw_weights = {}
         for reality_id in realities:
-            alignment = consciousness_alignments.get(reality_id, 0.5)
-            permission = karma_permissions.get(reality_id, 0.5)
+            alignment = consciousness_alignments.get(reality_id)
+            permission = karma_permissions.get(reality_id)
+            if alignment is None or permission is None:
+                return None
             raw_weights[reality_id] = alignment * permission
 
         # Normalize weights
@@ -685,7 +687,7 @@ class MultiRealityEngine:
         return MultiRealityState(
             overlap_coefficient=overlap,
             consensus_reality=consensus,
-            conflict_severity=conflict_result.get("conflict_severity", 0.0),
+            conflict_severity=conflict_result.get("conflict_severity") or 0.0,
             morphic_resonance=morphic,
             transmission_rate=transmission,
             stability=stability

@@ -219,15 +219,19 @@ class ConstraintChecker:
         """
         Check karma constraint - high karma limits manifestation.
         """
-        current_karma = current.get('K_karma', 0.5)
+        current_karma = current.get('K_karma')
 
         # High karma (>0.7) limits ability to make major changes
-        if current_karma > 0.7:
+        if current_karma is not None and current_karma > 0.7:
             # Check if we're trying to make large changes
-            total_change = sum(
-                abs(required.get(k, 0.5) - current.get(k, 0.5))
-                for k in required
-            )
+            changes = []
+            for k in required:
+                req_val = required.get(k)
+                cur_val = current.get(k)
+                if req_val is None or cur_val is None:
+                    return None
+                changes.append(abs(req_val - cur_val))
+            total_change = sum(changes)
             avg_change = total_change / max(1, len(required))
 
             if avg_change > 0.2:
@@ -259,26 +263,30 @@ class ConstraintChecker:
         belief_flexibility = self.S_LEVEL_CHARACTERISTICS[level_int]['belief_flexibility']
 
         # Check maya level - high maya = limited belief flexibility
-        maya = current.get('M_maya', 0.5)
+        maya = current.get('M_maya')
+        grace = required.get('G_grace')
+        req_psi = required.get('Psi_quality')
+        cur_psi = current.get('Psi_quality')
+        req_surrender = required.get('S_surrender')
+        cur_surrender = current.get('S_surrender')
+        req_void = required.get('V_void')
+        cur_void = current.get('V_void')
+
+        if any(v is None for v in [maya, grace, req_psi, cur_psi, req_surrender, cur_surrender, req_void, cur_void]):
+            return None
+
         effective_flexibility = belief_flexibility * (1 - maya * 0.5)
 
         # Check if required changes exceed belief flexibility
         # Grace can bypass belief limits
-        grace = required.get('G_grace', 0.5)
         grace_bypass = grace * 0.3
 
         total_flexibility = min(1.0, effective_flexibility + grace_bypass)
 
         # Calculate required belief stretch
-        consciousness_change = abs(
-            required.get('Psi_quality', 0.5) - current.get('Psi_quality', 0.5)
-        )
-        surrender_change = abs(
-            required.get('S_surrender', 0.5) - current.get('S_surrender', 0.5)
-        )
-        void_change = abs(
-            required.get('V_void', 0.5) - current.get('V_void', 0.5)
-        )
+        consciousness_change = abs(req_psi - cur_psi)
+        surrender_change = abs(req_surrender - cur_surrender)
+        void_change = abs(req_void - cur_void)
 
         # These operators require significant belief shifts
         belief_stretch = (consciousness_change + surrender_change + void_change) / 3
@@ -311,8 +319,11 @@ class ConstraintChecker:
         collective_binding = 1 - (level_int / 10)  # S1=0.9, S8=0.2
 
         # Check if required state is too disconnected
-        coherence = required.get('Co_coherence', 0.5)
-        resonance = required.get('Rs_resonance', 0.5)
+        coherence = required.get('Co_coherence')
+        resonance = required.get('Rs_resonance')
+
+        if any(v is None for v in [coherence, resonance]):
+            return None
 
         field_alignment = (coherence + resonance) / 2
 
@@ -338,12 +349,17 @@ class ConstraintChecker:
         """
         Check energy sustainability - can't maintain what energy doesn't support.
         """
-        current_shakti = current.get('Sh_shakti', 0.5)
-        required_shakti = required.get('Sh_shakti', 0.5)
+        current_shakti = current.get('Sh_shakti')
+        required_shakti = required.get('Sh_shakti')
 
         # Calculate energy demand of required state
         high_energy_ops = ['I_intention', 'A_aware', 'W_witness', 'P_presence']
-        energy_demand = sum(required.get(op, 0.5) for op in high_energy_ops) / len(high_energy_ops)
+        energy_values = [required.get(op) for op in high_energy_ops]
+
+        if any(v is None for v in [current_shakti, required_shakti] + energy_values):
+            return None
+
+        energy_demand = sum(energy_values) / len(high_energy_ops)
 
         # Check if current energy can support
         energy_gap = energy_demand - current_shakti
@@ -391,16 +407,20 @@ class ConstraintChecker:
         coherence_score = 1.0
 
         for op1, op2 in inverse_pairs:
-            val1 = required.get(op1, 0.5)
-            val2 = required.get(op2, 0.5)
+            val1 = required.get(op1)
+            val2 = required.get(op2)
+            if val1 is None or val2 is None:
+                return None
             pair_sum = val1 + val2
             # Should be close to 1
             deviation = abs(1 - pair_sum)
             coherence_score -= deviation * 0.1
 
         for op1, op2 in complementary_pairs:
-            val1 = required.get(op1, 0.5)
-            val2 = required.get(op2, 0.5)
+            val1 = required.get(op1)
+            val2 = required.get(op2)
+            if val1 is None or val2 is None:
+                return None
             gap = abs(val1 - val2)
             if gap > 0.3:
                 coherence_score -= (gap - 0.3) * 0.15
@@ -439,15 +459,16 @@ class ConstraintChecker:
         # D7 (Ego) - requires very high surrender, void tolerance
 
         # Check if D7 (ego death) is implied without D1-D6
-        required_void = required.get('V_void', 0.5)
-        required_surrender = required.get('S_surrender', 0.5)
-        current_attachment = current.get('At_attachment', 0.5)
-        current_maya = current.get('M_maya', 0.5)
+        required_void = required.get('V_void')
+        required_surrender = required.get('S_surrender')
+        current_attachment = current.get('At_attachment')
+        current_maya = current.get('M_maya')
 
         # If void > 0.7, likely D7 territory
-        if required_void > 0.7:
+        if required_void is not None and required_void > 0.7:
             # Check prerequisites
-            if current_attachment > 0.5 or current_maya > 0.5:
+            if (current_attachment is not None and current_attachment > 0.5) or \
+               (current_maya is not None and current_maya > 0.5):
                 return {
                     'ok': False,
                     'violation': ConstraintViolation(

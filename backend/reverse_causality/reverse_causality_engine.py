@@ -18,6 +18,26 @@ import math
 import random
 
 
+def _safe_weighted_sum(ops: dict, terms: list) -> Optional[float]:
+    """Compute weighted sum of operator values, returning None if any operator is missing.
+
+    Args:
+        ops: Dict mapping operator names to values
+        terms: List of (operator_name, weight, invert) tuples
+               where invert=True means use (1 - value) instead of value
+
+    Returns:
+        Weighted sum as float, or None if any operator value is missing
+    """
+    total = 0.0
+    for op_name, weight, invert in terms:
+        val = ops.get(op_name)
+        if val is None:
+            return None
+        total += (1 - val) * weight if invert else val * weight
+    return total
+
+
 @dataclass
 class RequiredState:
     """Required consciousness state for a desired outcome"""
@@ -103,116 +123,116 @@ class ReverseCausalityEngine:
     # Maps outcome names to functions of operators
     OUTCOME_FORMULAS = {
         'breakthrough_probability': {
-            'formula': lambda ops: (
-                ops.get('G_grace', 0.5) * 0.25 +
-                ops.get('S_surrender', 0.5) * 0.2 +
-                ops.get('Co_coherence', 0.5) * 0.15 +
-                ops.get('I_intention', 0.5) * 0.15 +
-                (1 - ops.get('At_attachment', 0.5)) * 0.1 +
-                (1 - ops.get('R_resistance', 0.5)) * 0.1 +
-                ops.get('V_void', 0.5) * 0.05
-            ),
+            'formula': lambda ops: _safe_weighted_sum(ops, [
+                ('G_grace', 0.25, False),
+                ('S_surrender', 0.2, False),
+                ('Co_coherence', 0.15, False),
+                ('I_intention', 0.15, False),
+                ('At_attachment', 0.1, True),
+                ('R_resistance', 0.1, True),
+                ('V_void', 0.05, False),
+            ]),
             'operators': ['G_grace', 'S_surrender', 'Co_coherence', 'I_intention',
                          'At_attachment', 'R_resistance', 'V_void'],
             'inverse': ['At_attachment', 'R_resistance']
         },
         'manifestation_power': {
-            'formula': lambda ops: (
-                ops.get('I_intention', 0.5) * 0.3 +
-                ops.get('Co_coherence', 0.5) * 0.2 +
-                ops.get('Sh_shakti', 0.5) * 0.2 +
-                (1 - ops.get('M_maya', 0.5)) * 0.15 +
-                ops.get('D_dharma', 0.5) * 0.15
-            ),
+            'formula': lambda ops: _safe_weighted_sum(ops, [
+                ('I_intention', 0.3, False),
+                ('Co_coherence', 0.2, False),
+                ('Sh_shakti', 0.2, False),
+                ('M_maya', 0.15, True),
+                ('D_dharma', 0.15, False),
+            ]),
             'operators': ['I_intention', 'Co_coherence', 'Sh_shakti', 'M_maya', 'D_dharma'],
             'inverse': ['M_maya']
         },
         'transformation_velocity': {
-            'formula': lambda ops: (
-                ops.get('G_grace', 0.5) * 0.2 +
-                ops.get('S_surrender', 0.5) * 0.2 +
-                ops.get('A_aware', 0.5) * 0.15 +
-                (1 - ops.get('Hf_habit', 0.5)) * 0.15 +
-                (1 - ops.get('K_karma', 0.5)) * 0.15 +
-                ops.get('Ce_cleaning', 0.5) * 0.15
-            ),
+            'formula': lambda ops: _safe_weighted_sum(ops, [
+                ('G_grace', 0.2, False),
+                ('S_surrender', 0.2, False),
+                ('A_aware', 0.15, False),
+                ('Hf_habit', 0.15, True),
+                ('K_karma', 0.15, True),
+                ('Ce_cleaning', 0.15, False),
+            ]),
             'operators': ['G_grace', 'S_surrender', 'A_aware', 'Hf_habit', 'K_karma', 'Ce_cleaning'],
             'inverse': ['Hf_habit', 'K_karma']
         },
         'peace_depth': {
-            'formula': lambda ops: (
-                ops.get('P_presence', 0.5) * 0.25 +
-                ops.get('E_equanimity', 0.5) * 0.25 +
-                (1 - ops.get('F_fear', 0.5)) * 0.15 +
-                (1 - ops.get('At_attachment', 0.5)) * 0.15 +
-                ops.get('W_witness', 0.5) * 0.2
-            ),
+            'formula': lambda ops: _safe_weighted_sum(ops, [
+                ('P_presence', 0.25, False),
+                ('E_equanimity', 0.25, False),
+                ('F_fear', 0.15, True),
+                ('At_attachment', 0.15, True),
+                ('W_witness', 0.2, False),
+            ]),
             'operators': ['P_presence', 'E_equanimity', 'F_fear', 'At_attachment', 'W_witness'],
             'inverse': ['F_fear', 'At_attachment']
         },
         'love_capacity': {
-            'formula': lambda ops: (
-                ops.get('O_openness', 0.5) * 0.25 +
-                (1 - ops.get('F_fear', 0.5)) * 0.2 +
-                ops.get('Se_service', 0.5) * 0.2 +
-                ops.get('Tr_trust', 0.5) * 0.2 +
-                (1 - ops.get('At_attachment', 0.5)) * 0.15
-            ),
+            'formula': lambda ops: _safe_weighted_sum(ops, [
+                ('O_openness', 0.25, False),
+                ('F_fear', 0.2, True),
+                ('Se_service', 0.2, False),
+                ('Tr_trust', 0.2, False),
+                ('At_attachment', 0.15, True),
+            ]),
             'operators': ['O_openness', 'F_fear', 'Se_service', 'Tr_trust', 'At_attachment'],
             'inverse': ['F_fear', 'At_attachment']
         },
         'creative_flow': {
-            'formula': lambda ops: (
-                ops.get('O_openness', 0.5) * 0.2 +
-                ops.get('J_joy', 0.5) * 0.2 +
-                ops.get('Sh_shakti', 0.5) * 0.2 +
-                (1 - ops.get('R_resistance', 0.5)) * 0.2 +
-                ops.get('V_void', 0.5) * 0.2
-            ),
+            'formula': lambda ops: _safe_weighted_sum(ops, [
+                ('O_openness', 0.2, False),
+                ('J_joy', 0.2, False),
+                ('Sh_shakti', 0.2, False),
+                ('R_resistance', 0.2, True),
+                ('V_void', 0.2, False),
+            ]),
             'operators': ['O_openness', 'J_joy', 'Sh_shakti', 'R_resistance', 'V_void'],
             'inverse': ['R_resistance']
         },
         'wisdom_access': {
-            'formula': lambda ops: (
-                ops.get('W_witness', 0.5) * 0.25 +
-                ops.get('A_aware', 0.5) * 0.2 +
-                (1 - ops.get('M_maya', 0.5)) * 0.2 +
-                ops.get('P_presence', 0.5) * 0.2 +
-                ops.get('Co_coherence', 0.5) * 0.15
-            ),
+            'formula': lambda ops: _safe_weighted_sum(ops, [
+                ('W_witness', 0.25, False),
+                ('A_aware', 0.2, False),
+                ('M_maya', 0.2, True),
+                ('P_presence', 0.2, False),
+                ('Co_coherence', 0.15, False),
+            ]),
             'operators': ['W_witness', 'A_aware', 'M_maya', 'P_presence', 'Co_coherence'],
             'inverse': ['M_maya']
         },
         'grace_availability': {
-            'formula': lambda ops: (
-                ops.get('S_surrender', 0.5) * 0.3 +
-                ops.get('Se_service', 0.5) * 0.2 +
-                ops.get('D_dharma', 0.5) * 0.2 +
-                (1 - ops.get('At_attachment', 0.5)) * 0.15 +
-                ops.get('Ce_cleaning', 0.5) * 0.15
-            ),
+            'formula': lambda ops: _safe_weighted_sum(ops, [
+                ('S_surrender', 0.3, False),
+                ('Se_service', 0.2, False),
+                ('D_dharma', 0.2, False),
+                ('At_attachment', 0.15, True),
+                ('Ce_cleaning', 0.15, False),
+            ]),
             'operators': ['S_surrender', 'Se_service', 'D_dharma', 'At_attachment', 'Ce_cleaning'],
             'inverse': ['At_attachment']
         },
         's_level_potential': {
-            'formula': lambda ops: (
-                ops.get('A_aware', 0.5) * 0.2 +
-                ops.get('G_grace', 0.5) * 0.2 +
-                ops.get('Co_coherence', 0.5) * 0.15 +
-                (1 - ops.get('K_karma', 0.5)) * 0.15 +
-                (1 - ops.get('At_attachment', 0.5)) * 0.15 +
-                ops.get('S_surrender', 0.5) * 0.15
-            ),
+            'formula': lambda ops: _safe_weighted_sum(ops, [
+                ('A_aware', 0.2, False),
+                ('G_grace', 0.2, False),
+                ('Co_coherence', 0.15, False),
+                ('K_karma', 0.15, True),
+                ('At_attachment', 0.15, True),
+                ('S_surrender', 0.15, False),
+            ]),
             'operators': ['A_aware', 'G_grace', 'Co_coherence', 'K_karma', 'At_attachment', 'S_surrender'],
             'inverse': ['K_karma', 'At_attachment']
         },
         'karma_burn_rate': {
-            'formula': lambda ops: (
-                ops.get('Ce_cleaning', 0.5) * 0.3 +
-                ops.get('G_grace', 0.5) * 0.3 +
-                ops.get('A_aware', 0.5) * 0.2 +
-                (1 - ops.get('At_attachment', 0.5)) * 0.2
-            ),
+            'formula': lambda ops: _safe_weighted_sum(ops, [
+                ('Ce_cleaning', 0.3, False),
+                ('G_grace', 0.3, False),
+                ('A_aware', 0.2, False),
+                ('At_attachment', 0.2, True),
+            ]),
             'operators': ['Ce_cleaning', 'G_grace', 'A_aware', 'At_attachment'],
             'inverse': ['At_attachment']
         }
@@ -230,7 +250,7 @@ class ReverseCausalityEngine:
         constraints: Optional[Dict[str, Any]] = None,
         max_iterations: int = 100,
         tolerance: float = 0.01
-    ) -> ReverseMappingResult:
+    ) -> Optional[ReverseMappingResult]:
         """
         Solve for required operator values to achieve a desired outcome.
 
@@ -243,7 +263,8 @@ class ReverseCausalityEngine:
             tolerance: Acceptable error from target
 
         Returns:
-            ReverseMappingResult with required state and analysis
+            ReverseMappingResult with required state and analysis, or None if
+            required operator values are missing
         """
         if desired_outcome not in self.OUTCOME_FORMULAS:
             # Try to handle custom outcomes
@@ -258,6 +279,9 @@ class ReverseCausalityEngine:
 
         # Calculate current outcome value
         current_value = formula(current_operators)
+        if current_value is None:
+            return None
+
         gap = desired_value - current_value
 
         if abs(gap) < tolerance:
@@ -282,6 +306,8 @@ class ReverseCausalityEngine:
             max_iterations=max_iterations,
             tolerance=tolerance
         )
+        if required_operators is None:
+            return None
 
         # Calculate achievement probability based on change difficulty
         achievement_prob = self._calculate_achievement_probability(
@@ -290,6 +316,9 @@ class ReverseCausalityEngine:
 
         # Check if goal is achievable
         final_value = formula(required_operators)
+        if final_value is None:
+            return None
+
         achievable = abs(final_value - desired_value) < tolerance * 2
 
         return self._build_result(
@@ -307,7 +336,7 @@ class ReverseCausalityEngine:
         current_operators: Dict[str, float],
         weights: Optional[Dict[str, float]] = None,
         constraints: Optional[Dict[str, Any]] = None
-    ) -> ReverseMappingResult:
+    ) -> Optional[ReverseMappingResult]:
         """
         Solve for operator values that achieve multiple outcomes simultaneously.
 
@@ -318,7 +347,8 @@ class ReverseCausalityEngine:
             constraints: Optional constraints
 
         Returns:
-            ReverseMappingResult with required state balancing all outcomes
+            ReverseMappingResult with required state balancing all outcomes,
+            or None if required operator values are missing
         """
         if weights is None:
             weights = {k: 1.0 for k in desired_outcomes}
@@ -338,12 +368,14 @@ class ReverseCausalityEngine:
                 all_inverse.update(config.get('inverse', []))
 
         # Combined loss function
-        def combined_loss(ops: Dict[str, float]) -> float:
+        def combined_loss(ops: Dict[str, float]) -> Optional[float]:
             total_loss = 0.0
             for outcome, target in desired_outcomes.items():
                 if outcome in self.OUTCOME_FORMULAS:
                     formula = self.OUTCOME_FORMULAS[outcome]['formula']
                     current = formula(ops)
+                    if current is None:
+                        return None
                     loss = (current - target) ** 2
                     total_loss += loss * weights[outcome]
             return total_loss
@@ -356,13 +388,18 @@ class ReverseCausalityEngine:
             inverse_operators=list(all_inverse),
             constraints=constraints
         )
+        if required_operators is None:
+            return None
 
         # Calculate overall achievement
         achieved_outcomes = {}
         for outcome in desired_outcomes:
             if outcome in self.OUTCOME_FORMULAS:
                 formula = self.OUTCOME_FORMULAS[outcome]['formula']
-                achieved_outcomes[outcome] = formula(required_operators)
+                val = formula(required_operators)
+                if val is None:
+                    return None
+                achieved_outcomes[outcome] = val
 
         # Calculate gap as average deviation
         total_gap = sum(
@@ -397,18 +434,27 @@ class ReverseCausalityEngine:
         constraints: Optional[Dict[str, Any]],
         max_iterations: int,
         tolerance: float
-    ) -> Dict[str, float]:
+    ) -> Optional[Dict[str, float]]:
         """
         Use gradient descent to find operator values that achieve target.
+        Returns None if any relevant operator value is missing.
         """
         # Start from current values
         operators = current_operators.copy()
+
+        # Check all relevant operators are present
+        for op in relevant_operators:
+            if operators.get(op) is None:
+                return None
 
         # Learning rate (adaptive)
         lr = 0.1
 
         for iteration in range(max_iterations):
             current_value = formula(operators)
+            if current_value is None:
+                return None
+
             error = target_value - current_value
 
             if abs(error) < tolerance:
@@ -421,8 +467,10 @@ class ReverseCausalityEngine:
             for op in relevant_operators:
                 # Forward difference
                 operators_plus = operators.copy()
-                operators_plus[op] = min(1.0, operators_plus.get(op, 0.5) + epsilon)
+                operators_plus[op] = min(1.0, operators_plus.get(op) + epsilon)
                 value_plus = formula(operators_plus)
+                if value_plus is None:
+                    return None
 
                 gradient = (value_plus - current_value) / epsilon
 
@@ -435,13 +483,13 @@ class ReverseCausalityEngine:
             # Update operators
             for op, grad in gradients.items():
                 if abs(grad) > 0.001:
-                    # Consider difficulty
-                    difficulty = self.OPERATORS.get(op, {}).get('difficulty', 0.5)
+                    # Consider difficulty (config metadata - use or 0.5)
+                    difficulty = self.OPERATORS.get(op, {}).get('difficulty') or 0.5
                     effective_lr = lr * (1 - difficulty * 0.5)
 
                     delta = effective_lr * error * (grad / (abs(grad) + 0.1))
 
-                    new_value = operators.get(op, 0.5) + delta
+                    new_value = operators.get(op) + delta
 
                     # Apply constraints
                     new_value = max(0.0, min(1.0, new_value))
@@ -467,15 +515,24 @@ class ReverseCausalityEngine:
         relevant_operators: List[str],
         inverse_operators: List[str],
         constraints: Optional[Dict[str, Any]]
-    ) -> Dict[str, float]:
+    ) -> Optional[Dict[str, float]]:
         """
         Optimize for combined multi-outcome loss function.
+        Returns None if any relevant operator value is missing.
         """
         operators = current_operators.copy()
+
+        # Check all relevant operators are present
+        for op in relevant_operators:
+            if operators.get(op) is None:
+                return None
+
         lr = 0.1
 
         for iteration in range(150):
             current_loss = loss_fn(operators)
+            if current_loss is None:
+                return None
 
             if current_loss < 0.001:
                 break
@@ -485,16 +542,19 @@ class ReverseCausalityEngine:
 
             for op in relevant_operators:
                 operators_plus = operators.copy()
-                operators_plus[op] = min(1.0, operators_plus.get(op, 0.5) + epsilon)
+                operators_plus[op] = min(1.0, operators_plus.get(op) + epsilon)
                 loss_plus = loss_fn(operators_plus)
+                if loss_plus is None:
+                    return None
 
                 gradient = (loss_plus - current_loss) / epsilon
 
                 # Update (gradient descent minimizes loss)
-                difficulty = self.OPERATORS.get(op, {}).get('difficulty', 0.5)
+                # difficulty is config metadata - use or 0.5
+                difficulty = self.OPERATORS.get(op, {}).get('difficulty') or 0.5
                 effective_lr = lr * (1 - difficulty * 0.3)
 
-                new_value = operators.get(op, 0.5) - effective_lr * gradient
+                new_value = operators.get(op) - effective_lr * gradient
                 new_value = max(0.0, min(1.0, new_value))
 
                 if constraints:
@@ -523,11 +583,15 @@ class ReverseCausalityEngine:
         total_change = 0.0
 
         for op, req_val in required.items():
-            curr_val = current.get(op, 0.5)
+            curr_val = current.get(op)
+            if curr_val is None:
+                continue
+
             change = abs(req_val - curr_val)
 
             if change > 0.01:
-                difficulty = self.OPERATORS.get(op, {}).get('difficulty', 0.5)
+                # difficulty is config metadata - use or 0.5
+                difficulty = self.OPERATORS.get(op, {}).get('difficulty') or 0.5
                 total_difficulty += change * difficulty
                 total_change += change
 
@@ -548,10 +612,11 @@ class ReverseCausalityEngine:
         target: float,
         current: Dict[str, float],
         constraints: Optional[Dict[str, Any]]
-    ) -> ReverseMappingResult:
+    ) -> Optional[ReverseMappingResult]:
         """
         Handle custom outcomes not in predefined formulas.
         Uses heuristic mapping based on outcome keywords.
+        Returns None if required operator values are missing.
         """
         # Map keywords to relevant operators
         keyword_operators = {
@@ -587,8 +652,12 @@ class ReverseCausalityEngine:
         positive_ops = [op for op in relevant_ops if op not in inverse_ops]
 
         def custom_formula(ops):
-            positive_sum = sum(ops.get(op, 0.5) for op in positive_ops)
-            inverse_sum = sum(1 - ops.get(op, 0.5) for op in inverse_in_relevant)
+            pos_vals = [ops.get(op) for op in positive_ops]
+            inv_vals = [ops.get(op) for op in inverse_in_relevant]
+            if any(v is None for v in pos_vals + inv_vals):
+                return None
+            positive_sum = sum(pos_vals)
+            inverse_sum = sum(1 - v for v in inv_vals)
             total = positive_sum + inverse_sum
             count = len(positive_ops) + len(inverse_in_relevant)
             return total / max(1, count)
@@ -604,9 +673,17 @@ class ReverseCausalityEngine:
             max_iterations=100,
             tolerance=0.02
         )
+        if required is None:
+            return None
 
         achievement_prob = self._calculate_achievement_probability(current, required)
         final_value = custom_formula(required)
+        if final_value is None:
+            return None
+
+        current_value = custom_formula(current)
+        if current_value is None:
+            return None
 
         return self._build_result(
             goal_description=f"Custom: {outcome} = {target:.2f}",
@@ -614,7 +691,7 @@ class ReverseCausalityEngine:
             achievement_probability=achievement_prob * 0.9,  # Slightly lower for custom
             required_operators=required,
             current_operators=current,
-            gap=abs(final_value - custom_formula(current))
+            gap=abs(final_value - current_value)
         )
 
     def _build_result(
@@ -632,11 +709,15 @@ class ReverseCausalityEngine:
         # Calculate operator changes
         changes = []
         for op, req_val in required_operators.items():
-            curr_val = current_operators.get(op, 0.5)
+            curr_val = current_operators.get(op)
+            if curr_val is None:
+                continue
+
             delta = req_val - curr_val
 
             if abs(delta) > 0.02:
-                difficulty = self.OPERATORS.get(op, {}).get('difficulty', 0.5)
+                # difficulty is config metadata - use or 0.5
+                difficulty = self.OPERATORS.get(op, {}).get('difficulty') or 0.5
 
                 if delta > 0:
                     change_type = 'increase'
@@ -680,8 +761,8 @@ class ReverseCausalityEngine:
 
         # Calculate requirements
         s_level_req = self._estimate_s_level_requirement(required_operators)
-        karma_req = required_operators.get('K_karma', 0.5)
-        grace_req = required_operators.get('G_grace', 0.5)
+        karma_req = required_operators.get('K_karma')
+        grace_req = required_operators.get('G_grace')
 
         # Sensitivity analysis
         sensitivity = self._calculate_sensitivity(required_operators, current_operators, changes)
@@ -707,24 +788,31 @@ class ReverseCausalityEngine:
             current_gap=gap,
             primary_blockers=blockers[:3],
             primary_enablers=enablers[:3],
-            s_level_requirement=s_level_req,
-            karma_requirement=1 - karma_req,  # Lower karma needed = higher requirement
-            grace_requirement=grace_req,
+            s_level_requirement=s_level_req if s_level_req is not None else 3.0,
+            karma_requirement=(1 - karma_req) if karma_req is not None else 0.0,
+            grace_requirement=grace_req if grace_req is not None else 0.0,
             intermediate_goals=intermediate_goals,
             sensitivity_analysis=sensitivity
         )
 
-    def _estimate_s_level_requirement(self, operators: Dict[str, float]) -> float:
+    def _estimate_s_level_requirement(self, operators: Dict[str, float]) -> Optional[float]:
         """
         Estimate the S-level required for this operator configuration.
+        Returns None if any required operator value is missing.
         """
         # Higher spiritual operators suggest higher S-level
         spiritual_ops = ['S_surrender', 'G_grace', 'V_void', 'W_witness', 'A_aware']
-        spiritual_avg = sum(operators.get(op, 0.5) for op in spiritual_ops) / len(spiritual_ops)
+        spiritual_vals = [operators.get(op) for op in spiritual_ops]
 
         # Binding operators reduce accessible S-level
         binding_ops = ['At_attachment', 'K_karma', 'Hf_habit', 'M_maya']
-        binding_avg = sum(operators.get(op, 0.5) for op in binding_ops) / len(binding_ops)
+        binding_vals = [operators.get(op) for op in binding_ops]
+
+        if any(v is None for v in spiritual_vals + binding_vals):
+            return None
+
+        spiritual_avg = sum(spiritual_vals) / len(spiritual_ops)
+        binding_avg = sum(binding_vals) / len(binding_ops)
 
         # S-level estimate (1-8 scale)
         s_level = 3.0 + spiritual_avg * 4 - binding_avg * 2

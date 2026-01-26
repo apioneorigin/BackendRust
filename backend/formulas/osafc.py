@@ -147,14 +147,16 @@ class OSAFCEngine:
         defn = OSAFC_DEFINITIONS[layer]
 
         # Extract relevant operators
-        p = operators.get("P_presence", 0.5)
-        w = operators.get("W_witness", 0.3)
-        e = operators.get("E_emotional", 0.5)
-        at = operators.get("At_attachment", 0.5)
-        m = operators.get("M_maya", 0.5)
-        ce = operators.get("Ce_cleaning", 0.5)
-        d = operators.get("D_dharma", 0.3)
-        i = operators.get("I_intention", 0.5)
+        p = operators.get("P_presence")
+        w = operators.get("W_witness")
+        e = operators.get("E_emotional")
+        at = operators.get("At_attachment")
+        m = operators.get("M_maya")
+        ce = operators.get("Ce_cleaning")
+        d = operators.get("D_dharma")
+        i = operators.get("I_intention")
+        if any(v is None for v in [p, w, e, at, m, ce, d, i]):
+            return None
 
         # S-level factor for this layer
         min_s = defn["min_s"]
@@ -231,7 +233,10 @@ class OSAFCEngine:
         """Calculate complete eight layer profile."""
         layers = {}
         for layer in OSAFCLayer:
-            layers[layer.value] = self.calculate_layer(layer, operators, s_level)
+            result = self.calculate_layer(layer, operators, s_level)
+            if result is None:
+                return None
+            layers[layer.value] = result
 
         # Center of gravity - weighted by dominance
         total_weight = sum(l.dominance * l.level for l in layers.values())

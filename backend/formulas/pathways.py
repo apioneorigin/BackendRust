@@ -193,7 +193,7 @@ class PathwaysEngine:
         self,
         ops: Dict[str, float],
         s_level: float
-    ) -> PathwayProfile:
+    ) -> Optional[PathwayProfile]:
         """
         Calculate Witnessing Pathway: Observation, Perception, Expression
 
@@ -202,12 +202,14 @@ class PathwaysEngine:
         - Perception (0.0-1.0): W × Psi × (1 - Distortion)
         - Expression (0.0-1.0): W × Communication × Clarity
         """
-        w = ops.get("W_witness", 0.3)
-        m = ops.get("M_maya", 0.5)
-        p = ops.get("P_presence", 0.5)
-        psi = ops.get("Psi_quality", 0.5)
-        e = ops.get("E_emotional", 0.5)
-        at = ops.get("At_attachment", 0.5)
+        w = ops.get("W_witness")
+        m = ops.get("M_maya")
+        p = ops.get("P_presence")
+        psi = ops.get("Psi_quality")
+        e = ops.get("E_emotional")
+        at = ops.get("At_attachment")
+        if any(v is None for v in [w, m, p, psi, e, at]):
+            return None
 
         # Observation = W × (1 - M) × P
         # Quality of pure noticing
@@ -288,7 +290,7 @@ class PathwaysEngine:
         self,
         ops: Dict[str, float],
         s_level: float
-    ) -> PathwayProfile:
+    ) -> Optional[PathwayProfile]:
         """
         Calculate Creating Pathway: Intention, Attention, Manifestation
 
@@ -297,14 +299,17 @@ class PathwaysEngine:
         - Attention (0.0-1.0): Focus × P × (1 - Distraction)
         - Manifestation (0.0-1.0): Chi × (1 - M) × Action
         """
-        i = ops.get("I_intention", 0.5)
-        p = ops.get("P_presence", 0.5)
-        m = ops.get("M_maya", 0.5)
-        psi = ops.get("Psi_quality", 0.5)
-        at = ops.get("At_attachment", 0.5)
-        v = ops.get("V_vitality", 0.5)
-        d = ops.get("D_dharma", 0.3)
-        se = ops.get("Se_service", 0.3)
+        i = ops.get("I_intention")
+        p = ops.get("P_presence")
+        m = ops.get("M_maya")
+        psi = ops.get("Psi_quality")
+        at = ops.get("At_attachment")
+        v = ops.get("V_vitality")
+        d = ops.get("D_dharma")
+        se = ops.get("Se_service")
+        ce = ops.get("Ce_cleaning")
+        if any(val is None for val in [i, p, m, psi, at, v, d, se, ce]):
+            return None
 
         # Intention = I × Purity × Alignment
         # Clarity of purpose
@@ -331,7 +336,7 @@ class PathwaysEngine:
         # Manifestation = Chi × (1 - M) × Action
         # Bringing into being
         chi = v * i * psi  # Creative force
-        action_capacity = (1 - at * 0.5) * ops.get("Ce_cleaning", 0.3) + 0.5
+        action_capacity = (1 - at * 0.5) * ce + 0.5
         manifestation_score = chi * (1 - m) * action_capacity * 0.8
         manifestation_components = {
             "creative_force": chi,
@@ -388,7 +393,7 @@ class PathwaysEngine:
         self,
         ops: Dict[str, float],
         s_level: float
-    ) -> PathwayProfile:
+    ) -> Optional[PathwayProfile]:
         """
         Calculate Embodying Pathway: Thoughts, Words, Actions
 
@@ -397,15 +402,17 @@ class PathwaysEngine:
         - Words (0.0-1.0): Speech_Alignment × Integrity × Expression
         - Actions (0.0-1.0): Behavioral_Alignment × D × Consistency
         """
-        w = ops.get("W_witness", 0.3)
-        m = ops.get("M_maya", 0.5)
-        psi = ops.get("Psi_quality", 0.5)
-        d = ops.get("D_dharma", 0.3)
-        se = ops.get("Se_service", 0.3)
-        at = ops.get("At_attachment", 0.5)
-        e = ops.get("E_emotional", 0.5)
-        hf = ops.get("Hf_habit", 0.5)
-        p = ops.get("P_presence", 0.5)
+        w = ops.get("W_witness")
+        m = ops.get("M_maya")
+        psi = ops.get("Psi_quality")
+        d = ops.get("D_dharma")
+        se = ops.get("Se_service")
+        at = ops.get("At_attachment")
+        e = ops.get("E_emotional")
+        hf = ops.get("Hf_habit")
+        p = ops.get("P_presence")
+        if any(v is None for v in [w, m, psi, d, se, at, e, hf, p]):
+            return None
 
         # Thoughts = Mental_Alignment × (1 - M) × Truth
         # Alignment of thinking with truth
@@ -512,7 +519,7 @@ class PathwaysEngine:
         self,
         operators: Dict[str, float],
         s_level: float = 4.0
-    ) -> PathwaysProfile:
+    ) -> Optional[PathwaysProfile]:
         """
         Calculate complete profile for all three pathways.
 
@@ -521,11 +528,14 @@ class PathwaysEngine:
             s_level: Current S-level (1.0-8.0)
 
         Returns:
-            Complete PathwaysProfile with all 9 dimensions
+            Complete PathwaysProfile with all 9 dimensions, or None if
+            any required operator is missing.
         """
         witnessing = self.calculate_witnessing_pathway(operators, s_level)
         creating = self.calculate_creating_pathway(operators, s_level)
         embodying = self.calculate_embodying_pathway(operators, s_level)
+        if any(v is None for v in [witnessing, creating, embodying]):
+            return None
 
         all_pathways = [witnessing, creating, embodying]
 

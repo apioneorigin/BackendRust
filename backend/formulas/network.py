@@ -241,17 +241,11 @@ class NetworkEmergenceCalculator:
 
         ZERO-FALLBACK: Uses available operators, returns partial results if some missing.
         """
-        # Get values with None fallback
-        Co = individual_operators.get('Co_coherence')
-        A = individual_operators.get('A_aware')
-        W = individual_operators.get('W_witness')
-        Psi = individual_operators.get('Psi_quality')
-
-        # Use available values or 0.5 only for network context (not consciousness)
-        Co = Co if Co is not None else 0.5
-        A = A if A is not None else 0.5
-        W = W if W is not None else 0.5
-        Psi = Psi if Psi is not None else 0.5
+        # Get values — use 0.0 for missing (no contribution)
+        Co = individual_operators.get('Co_coherence') or 0.0
+        A = individual_operators.get('A_aware') or 0.0
+        W = individual_operators.get('W_witness') or 0.0
+        Psi = individual_operators.get('Psi_quality') or 0.0
 
         # Emergence strength
         # Higher with coherence, awareness, and network effects

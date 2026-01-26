@@ -530,11 +530,13 @@ class GraceKarmaDynamics:
         Calculate alignment with dharma (righteous path).
         High alignment increases grace and reduces karma accumulation.
         """
-        D = operators.get('D_dharma', 0.5)
-        Se = operators.get('Se_service', 0.5)
-        A = operators.get('A_aware', 0.5)
-        I = operators.get('I_intention', 0.5)
-        At = operators.get('At_attachment', 0.5)
+        D = operators.get('D_dharma')
+        Se = operators.get('Se_service')
+        A = operators.get('A_aware')
+        I = operators.get('I_intention')
+        At = operators.get('At_attachment')
+        if any(v is None for v in [D, Se, A, I, At]):
+            return None
 
         # Dharmic alignment formula
         alignment = (D * 0.3 + Se * 0.25 + A * 0.25 + I * 0.1) * (1 - At * 0.3)
@@ -568,16 +570,23 @@ class GraceKarmaDynamics:
         """Generate dharma alignment recommendations"""
         recs = []
 
-        if operators.get('D_dharma', 0.5) < 0.5:
+        d = operators.get('D_dharma')
+        se = operators.get('Se_service')
+        a = operators.get('A_aware')
+        at = operators.get('At_attachment')
+        if any(v is None for v in [d, se, a, at]):
+            return recs
+
+        if d < 0.5:
             recs.append("Reflect on your unique purpose and calling")
 
-        if operators.get('Se_service', 0.5) < 0.5:
+        if se < 0.5:
             recs.append("Increase service to others without attachment to results")
 
-        if operators.get('A_aware', 0.5) < 0.5:
+        if a < 0.5:
             recs.append("Cultivate moment-to-moment awareness in all actions")
 
-        if operators.get('At_attachment', 0.5) > 0.6:
+        if at > 0.6:
             recs.append("Practice non-attachment to outcomes while maintaining intention")
 
         if not recs:

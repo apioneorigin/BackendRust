@@ -141,8 +141,8 @@ class QuantumMechanics:
 
         # Two levels up (rare but possible with grace)
         if current_s < 7:
-            G = operators.get('G_grace', 0.5)
-            if G > 0.7:
+            G = operators.get('G_grace')
+            if G is not None and G > 0.7:
                 states[f'S{current_s + 2}'] = 0.05 * G
 
         # Normalize to sum to 1
@@ -302,22 +302,28 @@ class QuantumMechanics:
         barrier_config = self.BARRIER_TYPES[barrier_type]
 
         # Calculate barrier height
-        barrier_op = operators.get(barrier_config['operator'], 0.5)
+        barrier_op = operators.get(barrier_config['operator'])
+        Hf = operators.get('Hf_habit')
+        G = operators.get('G_grace')
+        S = operators.get('S_surrender')
+        W = operators.get('W_witness')
+
+        if barrier_op is None:
+            barrier_op = 0.0
         barrier_height = barrier_config['base_height'] * barrier_op
 
         # Barrier width (related to how deeply ingrained)
-        Hf = operators.get('Hf_habit', 0.5)
-        barrier_width = 0.5 + Hf * 0.5  # 0.5 to 1.0
+        barrier_width = 0.5 + (Hf if Hf is not None else 0.0) * 0.5  # 0.5 to 1.0
 
         # Tunneling probability formula
         # P = exp(-2 × k × width) where k depends on height
         k = math.sqrt(barrier_height) * 2
         tunneling_prob = math.exp(-2 * k * barrier_width)
 
-        # Modifiers
-        G = operators.get('G_grace', 0.5)
-        S = operators.get('S_surrender', 0.5)
-        W = operators.get('W_witness', 0.5)
+        # Modifiers — use 0.0 for missing (no contribution, not midpoint fabrication)
+        G = G if G is not None else 0.0
+        S = S if S is not None else 0.0
+        W = W if W is not None else 0.0
 
         # Grace dramatically increases tunneling
         grace_multiplier = 1 + G * 2
@@ -348,7 +354,8 @@ class QuantumMechanics:
             blocking_factors.append(f'High {barrier_type} creating thick barrier')
         if Hf > 0.7:
             blocking_factors.append('Strong habits widening barrier')
-        if operators.get('R_resistance', 0.5) > 0.6:
+        R_val = operators.get('R_resistance')
+        if R_val is not None and R_val > 0.6:
             blocking_factors.append('Resistance collapsing tunneling attempts')
 
         return TunnelingAnalysis(
@@ -372,10 +379,10 @@ class QuantumMechanics:
 
         Determines probability of specific outcomes manifesting.
         """
-        I = operators.get('I_intention', 0.5)
-        W = operators.get('W_witness', 0.5)
-        G = operators.get('G_grace', 0.5)
-        Co = operators.get('Co_coherence', 0.5)
+        I = operators.get('I_intention') or 0.0
+        W = operators.get('W_witness') or 0.0
+        G = operators.get('G_grace') or 0.0
+        Co = operators.get('Co_coherence') or 0.0
 
         # Calculate probability for each outcome
         outcome_probs = {}
@@ -408,10 +415,12 @@ class QuantumMechanics:
         collapse_prob = W * Co * I
 
         # Catalyst strength
-        catalyst_strength = (I * 0.4 + G * 0.3 + operators.get('Sh_shakti', 0.5) * 0.3)
+        Sh = operators.get('Sh_shakti') or 0.0
+        catalyst_strength = (I * 0.4 + G * 0.3 + Sh * 0.3)
 
         # Observer effect (how much observation affects outcome)
-        observer_effect = W * 0.7 + operators.get('A_aware', 0.5) * 0.3
+        A = operators.get('A_aware') or 0.0
+        observer_effect = W * 0.7 + A * 0.3
 
         # Timeline estimate
         if collapse_prob > 0.7:
@@ -463,19 +472,19 @@ class QuantumMechanics:
         base_prob = 0.3 / level_gap
 
         # Grace dramatically enables jumps
-        G = operators.get('G_grace', 0.5)
+        G = operators.get('G_grace') or 0.0
         grace_factor = G ** 2 * 3  # Quadratic effect
 
         # Surrender required
-        S = operators.get('S_surrender', 0.5)
+        S = operators.get('S_surrender') or 0.0
         surrender_factor = S * 1.5
 
         # Void tolerance needed
-        V = operators.get('V_void', 0.5)
+        V = operators.get('V_void') or 0.0
         void_factor = V * 1.2
 
         # Resistance blocks jumps
-        R = operators.get('R_resistance', 0.5)
+        R = operators.get('R_resistance') or 0.0
         resistance_factor = 1 - R * 0.7
 
         final_prob = base_prob * grace_factor * surrender_factor * void_factor * resistance_factor

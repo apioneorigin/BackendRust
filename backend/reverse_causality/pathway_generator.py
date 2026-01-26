@@ -263,7 +263,9 @@ class PathwayGenerator:
         # Calculate changes needed for each operator
         changes_needed = {}
         for op, req_val in required_operators.items():
-            curr_val = current_operators.get(op, 0.5)
+            curr_val = current_operators.get(op)
+            if curr_val is None:
+                continue
             if abs(req_val - curr_val) > 0.05:
                 changes_needed[op] = (curr_val, req_val)
 
@@ -665,7 +667,8 @@ class PathwayGenerator:
         if required_operators.get('S_surrender', 0) > 0.7:
             effects.append("Initial loss of sense of control")
 
-        if required_operators.get('At_attachment', 0.5) < 0.3:
+        at_attachment = required_operators.get('At_attachment')
+        if at_attachment is not None and at_attachment < 0.3:
             effects.append("Relationships may shift as attachment patterns change")
 
         # Pathway-specific effects
@@ -747,7 +750,9 @@ class PathwayGenerator:
         """
         total_gap = 0
         for op, req_val in required.items():
-            curr_val = current.get(op, 0.5)
+            curr_val = current.get(op)
+            if curr_val is None:
+                continue
             total_gap += abs(req_val - curr_val)
 
         # Normalize by number of operators

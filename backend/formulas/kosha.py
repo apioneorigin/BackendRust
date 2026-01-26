@@ -116,13 +116,15 @@ class KoshaEngine:
         blockages = []
 
         # Extract relevant operators
-        p = operators.get("P_presence", 0.5)
-        w = operators.get("W_witness", 0.3)
-        e = operators.get("E_emotional", 0.5)
-        at = operators.get("At_attachment", 0.5)
-        m = operators.get("M_maya", 0.5)
-        ce = operators.get("Ce_cleaning", 0.5)
-        se = operators.get("Se_service", 0.3)
+        p = operators.get("P_presence")
+        w = operators.get("W_witness")
+        e = operators.get("E_emotional")
+        at = operators.get("At_attachment")
+        m = operators.get("M_maya")
+        ce = operators.get("Ce_cleaning")
+        se = operators.get("Se_service")
+        if any(v is None for v in [p, w, e, at, m, ce, se]):
+            return None
 
         # Kosha-specific calculations
         if kosha_type == KoshaType.ANNAMAYA:
@@ -130,12 +132,15 @@ class KoshaEngine:
             purity = p * (1 - at * 0.2)
             permeability = 0.8  # Physical is most accessible
             integration = ce * 0.5 + p * 0.5
-            if operators.get("Hf_habit", 0.5) > 0.6:
+            hf = operators.get("Hf_habit")
+            if hf is not None and hf > 0.6:
                 blockages.append("habitual_patterns")
 
         elif kosha_type == KoshaType.PRANAMAYA:
             # Energy body - breath and vitality
-            breath_quality = operators.get("breath_awareness", p * 0.7)
+            breath_quality = operators.get("breath_awareness")
+            if breath_quality is None:
+                breath_quality = p * 0.7
             purity = breath_quality * (1 - at * 0.3)
             permeability = 0.7 + p * 0.2
             integration = p * 0.6 + ce * 0.4
@@ -154,8 +159,10 @@ class KoshaEngine:
 
         elif kosha_type == KoshaType.VIJNANAMAYA:
             # Wisdom body - discernment
-            d = operators.get("D_dharma", 0.3)
-            i = operators.get("I_intention", 0.5)
+            d = operators.get("D_dharma")
+            i = operators.get("I_intention")
+            if any(v is None for v in [d, i]):
+                return None
             purity = w * d * (1 - m * 0.3)
             permeability = 0.4 + w * 0.4
             integration = d * 0.5 + i * 0.5
@@ -196,9 +203,10 @@ class KoshaEngine:
         """Calculate complete five kosha profile."""
         koshas = {}
         for kosha_type in KoshaType:
-            koshas[kosha_type.value] = self.calculate_kosha(
-                kosha_type, operators, s_level
-            )
+            result = self.calculate_kosha(kosha_type, operators, s_level)
+            if result is None:
+                return None
+            koshas[kosha_type.value] = result
 
         # Overall integration - product of all integrations
         integrations = [k.integration for k in koshas.values()]

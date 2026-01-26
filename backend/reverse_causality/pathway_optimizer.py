@@ -323,8 +323,8 @@ class PathwayOptimizer:
 
         # Adjust for current capacity if provided
         if capacity:
-            available_energy = capacity.get('energy', 0.5)
-            if available_energy < 0.5 and pathway.effort_required > 0.7:
+            available_energy = capacity.get('energy')
+            if available_energy is not None and available_energy < 0.5 and pathway.effort_required > 0.7:
                 base_score *= 0.8  # Penalty for high effort with low energy
 
         score = max(0.2, min(1.0, base_score))

@@ -128,11 +128,13 @@ class DistortionEngine:
     ) -> MayaScore:
         """Calculate Maya distortion scores."""
         # Extract operators
-        m = operators.get("M_maya", 0.5)
-        w = operators.get("W_witness", 0.3)
-        at = operators.get("At_attachment", 0.5)
-        p = operators.get("P_presence", 0.5)
-        e = operators.get("E_emotional", 0.5)
+        m = operators.get("M_maya")
+        w = operators.get("W_witness")
+        at = operators.get("At_attachment")
+        p = operators.get("P_presence")
+        e = operators.get("E_emotional")
+        if any(v is None for v in [m, w, at, p, e]):
+            return None
 
         # S-level reduces maya
         s_factor = max(0.2, 1 - (s_level - 4) / 8)
@@ -189,8 +191,10 @@ class DistortionEngine:
         defn = KLESHA_DEFINITIONS[klesha]
 
         # Get relevant operators
-        primary = operators.get(defn["operator_key"], 0.5)
-        inverse = operators.get(defn["inverse_key"], 0.3)
+        primary = operators.get(defn["operator_key"])
+        inverse = operators.get(defn["inverse_key"])
+        if any(v is None for v in [primary, inverse]):
+            return None
 
         # S-level reduces klesha intensity
         s_factor = max(0.1, 1 - (s_level - 4) / 6)
@@ -198,37 +202,47 @@ class DistortionEngine:
         # Klesha-specific calculations
         if klesha == Klesha.AVIDYA:
             # Root klesha - affected by all others
-            m = operators.get("M_maya", 0.5)
+            m = operators.get("M_maya")
+            if m is None:
+                return None
             intensity = m * s_factor * (1 - inverse * 0.6)
             root_depth = 0.9  # Deepest root
             active = m > 0.5
 
         elif klesha == Klesha.ASMITA:
             # I-am-ness - ego identification
-            at = operators.get("At_attachment", 0.5)
+            at = operators.get("At_attachment")
+            if at is None:
+                return None
             intensity = at * (1 - inverse * 0.5) * s_factor
             root_depth = 0.8
             active = at > 0.4 and inverse < 0.5
 
         elif klesha == Klesha.RAGA:
             # Attachment to pleasure
-            at = operators.get("At_attachment", 0.5)
-            e = operators.get("E_emotional", 0.5)
+            at = operators.get("At_attachment")
+            e = operators.get("E_emotional")
+            if any(v is None for v in [at, e]):
+                return None
             intensity = at * e * s_factor
             root_depth = 0.6
             active = at > 0.5
 
         elif klesha == Klesha.DVESHA:
             # Aversion - pushing away
-            e = operators.get("E_emotional", 0.5)
+            e = operators.get("E_emotional")
+            if e is None:
+                return None
             intensity = e * (1 - primary * 0.3) * s_factor * 0.8
             root_depth = 0.6
             active = e > 0.6 and inverse < 0.5
 
         else:  # Abhinivesha
             # Fear of death - universal
-            at = operators.get("At_attachment", 0.5)
-            p = operators.get("P_presence", 0.5)
+            at = operators.get("At_attachment")
+            p = operators.get("P_presence")
+            if any(v is None for v in [at, p]):
+                return None
             intensity = at * (1 - p * 0.4) * s_factor
             root_depth = 0.7
             active = at > 0.4 and p < 0.6
@@ -254,14 +268,21 @@ class DistortionEngine:
         """Calculate complete distortion profile."""
         # Calculate Maya
         maya = self.calculate_maya(operators, s_level)
+        if maya is None:
+            return None
 
         # Calculate all kleshas
         kleshas = {}
         for klesha in Klesha:
-            kleshas[klesha.value] = self.calculate_klesha(klesha, operators, s_level)
+            result = self.calculate_klesha(klesha, operators, s_level)
+            if result is None:
+                return None
+            kleshas[klesha.value] = result
 
         # Total distortion index
-        w = operators.get("W_witness", 0.3)
+        w = operators.get("W_witness")
+        if w is None:
+            return None
         klesha_sum = sum(k.intensity for k in kleshas.values())
         total_distortion = maya.total_maya * klesha_sum / (1 + w)
 

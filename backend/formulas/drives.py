@@ -338,16 +338,20 @@ class DrivesEngine:
 
     def _calculate_ego_separation(self, ops: Dict[str, float]) -> float:
         """Calculate ego separation factor."""
-        at = ops.get("At_attachment", 0.5)
-        se = ops.get("Se_service", 0.3)
-        as_ = ops.get("As_asmita", 0.5)
-        w = ops.get("W_witness", 0.3)
+        at = ops.get("At_attachment")
+        se = ops.get("Se_service")
+        as_ = ops.get("As_asmita")
+        w = ops.get("W_witness")
+        if any(v is None for v in [at, se, as_, w]):
+            return None
         return at * (1 - se) * as_ * (1 - w)
 
     def _calculate_maya_effective(self, ops: Dict[str, float]) -> float:
         """Calculate effective maya."""
-        m = ops.get("M_maya", 0.5)
-        w = ops.get("W_witness", 0.3)
+        m = ops.get("M_maya")
+        w = ops.get("W_witness")
+        if any(v is None for v in [m, w]):
+            return None
         return m * (1 - w)
 
     # -------------------------------------------------------------------------
@@ -356,16 +360,22 @@ class DrivesEngine:
 
     def calculate_love_components(self, ops: Dict[str, float]) -> Dict[str, float]:
         """Calculate Love drive sub-components."""
+        at = ops.get("At_attachment")
+        se = ops.get("Se_service")
+        e = ops.get("E_emotional")
+        p = ops.get("P_presence")
+        w = ops.get("W_witness")
+        sh = ops.get("Sh_shadow")
+        m = ops.get("M_maya")
+        ra = ops.get("Ra_raga")
+        dv = ops.get("Dv_dvesha")
+        focus = ops.get("I_intention")
+        if any(v is None for v in [at, se, e, p, w, sh, m, ra, dv, focus]):
+            return None
+
         ego_sep = self._calculate_ego_separation(ops)
-        at = ops.get("At_attachment", 0.5)
-        se = ops.get("Se_service", 0.3)
-        e = ops.get("E_emotional", 0.5)
-        p = ops.get("P_presence", 0.5)
-        w = ops.get("W_witness", 0.3)
-        sh = ops.get("Sh_shadow", 0.5)
-        m = ops.get("M_maya", 0.5)
-        ra = ops.get("Ra_raga", 0.5)
-        dv = ops.get("Dv_dvesha", 0.5)
+        if ego_sep is None:
+            return None
 
         # Heart_Open = (1 - Ego_Separation) × Emotional_Availability × Vulnerability
         emotional_availability = (1 - (1 - e) * 0.5) * p
@@ -383,7 +393,6 @@ class DrivesEngine:
 
         # Devotion = Heart_Open × Surrender × Focus
         surrender = 1 - at
-        focus = ops.get("I_intention", 0.5)
         devotion = heart_open * surrender * focus
 
         # Compassion = Heart_Open × Suffering_Awareness × (1 - Ego_Sep)
@@ -400,7 +409,16 @@ class DrivesEngine:
 
     def calculate_love_drive(self, ops: Dict[str, float], s_level: float) -> DriveProfile:
         """Calculate complete Love drive profile."""
+        at = ops.get("At_attachment")
+        sa = ops.get("Sa_samskara")
+        ce = ops.get("Ce_cleaning")
+        w = ops.get("W_witness")
+        if any(v is None for v in [at, sa, ce, w]):
+            return None
+
         components = self.calculate_love_components(ops)
+        if components is None:
+            return None
 
         # Love_Internal = Heart_Open × Self_Love × Unconditional_Capacity
         love_internal = (
@@ -410,9 +428,8 @@ class DrivesEngine:
         )
 
         # Drive strength based on wounds and S-level
-        at = ops.get("At_attachment", 0.5)
-        past_hurt = ops.get("Sa_samskara", 0.5) * (1 - ops.get("Ce_cleaning", 0.3))
-        heart_wounds = past_hurt * (1 - ops.get("W_witness", 0.3))
+        past_hurt = sa * (1 - ce)
+        heart_wounds = past_hurt * (1 - w)
         base_love = 1.0  # Universal constant
         drive_strength = base_love * (1 - heart_wounds * 0.5)
 
@@ -437,16 +454,18 @@ class DrivesEngine:
 
     def calculate_peace_components(self, ops: Dict[str, float]) -> Dict[str, float]:
         """Calculate Peace drive sub-components."""
-        p = ops.get("P_presence", 0.5)
-        w = ops.get("W_witness", 0.3)
-        m = ops.get("M_maya", 0.5)
-        e = ops.get("E_emotional", 0.5)
-        at = ops.get("At_attachment", 0.5)
-        dv = ops.get("Dv_dvesha", 0.5)
+        p = ops.get("P_presence")
+        w = ops.get("W_witness")
+        m = ops.get("M_maya")
+        e = ops.get("E_emotional")
+        at = ops.get("At_attachment")
+        dv = ops.get("Dv_dvesha")
+        t_future = ops.get("T_temporal")
+        if any(v is None for v in [p, w, m, e, at, dv, t_future]):
+            return None
 
         # Mental_Stillness = (1 - Mind_Proliferation) × P × Meditation_Depth
-        t_future = ops.get("T_temporal", 0.33)  # Future focus component
-        mind_proliferation = (1 - w * 0.7) * t_future
+        mind_proliferation = (1 - w * 0.7) * t_future  # Future focus component
         meditation_depth = w * (1 - m)
         mental_stillness = (1 - mind_proliferation) * p * meditation_depth
 
@@ -474,7 +493,14 @@ class DrivesEngine:
 
     def calculate_peace_drive(self, ops: Dict[str, float], s_level: float) -> DriveProfile:
         """Calculate complete Peace drive profile."""
+        p = ops.get("P_presence")
+        v = ops.get("V_vitality")
+        if any(val is None for val in [p, v]):
+            return None
+
         components = self.calculate_peace_components(ops)
+        if components is None:
+            return None
 
         # Peace_Internal = Mental_Stillness × Emotional_Equanimity × Present_Moment
         peace_internal = (
@@ -484,8 +510,8 @@ class DrivesEngine:
         )
 
         # Drive strength from burnout/exhaustion (seeking peace)
-        rajas = 1 - ops.get("P_presence", 0.5)  # Activity/restlessness
-        tamas = 1 - ops.get("V_vitality", 0.5)  # Depletion
+        rajas = 1 - p  # Activity/restlessness
+        tamas = 1 - v  # Depletion
         drive_strength = (rajas + tamas) / 2
 
         # External seeking
@@ -509,14 +535,17 @@ class DrivesEngine:
 
     def calculate_bliss_components(self, ops: Dict[str, float]) -> Dict[str, float]:
         """Calculate Bliss drive sub-components."""
-        psi = ops.get("Psi_quality", 0.5)
-        at = ops.get("At_attachment", 0.5)
-        m = ops.get("M_maya", 0.5)
-        g = ops.get("G_grace", 0.3)
-        w = ops.get("W_witness", 0.3)
-        kl = ops.get("KL_klesha", 0.5)
-        v = ops.get("V_vitality", 0.5)
-        p = ops.get("P_presence", 0.5)
+        psi = ops.get("Psi_quality")
+        at = ops.get("At_attachment")
+        m = ops.get("M_maya")
+        g = ops.get("G_grace")
+        w = ops.get("W_witness")
+        kl = ops.get("KL_klesha")
+        v = ops.get("V_vitality")
+        p = ops.get("P_presence")
+        i_intention = ops.get("I_intention")
+        if any(val is None for val in [psi, at, m, g, w, kl, v, p, i_intention]):
+            return None
 
         # Spiritual_Ecstasy = Psi × (1 - Separation) × Grace_Connection
         separation = at + m
@@ -530,7 +559,7 @@ class DrivesEngine:
         causeless_joy = (1 - external_dependency) * s_level / 8
 
         # Divine_Connection = G × (1 - M) × Devotion
-        devotion = (1 - at) * ops.get("I_intention", 0.5)
+        devotion = (1 - at) * i_intention
         divine_connection = g * (1 - m) * devotion
 
         # Ananda = Psi × (1 - KL) × W
@@ -552,6 +581,8 @@ class DrivesEngine:
     def calculate_bliss_drive(self, ops: Dict[str, float], s_level: float) -> DriveProfile:
         """Calculate complete Bliss drive profile."""
         components = self.calculate_bliss_components(ops)
+        if components is None:
+            return None
 
         # Bliss_Internal = Spiritual_Ecstasy × Causeless_Joy × Divine_Connection
         bliss_internal = (
@@ -584,13 +615,21 @@ class DrivesEngine:
 
     def calculate_satisfaction_components(self, ops: Dict[str, float]) -> Dict[str, float]:
         """Calculate Satisfaction drive sub-components."""
-        m = ops.get("M_maya", 0.5)
-        w = ops.get("W_witness", 0.3)
-        p = ops.get("P_presence", 0.5)
-        at = ops.get("At_attachment", 0.5)
-        e = ops.get("E_emotional", 0.5)
-        d = ops.get("D_dharma", 0.3)
-        i = ops.get("I_intention", 0.5)
+        m = ops.get("M_maya")
+        w = ops.get("W_witness")
+        p = ops.get("P_presence")
+        at = ops.get("At_attachment")
+        e = ops.get("E_emotional")
+        d = ops.get("D_dharma")
+        i = ops.get("I_intention")
+        t_future = ops.get("T_temporal")
+        se = ops.get("Se_service")
+        if any(v is None for v in [m, w, p, at, e, d, i, t_future, se]):
+            return None
+
+        ego_sep = self._calculate_ego_separation(ops)
+        if ego_sep is None:
+            return None
 
         # Completeness = (1 - Lack_Perception) × Fullness_Recognition
         desire_unfulfilled = at * (1 - e)
@@ -600,10 +639,8 @@ class DrivesEngine:
         completeness = (1 - lack_perception) * fullness_recognition
 
         # Contentment = (1 - Restlessness) × (1 - Comparison)
-        t_future = ops.get("T_temporal", 0.33)
         rajas = (1 - p) * t_future
         restlessness = rajas
-        ego_sep = self._calculate_ego_separation(ops)
         comparison = ego_sep * 0.5
         contentment = (1 - restlessness) * (1 - comparison)
 
@@ -618,7 +655,7 @@ class DrivesEngine:
 
         # Fulfillment = Purpose_Alignment × Achievement × Meaning
         purpose_alignment = d * i
-        achievement = ops.get("Se_service", 0.3) * (1 - at)
+        achievement = se * (1 - at)
         meaning = d * w
         fulfillment = purpose_alignment * achievement * meaning
 
@@ -632,7 +669,13 @@ class DrivesEngine:
 
     def calculate_satisfaction_drive(self, ops: Dict[str, float], s_level: float) -> DriveProfile:
         """Calculate complete Satisfaction drive profile."""
+        at = ops.get("At_attachment")
+        if at is None:
+            return None
+
         components = self.calculate_satisfaction_components(ops)
+        if components is None:
+            return None
 
         # Satisfaction_Internal = Completeness × Contentment × Present_Fullness
         satisfaction_internal = (
@@ -642,9 +685,10 @@ class DrivesEngine:
         )
 
         # Drive strength from unfulfilled desires
-        at = ops.get("At_attachment", 0.5)
         unfulfilled_desires = at * (1 - components["completeness"])
         comparison_frequency = self._calculate_ego_separation(ops)
+        if comparison_frequency is None:
+            return None
         drive_strength = unfulfilled_desires * (1 + comparison_frequency)
         drive_strength = min(1.0, drive_strength)
 
@@ -669,14 +713,16 @@ class DrivesEngine:
 
     def calculate_freedom_components(self, ops: Dict[str, float]) -> Dict[str, float]:
         """Calculate Freedom drive sub-components."""
-        k = ops.get("K_karma", 0.5)
-        hf = ops.get("Hf_habit", 0.5)
-        w = ops.get("W_witness", 0.3)
-        at = ops.get("At_attachment", 0.5)
-        p = ops.get("P_presence", 0.5)
-        g = ops.get("G_grace", 0.3)
-        kl = ops.get("KL_klesha", 0.5)
-        i = ops.get("I_intention", 0.5)
+        k = ops.get("K_karma")
+        hf = ops.get("Hf_habit")
+        w = ops.get("W_witness")
+        at = ops.get("At_attachment")
+        p = ops.get("P_presence")
+        g = ops.get("G_grace")
+        kl = ops.get("KL_klesha")
+        i = ops.get("I_intention")
+        if any(v is None for v in [k, hf, w, at, p, g, kl, i]):
+            return None
 
         # Liberation_from_Patterns = (1 - K) × (1 - Hf) × Breaking_Capacity
         breaking_capacity = w * p * (1 - at)
@@ -711,7 +757,16 @@ class DrivesEngine:
 
     def calculate_freedom_drive(self, ops: Dict[str, float], s_level: float) -> DriveProfile:
         """Calculate complete Freedom drive profile."""
+        k = ops.get("K_karma")
+        hf = ops.get("Hf_habit")
+        at = ops.get("At_attachment")
+        v = ops.get("V_vitality")
+        if any(val is None for val in [k, hf, at, v]):
+            return None
+
         components = self.calculate_freedom_components(ops)
+        if components is None:
+            return None
 
         # Freedom_Internal = Liberation × Choice × Being_Space
         freedom_internal = (
@@ -721,10 +776,8 @@ class DrivesEngine:
         )
 
         # Drive strength from perceived constraints
-        k = ops.get("K_karma", 0.5)
-        hf = ops.get("Hf_habit", 0.5)
         perceived_constraints = k + hf
-        rebellion_energy = (1 - ops.get("At_attachment", 0.5)) * ops.get("V_vitality", 0.5)
+        rebellion_energy = (1 - at) * v
         drive_strength = perceived_constraints * rebellion_energy
         drive_strength = min(1.0, drive_strength)
 
@@ -824,6 +877,9 @@ class DrivesEngine:
         bliss = self.calculate_bliss_drive(ops, s_level)
         satisfaction = self.calculate_satisfaction_drive(ops, s_level)
         freedom = self.calculate_freedom_drive(ops, s_level)
+
+        if any(d is None for d in [love, peace, bliss, satisfaction, freedom]):
+            return None
 
         all_drives = [love, peace, bliss, satisfaction, freedom]
 

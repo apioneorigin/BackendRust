@@ -24,7 +24,7 @@ from .distortions import DistortionEngine
 from .panchakritya import PanchakrityaEngine
 
 # Master inference engine
-from .inference import OOFInferenceEngine, IntegratedProfile, get_operator_defaults
+from .inference import OOFInferenceEngine, IntegratedProfile
 
 # Part XI Advanced Math and additional OOF formulas (from OOF_Math.txt)
 from .advanced_math import AdvancedMathEngine, get_advanced_math_profile
@@ -71,7 +71,6 @@ __all__ = [
     # Master engine
     'OOFInferenceEngine',
     'IntegratedProfile',
-    'get_operator_defaults',
     # Part XI Advanced Math (from OOF_Math.txt)
     'AdvancedMathEngine',
     'get_advanced_math_profile',

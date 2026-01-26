@@ -178,11 +178,15 @@ class DeathSequencer:
             current_status = self._assess_death_status(
                 death_id, current_operators
             )
+            if current_status is None:
+                continue
 
             # Check required status
             required_status = self._assess_required_death(
                 death_id, required_operators
             )
+            if required_status is None:
+                continue
 
             # Calculate gap
             gap = required_status - current_status['completion']
@@ -230,7 +234,7 @@ class DeathSequencer:
 
         # Check void tolerance
         void_tolerance_required = self._calculate_void_tolerance_needed(deaths_required)
-        current_void_tolerance = current_operators.get('V_void', 0.5)
+        current_void_tolerance = current_operators.get('V_void')
 
         # Can proceed?
         can_proceed = len(blocking_deaths) == 0 or all(
@@ -277,7 +281,9 @@ class DeathSequencer:
         primary_op = death_info['primary_operator']
         threshold = death_info['indicator_threshold']
 
-        primary_value = operators.get(primary_op, 0.5)
+        primary_value = operators.get(primary_op)
+        if primary_value is None:
+            return None
 
         # For most deaths, lower attachment/maya = more complete
         # For some (equanimity, coherence), higher = more complete
@@ -308,7 +314,9 @@ class DeathSequencer:
         primary_op = death_info['primary_operator']
         threshold = death_info['indicator_threshold']
 
-        required_value = required.get(primary_op, 0.5)
+        required_value = required.get(primary_op)
+        if required_value is None:
+            return None
 
         # Same logic as status
         inverted = primary_op in ['E_equanimity', 'Co_coherence', 'S_surrender', 'V_void']
@@ -329,6 +337,8 @@ class DeathSequencer:
         Check if a death process is sufficiently complete.
         """
         status = self._assess_death_status(death_id, operators)
+        if status is None:
+            return False
         return status['completion'] > 0.7
 
     def _determine_phase(self, completion: float) -> DeathPhaseProgress:
@@ -550,9 +560,12 @@ class DeathSequencer:
         Recommend overall intensity approach.
         """
         # Check current resilience
-        shakti = operators.get('Sh_shakti', 0.5)
-        equanimity = operators.get('E_equanimity', 0.5)
-        support = operators.get('G_grace', 0.5)
+        shakti = operators.get('Sh_shakti')
+        equanimity = operators.get('E_equanimity')
+        support = operators.get('G_grace')
+
+        if shakti is None or equanimity is None or support is None:
+            return "Insufficient operator data to recommend intensity. Proceed with gentle approach."
 
         resilience = (shakti + equanimity + support) / 3
 
@@ -577,17 +590,19 @@ class DeathSequencer:
         recs = []
 
         # Check grace level
-        if operators.get('G_grace', 0.5) < 0.5:
+        grace = operators.get('G_grace')
+        if grace is not None and grace < 0.5:
             recs.append("Increase connection to grace through prayer, transmission, or satsang")
 
         # Check support operators
-        if operators.get('Tr_trust', 0.5) < 0.5:
+        trust = operators.get('Tr_trust')
+        if trust is not None and trust < 0.5:
             recs.append("Build trust through small surrenders before major death work")
 
         # Check void tolerance
         void_needed = self._calculate_void_tolerance_needed(deaths)
-        current_void = operators.get('V_void', 0.5)
-        if current_void < void_needed:
+        current_void = operators.get('V_void')
+        if current_void is not None and current_void < void_needed:
             recs.append(f"Build void tolerance through meditation and silence practices")
 
         # General recommendations based on deaths required

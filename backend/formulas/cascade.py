@@ -604,9 +604,11 @@ class CascadeCalculator:
         if cleanliness is None:
             return []
 
-        k = operators.get('K_karma', 0.5)
-        g = operators.get('G_grace', 0.3)
-        w = operators.get('W_witness', 0.3)
+        k = operators.get('K_karma')
+        g = operators.get('G_grace')
+        w = operators.get('W_witness')
+        if any(v is None for v in [k, g, w]):
+            return []
 
         # Base probability from cleanliness
         higher_path_base = cleanliness
@@ -664,11 +666,13 @@ class CascadeCalculator:
         - Habits (internal)
         - Unconsciousness (maya)
         """
-        ce = operators.get('Ce_cleaning', 0.3)
-        g = operators.get('G_grace', 0.3)
-        hf = operators.get('Hf_habit', 0.5)
-        m = operators.get('M_maya', 0.5)
-        w = operators.get('W_witness', 0.3)
+        ce = operators.get('Ce_cleaning')
+        g = operators.get('G_grace')
+        hf = operators.get('Hf_habit')
+        m = operators.get('M_maya')
+        w = operators.get('W_witness')
+        if any(v is None for v in [ce, g, hf, m, w]):
+            return None
 
         # Calculate cleaning effect
         cleaning_effect = ce * (1 + g * 0.5)  # Grace amplifies cleaning
@@ -745,10 +749,12 @@ class CascadeCalculator:
         if cleanliness is None:
             return None, None
 
-        ce = operators.get('Ce_cleaning', 0.3)
-        g = operators.get('G_grace', 0.3)
-        hf = operators.get('Hf_habit', 0.5)
-        m = operators.get('M_maya', 0.5)
+        ce = operators.get('Ce_cleaning')
+        g = operators.get('G_grace')
+        hf = operators.get('Hf_habit')
+        m = operators.get('M_maya')
+        if any(v is None for v in [ce, g, hf, m]):
+            return None, None
 
         # Cleaning is easier at grosser levels, harder at subtle levels
         difficulty_factor = 1.0 - (level - 1) * 0.08

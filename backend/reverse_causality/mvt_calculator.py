@@ -167,7 +167,9 @@ class MVTCalculator:
         # Calculate metrics
         full_change_count = sum(
             1 for op in required_operators
-            if abs(required_operators.get(op, 0.5) - current_operators.get(op, 0.5)) > 0.05
+            if required_operators.get(op) is not None
+            and current_operators.get(op) is not None
+            and abs(required_operators.get(op) - current_operators.get(op)) > 0.05
         )
 
         total_magnitude = sum(c.change_magnitude for c in mvt_changes)
@@ -212,8 +214,10 @@ class MVTCalculator:
         sensitivities = []
 
         for op in required:
-            curr = current.get(op, 0.5)
-            req = required.get(op, 0.5)
+            curr = current.get(op)
+            req = required.get(op)
+            if curr is None or req is None:
+                continue
             change_needed = abs(req - curr)
 
             if change_needed < 0.02:
@@ -229,7 +233,9 @@ class MVTCalculator:
             leverage = 1 + cascade_bonus
 
             # Ease of change (inverse of difficulty)
-            difficulty = self.CHANGE_DIFFICULTY.get(op, 0.5)
+            difficulty = self.CHANGE_DIFFICULTY.get(op)
+            if difficulty is None:
+                continue
             ease = 1 - difficulty
 
             # Impact per effort
@@ -285,7 +291,9 @@ class MVTCalculator:
         """
         relevant_ops = set(
             op for op in required
-            if abs(required.get(op, 0.5) - current.get(op, 0.5)) > 0.05
+            if required.get(op) is not None
+            and current.get(op) is not None
+            and abs(required.get(op) - current.get(op)) > 0.05
         )
 
         cascade_map = {}
@@ -321,8 +329,10 @@ class MVTCalculator:
 
             sens = next((s for s in sensitivities if s.operator == keystone), None)
             if sens and sens.sensitivity_score > 0.1:
-                curr = current.get(keystone, 0.5)
-                req = required.get(keystone, 0.5)
+                curr = current.get(keystone)
+                req = required.get(keystone)
+                if curr is None or req is None:
+                    continue
 
                 selected.append(MVTChange(
                     operator=keystone,
@@ -352,8 +362,10 @@ class MVTCalculator:
                 # Still might need explicit work, but lower priority
                 continue
 
-            curr = current.get(op, 0.5)
-            req = required.get(op, 0.5)
+            curr = current.get(op)
+            req = required.get(op)
+            if curr is None or req is None:
+                continue
 
             selected.append(MVTChange(
                 operator=op,
@@ -377,7 +389,9 @@ class MVTCalculator:
         total_effort = 0
 
         for change in changes:
-            difficulty = self.CHANGE_DIFFICULTY.get(change.operator, 0.5)
+            difficulty = self.CHANGE_DIFFICULTY.get(change.operator)
+            if difficulty is None:
+                continue
             effort = change.change_magnitude * difficulty
             total_effort += effort
 
@@ -446,19 +460,23 @@ class MVTCalculator:
         """
         blockers = []
 
+        at = current.get('At_attachment')
+        resistance = current.get('R_resistance')
+        shakti = current.get('Sh_shakti')
+
         for change in changes:
             # High attachment blocks many changes
-            if change.operator != 'At_attachment' and current.get('At_attachment', 0.5) > 0.7:
+            if change.operator != 'At_attachment' and at is not None and at > 0.7:
                 if 'High attachment' not in blockers:
                     blockers.append("High attachment may slow progress")
 
             # High resistance blocks change
-            if current.get('R_resistance', 0.5) > 0.6:
+            if resistance is not None and resistance > 0.6:
                 if 'High resistance' not in blockers:
                     blockers.append("High resistance to change")
 
             # Low energy limits capacity
-            if current.get('Sh_shakti', 0.5) < 0.4:
+            if shakti is not None and shakti < 0.4:
                 if 'Low energy' not in blockers:
                     blockers.append("Low energy may limit transformation capacity")
 
@@ -520,8 +538,10 @@ class MVTCalculator:
         comparison += f"| Total Change | {mvt.total_change_magnitude:.2f} | "
 
         full_change = sum(
-            abs(required.get(op, 0.5) - current.get(op, 0.5))
+            abs(required.get(op) - current.get(op))
             for op in required
+            if required.get(op) is not None
+            and current.get(op) is not None
         )
         comparison += f"{full_change:.2f} |\n"
 

@@ -175,7 +175,7 @@ class Validator:
             if isinstance(obs, dict) and 'var' in obs:
                 var_name = obs['var']
                 value = obs.get('value')
-                confidence = obs.get('confidence', 0.5)
+                confidence = obs.get('confidence')
 
                 # Skip if value is explicitly None or marked as unable
                 if value is None or var_name == 'UNABLE':
@@ -200,7 +200,7 @@ class Validator:
         # Validate value ranges for populated operators
         for op, data in obs_dict.items():
             value = data.get('value')
-            confidence = data.get('confidence', 0.5)
+            confidence = data.get('confidence')
 
             # Skip None values
             if value is None:

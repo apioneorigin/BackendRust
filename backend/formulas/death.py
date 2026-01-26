@@ -170,12 +170,14 @@ class DeathEngine:
     def __init__(self):
         self.definitions = DEATH_DEFINITIONS
 
-    def _calculate_ego_separation(self, ops: Dict[str, float]) -> float:
+    def _calculate_ego_separation(self, ops: Dict[str, float]) -> Optional[float]:
         """Calculate ego separation factor."""
-        at = ops.get("At_attachment", 0.5)
-        se = ops.get("Se_service", 0.3)
-        as_ = ops.get("As_asmita", 0.5)
-        w = ops.get("W_witness", 0.3)
+        at = ops.get("At_attachment")
+        se = ops.get("Se_service")
+        as_ = ops.get("As_asmita")
+        w = ops.get("W_witness")
+        if any(val is None for val in [at, se, as_, w]):
+            return None
         return at * (1 - se) * as_ * (1 - w)
 
     def _determine_phase(self, intensity: float, acceptance: float, surrender: float) -> DeathPhase:
@@ -212,27 +214,31 @@ class DeathEngine:
     # INDIVIDUAL DEATH TYPE CALCULATIONS
     # -------------------------------------------------------------------------
 
-    def calculate_d1_physical(self, ops: Dict[str, float], s_level: float) -> DeathScore:
+    def calculate_d1_physical(self, ops: Dict[str, float], s_level: float) -> Optional[DeathScore]:
         """
         D1: Physical Death
 
         Active when mortality awareness is high, body changes significant.
         """
-        ab = ops.get("Ab_abhinivesha", 0.5)  # Fear of death
-        v = ops.get("V_vitality", 0.5)
-        p = ops.get("P_presence", 0.5)
-        g = ops.get("G_grace", 0.3)
-        at = ops.get("At_attachment", 0.5)
+        ab = ops.get("Ab_abhinivesha")  # Fear of death
+        v = ops.get("V_vitality")
+        p = ops.get("P_presence")
+        g = ops.get("G_grace")
+        at = ops.get("At_attachment")
+        m = ops.get("M_maya")
+        w = ops.get("W_witness")
+        if any(val is None for val in [ab, v, p, g, at, m, w]):
+            return None
 
         # Physical death indicators
-        mortality_awareness = ab * (1 - ops.get("M_maya", 0.5))
+        mortality_awareness = ab * (1 - m)
         body_transformation = (1 - v) * (1 - p)
         health_crisis = (1 - v) * ab
 
         intensity = (mortality_awareness + body_transformation + health_crisis) / 3
 
         # Depth based on acceptance
-        acceptance = ops.get("W_witness", 0.3) * (1 - ab)
+        acceptance = w * (1 - ab)
         surrender = (1 - at) * g
 
         depth = acceptance * surrender
@@ -254,21 +260,27 @@ class DeathEngine:
             description="Physical body transformation and mortality awareness",
         )
 
-    def calculate_d2_relationship(self, ops: Dict[str, float], s_level: float) -> DeathScore:
+    def calculate_d2_relationship(self, ops: Dict[str, float], s_level: float) -> Optional[DeathScore]:
         """
         D2: Relationship Death
 
         Active when significant bonds are ending or transforming.
         """
-        at = ops.get("At_attachment", 0.5)
-        se = ops.get("Se_service", 0.3)
-        e = ops.get("E_emotional", 0.5)
-        w = ops.get("W_witness", 0.3)
-        g = ops.get("G_grace", 0.3)
+        at = ops.get("At_attachment")
+        se = ops.get("Se_service")
+        e = ops.get("E_emotional")
+        w = ops.get("W_witness")
+        g = ops.get("G_grace")
+        if any(val is None for val in [at, se, e, w, g]):
+            return None
+
+        ego_sep = self._calculate_ego_separation(ops)
+        if ego_sep is None:
+            return None
 
         # Relationship death indicators
         bond_dissolution = at * (1 - se)
-        role_loss = self._calculate_ego_separation(ops) * 0.8
+        role_loss = ego_sep * 0.8
         connection_change = (1 - e) * at
 
         intensity = (bond_dissolution + role_loss + connection_change) / 3
@@ -295,22 +307,28 @@ class DeathEngine:
             description="Relationship and connection transformation",
         )
 
-    def calculate_d3_identity(self, ops: Dict[str, float], s_level: float) -> DeathScore:
+    def calculate_d3_identity(self, ops: Dict[str, float], s_level: float) -> Optional[DeathScore]:
         """
         D3: Identity Death
 
         Active when self-concept is dissolving or transforming.
         Formula: Role_Loss × Identity_Attachment × Ego_Dissolution × (1 - New_Identity_Formed)
         """
-        at = ops.get("At_attachment", 0.5)
-        as_ = ops.get("As_asmita", 0.5)
-        w = ops.get("W_witness", 0.3)
-        m = ops.get("M_maya", 0.5)
-        g = ops.get("G_grace", 0.3)
+        at = ops.get("At_attachment")
+        as_ = ops.get("As_asmita")
+        w = ops.get("W_witness")
+        m = ops.get("M_maya")
+        g = ops.get("G_grace")
+        if any(val is None for val in [at, as_, w, m, g]):
+            return None
+
+        ego_sep = self._calculate_ego_separation(ops)
+        if ego_sep is None:
+            return None
 
         # Identity death indicators
         identity_attachment = at * as_
-        role_loss = self._calculate_ego_separation(ops)
+        role_loss = ego_sep
         ego_dissolution = (1 - as_) * w
         new_identity_formed = w * (1 - m)
 
@@ -340,18 +358,20 @@ class DeathEngine:
             description="Self-concept and identity transformation",
         )
 
-    def calculate_d4_belief(self, ops: Dict[str, float], s_level: float) -> DeathScore:
+    def calculate_d4_belief(self, ops: Dict[str, float], s_level: float) -> Optional[DeathScore]:
         """
         D4: Belief System Death
 
         Active when worldview or paradigm is collapsing.
         """
-        m = ops.get("M_maya", 0.5)
-        w = ops.get("W_witness", 0.3)
-        psi = ops.get("Psi_quality", 0.5)
-        at = ops.get("At_attachment", 0.5)
-        g = ops.get("G_grace", 0.3)
-        bn = ops.get("BN_belief", 0.5)
+        m = ops.get("M_maya")
+        w = ops.get("W_witness")
+        psi = ops.get("Psi_quality")
+        at = ops.get("At_attachment")
+        g = ops.get("G_grace")
+        bn = ops.get("BN_belief")
+        if any(val is None for val in [m, w, psi, at, g, bn]):
+            return None
 
         # Belief death indicators
         paradigm_shift = (1 - m) * w  # Seeing through maya
@@ -382,18 +402,20 @@ class DeathEngine:
             description="Worldview and belief system transformation",
         )
 
-    def calculate_d5_desire(self, ops: Dict[str, float], s_level: float) -> DeathScore:
+    def calculate_d5_desire(self, ops: Dict[str, float], s_level: float) -> Optional[DeathScore]:
         """
         D5: Desire Death
 
         Active when attachments and cravings are dissolving.
         """
-        at = ops.get("At_attachment", 0.5)
-        ra = ops.get("Ra_raga", 0.5)
-        dv = ops.get("Dv_dvesha", 0.5)
-        w = ops.get("W_witness", 0.3)
-        g = ops.get("G_grace", 0.3)
-        p = ops.get("P_presence", 0.5)
+        at = ops.get("At_attachment")
+        ra = ops.get("Ra_raga")
+        dv = ops.get("Dv_dvesha")
+        w = ops.get("W_witness")
+        g = ops.get("G_grace")
+        p = ops.get("P_presence")
+        if any(val is None for val in [at, ra, dv, w, g, p]):
+            return None
 
         # Desire death indicators (vairagya = dispassion)
         attachment_releasing = (1 - at) * w
@@ -424,20 +446,24 @@ class DeathEngine:
             description="Desire and attachment transformation",
         )
 
-    def calculate_d6_separation(self, ops: Dict[str, float], s_level: float) -> DeathScore:
+    def calculate_d6_separation(self, ops: Dict[str, float], s_level: float) -> Optional[DeathScore]:
         """
         D6: Separation Death
 
         Active when boundaries and duality are dissolving.
         """
-        at = ops.get("At_attachment", 0.5)
-        m = ops.get("M_maya", 0.5)
-        w = ops.get("W_witness", 0.3)
-        psi = ops.get("Psi_quality", 0.5)
-        g = ops.get("G_grace", 0.3)
-        se = ops.get("Se_service", 0.3)
+        at = ops.get("At_attachment")
+        m = ops.get("M_maya")
+        w = ops.get("W_witness")
+        psi = ops.get("Psi_quality")
+        g = ops.get("G_grace")
+        se = ops.get("Se_service")
+        if any(val is None for val in [at, m, w, psi, g, se]):
+            return None
 
         ego_sep = self._calculate_ego_separation(ops)
+        if ego_sep is None:
+            return None
 
         # Separation death indicators
         boundary_dissolution = (1 - ego_sep) * w
@@ -468,25 +494,31 @@ class DeathEngine:
             description="Separation and duality transformation",
         )
 
-    def calculate_d7_ego(self, ops: Dict[str, float], s_level: float) -> DeathScore:
+    def calculate_d7_ego(self, ops: Dict[str, float], s_level: float) -> Optional[DeathScore]:
         """
         D7: Ego Death
 
         Complete dissolution of separate self-sense.
         Formula: Ego_Dissolution × (1 - Asmita) × Witness_Emergence × (S_level ≥ 7)
         """
-        at = ops.get("At_attachment", 0.5)
-        as_ = ops.get("As_asmita", 0.5)
-        w = ops.get("W_witness", 0.3)
-        psi = ops.get("Psi_quality", 0.5)
-        g = ops.get("G_grace", 0.3)
-        m = ops.get("M_maya", 0.5)
+        at = ops.get("At_attachment")
+        as_ = ops.get("As_asmita")
+        w = ops.get("W_witness")
+        psi = ops.get("Psi_quality")
+        g = ops.get("G_grace")
+        m = ops.get("M_maya")
+        if any(val is None for val in [at, as_, w, psi, g, m]):
+            return None
+
+        ego_sep = self._calculate_ego_separation(ops)
+        if ego_sep is None:
+            return None
 
         # S-level factor
         s_factor = max(0, (s_level - 6)) / 2
 
         # Ego death indicators
-        ego_dissolution = (1 - self._calculate_ego_separation(ops)) * w
+        ego_dissolution = (1 - ego_sep) * w
         asmita_dissolving = (1 - as_) * w * psi
         witness_emergence = w * psi * (1 - m)
 
@@ -520,8 +552,8 @@ class DeathEngine:
     # INTEGRATION
     # -------------------------------------------------------------------------
 
-    def calculate_all_deaths(self, ops: Dict[str, float], s_level: float = 4.0) -> Dict[str, DeathScore]:
-        """Calculate all death type scores."""
+    def calculate_all_deaths(self, ops: Dict[str, float], s_level: float = 4.0) -> Dict[str, Optional[DeathScore]]:
+        """Calculate all death type scores. Individual scores may be None if operators are missing."""
         return {
             DeathType.D1_PHYSICAL.value: self.calculate_d1_physical(ops, s_level),
             DeathType.D2_RELATIONSHIP.value: self.calculate_d2_relationship(ops, s_level),
@@ -536,7 +568,7 @@ class DeathEngine:
         self,
         operators: Dict[str, float],
         s_level: float = 4.0
-    ) -> DeathProfile:
+    ) -> Optional[DeathProfile]:
         """
         Calculate complete death architecture profile.
 
@@ -545,12 +577,23 @@ class DeathEngine:
             s_level: Current S-level (1.0-8.0)
 
         Returns:
-            Complete DeathProfile
+            Complete DeathProfile, or None if required operators are missing
         """
+        # Check operators used directly by this method
+        grace_support = operators.get("G_grace")
+        w = operators.get("W_witness")
+        at = operators.get("At_attachment")
+        psi = operators.get("Psi_quality")
+        if any(val is None for val in [grace_support, w, at, psi]):
+            return None
+
         deaths = self.calculate_all_deaths(operators, s_level)
 
+        # Filter out None death scores for aggregation
+        valid_deaths = {k: v for k, v in deaths.items() if v is not None}
+
         # Find active death type (highest intensity)
-        active_deaths = [(k, v) for k, v in deaths.items() if v.intensity > 0.3]
+        active_deaths = [(k, v) for k, v in valid_deaths.items() if v.intensity > 0.3]
         if active_deaths:
             dominant = max(active_deaths, key=lambda x: x[1].intensity)
             active_death_type = DeathType(dominant[0])
@@ -558,24 +601,18 @@ class DeathEngine:
             active_death_type = None
 
         # Calculate overall transformation intensity
-        intensities = [d.intensity for d in deaths.values()]
+        intensities = [d.intensity for d in valid_deaths.values()]
         overall_intensity = sum(intensities) / len(intensities) if intensities else 0.0
 
         # Calculate death readiness (overall)
-        readiness_scores = [d.s_level_readiness for d in deaths.values()]
+        readiness_scores = [d.s_level_readiness for d in valid_deaths.values()]
         death_readiness = sum(readiness_scores) / len(readiness_scores) if readiness_scores else 0.0
 
-        # Grace support
-        grace_support = operators.get("G_grace", 0.3)
-
         # Rebirth potential
-        w = operators.get("W_witness", 0.3)
-        at = operators.get("At_attachment", 0.5)
-        psi = operators.get("Psi_quality", 0.5)
         rebirth_potential = w * (1 - at) * psi * grace_support
 
         return DeathProfile(
-            deaths=deaths,
+            deaths=valid_deaths,
             active_death_type=active_death_type,
             overall_transformation_intensity=overall_intensity,
             death_readiness=death_readiness,

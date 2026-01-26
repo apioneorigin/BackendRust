@@ -234,15 +234,22 @@ def calculate_phase_space_trajectory(
     current = operators.copy()
     dt = 0.1
 
+    # Check required operators before simulation
+    required = [current.get('Psi_quality'), current.get('M_maya'),
+                current.get('W_witness'), current.get('K_karma'),
+                current.get('G_grace')]
+    if any(v is None for v in required):
+        return None
+
     for _ in range(time_steps):
         trajectory.append(current.copy())
 
         # Simplified evolution equations
-        psi = current.get('Psi_quality', 0.5)
-        maya = current.get('M_maya', 0.5)
-        witness = current.get('W_witness', 0.5)
-        karma = current.get('K_karma', 0.5)
-        grace = current.get('G_grace', 0.5)
+        psi = current.get('Psi_quality')
+        maya = current.get('M_maya')
+        witness = current.get('W_witness')
+        karma = current.get('K_karma')
+        grace = current.get('G_grace')
 
         # dM/dt - Maya decreases with witness
         dm_dt = -0.1 * witness * (1 - maya) + 0.05 * (1 - psi)
@@ -597,9 +604,12 @@ def identify_consciousness_symmetry_group(operators: Dict[str, float]) -> str:
     Consciousness_Symmetry_Group = G = {transformations preserving consciousness structure}
     """
     # Simplified symmetry identification
-    psi = operators.get('Psi_quality', 0.5)
-    maya = operators.get('M_maya', 0.5)
-    witness = operators.get('W_witness', 0.5)
+    psi = operators.get('Psi_quality')
+    maya = operators.get('M_maya')
+    witness = operators.get('W_witness')
+
+    if any(v is None for v in [psi, maya, witness]):
+        return None
 
     # Check for different symmetry types
     if abs(psi - (1 - maya)) < 0.1:
@@ -661,9 +671,12 @@ def calculate_consciousness_manifold_metric(
     where g_ij = metric tensor defining distances in consciousness space
     """
     # Simplified 3x3 metric for (Ψ, M, W) subspace
-    psi = operators.get('Psi_quality', 0.5)
-    maya = operators.get('M_maya', 0.5)
-    witness = operators.get('W_witness', 0.5)
+    psi = operators.get('Psi_quality')
+    maya = operators.get('M_maya')
+    witness = operators.get('W_witness')
+
+    if any(v is None for v in [psi, maya, witness]):
+        return None
 
     # Metric encodes how distances vary with consciousness state
     g = [
@@ -1088,12 +1101,15 @@ class AdvancedMathEngine:
         """Calculate complete advanced math profile from operators."""
         profile = AdvancedMathProfile()
 
-        psi = operators.get('Psi_quality', 0.5)
-        maya = operators.get('M_maya', 0.5)
-        witness = operators.get('W_witness', 0.5)
-        grace = operators.get('G_grace', 0.5)
-        presence = operators.get('P_presence', 0.5)
-        belief_network = operators.get('BN_belief', 0.5)
+        psi = operators.get('Psi_quality')
+        maya = operators.get('M_maya')
+        witness = operators.get('W_witness')
+        grace = operators.get('G_grace')
+        presence = operators.get('P_presence')
+        belief_network = operators.get('BN_belief')
+
+        if any(v is None for v in [psi, maya, witness, grace, presence, belief_network]):
+            return None
 
         # 11.5 Sacred Geometry
         ratio, harmony = calculate_optimal_operator_ratio(witness, maya)

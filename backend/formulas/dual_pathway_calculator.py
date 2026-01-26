@@ -57,15 +57,28 @@ def calculate_separation_pathway(
     Returns:
         PathwayMetrics for separation-based approach
     """
-    # Get key operators with safe defaults
-    At = operators.get('At_attachment') or 0.5
-    F = operators.get('F_fear') or 0.5
-    R = operators.get('R_resistance') or 0.5
-    M = operators.get('M_maya') or 0.5
-    S = operators.get('S_surrender') or 0.5
-    W = operators.get('W_witness') or 0.5
+    # Get key operators — return None if insufficient data
+    required = {
+        'At_attachment': operators.get('At_attachment'),
+        'F_fear': operators.get('F_fear'),
+        'R_resistance': operators.get('R_resistance'),
+        'M_maya': operators.get('M_maya'),
+        'S_surrender': operators.get('S_surrender'),
+        'W_witness': operators.get('W_witness'),
+    }
+    available = {k: v for k, v in required.items() if v is not None}
+    if not available:
+        logger.info("[SEP_PATHWAY] No operators available, returning None")
+        return None
 
-    logger.debug(f"[SEP_PATHWAY] goal={goal_category} At={At:.2f} F={F:.2f} R={R:.2f} M={M:.2f} S={S:.2f} W={W:.2f}")
+    At = required['At_attachment'] if required['At_attachment'] is not None else 0.0
+    F = required['F_fear'] if required['F_fear'] is not None else 0.0
+    R = required['R_resistance'] if required['R_resistance'] is not None else 0.0
+    M = required['M_maya'] if required['M_maya'] is not None else 0.0
+    S = required['S_surrender'] if required['S_surrender'] is not None else 0.0
+    W = required['W_witness'] if required['W_witness'] is not None else 0.0
+
+    logger.debug(f"[SEP_PATHWAY] goal={goal_category} At={At:.2f} F={F:.2f} R={R:.2f} M={M:.2f} S={S:.2f} W={W:.2f} (available={len(available)}/{len(required)})")
 
     # Separation pathway: high attachment/fear -> higher initial probability but poor sustainability
     # The more attached/fearful, the more likely to force short-term success
@@ -124,16 +137,30 @@ def calculate_unity_pathway(
     Returns:
         PathwayMetrics for unity-based approach
     """
-    # Get key operators with safe defaults
-    S = operators.get('S_surrender') or 0.5
-    W = operators.get('W_witness') or 0.5
-    G = operators.get('G_grace') or 0.5
-    At = operators.get('At_attachment') or 0.5
-    F = operators.get('F_fear') or 0.5
-    E = operators.get('E_equanimity') or 0.5
-    P = operators.get('P_presence') or 0.5
+    # Get key operators — return None if insufficient data
+    required = {
+        'S_surrender': operators.get('S_surrender'),
+        'W_witness': operators.get('W_witness'),
+        'G_grace': operators.get('G_grace'),
+        'At_attachment': operators.get('At_attachment'),
+        'F_fear': operators.get('F_fear'),
+        'E_equanimity': operators.get('E_equanimity'),
+        'P_presence': operators.get('P_presence'),
+    }
+    available = {k: v for k, v in required.items() if v is not None}
+    if not available:
+        logger.info("[UNITY_PATHWAY] No operators available, returning None")
+        return None
 
-    logger.debug(f"[UNITY_PATHWAY] goal={goal_category} S={S:.2f} W={W:.2f} G={G:.2f} E={E:.2f} P={P:.2f}")
+    S = required['S_surrender'] if required['S_surrender'] is not None else 0.0
+    W = required['W_witness'] if required['W_witness'] is not None else 0.0
+    G = required['G_grace'] if required['G_grace'] is not None else 0.0
+    At = required['At_attachment'] if required['At_attachment'] is not None else 0.0
+    F = required['F_fear'] if required['F_fear'] is not None else 0.0
+    E = required['E_equanimity'] if required['E_equanimity'] is not None else 0.0
+    P = required['P_presence'] if required['P_presence'] is not None else 0.0
+
+    logger.debug(f"[UNITY_PATHWAY] goal={goal_category} S={S:.2f} W={W:.2f} G={G:.2f} E={E:.2f} P={P:.2f} (available={len(available)}/{len(required)})")
 
     # Unity pathway: moderate initial probability but excellent sustainability
     # Depends on surrender, witness, and grace
@@ -294,7 +321,7 @@ def calculate_dual_pathways(
     goal_category: str,
     operators: Dict[str, Optional[float]],
     unity_metrics: Optional[UnitySeparationMetrics] = None
-) -> DualPathway:
+) -> Optional[DualPathway]:
     """
     Master function returning both pathways with recommendation.
 
@@ -312,6 +339,10 @@ def calculate_dual_pathways(
     # Calculate both pathways
     sep_pathway = calculate_separation_pathway(goal_category, operators, unity_metrics)
     unity_pathway = calculate_unity_pathway(goal_category, operators, unity_metrics)
+
+    if sep_pathway is None or unity_pathway is None:
+        logger.info("[DUAL_PATHWAYS] Insufficient operator data for pathway calculation")
+        return None
 
     # Project over time
     projections, crossover_month = project_pathway_over_time(sep_pathway, unity_pathway)

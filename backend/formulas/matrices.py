@@ -216,10 +216,12 @@ class MatricesEngine:
 
     def _calculate_ego_separation(self, ops: Dict[str, float]) -> float:
         """Calculate ego separation factor."""
-        at = ops.get("At_attachment", 0.5)
-        se = ops.get("Se_service", 0.3)
-        as_ = ops.get("As_asmita", 0.5)
-        w = ops.get("W_witness", 0.3)
+        at = ops.get("At_attachment")
+        se = ops.get("Se_service")
+        as_ = ops.get("As_asmita")
+        w = ops.get("W_witness")
+        if any(v is None for v in [at, se, as_, w]):
+            return None
         return at * (1 - se) * as_ * (1 - w)
 
     def _weighted_position(self, scores: List[float]) -> float:
@@ -267,10 +269,12 @@ class MatricesEngine:
             (Truth_State, Truth_Score)
         ])
         """
-        m = ops.get("M_maya", 0.5)
-        w = ops.get("W_witness", 0.3)
-        at = ops.get("At_attachment", 0.5)
-        psi = ops.get("Psi_quality", 0.5)
+        m = ops.get("M_maya")
+        w = ops.get("W_witness")
+        at = ops.get("At_attachment")
+        psi = ops.get("Psi_quality")
+        if any(v is None for v in [m, w, at, psi]):
+            return None
 
         # Illusion_Score = M × (1 - W) × (1 - A)
         illusion_score = m * (1 - w) * (1 - psi * 0.5)
@@ -336,15 +340,19 @@ class MatricesEngine:
         """
         Calculate Love Matrix: Separation → Connection → Unity → Oneness
         """
-        at = ops.get("At_attachment", 0.5)
-        se = ops.get("Se_service", 0.3)
-        w = ops.get("W_witness", 0.3)
-        m = ops.get("M_maya", 0.5)
-        psi = ops.get("Psi_quality", 0.5)
-        as_ = ops.get("As_asmita", 0.5)
+        at = ops.get("At_attachment")
+        se = ops.get("Se_service")
+        w = ops.get("W_witness")
+        m = ops.get("M_maya")
+        psi = ops.get("Psi_quality")
+        as_ = ops.get("As_asmita")
+        ab = ops.get("Ab_abhinivesha")
+        e = ops.get("E_emotional")
+        if any(v is None for v in [at, se, w, m, psi, as_, ab, e]):
+            return None
 
         ego_sep = self._calculate_ego_separation(ops)
-        fear = ops.get("Ab_abhinivesha", 0.5)
+        fear = ab
 
         # Separation_Score = At × (1 - Se) × Ego_Boundaries × Fear
         ego_boundaries = at + as_
@@ -352,7 +360,7 @@ class MatricesEngine:
 
         # Connection_Score = (1 - Separation) × Relationship_Quality × Empathy
         empathy = (1 - ego_sep) * se
-        relationship_quality = (1 - at) * ops.get("E_emotional", 0.5)
+        relationship_quality = (1 - at) * e
         connection_score = (1 - separation_score) * relationship_quality * empathy * 0.5
 
         # Unity_Score = Se × (1 - At) × We_Space_Experience
@@ -413,32 +421,39 @@ class MatricesEngine:
         """
         Calculate Power Matrix: Victim → Responsibility → Mastery → Service
         """
-        at = ops.get("At_attachment", 0.5)
-        se = ops.get("Se_service", 0.3)
-        m = ops.get("M_maya", 0.5)
-        i = ops.get("I_intention", 0.5)
-        w = ops.get("W_witness", 0.3)
-        d = ops.get("D_dharma", 0.3)
+        at = ops.get("At_attachment")
+        se = ops.get("Se_service")
+        m = ops.get("M_maya")
+        i = ops.get("I_intention")
+        w = ops.get("W_witness")
+        d = ops.get("D_dharma")
+        vit = ops.get("V_vitality")
+        hf = ops.get("Hf_habit")
+        ce = ops.get("Ce_cleaning")
+        ab = ops.get("Ab_abhinivesha")
+        as_ = ops.get("As_asmita")
+        if any(v is None for v in [at, se, m, i, w, d, vit, hf, ce, ab, as_]):
+            return None
 
         # Victim_Score = External_Locus × Powerlessness × Blame
         external_locus = (1 - m) * (1 - i)
-        powerlessness = (1 - i) * (1 - ops.get("V_vitality", 0.5))
+        powerlessness = (1 - i) * (1 - vit)
         blame = (1 - w) * at
         victim_score = external_locus * powerlessness * blame
 
         # Responsibility_Score = Internal_Locus × (1 - Blame) × Choice_Recognition
         internal_locus = m * i
-        choice_recognition = (1 - ops.get("Hf_habit", 0.5)) * w
+        choice_recognition = (1 - hf) * w
         responsibility_score = internal_locus * (1 - blame) * choice_recognition * 0.5
 
         # Mastery_Score = Skill_Level × Confidence × Results
-        skill_level = ops.get("Ce_cleaning", 0.3) * (1 - ops.get("Hf_habit", 0.5))
-        confidence = (1 - ops.get("Ab_abhinivesha", 0.5)) * i
+        skill_level = ce * (1 - hf)
+        confidence = (1 - ab) * i
         results = d * se
         mastery_score = skill_level * confidence * results
 
         # Service_Score = Se × Mastery × (1 - Ego_Attachment)
-        ego_attachment = at * ops.get("As_asmita", 0.5)
+        ego_attachment = at * as_
         service_score = se * mastery_score * (1 - ego_attachment)
 
         scores = [victim_score, responsibility_score, mastery_score, service_score]
@@ -490,12 +505,16 @@ class MatricesEngine:
         """
         Calculate Freedom Matrix: Bondage → Choice → Liberation → Transcendence
         """
-        at = ops.get("At_attachment", 0.5)
-        k = ops.get("K_karma", 0.5)
-        hf = ops.get("Hf_habit", 0.5)
-        w = ops.get("W_witness", 0.3)
-        g = ops.get("G_grace", 0.3)
-        kl = ops.get("KL_klesha", 0.5)
+        at = ops.get("At_attachment")
+        k = ops.get("K_karma")
+        hf = ops.get("Hf_habit")
+        w = ops.get("W_witness")
+        g = ops.get("G_grace")
+        kl = ops.get("KL_klesha")
+        p = ops.get("P_presence")
+        i = ops.get("I_intention")
+        if any(v is None for v in [at, k, hf, w, g, kl, p, i]):
+            return None
 
         # Bondage_Score = Hf × K × (1 - Awareness) × Constraint_Perception
         constraint_perception = at + k
@@ -503,7 +522,7 @@ class MatricesEngine:
 
         # Choice_Score = Free_Will × Choice_Consciousness × (1 - Bondage)
         free_will = (1 - hf) * (1 - k * 0.5)
-        choice_consciousness = w * ops.get("P_presence", 0.5)
+        choice_consciousness = w * p
         choice_score = free_will * choice_consciousness * (1 - bondage_score) * 0.5
 
         # Liberation_Score = (1 - K) × (1 - Hf) × (1 - At) × Freedom_Experience
@@ -512,7 +531,7 @@ class MatricesEngine:
 
         # Transcendence_Score = (S_level ≥ 7) × (1 - Personal_Will) × Divine_Will_Alignment
         s_factor = max(0, (s_level - 6)) / 2
-        personal_will = at * ops.get("I_intention", 0.5)
+        personal_will = at * i
         divine_alignment = g * (1 - at)
         transcendence_score = s_factor * (1 - personal_will) * divine_alignment
 
@@ -565,21 +584,26 @@ class MatricesEngine:
         """
         Calculate Creation Matrix: Destruction → Maintenance → Creation → Source
         """
-        m = ops.get("M_maya", 0.5)
-        i = ops.get("I_intention", 0.5)
-        psi = ops.get("Psi_quality", 0.5)
-        g = ops.get("G_grace", 0.3)
-        at = ops.get("At_attachment", 0.5)
+        m = ops.get("M_maya")
+        i = ops.get("I_intention")
+        psi = ops.get("Psi_quality")
+        g = ops.get("G_grace")
+        at = ops.get("At_attachment")
+        ce = ops.get("Ce_cleaning")
+        s_struct = ops.get("S_struct")
+        vit = ops.get("V_vitality")
+        if any(v is None for v in [m, i, psi, g, at, ce, s_struct, vit]):
+            return None
 
         # Destruction_Score = Breaking_down patterns
-        dissolution = (1 - at) * ops.get("Ce_cleaning", 0.3)
+        dissolution = (1 - at) * ce
         destruction_score = dissolution * (1 - m) * 0.5
 
         # Maintenance_Score = Sustaining existing
-        maintenance_score = at * (1 - i * 0.5) * ops.get("S_struct", 0.5)
+        maintenance_score = at * (1 - i * 0.5) * s_struct
 
         # Creation_Score = Bringing new
-        creative_force = i * psi * ops.get("V_vitality", 0.5)
+        creative_force = i * psi * vit
         creation_score = creative_force * (1 - at * 0.5)
 
         # Source_Score = Connected to origin
@@ -599,7 +623,7 @@ class MatricesEngine:
             ),
             "maintenance": StateScore(
                 name="maintenance", score=scores[1],
-                indicators={"stability": at, "structure": ops.get("S_struct", 0.5)},
+                indicators={"stability": at, "structure": s_struct},
                 description=self.state_descriptions.get("creation_maintenance", "")
             ),
             "creation": StateScore(
@@ -635,13 +659,14 @@ class MatricesEngine:
         """
         Calculate Time Matrix: Past/Future → Present → Eternal → Beyond Time
         """
-        p = ops.get("P_presence", 0.5)
-        w = ops.get("W_witness", 0.3)
-        at = ops.get("At_attachment", 0.5)
-        psi = ops.get("Psi_quality", 0.5)
-        m = ops.get("M_maya", 0.5)
-
-        t_temporal = ops.get("T_temporal", 0.33)
+        p = ops.get("P_presence")
+        w = ops.get("W_witness")
+        at = ops.get("At_attachment")
+        psi = ops.get("Psi_quality")
+        m = ops.get("M_maya")
+        t_temporal = ops.get("T_temporal")
+        if any(v is None for v in [p, w, at, psi, m, t_temporal]):
+            return None
 
         # Past_Future_Score = Caught in time
         past_future_score = (1 - p) * (t_temporal + at * 0.5)
@@ -705,12 +730,14 @@ class MatricesEngine:
         """
         Calculate Death Matrix: Clinging → Acceptance → Surrender → Rebirth
         """
-        at = ops.get("At_attachment", 0.5)
-        ab = ops.get("Ab_abhinivesha", 0.5)
-        w = ops.get("W_witness", 0.3)
-        g = ops.get("G_grace", 0.3)
-        psi = ops.get("Psi_quality", 0.5)
-        e = ops.get("E_emotional", 0.5)
+        at = ops.get("At_attachment")
+        ab = ops.get("Ab_abhinivesha")
+        w = ops.get("W_witness")
+        g = ops.get("G_grace")
+        psi = ops.get("Psi_quality")
+        e = ops.get("E_emotional")
+        if any(v is None for v in [at, ab, w, g, psi, e]):
+            return None
 
         # Clinging_Score = Holding on
         clinging_score = at * ab * (1 - w)
@@ -796,6 +823,8 @@ class MatricesEngine:
         death = self.calculate_death_matrix(operators, s_level)
 
         all_matrices = [truth, love, power, freedom, creation, time, death]
+        if any(m is None for m in all_matrices):
+            return None
 
         # Calculate overall evolution
         positions = [m.current_position for m in all_matrices]

@@ -2432,7 +2432,9 @@ def format_results_fallback(prompt: str, evidence: dict, posteriors: dict) -> st
 
     for obs in evidence.get("observations", []):
         if isinstance(obs, dict) and 'var' in obs and 'value' in obs:
-            lines.append(f"- {obs['var']}: {obs['value']:.2f} (confidence: {obs.get('confidence', 0.5):.2f})")
+            conf_val = obs.get('confidence')
+            conf_str = f"{conf_val:.2f}" if conf_val is not None else "N/A"
+            lines.append(f"- {obs['var']}: {obs['value']:.2f} (confidence: {conf_str})")
 
     lines.append("")
     lines.append("### Consciousness State Analysis")
@@ -3142,7 +3144,7 @@ def _extract_operators_from_evidence(evidence: dict) -> Tuple[Dict[str, float], 
         if isinstance(obs, dict):
             var = obs.get('var', '')
             value = obs.get('value')
-            conf = obs.get('confidence', 0.5)
+            conf = obs.get('confidence')
 
             # Validate value is numeric and in range
             if value is None or not isinstance(value, (int, float)):

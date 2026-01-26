@@ -154,9 +154,11 @@ class CollectiveEngine:
         Formula: We_Space_Quality = Coherence × Shared_S_level × Alignment
         """
         # Alignment from operators
-        se = operators.get("Se_service", 0.3)
-        at = operators.get("At_attachment", 0.5)
-        w = operators.get("W_witness", 0.3)
+        se = operators.get("Se_service")
+        at = operators.get("At_attachment")
+        w = operators.get("W_witness")
+        if any(v is None for v in [se, at, w]):
+            return None
 
         alignment = se * (1 - at) * w
         alignment = min(1.0, alignment * 2)
@@ -186,10 +188,14 @@ class CollectiveEngine:
     ) -> CollectiveProfile:
         """Calculate complete collective consciousness profile."""
         # Base values from operators
-        psi = operators.get("Psi_quality", 0.5)
-        r = operators.get("R_resonance", 0.5)
-        coherence = operators.get("Co_coherence", psi * 0.8)
-        g = operators.get("G_grace", 0.3)
+        psi = operators.get("Psi_quality")
+        r = operators.get("R_resonance")
+        g = operators.get("G_grace")
+        if any(v is None for v in [psi, r, g]):
+            return None
+        coherence = operators.get("Co_coherence")
+        if coherence is None:
+            coherence = psi * 0.8
 
         # Calculate components
         network = self.calculate_network_effect(network_size, r, coherence, population)
