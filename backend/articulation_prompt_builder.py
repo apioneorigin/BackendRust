@@ -431,7 +431,7 @@ to articulate. Don't list all values - synthesize the relevant ones.
 **Grace Mechanics:**
 - Availability: {_fmt(grace_mech.availability)}
 - Effectiveness: {_fmt(grace_mech.effectiveness)}
-- Multiplication factor: {grace_mech.multiplication_factor:.2f}x if grace_mech.multiplication_factor else 'N/A'
+- Multiplication factor: {f'{grace_mech.multiplication_factor:.2f}x' if grace_mech.multiplication_factor else 'N/A'}
 
 ### COHERENCE & GAPS
 
@@ -474,12 +474,20 @@ to articulate. Don't list all values - synthesize the relevant ones.
             logger.debug("[_build_unity_metrics_section] skipped: default values (not calculated)")
             return ""
 
-        logger.debug(
-            f"[_build_unity_metrics_section] unity data present: "
-            f"sep_dist={um.separation_distance:.3f} vector={um.unity_vector:.3f} "
-            f"percolation={um.percolation_quality:.3f} distortion={um.distortion_field:.3f} "
-            f"direction={um.net_direction}"
-        )
+        if all(v is not None for v in [um.separation_distance, um.unity_vector, um.percolation_quality, um.distortion_field]):
+            logger.debug(
+                f"[_build_unity_metrics_section] unity data present: "
+                f"sep_dist={um.separation_distance:.3f} vector={um.unity_vector:.3f} "
+                f"percolation={um.percolation_quality:.3f} distortion={um.distortion_field:.3f} "
+                f"direction={um.net_direction}"
+            )
+        else:
+            logger.debug(f"[_build_unity_metrics_section] unity data partial: some metrics are None")
+
+        # Skip if any key metrics are None (not calculated)
+        if any(v is None for v in [um.unity_vector, um.separation_distance, um.percolation_quality]):
+            logger.debug("[_build_unity_metrics_section] skipped: key metrics are None")
+            return ""
 
         # Translate unity_vector to direction description
         if um.unity_vector > 0.3:
