@@ -212,15 +212,16 @@ CORE_OPERATORS: Dict[str, OperatorDefinition] = {
     ),
 
     # -------------------------------------------------------------------------
-    # 13. E (Emotional) - Emotional Coherence
+    # 13. E (Equanimity) - Emotional Balance & Equanimity
     # -------------------------------------------------------------------------
-    "E_emotional": OperatorDefinition(
+    "E_equanimity": OperatorDefinition(
         symbol="E",
-        name="Emotional Coherence",
+        name="Equanimity",
         category=OperatorCategory.UCB,
-        description="Emotional stability and coherence; rasa integration",
-        formula="Equanimity × (1 - Volatility) × Expression_health",
-        extraction_method="semantic"
+        description="Emotional balance and equanimity; non-reactive awareness",
+        formula="Witness × (1 - Reactivity) × Acceptance",
+        extraction_method="semantic",
+        s_level_weight={1: 0.1, 2: 0.15, 3: 0.25, 4: 0.4, 5: 0.55, 6: 0.7, 7: 0.85, 8: 1.0}
     ),
 
     # -------------------------------------------------------------------------
@@ -503,16 +504,6 @@ KLESHA_OPERATORS: Dict[str, OperatorDefinition] = {
         formula="Safety × Experience × Faith",
         extraction_method="semantic",
         s_level_weight={1: 0.2, 2: 0.3, 3: 0.35, 4: 0.45, 5: 0.6, 6: 0.75, 7: 0.9, 8: 1.0}
-    ),
-
-    "E_equanimity": OperatorDefinition(
-        symbol="Eq",
-        name="Equanimity",
-        category=OperatorCategory.CONSCIOUSNESS,
-        description="Balanced, non-reactive awareness",
-        formula="Witness × (1 - Reactivity) × Acceptance",
-        extraction_method="semantic",
-        s_level_weight={1: 0.1, 2: 0.15, 3: 0.25, 4: 0.4, 5: 0.55, 6: 0.7, 7: 0.85, 8: 1.0}
     ),
 
     "Sh_shakti": OperatorDefinition(
@@ -1051,7 +1042,7 @@ if __name__ == "__main__":
         "Se_service": 0.6,
         "G_grace": 0.4,
         "P_presence": 0.7,
-        "E_emotional": 0.6,
+        "E_equanimity": 0.6,
         "K_karma": 0.4,
         "D_dharma": 0.5,
         "Ce_cleaning": 0.5,

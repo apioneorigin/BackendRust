@@ -268,7 +268,7 @@ class DeathEngine:
         """
         at = ops.get("At_attachment")
         se = ops.get("Se_service")
-        e = ops.get("E_emotional")
+        e = ops.get("E_equanimity")
         w = ops.get("W_witness")
         g = ops.get("G_grace")
         if any(val is None for val in [at, se, e, w, g]):
@@ -665,7 +665,7 @@ if __name__ == "__main__":
         "Se_service": 0.55,
         "G_grace": 0.45,
         "P_presence": 0.65,
-        "E_emotional": 0.6,
+        "E_equanimity": 0.6,
         "V_vitality": 0.6,
         "As_asmita": 0.4,
         "Ab_abhinivesha": 0.35,

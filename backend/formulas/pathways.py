@@ -206,7 +206,7 @@ class PathwaysEngine:
         m = ops.get("M_maya")
         p = ops.get("P_presence")
         psi = ops.get("Psi_quality")
-        e = ops.get("E_emotional")
+        e = ops.get("E_equanimity")
         at = ops.get("At_attachment")
         if any(v is None for v in [w, m, p, psi, e, at]):
             return None
@@ -408,7 +408,7 @@ class PathwaysEngine:
         d = ops.get("D_dharma")
         se = ops.get("Se_service")
         at = ops.get("At_attachment")
-        e = ops.get("E_emotional")
+        e = ops.get("E_equanimity")
         hf = ops.get("Hf_habit")
         p = ops.get("P_presence")
         if any(v is None for v in [w, m, psi, d, se, at, e, hf, p]):
@@ -606,7 +606,7 @@ if __name__ == "__main__":
         "Se_service": 0.55,
         "G_grace": 0.45,
         "P_presence": 0.65,
-        "E_emotional": 0.6,
+        "E_equanimity": 0.6,
         "K_karma": 0.4,
         "D_dharma": 0.5,
         "Ce_cleaning": 0.5,

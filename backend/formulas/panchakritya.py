@@ -85,7 +85,7 @@ KRITYA_DEFINITIONS = {
         "sanskrit": "Tirobhava",
         "description": "Concealment - veiling truth for play",
         "domain": "maya",
-        "operators": ["M_maya", "E_emotional"],
+        "operators": ["M_maya", "E_equanimity"],
     },
     KrityaType.ANUGRAHA: {
         "sanskrit": "Anugraha",
@@ -115,7 +115,7 @@ class PanchakrityaEngine:
         w = operators.get("W_witness")
         at = operators.get("At_attachment")
         m = operators.get("M_maya")
-        e = operators.get("E_emotional")
+        e = operators.get("E_equanimity")
         d = operators.get("D_dharma")
         se = operators.get("Se_service")
         if any(v is None for v in [i, p, w, at, m, e, d, se]):
@@ -351,7 +351,7 @@ if __name__ == "__main__":
     engine = PanchakrityaEngine()
     test_ops = {
         "I_intention": 0.6, "P_presence": 0.65, "W_witness": 0.5,
-        "At_attachment": 0.4, "M_maya": 0.4, "E_emotional": 0.5,
+        "At_attachment": 0.4, "M_maya": 0.4, "E_equanimity": 0.5,
         "D_dharma": 0.5, "Se_service": 0.55,
     }
 

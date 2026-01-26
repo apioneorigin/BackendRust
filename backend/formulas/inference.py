@@ -763,7 +763,7 @@ if __name__ == "__main__":
         "At_attachment": 0.4,
         "Se_service": 0.55,
         "W_witness": 0.5,
-        "E_emotional": 0.55,
+        "E_equanimity": 0.55,
         "D_dharma": 0.5,
         "M_maya": 0.4,
         "I_intention": 0.6,

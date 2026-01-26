@@ -106,7 +106,7 @@ KLESHA_DEFINITIONS = {
     Klesha.DVESHA: {
         "sanskrit": "Dvesha",
         "description": "Aversion - pushing away the unpleasant",
-        "operator_key": "E_emotional",
+        "operator_key": "E_equanimity",
         "inverse_key": "W_witness",
     },
     Klesha.ABHINIVESHA: {
@@ -132,7 +132,7 @@ class DistortionEngine:
         w = operators.get("W_witness")
         at = operators.get("At_attachment")
         p = operators.get("P_presence")
-        e = operators.get("E_emotional")
+        e = operators.get("E_equanimity")
         if any(v is None for v in [m, w, at, p, e]):
             return None
 
@@ -221,7 +221,7 @@ class DistortionEngine:
         elif klesha == Klesha.RAGA:
             # Attachment to pleasure
             at = operators.get("At_attachment")
-            e = operators.get("E_emotional")
+            e = operators.get("E_equanimity")
             if any(v is None for v in [at, e]):
                 return None
             intensity = at * e * s_factor
@@ -230,7 +230,7 @@ class DistortionEngine:
 
         elif klesha == Klesha.DVESHA:
             # Aversion - pushing away
-            e = operators.get("E_emotional")
+            e = operators.get("E_equanimity")
             if e is None:
                 return None
             intensity = e * (1 - primary * 0.3) * s_factor * 0.8
@@ -398,7 +398,7 @@ if __name__ == "__main__":
     engine = DistortionEngine()
     test_ops = {
         "M_maya": 0.45, "W_witness": 0.5, "At_attachment": 0.4,
-        "P_presence": 0.6, "E_emotional": 0.5, "Se_service": 0.5,
+        "P_presence": 0.6, "E_equanimity": 0.5, "Se_service": 0.5,
     }
 
     profile = engine.calculate_distortion_profile(test_ops, s_level=5.0)

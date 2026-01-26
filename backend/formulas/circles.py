@@ -81,7 +81,7 @@ class CirclesEngine:
         at = operators.get("At_attachment")
         se = operators.get("Se_service")
         w = operators.get("W_witness")
-        e = operators.get("E_emotional")
+        e = operators.get("E_equanimity")
         d = operators.get("D_dharma")
         if any(v is None for v in [p, at, se, w, e, d]):
             return None
@@ -186,7 +186,7 @@ if __name__ == "__main__":
     engine = CirclesEngine()
     test_ops = {
         "P_presence": 0.65, "At_attachment": 0.35, "Se_service": 0.55,
-        "W_witness": 0.5, "E_emotional": 0.6, "D_dharma": 0.5,
+        "W_witness": 0.5, "E_equanimity": 0.6, "D_dharma": 0.5,
         "M_maya": 0.4, "I_intention": 0.55, "Hf_habit": 0.4,
     }
 

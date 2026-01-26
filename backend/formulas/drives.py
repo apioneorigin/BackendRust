@@ -152,7 +152,7 @@ LOVE_COMPONENTS: Dict[str, DriveComponent] = {
         name="Heart Open",
         description="Capacity for emotional vulnerability and connection",
         formula="(1 - Ego_Separation) × Emotional_Availability × Vulnerability",
-        dependencies=["At_attachment", "Se_service", "E_emotional", "P_presence"]
+        dependencies=["At_attachment", "Se_service", "E_equanimity", "P_presence"]
     ),
     "self_love": DriveComponent(
         name="Self Love",
@@ -164,7 +164,7 @@ LOVE_COMPONENTS: Dict[str, DriveComponent] = {
         name="Unconditional Capacity",
         description="Ability to love without conditions",
         formula="(1 - Ra) × (1 - Dv) × Equanimity",
-        dependencies=["Ra_raga", "Dv_dvesha", "E_emotional"]
+        dependencies=["Ra_raga", "Dv_dvesha", "E_equanimity"]
     ),
     "devotion": DriveComponent(
         name="Devotion",
@@ -191,7 +191,7 @@ PEACE_COMPONENTS: Dict[str, DriveComponent] = {
         name="Emotional Equanimity",
         description="Balanced emotional state",
         formula="E × (1 - Rasa_Volatility)",
-        dependencies=["E_emotional"]
+        dependencies=["E_equanimity"]
     ),
     "present_moment": DriveComponent(
         name="Present Moment",
@@ -257,7 +257,7 @@ SATISFACTION_COMPONENTS: Dict[str, DriveComponent] = {
         name="Contentment",
         description="Being at ease with what is",
         formula="(1 - Restlessness) × (1 - Comparison)",
-        dependencies=["At_attachment", "E_emotional"]
+        dependencies=["At_attachment", "E_equanimity"]
     ),
     "present_fullness": DriveComponent(
         name="Present Fullness",
@@ -362,7 +362,7 @@ class DrivesEngine:
         """Calculate Love drive sub-components."""
         at = ops.get("At_attachment")
         se = ops.get("Se_service")
-        e = ops.get("E_emotional")
+        e = ops.get("E_equanimity")
         p = ops.get("P_presence")
         w = ops.get("W_witness")
         sh = ops.get("Sh_shadow")
@@ -457,7 +457,7 @@ class DrivesEngine:
         p = ops.get("P_presence")
         w = ops.get("W_witness")
         m = ops.get("M_maya")
-        e = ops.get("E_emotional")
+        e = ops.get("E_equanimity")
         at = ops.get("At_attachment")
         dv = ops.get("Dv_dvesha")
         t_future = ops.get("T_temporal")
@@ -619,7 +619,7 @@ class DrivesEngine:
         w = ops.get("W_witness")
         p = ops.get("P_presence")
         at = ops.get("At_attachment")
-        e = ops.get("E_emotional")
+        e = ops.get("E_equanimity")
         d = ops.get("D_dharma")
         i = ops.get("I_intention")
         t_future = ops.get("T_temporal")
@@ -941,7 +941,7 @@ if __name__ == "__main__":
         "Se_service": 0.55,
         "G_grace": 0.45,
         "P_presence": 0.65,
-        "E_emotional": 0.6,
+        "E_equanimity": 0.6,
         "K_karma": 0.4,
         "D_dharma": 0.5,
         "Ce_cleaning": 0.5,

@@ -347,7 +347,7 @@ class MatricesEngine:
         psi = ops.get("Psi_quality")
         as_ = ops.get("As_asmita")
         ab = ops.get("Ab_abhinivesha")
-        e = ops.get("E_emotional")
+        e = ops.get("E_equanimity")
         if any(v is None for v in [at, se, w, m, psi, as_, ab, e]):
             return None
 
@@ -735,7 +735,7 @@ class MatricesEngine:
         w = ops.get("W_witness")
         g = ops.get("G_grace")
         psi = ops.get("Psi_quality")
-        e = ops.get("E_emotional")
+        e = ops.get("E_equanimity")
         if any(v is None for v in [at, ab, w, g, psi, e]):
             return None
 
@@ -897,7 +897,7 @@ if __name__ == "__main__":
         "Se_service": 0.55,
         "G_grace": 0.45,
         "P_presence": 0.65,
-        "E_emotional": 0.6,
+        "E_equanimity": 0.6,
         "K_karma": 0.4,
         "D_dharma": 0.5,
         "Ce_cleaning": 0.5,
