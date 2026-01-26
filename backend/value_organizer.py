@@ -398,7 +398,7 @@ class ValueOrganizer:
         breakthrough_dynamics = BreakthroughDynamics(
             probability=self._get_value(v, 'breakthrough_prob', default=None),
             tipping_point_distance=self._get_value(v, 'breakthrough_tipping', default=None),
-            quantum_jump_prob=self._get_value(v, 'quantum_jump_prob', default=None5),
+            quantum_jump_prob=self._get_value(v, 'quantum_jump_prob', default=None),
             operators_at_threshold=v.get('breakthrough_operators', [])
         )
 
