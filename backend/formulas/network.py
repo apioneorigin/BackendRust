@@ -18,6 +18,8 @@ from typing import Dict, Any, List, Optional, Tuple, Set
 from dataclasses import dataclass, field
 import math
 
+from .collective import CollectiveEngine
+
 
 @dataclass
 class NetworkNode:
@@ -165,18 +167,18 @@ class NetworkEmergenceCalculator:
     ) -> float:
         """
         Calculate morphogenetic field strength.
-        Based on Sheldrake's theory of morphic resonance.
+        Delegates to CollectiveEngine for canonical formula.
         """
-        # Base field from number of participants
-        base_field = math.log(1 + nodes) / 10
-
-        # Coherence strengthens the field
-        coherence_factor = coherence ** 1.5
-
-        # Higher S-levels contribute more to field
-        s_level_factor = 1 + (s_level - 3) * 0.2
-
-        return min(1.0, base_field * coherence_factor * s_level_factor)
+        # Use CollectiveEngine for canonical morphic field calculation
+        collective = CollectiveEngine()
+        # Default repetitions=100 for typical network context
+        morphic = collective.calculate_morphic_field(
+            repetitions=100,
+            participants=nodes,
+            coherence=coherence,
+            s_level_avg=s_level
+        )
+        return morphic.field_strength
 
     def _calculate_collective_breakthrough(
         self,

@@ -11,14 +11,6 @@ Write-Host ""
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $scriptDir
 
-# Check if registry.json exists
-if (-not (Test-Path "registry.json")) {
-    Write-Host "ERROR: registry.json not found!" -ForegroundColor Red
-    Write-Host "Run formula_compiler.py first."
-    exit 1
-}
-Write-Host "[OK] Registry found" -ForegroundColor Green
-
 # Check if backend directory exists
 if (-not (Test-Path "backend")) {
     Write-Host "ERROR: backend directory not found!" -ForegroundColor Red

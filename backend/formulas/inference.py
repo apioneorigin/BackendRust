@@ -27,12 +27,12 @@ import json
 
 # Import all OOF modules
 from .nomenclature import resolve_ambiguous, CORE_VARIABLES
-from .operators import OperatorEngine, CORE_OPERATORS
+from .operators import OperatorEngine, CORE_OPERATORS, CANONICAL_OPERATOR_NAMES
 from .drives import DrivesEngine, DriveType
 from .matrices import MatricesEngine, MatrixType
 from .pathways import PathwaysEngine, PathwayType
 from .cascade import CascadeCalculator, CascadeLevel, CleanlinessZone
-from .emotions import EmotionAnalyzer, ExpandedEmotionEngine
+from .emotions import EmotionAnalyzer
 from .death import DeathEngine, DeathType
 from .collective import CollectiveEngine
 from .circles import CirclesEngine, CircleType
@@ -40,6 +40,25 @@ from .kosha import KoshaEngine, KoshaType
 from .osafc import OSAFCEngine, OSAFCLayer
 from .distortions import DistortionEngine, Klesha, Guna
 from .panchakritya import PanchakrityaEngine, KrityaType
+
+# Additional calculation modules (previously separate)
+from .dynamics import GraceKarmaDynamics
+from .network import NetworkEmergenceCalculator
+from .quantum import QuantumMechanics
+from .realism import RealismEngine
+from .unity_principle import get_unity_metrics
+from .dual_pathway_calculator import calculate_dual_pathways
+
+# Part XI Advanced Math and additional OOF formulas
+from .advanced_math import AdvancedMathEngine
+from .hierarchical import HierarchicalResolutionEngine, HLevel
+from .platform_specific import PlatformSpecificEngine, IntelligenceAdaptationEngine
+from .multi_reality import MultiRealityEngine
+from .timeline_prediction import (
+    BreakthroughDynamicsEngine,
+    TimelinePredictionEngine,
+    EvolutionDynamicsEngine
+)
 
 
 @dataclass
@@ -64,6 +83,20 @@ class IntegratedProfile:
     distortion_profile: Optional[Any] = None
     panchakritya_profile: Optional[Any] = None
 
+    # Part XI Advanced Math modules
+    advanced_math_profile: Optional[Any] = None
+    hierarchical_profile: Optional[Any] = None
+    platform_profile: Optional[Any] = None
+    multi_reality_profile: Optional[Any] = None
+    timeline_profile: Optional[Any] = None
+
+    # Additional calculation modules
+    dynamics_profile: Optional[Any] = None
+    network_profile: Optional[Any] = None
+    quantum_profile: Optional[Any] = None
+    realism_profile: Optional[Any] = None
+    unity_profile: Optional[Any] = None
+
     # Summary metrics
     overall_health: float = 0.0
     liberation_index: float = 0.0
@@ -82,7 +115,6 @@ class OOFInferenceEngine:
         self.pathways_engine = PathwaysEngine()
         self.cascade_calculator = CascadeCalculator()
         self.emotion_analyzer = EmotionAnalyzer()
-        self.expanded_emotion_engine = ExpandedEmotionEngine()
         self.death_engine = DeathEngine()
         self.collective_engine = CollectiveEngine()
         self.circles_engine = CirclesEngine()
@@ -90,6 +122,26 @@ class OOFInferenceEngine:
         self.osafc_engine = OSAFCEngine()
         self.distortion_engine = DistortionEngine()
         self.panchakritya_engine = PanchakrityaEngine()
+
+        # Part XI Advanced Math engines
+        self.advanced_math_engine = AdvancedMathEngine()
+        self.hierarchical_engine = HierarchicalResolutionEngine()
+        self.platform_engine = PlatformSpecificEngine()
+        self.intelligence_adaptation_engine = IntelligenceAdaptationEngine()
+        self.multi_reality_engine = MultiRealityEngine()
+        self.breakthrough_engine = BreakthroughDynamicsEngine()
+        self.timeline_engine = TimelinePredictionEngine()
+        self.evolution_engine = EvolutionDynamicsEngine()
+
+        # Additional calculation engines
+        self.dynamics_engine = GraceKarmaDynamics()
+        self.network_engine = NetworkEmergenceCalculator()
+        self.quantum_engine = QuantumMechanics()
+        self.realism_engine = RealismEngine()
+
+        # API compatibility attributes
+        self.formula_count = 287  # Total formulas across all modules
+        self.is_loaded = True  # Always ready - pure Python
 
     def calculate_full_profile(
         self,
@@ -114,7 +166,9 @@ class OOFInferenceEngine:
             include_modules = [
                 "operators", "drives", "matrices", "pathways",
                 "cascade", "emotions", "death", "collective",
-                "circles", "kosha", "osafc", "distortions", "panchakritya"
+                "circles", "kosha", "osafc", "distortions", "panchakritya",
+                "advanced_math", "hierarchical", "platform", "multi_reality", "timeline",
+                "dynamics", "network", "quantum", "realism", "unity"
             ]
 
         profile = IntegratedProfile(
@@ -162,12 +216,12 @@ class OOFInferenceEngine:
                 "network_effect": self.collective_engine.calculate_network_effect(
                     network_size=10,
                     base_resonance=operators.get("Se_service", 0.3),
-                    coherence=operators.get("Ce_center", 0.5),
+                    coherence=operators.get("Ce_cleaning", 0.5),
                     population=1000
                 ),
                 "we_space": self.collective_engine.calculate_we_space(
                     operators=operators,
-                    network_coherence=operators.get("Ce_center", 0.5),
+                    network_coherence=operators.get("Ce_cleaning", 0.5),
                     shared_s_level=s_level
                 )
             }
@@ -196,6 +250,79 @@ class OOFInferenceEngine:
             profile.panchakritya_profile = self.panchakritya_engine.calculate_panchakritya_profile(
                 operators, s_level
             )
+
+        # Part XI Advanced Math modules
+        if "advanced_math" in include_modules:
+            profile.advanced_math_profile = self.advanced_math_engine.calculate_full_profile(
+                operators, s_level
+            )
+
+        if "hierarchical" in include_modules:
+            # H-level detection requires text context - use operator-based defaults
+            profile.hierarchical_profile = self.hierarchical_engine.get_h_level_info(
+                HLevel.H1_PERSONAL  # Default to personal level without text
+            )
+
+        if "platform" in include_modules:
+            # Platform profiles for common platforms
+            from .platform_specific import Platform
+            profile.platform_profile = {
+                "intelligence_level": self.intelligence_adaptation_engine.detect_intelligence_level(
+                    complexity_handled=operators.get("W_witness", 0.5),
+                    abstraction_comfort=s_level / 8.0,
+                    technical_literacy=operators.get("D_dharma", 0.5)
+                )
+            }
+
+        if "multi_reality" in include_modules:
+            profile.multi_reality_profile = self.multi_reality_engine.calculate_full_multi_reality_state(
+                shared_beliefs=operators.get("Ce_cleaning", 0.5),
+                shared_consciousness=s_level / 8.0,
+                interaction_frequency=0.5,
+                num_participants=1,
+                individual_realities=[s_level / 8.0],
+                consciousness_levels=[s_level / 8.0],
+                attachments=[operators.get("At_attachment", 0.5)],
+                resonance=operators.get("P_presence", 0.5)
+            )
+
+        if "timeline" in include_modules:
+            profile.timeline_profile = self.evolution_engine.calculate_full_evolution_dynamics(
+                operators, s_level
+            )
+
+        # Additional calculation modules
+        if "dynamics" in include_modules:
+            profile.dynamics_profile = self.dynamics_engine.calculate_all(operators)
+
+        if "network" in include_modules:
+            coherence = operators.get('Co_coherence', 0.5)
+            profile.network_profile = self.network_engine.calculate_network_state(
+                individual_coherence=coherence,
+                individual_s_level=s_level,
+                connected_nodes=1
+            )
+
+        if "quantum" in include_modules:
+            profile.quantum_profile = self.quantum_engine.calculate_quantum_state(operators, s_level)
+
+        if "realism" in include_modules:
+            profile.realism_profile = self.realism_engine.calculate_realism_profile(operators, s_level)
+
+        if "unity" in include_modules:
+            unity_ops = {
+                'W_witness': operators.get('W_witness'),
+                'A_aware': operators.get('A_aware'),
+                'P_presence': operators.get('P_presence'),
+                'G_grace': operators.get('G_grace'),
+                'S_surrender': operators.get('S_surrender'),
+                'At_attachment': operators.get('At_attachment'),
+                'F_fear': operators.get('F_fear'),
+                'M_maya': operators.get('M_maya'),
+                'R_resistance': operators.get('R_resistance'),
+                'Co_coherence': operators.get('Co_coherence'),
+            }
+            profile.unity_profile = get_unity_metrics(unity_ops, s_level)
 
         # Calculate summary metrics
         profile = self._calculate_summary_metrics(profile)
@@ -360,6 +487,189 @@ class OOFInferenceEngine:
 
         return recommendations
 
+    def run_inference(self, evidence: dict) -> dict:
+        """
+        Run inference given evidence observations (API format).
+
+        Args:
+            evidence: {
+                "observations": [{"var": "Name", "value": 0.0-1.0, "confidence": 0.0-1.0}],
+                "targets": ["VarName1", "VarName2"]  # Optional
+                "goal_context": {"goal": "...", "category": "..."}  # Optional
+            }
+
+        Returns:
+            dict with values, confidence, formula_count, metadata
+        """
+        # Extract operators from observations
+        operators: Dict[str, float] = {}
+        confidence: Dict[str, float] = {}
+        populated_operators = set()
+        missing_operators = set()
+
+        observations = evidence.get('observations', [])
+        for obs in observations:
+            var_name = obs.get('var', '')
+            value = obs.get('value')
+            conf = obs.get('confidence', 0.8)
+
+            if not var_name or value is None:
+                continue
+            if not isinstance(value, (int, float)):
+                continue
+
+            operators[var_name] = float(value)
+            confidence[var_name] = float(conf) if conf is not None else 0.8
+            populated_operators.add(var_name)
+
+        # Track missing operators
+        for op in CANONICAL_OPERATOR_NAMES:
+            if op not in operators:
+                missing_operators.add(op)
+
+        # Get S-level
+        s_level = operators.get('S_level', operators.get('s_level', 3.0))
+
+        # Run full calculation
+        profile = self.calculate_full_profile(operators, s_level)
+
+        # Flatten profile to values dict
+        values = self._flatten_profile(profile, confidence)
+
+        # Handle dual pathways if goal_context provided
+        goal_context = evidence.get('goal_context')
+        if goal_context and profile.unity_profile:
+            unity_ops = {k: operators.get(k) for k in [
+                'W_witness', 'A_aware', 'P_presence', 'G_grace', 'S_surrender',
+                'At_attachment', 'F_fear', 'M_maya', 'R_resistance', 'Co_coherence'
+            ]}
+            dual = calculate_dual_pathways(
+                goal=goal_context.get('goal', ''),
+                goal_category=goal_context.get('category', 'achievement'),
+                operators=unity_ops,
+                unity_metrics=profile.unity_profile
+            )
+            if dual:
+                values['pathway_separation_success'] = dual.separation_pathway.initial_success_probability
+                values['pathway_unity_success'] = dual.unity_pathway.initial_success_probability
+                values['pathway_crossover_months'] = dual.crossover_point_months
+                values['pathway_recommendation'] = dual.recommended_pathway
+                confidence['pathway_separation_success'] = 0.8
+                confidence['pathway_unity_success'] = 0.8
+                confidence['pathway_crossover_months'] = 0.8
+
+        return {
+            "values": values,
+            "confidence": {k: confidence.get(k, 0.8) for k in values},
+            "formula_count": 287,  # Total formulas across all modules
+            "metadata": {
+                "populated_operators": list(populated_operators),
+                "missing_operators": list(missing_operators),
+                "modules_executed": ["oof_engine", "dynamics", "network", "quantum", "realism", "unity"],
+            }
+        }
+
+    def _flatten_profile(self, profile: IntegratedProfile, confidence: Dict[str, float]) -> Dict[str, Any]:
+        """Flatten profile to flat values dict."""
+        values: Dict[str, Any] = {}
+
+        # Extract from each profile using prefixes
+        profile_mappings = [
+            (profile.operator_scores, "op"),
+            (profile.drives_profile, "drives"),
+            (profile.matrices_profile, "matrices"),
+            (profile.pathways_profile, "pathways"),
+            (profile.cascade_profile, "cascade"),
+            (profile.emotion_profile, "emotion"),
+            (profile.death_profile, "death"),
+            (profile.circles_profile, "circles"),
+            (profile.kosha_profile, "kosha"),
+            (profile.osafc_profile, "osafc"),
+            (profile.distortion_profile, "distortion"),
+            (profile.panchakritya_profile, "panchakritya"),
+        ]
+
+        for obj, prefix in profile_mappings:
+            if obj is None:
+                continue
+            if isinstance(obj, dict):
+                items = obj.items()
+            elif hasattr(obj, '__dict__'):
+                items = vars(obj).items()
+            else:
+                continue
+
+            for key, val in items:
+                if key.startswith('_'):
+                    continue
+                if isinstance(val, (int, float)):
+                    full_key = f"{prefix}_{key}"
+                    values[full_key] = val
+                    confidence[full_key] = 0.8
+                elif isinstance(val, str) and len(val) < 100:
+                    values[f"{prefix}_{key}"] = val
+
+        # Summary metrics
+        values['overall_health'] = profile.overall_health
+        values['liberation_index'] = profile.liberation_index
+        values['integration_score'] = profile.integration_score
+        values['transformation_potential'] = profile.transformation_potential
+        confidence['overall_health'] = 0.85
+        confidence['liberation_index'] = 0.85
+        confidence['integration_score'] = 0.85
+        confidence['transformation_potential'] = 0.85
+
+        # Additional module values
+        if profile.dynamics_profile and profile.dynamics_profile.grace and profile.dynamics_profile.karma:
+            values['grace_availability'] = profile.dynamics_profile.grace.availability
+            values['grace_effectiveness'] = profile.dynamics_profile.grace.effectiveness
+            values['karma_burn_rate'] = profile.dynamics_profile.karma.burn_rate
+            values['karma_net_change'] = profile.dynamics_profile.karma.net_change
+            values['grace_karma_ratio'] = profile.dynamics_profile.grace_karma_ratio
+            values['transformation_momentum'] = profile.dynamics_profile.transformation_momentum
+            for k in ['grace_availability', 'grace_effectiveness', 'karma_burn_rate',
+                      'karma_net_change', 'grace_karma_ratio', 'transformation_momentum']:
+                confidence[k] = 0.8
+
+        if profile.network_profile:
+            values['network_emergence'] = profile.network_profile.collective_breakthrough_prob
+            values['network_field_strength'] = profile.network_profile.morphic_field_strength
+            values['network_coherence_multiplier'] = profile.network_profile.coherence_multiplier
+            values['network_critical_mass'] = profile.network_profile.critical_mass_proximity
+            for k in ['network_emergence', 'network_field_strength',
+                      'network_coherence_multiplier', 'network_critical_mass']:
+                confidence[k] = 0.7
+
+        if profile.quantum_profile:
+            values['quantum_coherence_time'] = profile.quantum_profile.coherence_time
+            values['quantum_tunneling'] = profile.quantum_profile.tunneling_probability
+            values['quantum_entanglement'] = profile.quantum_profile.entanglement_strength
+            values['quantum_collapse_readiness'] = profile.quantum_profile.collapse_readiness
+            for k in ['quantum_coherence_time', 'quantum_tunneling',
+                      'quantum_entanglement', 'quantum_collapse_readiness']:
+                confidence[k] = 0.7
+
+        if profile.realism_profile:
+            values['realism_dominant'] = profile.realism_profile.dominant_realism
+            values['realism_dominant_weight'] = profile.realism_profile.dominant_weight
+            values['realism_coherence'] = profile.realism_profile.coherence
+            values['realism_evolution_direction'] = profile.realism_profile.evolution_direction
+            confidence['realism_dominant'] = 0.8
+            confidence['realism_dominant_weight'] = 0.8
+            confidence['realism_coherence'] = 0.75
+
+        if profile.unity_profile:
+            values['unity_separation_distance'] = profile.unity_profile.separation_distance
+            values['unity_distortion_field'] = profile.unity_profile.distortion_field
+            values['unity_percolation_quality'] = profile.unity_profile.percolation_quality
+            values['unity_vector'] = profile.unity_profile.unity_vector
+            values['unity_net_direction'] = profile.unity_profile.net_direction
+            for k in ['unity_separation_distance', 'unity_distortion_field',
+                      'unity_percolation_quality', 'unity_vector', 'unity_net_direction']:
+                confidence[k] = 0.85
+
+        return values
+
     def to_dict(self, profile: IntegratedProfile) -> Dict[str, Any]:
         """Convert profile to serializable dictionary."""
         result = {
@@ -433,7 +743,7 @@ def run_inference(
 
 
 def get_operator_defaults() -> Dict[str, float]:
-    """Get default operator values."""
+    """Get default operator values using canonical operator names."""
     return {
         "P_presence": 0.5,
         "At_attachment": 0.5,
@@ -444,9 +754,17 @@ def get_operator_defaults() -> Dict[str, float]:
         "M_maya": 0.5,
         "I_intention": 0.5,
         "Hf_habit": 0.5,
-        "Ce_center": 0.5,
+        "Ce_cleaning": 0.5,  # Canonical name (not Ce_cleaning)
         "K_karma": 0.5,
-        "Lf_lifeforce": 0.5,
+        "Lf_lovefear": 0.5,  # Canonical name (not Lf_lifeforce)
+        # Extended commonly-used operators
+        "S_surrender": 0.5,
+        "A_aware": 0.5,
+        "Co_coherence": 0.5,
+        "F_fear": 0.5,
+        "R_resistance": 0.5,
+        "G_grace": 0.3,
+        "Psi_quality": 0.5,
     }
 
 
@@ -455,7 +773,7 @@ if __name__ == "__main__":
     print("OOF Master Inference Engine Test")
     print("=" * 60)
 
-    # Test with sample operators
+    # Test with sample operators using canonical names
     test_ops = {
         "P_presence": 0.65,
         "At_attachment": 0.4,
@@ -466,9 +784,12 @@ if __name__ == "__main__":
         "M_maya": 0.4,
         "I_intention": 0.6,
         "Hf_habit": 0.4,
-        "Ce_center": 0.55,
+        "Ce_cleaning": 0.55,  # Canonical name
         "K_karma": 0.45,
-        "Lf_lifeforce": 0.6,
+        "Lf_lovefear": 0.6,  # Canonical name
+        "S_surrender": 0.5,
+        "G_grace": 0.5,
+        "Psi_quality": 0.5,
     }
 
     engine = OOFInferenceEngine()

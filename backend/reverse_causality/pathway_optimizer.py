@@ -19,8 +19,11 @@ import math
 
 
 @dataclass
-class DimensionScore:
-    """Score on a single dimension"""
+class WeightedDimensionScore:
+    """
+    Score on a single dimension with weighting.
+    Note: Distinct from formulas.pathways.WeightedDimensionScore which doesn't include weights.
+    """
     dimension: str
     score: float  # 0-1
     weight: float  # Importance weight
@@ -44,11 +47,11 @@ class PathwayScore:
     pathway_name: str
 
     # Individual dimension scores
-    speed_score: DimensionScore
-    stability_score: DimensionScore
-    effort_score: DimensionScore
-    side_effect_score: DimensionScore
-    success_score: DimensionScore
+    speed_score: WeightedDimensionScore
+    stability_score: WeightedDimensionScore
+    effort_score: WeightedDimensionScore
+    side_effect_score: WeightedDimensionScore
+    success_score: WeightedDimensionScore
 
     # Overall score
     total_score: float
@@ -234,7 +237,7 @@ class PathwayOptimizer:
             recommendation_reason=""
         )
 
-    def _score_speed(self, pathway: TransformationPathway) -> DimensionScore:
+    def _score_speed(self, pathway: TransformationPathway) -> WeightedDimensionScore:
         """
         Score pathway on speed (faster = higher score).
         """
@@ -260,7 +263,7 @@ class PathwayOptimizer:
 
         description = f"Timeline: {pathway.total_duration_estimate}"
 
-        return DimensionScore(
+        return WeightedDimensionScore(
             dimension='speed',
             score=score,
             weight=0,
@@ -268,7 +271,7 @@ class PathwayOptimizer:
             description=description
         )
 
-    def _score_stability(self, pathway: TransformationPathway) -> DimensionScore:
+    def _score_stability(self, pathway: TransformationPathway) -> WeightedDimensionScore:
         """
         Score pathway on stability (more stable = higher score).
         """
@@ -289,7 +292,7 @@ class PathwayOptimizer:
 
         description = f"Stability: {pathway.stability_score:.0%}, {len(pathway.risks)} identified risks"
 
-        return DimensionScore(
+        return WeightedDimensionScore(
             dimension='stability',
             score=score,
             weight=0,
@@ -301,7 +304,7 @@ class PathwayOptimizer:
         self,
         pathway: TransformationPathway,
         capacity: Optional[Dict[str, float]]
-    ) -> DimensionScore:
+    ) -> WeightedDimensionScore:
         """
         Score pathway on effort (lower effort = higher score).
         """
@@ -328,7 +331,7 @@ class PathwayOptimizer:
 
         description = f"Effort: {pathway.effort_required:.0%}, Avg step difficulty: {avg_difficulty:.0%}"
 
-        return DimensionScore(
+        return WeightedDimensionScore(
             dimension='effort',
             score=score,
             weight=0,
@@ -336,7 +339,7 @@ class PathwayOptimizer:
             description=description
         )
 
-    def _score_side_effects(self, pathway: TransformationPathway) -> DimensionScore:
+    def _score_side_effects(self, pathway: TransformationPathway) -> WeightedDimensionScore:
         """
         Score pathway on side effects (fewer negative = higher score).
         """
@@ -363,7 +366,7 @@ class PathwayOptimizer:
 
         description = f"{len(pathway.benefits)} benefits, {negative_count} potential side effects"
 
-        return DimensionScore(
+        return WeightedDimensionScore(
             dimension='side_effects',
             score=score,
             weight=0,
@@ -371,7 +374,7 @@ class PathwayOptimizer:
             description=description
         )
 
-    def _score_success(self, pathway: TransformationPathway) -> DimensionScore:
+    def _score_success(self, pathway: TransformationPathway) -> WeightedDimensionScore:
         """
         Score pathway on success probability.
         """
@@ -379,7 +382,7 @@ class PathwayOptimizer:
 
         description = f"Success probability: {pathway.success_probability:.0%}"
 
-        return DimensionScore(
+        return WeightedDimensionScore(
             dimension='success',
             score=score,
             weight=0,
@@ -390,9 +393,9 @@ class PathwayOptimizer:
     def _analyze_tradeoffs(
         self,
         pathway: TransformationPathway,
-        speed: DimensionScore,
-        stability: DimensionScore,
-        effort: DimensionScore
+        speed: WeightedDimensionScore,
+        stability: WeightedDimensionScore,
+        effort: WeightedDimensionScore
     ) -> TradeoffAnalysis:
         """
         Analyze trade-offs for a pathway.

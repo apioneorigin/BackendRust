@@ -16,6 +16,8 @@ from typing import Dict, Any, List, Tuple, Optional, Set
 from dataclasses import dataclass, field
 import math
 
+from formulas import CANONICAL_OPERATOR_NAMES
+
 
 @dataclass
 class ValidationResult:
@@ -51,15 +53,8 @@ class Validator:
     Validate OOF values at each stage of the pipeline.
     """
 
-    # Required tier-1 operators
-    REQUIRED_OPERATORS = [
-        'P_presence', 'A_aware', 'E_equanimity', 'Psi_quality',
-        'M_maya', 'W_witness', 'I_intention', 'At_attachment',
-        'Se_service', 'Sh_shakti', 'G_grace', 'S_surrender',
-        'D_dharma', 'K_karma', 'Hf_habit', 'V_void',
-        'Ce_celebration', 'Co_coherence', 'R_resistance',
-        'F_fear', 'J_joy', 'Tr_trust', 'O_openness'
-    ]
+    # Use centralized canonical operator names
+    REQUIRED_OPERATORS = list(CANONICAL_OPERATOR_NAMES)
 
     # Operator aliases (alternative names)
     OPERATOR_ALIASES = {
@@ -97,8 +92,8 @@ class Validator:
         'HabitForce': 'Hf_habit',
         'V': 'V_void',
         'Void': 'V_void',
-        'Ce': 'Ce_celebration',
-        'Celebration': 'Ce_celebration',
+        'Ce': 'Ce_cleaning',
+        'Celebration': 'Ce_cleaning',
         'Co': 'Co_coherence',
         'Coherence': 'Co_coherence',
         'Re': 'R_resistance',
@@ -196,16 +191,8 @@ class Validator:
             if op not in obs_dict:
                 missing_operators.append(op)
 
-                if zero_fallback_mode:
-                    # In zero-fallback mode, missing is not an error, just tracked
-                    warnings.append(f"Operator {op} not extracted - will be collected")
-                elif auto_correct:
-                    # Legacy behavior (deprecated)
-                    obs_dict[op] = {'value': 0.5, 'confidence': 0.3}
-                    corrections[op] = 'Added with default value 0.5'
-                    warnings.append(f"Missing operator {op} - defaulted to 0.5 (DEPRECATED)")
-                else:
-                    errors.append(f"Missing required operator: {op}")
+                # Zero-fallback mode: missing is not an error, just tracked
+                warnings.append(f"Operator {op} not extracted - will be collected")
 
         # Validate value ranges for populated operators
         for op, data in obs_dict.items():

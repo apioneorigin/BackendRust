@@ -17,6 +17,8 @@ from enum import Enum
 import json
 import uuid
 
+from formulas import CANONICAL_OPERATOR_NAMES
+
 
 class OperatorSource(Enum):
     """Source of an operator value"""
@@ -91,7 +93,7 @@ class SessionStore:
         'At': 'At', 'At_attachment': 'At', 'attachment': 'At',
         'Av': 'Av', 'Av_aversion': 'Av', 'aversion': 'Av',
         'Se': 'Se', 'Se_service': 'Se', 'service': 'Se',
-        'Ce': 'Ce', 'Ce_celebration': 'Ce', 'celebration': 'Ce', 'cleaning': 'Ce',
+        'Ce': 'Ce', 'Ce_cleaning': 'Ce', 'celebration': 'Ce', 'cleaning': 'Ce',
         'Su': 'Su', 'Su_suffering': 'Su', 'suffering': 'Su',
         'As': 'As', 'As_aspiration': 'As', 'aspiration': 'As',
         'Fe': 'Fe', 'Fe_faith': 'Fe', 'faith': 'Fe',
@@ -116,12 +118,8 @@ class SessionStore:
         'T_time_present': 'T_time', 'time': 'T_time',
     }
 
-    # Core 25 operators that should be collected
-    CORE_OPERATORS = {
-        'Psi', 'K', 'M', 'G', 'W', 'A', 'P', 'E', 'V', 'L', 'R',
-        'At', 'Av', 'Se', 'Ce', 'Su', 'As', 'Fe', 'De', 'Re',
-        'Hf', 'Sa', 'Bu', 'Ma', 'Ch'
-    }
+    # Use centralized canonical operator names
+    CORE_OPERATORS = CANONICAL_OPERATOR_NAMES
 
     def __init__(self):
         """Initialize the session store."""

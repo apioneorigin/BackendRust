@@ -124,7 +124,7 @@ class PathwayGenerator:
         'J_joy': ['gratitude practice', 'celebration', 'play', 'nature immersion'],
         'V_void': ['void meditation', 'emptiness practice', 'silence retreats'],
         'Sh_shakti': ['energy practices', 'yoga', 'breathwork', 'movement'],
-        'Ce_celebration': ['cleaning practice', 'morning meditation', 'evening review'],
+        'Ce_cleaning': ['cleaning practice', 'morning meditation', 'evening review'],
         'Hf_habit': ['habit disruption', 'pattern interrupts', 'new routines'],
         'E_equanimity': ['equanimity meditation', 'non-reactivity practice'],
         'Tr_trust': ['trust exercises', 'vulnerability practice', 'faith cultivation'],
@@ -358,7 +358,7 @@ class PathwayGenerator:
             'grace': {
                 'first': ['S_surrender', 'G_grace', 'O_openness'],
                 'second': ['At_attachment', 'R_resistance', 'Tr_trust'],
-                'third': ['V_void', 'Ce_celebration', 'Se_service']
+                'third': ['V_void', 'Ce_cleaning', 'Se_service']
             },
             'effort': {
                 'first': ['I_intention', 'Sh_shakti', 'D_dharma'],
@@ -562,7 +562,7 @@ class PathwayGenerator:
             'O_openness': 'openness', 'J_joy': 'joy',
             'V_void': 'void tolerance', 'Sh_shakti': 'energy',
             'Se_service': 'service', 'D_dharma': 'purpose alignment',
-            'Hf_habit': 'habit transformation', 'Ce_celebration': 'cleaning practice',
+            'Hf_habit': 'habit transformation', 'Ce_cleaning': 'cleaning practice',
             'K_karma': 'karma release', 'M_maya': 'clarity'
         }
 

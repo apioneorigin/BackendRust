@@ -420,6 +420,110 @@ KLESHA_OPERATORS: Dict[str, OperatorDefinition] = {
         extraction_method="semantic",
         s_level_weight={1: 0.95, 2: 0.85, 3: 0.75, 4: 0.6, 5: 0.45, 6: 0.3, 7: 0.15, 8: 0.0}
     ),
+
+    # -------------------------------------------------------------------------
+    # COMMONLY USED DERIVED/EXTENDED OPERATORS
+    # These are widely used throughout the codebase
+    # -------------------------------------------------------------------------
+    "S_surrender": OperatorDefinition(
+        symbol="S",
+        name="Surrender",
+        category=OperatorCategory.CONSCIOUSNESS,
+        description="Degree of letting go and accepting what is",
+        formula="Trust × (1 - Control_need) × Grace_receptivity",
+        extraction_method="semantic",
+        s_level_weight={1: 0.1, 2: 0.15, 3: 0.2, 4: 0.35, 5: 0.55, 6: 0.7, 7: 0.85, 8: 1.0}
+    ),
+
+    "A_aware": OperatorDefinition(
+        symbol="A",
+        name="Awareness",
+        category=OperatorCategory.CONSCIOUSNESS,
+        description="Basic awareness/attention capacity",
+        formula="Attention × Clarity × Continuity",
+        extraction_method="semantic",
+        s_level_weight={1: 0.2, 2: 0.3, 3: 0.4, 4: 0.5, 5: 0.65, 6: 0.8, 7: 0.9, 8: 1.0}
+    ),
+
+    "Co_coherence": OperatorDefinition(
+        symbol="Co",
+        name="Coherence",
+        category=OperatorCategory.PATTERN,
+        description="Internal alignment and consistency",
+        formula="Alignment × Integration × Harmony",
+        extraction_method="semantic",
+        s_level_weight={1: 0.1, 2: 0.2, 3: 0.3, 4: 0.45, 5: 0.6, 6: 0.75, 7: 0.9, 8: 1.0}
+    ),
+
+    "F_fear": OperatorDefinition(
+        symbol="F",
+        name="Fear",
+        category=OperatorCategory.DISTORTION,
+        description="Fear response intensity",
+        formula="Threat_perception × Vulnerability × (1 - Trust)",
+        extraction_method="semantic",
+        s_level_weight={1: 0.9, 2: 0.8, 3: 0.7, 4: 0.55, 5: 0.4, 6: 0.25, 7: 0.1, 8: 0.0}
+    ),
+
+    "V_void": OperatorDefinition(
+        symbol="V",
+        name="Void Awareness",
+        category=OperatorCategory.UCB,
+        description="Awareness of emptiness/spaciousness",
+        formula="Spaciousness × (1 - Clinging) × Equanimity",
+        extraction_method="semantic",
+        s_level_weight={1: 0.0, 2: 0.05, 3: 0.1, 4: 0.2, 5: 0.4, 6: 0.6, 7: 0.8, 8: 1.0}
+    ),
+
+    "R_resistance": OperatorDefinition(
+        symbol="R",
+        name="Resistance",
+        category=OperatorCategory.DISTORTION,
+        description="Resistance to change or experience",
+        formula="Control_need × Fear × (1 - Surrender)",
+        extraction_method="semantic",
+        s_level_weight={1: 0.9, 2: 0.8, 3: 0.7, 4: 0.55, 5: 0.4, 6: 0.25, 7: 0.1, 8: 0.0}
+    ),
+
+    "O_openness": OperatorDefinition(
+        symbol="O",
+        name="Openness",
+        category=OperatorCategory.CONSCIOUSNESS,
+        description="Receptivity and openness to experience",
+        formula="Curiosity × Acceptance × (1 - Fear)",
+        extraction_method="semantic",
+        s_level_weight={1: 0.2, 2: 0.3, 3: 0.4, 4: 0.5, 5: 0.6, 6: 0.75, 7: 0.9, 8: 1.0}
+    ),
+
+    "Tr_trust": OperatorDefinition(
+        symbol="Tr",
+        name="Trust",
+        category=OperatorCategory.RELATIONSHIP,
+        description="Basic trust in self, others, and existence",
+        formula="Safety × Experience × Faith",
+        extraction_method="semantic",
+        s_level_weight={1: 0.2, 2: 0.3, 3: 0.35, 4: 0.45, 5: 0.6, 6: 0.75, 7: 0.9, 8: 1.0}
+    ),
+
+    "E_equanimity": OperatorDefinition(
+        symbol="Eq",
+        name="Equanimity",
+        category=OperatorCategory.CONSCIOUSNESS,
+        description="Balanced, non-reactive awareness",
+        formula="Witness × (1 - Reactivity) × Acceptance",
+        extraction_method="semantic",
+        s_level_weight={1: 0.1, 2: 0.15, 3: 0.25, 4: 0.4, 5: 0.55, 6: 0.7, 7: 0.85, 8: 1.0}
+    ),
+
+    "Sh_shakti": OperatorDefinition(
+        symbol="Sh",
+        name="Shakti (Creative Energy)",
+        category=OperatorCategory.ACTION,
+        description="Creative/dynamic energy; power of manifestation",
+        formula="Energy × Intention × Flow",
+        extraction_method="semantic",
+        s_level_weight={1: 0.3, 2: 0.4, 3: 0.5, 4: 0.55, 5: 0.6, 6: 0.7, 7: 0.85, 8: 1.0}
+    ),
 }
 
 
@@ -834,6 +938,31 @@ def validate_operator_values(values: Dict[str, float]) -> Tuple[bool, List[str]]
                 )
 
     return len(errors) == 0, errors
+
+
+# =============================================================================
+# CANONICAL OPERATOR NAMES (for import by other modules)
+# =============================================================================
+
+# Single source of truth for the 24 canonical operator names
+CANONICAL_OPERATOR_NAMES = {
+    'P_presence', 'A_aware', 'E_equanimity', 'Psi_quality', 'M_maya',
+    'W_witness', 'I_intention', 'At_attachment', 'Se_service', 'Sh_shakti',
+    'G_grace', 'S_surrender', 'D_dharma', 'K_karma', 'Hf_habit',
+    'V_void', 'Ce_cleaning', 'Co_coherence', 'R_resistance',
+    'F_fear', 'J_joy', 'Tr_trust', 'O_openness', 'L_love'
+}
+
+# Short name to canonical name mapping
+SHORT_TO_CANONICAL = {
+    'Psi': 'Psi_quality', 'K': 'K_karma', 'M': 'M_maya', 'G': 'G_grace',
+    'W': 'W_witness', 'A': 'A_aware', 'P': 'P_presence', 'E': 'E_equanimity',
+    'V': 'V_void', 'L': 'L_love', 'R': 'R_resistance', 'At': 'At_attachment',
+    'Av': 'Av_aversion', 'Se': 'Se_service', 'Ce': 'Ce_cleaning',
+    'Su': 'S_surrender', 'As': 'As_aspiration', 'Fe': 'F_fear',
+    'De': 'De_desire', 'Re': 'R_resistance', 'Hf': 'Hf_habit',
+    'Sa': 'Sa_samskara', 'Bu': 'Bu_buddhi', 'Ma': 'Ma_manas', 'Ch': 'Ch_chitta'
+}
 
 
 # =============================================================================

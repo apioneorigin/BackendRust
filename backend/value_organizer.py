@@ -15,11 +15,12 @@ from consciousness_state import (
     DeathArchitecture, Pathways, PathwayWitnessing, PathwayCreating, PathwayEmbodying,
     PipelineFlow, BreakthroughDynamics, KarmaDynamics, GraceMechanics,
     NetworkEffects, POMDPGaps, MorphogeneticFields,
-    TimelinePredictions, TransformationVectors, QuantumMechanics, FrequencyAnalysis,
+    TimelinePredictions, TransformationVectors, QuantumMetricsSnapshot, FrequencyAnalysis,
     Bottleneck, LeveragePoint,
     # Unity Principle dataclasses
-    UnitySeparationMetrics, DualPathway, PathwayMetrics, GoalContext
+    DualPathway, PathwayMetrics, GoalContext
 )
+from formulas.unity_principle import UnitySeparationMetrics
 from nomenclature import (
     get_s_level_label, get_matrix_position, get_manifestation_time_label, get_dominant
 )
@@ -105,7 +106,7 @@ class ValueOrganizer:
             T_time_past=self._get_value(obs_dict, 'T_past', default=None),
             T_time_present=self._get_value(obs_dict, 'T_present', default=None),
             T_time_future=self._get_value(obs_dict, 'T_future', default=None),
-            Ce_celebration=self._get_value(obs_dict, 'Ce', 'Celebration', default=None),
+            Ce_cleaning=self._get_value(obs_dict, 'Ce', 'Celebration', default=None),
             Co_coherence=self._get_value(obs_dict, 'Co', 'Coherence', default=None),
             R_resistance=self._get_value(obs_dict, 'R', 'Re', 'Resistance', default=None),
             F_fear=self._get_value(obs_dict, 'F', 'Fe', 'Fear', default=None),
@@ -453,7 +454,7 @@ class ValueOrganizer:
             evolution_direction=v.get('transform_direction', "")
         )
 
-        quantum_mechanics = QuantumMechanics(
+        quantum_mechanics = QuantumMetricsSnapshot(
             wave_function_amplitude=self._get_value(v, 'quantum_amplitude', default=None),
             collapse_probability=v.get('quantum_collapse_prob', {}),
             tunneling_probability=self._get_value(v, 'quantum_tunnel_prob', default=None),

@@ -67,7 +67,7 @@ from fastapi.responses import HTMLResponse, FileResponse
 from sse_starlette.sse import EventSourceResponse
 from dotenv import load_dotenv
 
-from inference import InferenceEngine
+from formulas import OOFInferenceEngine, CANONICAL_OPERATOR_NAMES
 from value_organizer import ValueOrganizer
 from bottleneck_detector import BottleneckDetector
 from leverage_identifier import LeverageIdentifier
@@ -117,9 +117,13 @@ app = FastAPI(title="Reality Transformer", version="4.1.0")
 import threading
 import uuid
 
-class SessionStore:
+class APISessionStore:
     """
     Thread-safe session storage for constellation Q&A flow.
+    Simple key-value store for FastAPI endpoints.
+
+    Note: This is distinct from session_store.SessionStore which handles
+    operator canonicalization and complex session state management.
 
     In production, replace with Redis or database-backed storage.
     """
@@ -156,8 +160,8 @@ class SessionStore:
                 del self._sessions[sid]
         return len(expired)
 
-# Global session store instance
-session_store = SessionStore()
+# Global session store instance for API endpoints
+api_session_store = APISessionStore()
 
 # =====================================================================
 # END SESSION STORAGE
@@ -266,9 +270,8 @@ def get_model_config(model: str) -> dict:
         model = DEFAULT_MODEL
     return {"model": model, **MODEL_CONFIGS[model]}
 
-# Initialize inference engine
-REGISTRY_PATH = Path(__file__).parent.parent / "registry.json"
-inference_engine = InferenceEngine(str(REGISTRY_PATH))
+# Initialize inference engine (single unified engine)
+inference_engine = OOFInferenceEngine()
 
 # Initialize Articulation Bridge components
 value_organizer = ValueOrganizer()
@@ -295,9 +298,6 @@ if LLM_CALL2_PATH.exists():
     api_logger.info(f"Loaded LLM Call 2 context: {len(LLM_CALL2_CONTEXT)} characters")
 else:
     api_logger.warning(f"LLM Call 2 context not found at {LLM_CALL2_PATH}")
-
-# Legacy alias for backward compatibility (will be removed)
-OOF_FRAMEWORK = LLM_CALL2_CONTEXT
 
 api_logger.info("Articulation Bridge initialized: ValueOrganizer, BottleneckDetector, LeverageIdentifier, PromptBuilder")
 
@@ -360,7 +360,7 @@ async def process_constellation_answer(
     It maps the constellation selection to operators and triggers the rest of the pipeline.
     """
     # Retrieve pending session data
-    session_data = session_store.get(session_id)
+    session_data = api_session_store.get(session_id)
     if not session_data:
         raise HTTPException(status_code=404, detail="Session not found")
 
@@ -407,7 +407,7 @@ async def process_constellation_answer(
     # Clear pending question and update session
     session_data['_pending_question'] = None
     session_data['evidence'] = evidence
-    session_store.update(session_id, session_data)
+    api_session_store.update(session_id, session_data)
 
     api_logger.info(f"[CONSTELLATION] Answer processed: {selected_option} -> {selected_constellation.pattern_name}")
     api_logger.info(f"[CONSTELLATION] Added {len(mapping_result.mapped_values)} operator values")
@@ -430,7 +430,7 @@ async def continue_inference(
 
     This endpoint picks up where /api/run left off, with the new operator values.
     """
-    session_data = session_store.get(session_id)
+    session_data = api_session_store.get(session_id)
     if not session_data:
         raise HTTPException(status_code=404, detail="Session not found")
 
@@ -577,7 +577,7 @@ async def inference_stream_continue(
             yield token_data
 
         # Check if response validation question should be asked (only once per session)
-        session_data = session_store.get(session_id)
+        session_data = api_session_store.get(session_id)
         already_validated = session_data.get('_validation_asked', False) if session_data else False
 
         extracted_operators = {}
@@ -585,14 +585,7 @@ async def inference_stream_continue(
             if isinstance(obs, dict) and 'var' in obs and 'value' in obs:
                 extracted_operators[obs['var']] = obs['value']
 
-        CORE_OPERATORS_SET = {
-            'P_presence', 'A_aware', 'E_equanimity', 'Psi_quality', 'M_maya',
-            'W_witness', 'I_intention', 'At_attachment', 'Se_service', 'Sh_shakti',
-            'G_grace', 'S_surrender', 'D_dharma', 'K_karma', 'Hf_habit',
-            'V_void', 'Ce_celebration', 'Co_coherence', 'R_resistance',
-            'F_fear', 'J_joy', 'Tr_trust', 'O_openness', 'L_love'
-        }
-        remaining_missing = CORE_OPERATORS_SET - set(extracted_operators.keys())
+        remaining_missing = CANONICAL_OPERATOR_NAMES - set(extracted_operators.keys())
 
         should_ask_validation = (
             not already_validated
@@ -617,12 +610,12 @@ async def inference_stream_continue(
             )
 
             if validation_question:
-                session_data = session_store.get(session_id)
+                session_data = api_session_store.get(session_id)
                 session_data['_validation_question'] = validation_question
                 session_data['_pending_question'] = validation_question
                 session_data['_validation_asked'] = True
                 session_data['evidence'] = evidence
-                session_store.update(session_id, session_data)
+                api_session_store.update(session_id, session_data)
 
                 yield {
                     "event": "validation_question",
@@ -660,7 +653,7 @@ async def inference_stream_continue(
                 return
 
         # Normal cleanup - no validation needed
-        session_store.delete(session_id)
+        api_session_store.delete(session_id)
 
         elapsed = time.time() - start_time
         api_logger.info(f"[PIPELINE COMPLETE] Total time: {elapsed:.2f}s")
@@ -689,7 +682,7 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
 
     # Create session for constellation Q&A flow
     session_id = str(uuid.uuid4())
-    session_store.create(session_id, {
+    api_session_store.create(session_id, {
         '_created_at': start_time,
         'prompt': prompt,
         'model_config': model_config,
@@ -808,15 +801,8 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
             if isinstance(obs, dict) and 'var' in obs and 'value' in obs:
                 extracted_operators[obs['var']] = obs['value']
 
-        # Get set of missing operators (core operators)
-        CORE_OPERATORS = {
-            'P_presence', 'A_aware', 'E_equanimity', 'Psi_quality', 'M_maya',
-            'W_witness', 'I_intention', 'At_attachment', 'Se_service', 'Sh_shakti',
-            'G_grace', 'S_surrender', 'D_dharma', 'K_karma', 'Hf_habit',
-            'V_void', 'Ce_celebration', 'Co_coherence', 'R_resistance',
-            'F_fear', 'J_joy', 'Tr_trust', 'O_openness', 'L_love'
-        }
-        missing_operators = CORE_OPERATORS - set(extracted_operators.keys())
+        # Get set of missing operators (use centralized canonical names)
+        missing_operators = CANONICAL_OPERATOR_NAMES - set(extracted_operators.keys())
 
         # Determine if question should be asked (only if significant operators missing)
         should_ask_question = len(missing_operators) >= 5  # Threshold: ask if 5+ operators missing
@@ -830,11 +816,11 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
 
             if question:
                 # Store session data for answer processing
-                session_data = session_store.get(session_id)
+                session_data = api_session_store.get(session_id)
                 session_data['evidence'] = evidence
                 session_data['_pending_question'] = question
                 session_data['_question_asked'] = True
-                session_store.update(session_id, session_data)
+                api_session_store.update(session_id, session_data)
 
                 # Yield question to user and wait for answer
                 yield {
@@ -872,10 +858,10 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
 
         # No question needed - continue with existing operators
         api_logger.info(f"[CONSTELLATION] No question needed - {len(extracted_operators)} operators extracted")
-        session_data = session_store.get(session_id)
+        session_data = api_session_store.get(session_id)
         session_data['evidence'] = evidence
         session_data['_question_asked'] = False
-        session_store.update(session_id, session_data)
+        api_session_store.update(session_id, session_data)
 
         # =====================================================================
         # END CONSTELLATION QUESTION FLOW
@@ -2422,137 +2408,6 @@ SECTION 5: FIRST STEPS
         await asyncio.sleep(0.02)
 
 
-async def format_results_streaming(prompt: str, evidence: dict, posteriors: dict) -> AsyncGenerator[str, None]:
-    """Legacy function - kept for backwards compatibility. Use format_results_streaming_bridge instead."""
-
-    # Log what's being sent to LLM for articulation
-    obs_count = len(evidence.get('observations', []))
-    posteriors_count = len(posteriors.get('values', {}))
-    formula_count = posteriors.get('formula_count', 0)
-    print(f"[LLM ARTICULATION - LEGACY] Sending to gpt-5.2: {obs_count} observations, {posteriors_count} posteriors from {formula_count} formulas")
-
-    if not OPENAI_API_KEY:
-        # Fallback: format results without OpenAI
-        fallback_text = format_results_fallback(prompt, evidence, posteriors)
-        for word in fallback_text.split():
-            yield word + " "
-            await asyncio.sleep(0.02)
-        return
-
-    instructions = f"""You are Reality Transformer, a consciousness-based transformation engine powered by the One Origin Framework (OOF).
-
-=== OOF FRAMEWORK KNOWLEDGE ===
-{LLM_CALL2_CONTEXT}
-=== END OOF FRAMEWORK ===
-
-=== ARTICULATION STYLE ===
-Write with NATURAL CADENCE, METAPHOR, and CONVERSATIONAL RHYTHM.
-Speak as a wise guide who sees deeply into consciousness patterns.
-Use poetic precision - every word chosen for resonance.
-Let insights flow organically, not as rigid bullet points.
-Vary sentence length. Use rhetorical questions. Create moments of pause.
-Honor the human before you with warmth and genuine presence.
-
-Your response should feel like sitting with a master who truly sees you -
-not like reading a diagnostic report.
-=== END ARTICULATION STYLE ===
-
-Structure your response around these movements (but let them flow naturally):
-
-1. RECOGNITION - Where they are on the Sacred Chain (S1-S8), what's alive in them
-2. DIAGNOSIS - The operators at play, the patterns creating their reality
-3. MECHANISM - How OOF physics explains what they're experiencing
-4. PATH - The transformation available, the opening that exists
-5. ACTION - Concrete next steps that honor their current capacity
-6. GRACE - What support is available, what wants to emerge
-
-Guidelines:
-- Use OOF terminology naturally (Karma, Maya, Witness, Grace, etc.)
-- Reference specific formulas when explaining mechanisms
-- Translate technical terms accessibly (e.g., "Maya" = "the fog that keeps you from seeing")
-- Be profound yet practical - insight without action is incomplete
-- Speak to the soul, not just the mind
-- Honor both shadow and light
-- Weave in the web research context where it illuminates their situation"""
-
-    user_content = f"""Original query: {prompt}
-
-=== CONSCIOUSNESS ANALYSIS (with web research) ===
-User Identity: {evidence.get('user_identity', 'User')}
-Goal: {evidence.get('goal', prompt)}
-Estimated S-Level: {evidence.get('s_level', 'Unknown')}
-Web Research Summary: {evidence.get('web_research_summary', 'N/A')}
-Relevant OOF Components: {evidence.get('relevant_oof_components', [])}
-
-Operator Observations (all 25 tier-1 values):
-{json.dumps(evidence.get('observations', []), indent=2)}
-
-=== INFERENCE ENGINE RESULTS ===
-{json.dumps(posteriors, indent=2)}
-
-=== TASK ===
-Provide a deep, transformative response that:
-1. Explains their current reality through OOF consciousness physics
-2. Identifies the key operators creating their situation
-3. Uses the web research context to make insights more relevant
-4. Maps the transformation path available to them
-5. Gives specific, actionable next steps
-6. Speaks with wisdom and compassion"""
-
-    request_body = {
-        "model": OPENAI_MODEL,
-        "instructions": instructions,
-        "input": [{
-            "type": "message",
-            "role": "user",
-            "content": [{"type": "input_text", "text": user_content}]
-        }],
-        "temperature": 0.85,  # Higher for natural articulation, not agent rigidity
-        "stream": True
-        # NOTE: No response_format/schema - free-form natural language
-    }
-
-    try:
-        async with httpx.AsyncClient(timeout=180.0) as client:
-            async with client.stream(
-                "POST",
-                OPENAI_RESPONSES_URL,
-                headers={
-                    "Authorization": f"Bearer {OPENAI_API_KEY}",
-                    "Content-Type": "application/json"
-                },
-                json=request_body
-            ) as response:
-                if response.status_code != 200:
-                    error_text = await response.aread()
-                    api_logger.error(f"OpenAI streaming error: {response.status_code} - {error_text}")
-                    raise Exception(f"OpenAI API error: {response.status_code}")
-
-                async for line in response.aiter_lines():
-                    if line.startswith("data: "):
-                        data_str = line[6:]
-                        if data_str == "[DONE]":
-                            break
-                        try:
-                            data = json.loads(data_str)
-                            # ONLY handle delta events to avoid duplication
-                            event_type = data.get("type", "") if isinstance(data, dict) else ""
-                            if event_type == "response.output_text.delta" and "delta" in data:
-                                yield data["delta"]
-                            elif event_type == "response.content_part.delta":
-                                if "delta" in data and "text" in data["delta"]:
-                                    yield data["delta"]["text"]
-                        except json.JSONDecodeError:
-                            continue
-
-    except Exception as e:
-        api_logger.error(f"OpenAI streaming error: {e}")
-        fallback_text = format_results_fallback(prompt, evidence, posteriors)
-        for word in fallback_text.split():
-            yield word + " "
-            await asyncio.sleep(0.02)
-
-
 def format_results_fallback(prompt: str, evidence: dict, posteriors: dict) -> str:
     """Format results without OpenAI (legacy fallback)"""
 
@@ -3209,7 +3064,7 @@ def _extract_operators_from_consciousness_state(consciousness_state: Consciousne
         'Av_aversion': core.R_resistance,  # Resistance as aversion proxy
         # Service and practice operators
         'Se_seva': core.Se_service,
-        'Ce_cleaning': core.Ce_celebration,  # Celebration/cleaning practice
+        'Ce_cleaning': core.Ce_cleaning,  # Celebration/cleaning practice
         'Su_surrender': core.S_surrender,
         # Aspiration and desire operators
         'As_aspiration': core.I_intention,  # Intention as aspiration
@@ -3257,7 +3112,7 @@ def _extract_operators_from_evidence(evidence: dict) -> Tuple[Dict[str, float], 
         'Av': 'Av_aversion', 'Aversion': 'Av_aversion',  # Added
         # Service and practice operators
         'Se': 'Se_seva', 'Seva': 'Se_seva',
-        'Ce': 'Ce_cleaning', 'Cleaning': 'Ce_cleaning',  # Fixed: was Ce_celebration
+        'Ce': 'Ce_cleaning', 'Cleaning': 'Ce_cleaning',  # Fixed: was Ce_cleaning
         'Su': 'Su_surrender', 'Surrender': 'Su_surrender',
         # Aspiration and desire operators
         'As': 'As_aspiration', 'Aspiration': 'As_aspiration',  # Added
@@ -3448,11 +3303,11 @@ async def health_check():
         "status": "healthy",
         "version": "4.1.0",
         "model": OPENAI_MODEL,
-        "registry_loaded": inference_engine.is_loaded,
+        "engine_loaded": inference_engine.is_loaded,
         "formula_count": inference_engine.formula_count,
         "openai_configured": OPENAI_API_KEY is not None,
-        "oof_framework_loaded": len(OOF_FRAMEWORK) > 0,
-        "oof_framework_size": len(OOF_FRAMEWORK),
+        "oof_framework_loaded": len(LLM_CALL2_CONTEXT) > 0,
+        "oof_framework_size": len(LLM_CALL2_CONTEXT),
         "web_research_enabled": True,
         "articulation_bridge": {
             "enabled": True,

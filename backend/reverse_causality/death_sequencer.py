@@ -22,21 +22,26 @@ from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass, field
 import math
 
+from formulas.death import DeathPhase
+
 
 @dataclass
-class DeathPhase:
-    """Current phase within a death process"""
-    phase: str  # "not_started", "initiation", "dissolution", "void", "rebirth", "complete"
+class DeathPhaseProgress:
+    """Current phase progress within a death process"""
+    phase: DeathPhase  # Uses canonical DeathPhase enum
     completion: float  # 0-1 completion of this phase
     description: str
 
 
 @dataclass
-class DeathProcess:
-    """Status of a single death process"""
+class SequencedDeathProcess:
+    """
+    Status of a single death process for sequencing.
+    Note: Distinct from formulas.death_detection.DeathProcess which is for detection.
+    """
     death_type: str  # D1-D7
     name: str
-    current_phase: DeathPhase
+    current_phase: DeathPhaseProgress
     overall_completion: float  # 0-1
     required_completion: float  # How complete this needs to be for goal
     gap: float  # Required - Current
@@ -49,7 +54,7 @@ class DeathProcess:
 @dataclass
 class DeathSequence:
     """Complete death sequencing for a transformation"""
-    deaths_required: List[DeathProcess]
+    deaths_required: List[SequencedDeathProcess]
     sequence_order: List[str]  # Order to work on deaths
     total_death_work: float  # 0-1 overall death work needed
     void_tolerance_required: float
@@ -189,7 +194,7 @@ class DeathSequencer:
                 # Calculate duration
                 duration = self._estimate_duration(gap, death_info['intensity_default'])
 
-                death_process = DeathProcess(
+                death_process = SequencedDeathProcess(
                     death_type=death_id,
                     name=death_info['name'],
                     current_phase=phase,
@@ -326,45 +331,51 @@ class DeathSequencer:
         status = self._assess_death_status(death_id, operators)
         return status['completion'] > 0.7
 
-    def _determine_phase(self, completion: float) -> DeathPhase:
+    def _determine_phase(self, completion: float) -> DeathPhaseProgress:
         """
         Determine current phase based on completion.
         """
         if completion < 0.1:
-            return DeathPhase(
-                phase="not_started",
+            return DeathPhaseProgress(
+                phase=DeathPhase.DENIAL,
                 completion=completion,
                 description="Death process not yet initiated"
             )
-        elif completion < 0.3:
-            return DeathPhase(
-                phase="initiation",
+        elif completion < 0.2:
+            return DeathPhaseProgress(
+                phase=DeathPhase.CLINGING,
                 completion=completion,
                 description="Beginning of dissolution process"
             )
-        elif completion < 0.6:
-            return DeathPhase(
-                phase="dissolution",
+        elif completion < 0.35:
+            return DeathPhaseProgress(
+                phase=DeathPhase.BARGAINING,
                 completion=completion,
-                description="Active letting go in progress"
+                description="Negotiating with the change"
             )
-        elif completion < 0.8:
-            return DeathPhase(
-                phase="void",
+        elif completion < 0.5:
+            return DeathPhaseProgress(
+                phase=DeathPhase.GRIEF,
                 completion=completion,
-                description="In the void between old and new"
+                description="Mourning what is passing"
             )
-        elif completion < 0.95:
-            return DeathPhase(
-                phase="rebirth",
+        elif completion < 0.7:
+            return DeathPhaseProgress(
+                phase=DeathPhase.ACCEPTANCE,
                 completion=completion,
-                description="New structure emerging"
+                description="Accepting the transformation"
+            )
+        elif completion < 0.9:
+            return DeathPhaseProgress(
+                phase=DeathPhase.SURRENDER,
+                completion=completion,
+                description="Surrendering to the process"
             )
         else:
-            return DeathPhase(
-                phase="complete",
+            return DeathPhaseProgress(
+                phase=DeathPhase.REBIRTH,
                 completion=completion,
-                description="Death process complete"
+                description="New structure emerging"
             )
 
     def _determine_intensity(self, gap: float, death_id: str) -> str:
@@ -408,7 +419,7 @@ class DeathSequencer:
 
     def _determine_sequence_order(
         self,
-        deaths: List[DeathProcess],
+        deaths: List[SequencedDeathProcess],
         operators: Dict[str, float]
     ) -> List[str]:
         """
@@ -453,7 +464,7 @@ class DeathSequencer:
 
     def _identify_parallel_deaths(
         self,
-        deaths: List[DeathProcess]
+        deaths: List[SequencedDeathProcess]
     ) -> List[str]:
         """
         Identify deaths that can be worked on simultaneously.
@@ -474,7 +485,7 @@ class DeathSequencer:
 
     def _calculate_void_tolerance_needed(
         self,
-        deaths: List[DeathProcess]
+        deaths: List[SequencedDeathProcess]
     ) -> float:
         """
         Calculate void tolerance needed for the death work.
@@ -495,7 +506,7 @@ class DeathSequencer:
 
     def _estimate_total_timeline(
         self,
-        deaths: List[DeathProcess]
+        deaths: List[SequencedDeathProcess]
     ) -> str:
         """
         Estimate total timeline for all death work.
@@ -533,7 +544,7 @@ class DeathSequencer:
     def _recommend_intensity(
         self,
         operators: Dict[str, float],
-        deaths: List[DeathProcess]
+        deaths: List[SequencedDeathProcess]
     ) -> str:
         """
         Recommend overall intensity approach.
@@ -557,7 +568,7 @@ class DeathSequencer:
 
     def _generate_support_recommendations(
         self,
-        deaths: List[DeathProcess],
+        deaths: List[SequencedDeathProcess],
         operators: Dict[str, float]
     ) -> List[str]:
         """

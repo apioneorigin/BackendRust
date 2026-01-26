@@ -11,15 +11,6 @@ echo.
 REM Get the directory where this script is located
 cd /d "%~dp0"
 
-REM Check if registry.json exists
-if not exist "registry.json" (
-    echo ERROR: registry.json not found!
-    echo Run formula_compiler.py first.
-    pause
-    exit /b 1
-)
-echo [OK] Registry found
-
 REM Check if backend directory exists
 if not exist "backend" (
     echo ERROR: backend directory not found!

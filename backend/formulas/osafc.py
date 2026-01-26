@@ -152,7 +152,7 @@ class OSAFCEngine:
         e = operators.get("E_emotional", 0.5)
         at = operators.get("At_attachment", 0.5)
         m = operators.get("M_maya", 0.5)
-        ce = operators.get("Ce_center", 0.5)
+        ce = operators.get("Ce_cleaning", 0.5)
         d = operators.get("D_dharma", 0.3)
         i = operators.get("I_intention", 0.5)
 
@@ -347,7 +347,7 @@ if __name__ == "__main__":
     engine = OSAFCEngine()
     test_ops = {
         "P_presence": 0.65, "W_witness": 0.5, "E_emotional": 0.55,
-        "At_attachment": 0.4, "M_maya": 0.45, "Ce_center": 0.5,
+        "At_attachment": 0.4, "M_maya": 0.45, "Ce_cleaning": 0.5,
         "D_dharma": 0.5, "I_intention": 0.55,
     }
 

@@ -104,7 +104,7 @@ class GraceCalculator:
             'description': 'Living your purpose creates resonance with grace'
         },
         'cleaning': {
-            'operator': 'Ce_celebration',
+            'operator': 'Ce_cleaning',
             'weight': 0.15,
             'practices': ['morning meditation', 'evening cleaning', 'regular practice'],
             'description': 'Regular cleaning removes accumulated impressions'
@@ -476,7 +476,7 @@ class GraceCalculator:
                 steps.append(f"Open {channel.name} channel: {channel.activation_practices[0]}")
 
         # General recommendations
-        if current.get('Ce_celebration', 0.5) < 0.6:
+        if current.get('Ce_cleaning', 0.5) < 0.6:
             steps.append("Establish daily cleaning practice (morning meditation)")
 
         if current.get('S_surrender', 0.5) < 0.5:
