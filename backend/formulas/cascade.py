@@ -168,8 +168,6 @@ class CascadeCalculator:
             if cleanliness is not None:
                 calculable_count += 1
 
-            logger.debug(f"[calculate_cascade] level={level_num}, cleanliness={cleanliness:.3f if cleanliness is not None else 'None'}")
-
             # Calculate zone
             zone = get_cleanliness_zone(cleanliness)
 
@@ -230,7 +228,7 @@ class CascadeCalculator:
             "total_choices": len(demux_probs),
         }
 
-        logger.debug(f"[calculate_cascade] result: overall_cleanliness={overall:.3f if overall is not None else 'None'}, zone={overall_zone}, flow_efficiency={flow_efficiency:.3f if flow_efficiency is not None else 'None'}")
+        logger.debug(f"[calculate_cascade] result: overall_cleanliness={overall:.3f}, zone={overall_zone}, flow_efficiency={flow_efficiency:.3f}" if overall is not None and flow_efficiency is not None else f"[calculate_cascade] result: overall_cleanliness={overall}, zone={overall_zone}, flow_efficiency={flow_efficiency}")
         logger.info(f"[calculate_cascade] calculable_levels={calculable_count}/7, missing_operators={len(all_missing_operators)}")
         return CascadeState(
             levels=levels,
@@ -268,7 +266,6 @@ class CascadeCalculator:
             7: ['Ce_cleaning', 'P_presence', 'At_attachment', 'F_fear', 'Hf_habit'],  # Body
         }
 
-        logger.debug(f"[_calculate_level_cleanliness] inputs: level={level}, operator_count={len(operators)}")
         required = level_requirements.get(level, [])
         missing = [op for op in required if op not in operators or operators.get(op) is None]
 
@@ -634,7 +631,7 @@ class CascadeCalculator:
 
         Formula: Choice_Probability = cleanliness × consciousness × karma_modifier
         """
-        logger.debug(f"[_calculate_demux_choices] inputs: level={level}, cleanliness={cleanliness:.3f if cleanliness is not None else 'None'}")
+        logger.debug(f"[_calculate_demux_choices] inputs: level={level}, cleanliness={cleanliness:.3f}" if cleanliness is not None else f"[_calculate_demux_choices] inputs: level={level}, cleanliness=None")
         if cleanliness is None:
             logger.warning(f"[_calculate_demux_choices] missing required: cleanliness is None for level {level}")
             return []
@@ -765,7 +762,7 @@ class CascadeCalculator:
         else:
             time_to_next = None
 
-        logger.debug(f"[_calculate_dynamics] result: net_change={net_change:.3f}, equilibrium={equilibrium:.3f}, time_to_next={time_to_next:.3f if time_to_next is not None else 'None'}")
+        logger.debug(f"[_calculate_dynamics] result: net_change={net_change:.3f}, equilibrium={equilibrium:.3f}, time_to_next={time_to_next:.3f}" if time_to_next is not None else f"[_calculate_dynamics] result: net_change={net_change:.3f}, equilibrium={equilibrium:.3f}, time_to_next=None")
         return CleanlinessDynamics(
             net_change_rate=net_change,
             cleaning_effort_effect=cleaning_effect,
