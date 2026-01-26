@@ -259,11 +259,22 @@ class NetworkEmergenceCalculator:
             f"[calculate_emergence] operators={len(individual_operators)} keys, "
             f"network_nodes={network_state.connected_nodes}"
         )
-        # Get values — use 0.0 for missing (no contribution)
-        Co = individual_operators.get('Co_coherence') or 0.0
-        A = individual_operators.get('A_aware') or 0.0
-        W = individual_operators.get('W_witness') or 0.0
-        Psi = individual_operators.get('Psi_quality') or 0.0
+        # ZERO-FALLBACK: all operators required for emergence calculation
+        required = {
+            'Co_coherence': individual_operators.get('Co_coherence'),
+            'A_aware': individual_operators.get('A_aware'),
+            'W_witness': individual_operators.get('W_witness'),
+            'Psi_quality': individual_operators.get('Psi_quality'),
+        }
+        missing = [k for k, v in required.items() if v is None]
+        if missing:
+            logger.warning(f"[calculate_emergence] missing required operators: {missing}, returning None")
+            return None
+
+        Co = required['Co_coherence']
+        A = required['A_aware']
+        W = required['W_witness']
+        Psi = required['Psi_quality']
 
         # Emergence strength
         # Higher with coherence, awareness, and network effects

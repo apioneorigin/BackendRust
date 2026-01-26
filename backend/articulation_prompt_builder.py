@@ -469,11 +469,6 @@ to articulate. Don't list all values - synthesize the relevant ones.
 
         um = state.unity_metrics
 
-        # Skip if all default values (not calculated)
-        if um.separation_distance == 0.5 and um.unity_vector == 0.0:
-            logger.debug("[_build_unity_metrics_section] skipped: default values (not calculated)")
-            return ""
-
         if all(v is not None for v in [um.separation_distance, um.unity_vector, um.percolation_quality, um.distortion_field]):
             logger.debug(
                 f"[_build_unity_metrics_section] unity data present: "
@@ -549,9 +544,9 @@ to articulate. Don't list all values - synthesize the relevant ones.
 
         dp = state.dual_pathways
 
-        # Skip if all default values
-        if dp.separation_pathway.initial_success_probability == 0.0 and dp.unity_pathway.initial_success_probability == 0.0:
-            logger.debug("[_build_dual_pathway_section] skipped: default values (not calculated)")
+        # Skip if pathway probabilities are None (not calculated)
+        if dp.separation_pathway.initial_success_probability is None and dp.unity_pathway.initial_success_probability is None:
+            logger.debug("[_build_dual_pathway_section] skipped: pathway probabilities are None (not calculated)")
             return ""
 
         logger.debug(
@@ -599,43 +594,60 @@ to articulate. Don't list all values - synthesize the relevant ones.
 - {recommendation}"""
 
     def _build_data_quality_section(self, state: ConsciousnessState) -> str:
-        """Build data quality/metadata section showing what's missing."""
-        # Check if we have inference metadata
-        if not hasattr(state, 'inference_metadata') or state.inference_metadata is None:
-            logger.debug("[_build_data_quality_section] skipped: no inference_metadata")
+        """Build data quality/metadata section showing calculated vs non-calculated values."""
+        sections = ["\n### DATA QUALITY NOTICE\n"]
+        has_content = False
+
+        # ZERO-DEFAULT: Show calculated vs non-calculated split
+        if hasattr(state, 'calculated_values') and hasattr(state, 'non_calculated_values'):
+            calc_count = len(state.calculated_values)
+            non_calc_count = len(state.non_calculated_values)
+            total = calc_count + non_calc_count
+            if total > 0:
+                has_content = True
+                coverage = (calc_count / total * 100) if total > 0 else 0
+                sections.append(f"**Calculation Coverage:** {calc_count}/{total} metrics computed ({coverage:.0f}%)")
+                if non_calc_count > 0:
+                    non_calc_list = ', '.join(state.non_calculated_values[:15])
+                    if non_calc_count > 15:
+                        non_calc_list += f" (and {non_calc_count - 15} more)"
+                    sections.append(f"**Non-Calculated (missing data):** {non_calc_list}")
+                    sections.append("(Values marked N/A could not be computed due to missing input operators)")
+
+        # Missing operator priority from LLM Call 1
+        if hasattr(state, 'missing_operator_priority') and state.missing_operator_priority:
+            has_content = True
+            priority_list = ', '.join(state.missing_operator_priority[:10])
+            sections.append(f"**Priority Missing Operators:** {priority_list}")
+            sections.append("(These operators were identified as most important but could not be extracted from user input)")
+
+        # Legacy inference metadata (if available)
+        if hasattr(state, 'inference_metadata') and state.inference_metadata is not None:
+            meta = state.inference_metadata
+            if hasattr(meta, 'populated_operators') and hasattr(meta, 'missing_operators'):
+                populated = len(meta.populated_operators) if meta.populated_operators else 0
+                missing = len(meta.missing_operators) if meta.missing_operators else 0
+                total = populated + missing
+                if total > 0:
+                    has_content = True
+                    coverage = (populated / total * 100) if total > 0 else 0
+                    sections.append(f"**Operator Coverage:** {populated}/{total} ({coverage:.0f}%)")
+                    if meta.missing_operators:
+                        missing_list = ', '.join(list(meta.missing_operators)[:10])
+                        if len(meta.missing_operators) > 10:
+                            missing_list += f" (and {len(meta.missing_operators) - 10} more)"
+                        sections.append(f"**Missing Operators:** {missing_list}")
+
+        if not has_content:
+            logger.debug("[_build_data_quality_section] skipped: no quality data available")
             return ""
 
-        meta = state.inference_metadata
-
-        sections = ["\n### DATA QUALITY NOTICE\n"]
-
-        # Coverage info
-        if hasattr(meta, 'populated_operators') and hasattr(meta, 'missing_operators'):
-            populated = len(meta.populated_operators) if meta.populated_operators else 0
-            missing = len(meta.missing_operators) if meta.missing_operators else 0
-            total = populated + missing
-            coverage = (populated / total * 100) if total > 0 else 0
-
-            sections.append(f"**Operator Coverage:** {populated}/{total} ({coverage:.0f}%)")
-
-            if meta.missing_operators:
-                missing_list = ', '.join(list(meta.missing_operators)[:10])
-                if len(meta.missing_operators) > 10:
-                    missing_list += f" (and {len(meta.missing_operators) - 10} more)"
-                sections.append(f"**Missing Operators:** {missing_list}")
-
-        # Blocked formulas
-        if hasattr(meta, 'blocked_formulas') and meta.blocked_formulas:
-            blocked_list = ', '.join(list(meta.blocked_formulas)[:5])
-            if len(meta.blocked_formulas) > 5:
-                blocked_list += f" (and {len(meta.blocked_formulas) - 5} more)"
-            sections.append(f"**Blocked Calculations:** {blocked_list}")
-            sections.append("(Some calculations show N/A due to missing input operators)")
-
+        calc_count = len(state.calculated_values) if hasattr(state, 'calculated_values') else 0
+        non_calc_count = len(state.non_calculated_values) if hasattr(state, 'non_calculated_values') else 0
+        priority_count = len(state.missing_operator_priority) if hasattr(state, 'missing_operator_priority') else 0
         logger.debug(
-            f"[_build_data_quality_section] coverage={coverage:.0f}% "
-            f"populated={populated} missing={missing} "
-            f"blocked={len(meta.blocked_formulas) if hasattr(meta, 'blocked_formulas') and meta.blocked_formulas else 0}"
+            f"[_build_data_quality_section] calculated={calc_count} "
+            f"non_calculated={non_calc_count} priority_missing={priority_count}"
         )
         return '\n'.join(sections) + "\n"
 

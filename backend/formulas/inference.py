@@ -68,7 +68,7 @@ class IntegratedProfile:
     """Complete integrated OOF profile."""
     # Core data
     operators: Dict[str, float]
-    s_level: float
+    s_level: Optional[float]
 
     # Module results
     operator_scores: Optional[Any] = None
@@ -148,7 +148,7 @@ class OOFInferenceEngine:
     def calculate_full_profile(
         self,
         operators: Dict[str, float],
-        s_level: float = 4.0,
+        s_level: Optional[float] = None,
         include_modules: Optional[List[str]] = None
     ) -> IntegratedProfile:
         """
@@ -165,7 +165,7 @@ class OOFInferenceEngine:
         """
         inference_logger.debug(
             f"[calculate_full_profile] entry: operator_count={len(operators)} "
-            f"s_level={s_level:.3f} include_modules={include_modules}"
+            f"s_level={f'{s_level:.3f}' if s_level is not None else 'None'} include_modules={include_modules}"
         )
 
         # Default to all modules if not specified
@@ -179,6 +179,22 @@ class OOFInferenceEngine:
             ]
 
         inference_logger.debug(f"[calculate_full_profile] modules to execute: {len(include_modules)}")
+
+        # Modules that require s_level — skip if s_level is None
+        s_level_required_modules = {
+            "drives", "matrices", "pathways", "death", "circles", "kosha",
+            "osafc", "distortions", "panchakritya", "advanced_math",
+            "platform", "multi_reality", "timeline", "network",
+            "quantum", "realism", "unity", "collective"
+        }
+        skipped_modules = []
+        if s_level is None:
+            skipped_modules = [m for m in include_modules if m in s_level_required_modules]
+            include_modules = [m for m in include_modules if m not in s_level_required_modules]
+            if skipped_modules:
+                inference_logger.warning(
+                    f"[calculate_full_profile] s_level is None — skipping {len(skipped_modules)} modules: {skipped_modules}"
+                )
 
         profile = IntegratedProfile(
             operators=operators,
@@ -479,7 +495,7 @@ class OOFInferenceEngine:
         - practice: Suggested practices
         - caution: Areas needing attention
         """
-        inference_logger.debug(f"[get_recommendations] entry: s_level={profile.s_level:.3f}")
+        inference_logger.debug(f"[get_recommendations] entry: s_level={f'{profile.s_level:.3f}' if profile.s_level is not None else 'None'}")
         recommendations = {
             "immediate": [],
             "development": [],
@@ -521,19 +537,20 @@ class OOFInferenceEngine:
             recommendations["practice"].extend(pancha_recs.get("support", []))
             recommendations["caution"].extend(pancha_recs.get("release", []))
 
-        # Overall S-level guidance
-        if profile.s_level < 4:
-            recommendations["development"].append(
-                f"Current S-level {profile.s_level:.1f} - focus on foundation building"
-            )
-        elif profile.s_level < 5.5:
-            recommendations["development"].append(
-                f"S-level {profile.s_level:.1f} - ready for deeper witness cultivation"
-            )
-        elif profile.s_level >= 5.5:
-            recommendations["development"].append(
-                f"S-level {profile.s_level:.1f} - support integration and service"
-            )
+        # Overall S-level guidance — only if s_level available
+        if profile.s_level is not None:
+            if profile.s_level < 4:
+                recommendations["development"].append(
+                    f"Current S-level {profile.s_level:.1f} - focus on foundation building"
+                )
+            elif profile.s_level < 5.5:
+                recommendations["development"].append(
+                    f"S-level {profile.s_level:.1f} - ready for deeper witness cultivation"
+                )
+            elif profile.s_level >= 5.5:
+                recommendations["development"].append(
+                    f"S-level {profile.s_level:.1f} - support integration and service"
+                )
 
         total_recs = sum(len(v) for v in recommendations.values())
         inference_logger.debug(
@@ -595,8 +612,12 @@ class OOFInferenceEngine:
             if op not in operators:
                 missing_operators.add(op)
 
-        # Get S-level
-        s_level = operators.get('S_level', operators.get('s_level', 3.0))
+        # Get S-level — ZERO-FALLBACK: no default, None if not provided
+        s_level = operators.get('S_level', operators.get('s_level'))
+        if s_level is None:
+            inference_logger.warning("[run_inference] S_level not found in operators — missing from LLM extraction")
+            # S_level is critical for most calculations; track as missing
+            missing_operators.add('S_level')
 
         # Run full calculation
         profile = self.calculate_full_profile(operators, s_level)
@@ -628,7 +649,7 @@ class OOFInferenceEngine:
 
         result = {
             "values": values,
-            "confidence": {k: confidence.get(k, 0.8) for k in values},
+            "confidence": {k: confidence.get(k) for k in values},
             "formula_count": 287,  # Total formulas across all modules
             "tiers_executed": len([m for m in ["oof_engine", "dynamics", "network", "quantum", "realism", "unity"] if values]),
             "metadata": {
@@ -641,7 +662,7 @@ class OOFInferenceEngine:
         inference_logger.info(
             f"[run_inference] result: populated={len(populated_operators)} "
             f"missing={len(missing_operators)} total_values={len(values)} "
-            f"s_level={s_level:.3f}"
+            f"s_level={f'{s_level:.3f}' if s_level is not None else 'None'}"
         )
         return result
 
@@ -843,7 +864,7 @@ class OOFInferenceEngine:
 # Convenience functions
 def run_inference(
     operators: Dict[str, float],
-    s_level: float = 4.0
+    s_level: Optional[float] = None
 ) -> Dict[str, Any]:
     """
     Run full OOF inference and return serializable results.
@@ -856,7 +877,7 @@ def run_inference(
         Dict with all inference results
     """
     inference_logger.debug(
-        f"[run_inference] entry: operator_count={len(operators)} s_level={s_level:.3f}"
+        f"[run_inference] entry: operator_count={len(operators)} s_level={f'{s_level:.3f}' if s_level is not None else 'None'}"
     )
     engine = OOFInferenceEngine()
     profile = engine.calculate_full_profile(operators, s_level)

@@ -424,7 +424,9 @@ class PathwayGenerator:
         total_difficulty = 0
         for op, (curr, target) in changes.items():
             change_mag = abs(target - curr)
-            op_difficulty = difficult_ops.get(op, 0.4)
+            op_difficulty = difficult_ops.get(op)
+            if op_difficulty is None:
+                continue
             total_difficulty += change_mag * op_difficulty
 
         # Normalize
@@ -656,7 +658,9 @@ class PathwayGenerator:
             'grace': 0.9,
             'effort': 1.0,
             'hybrid': 1.0
-        }.get(pathway_type, 1.0)
+        }.get(pathway_type)
+        if type_factor is None:
+            return None
 
         probability = base * gap_factor * s_level_factor * step_factor * type_factor
 
@@ -675,10 +679,12 @@ class PathwayGenerator:
         effects = []
 
         # Common transformation side effects
-        if required_operators.get('V_void', 0) > 0.6:
+        v_void = required_operators.get('V_void')
+        if v_void is not None and v_void > 0.6:
             effects.append("Temporary disorientation as old structures dissolve")
 
-        if required_operators.get('S_surrender', 0) > 0.7:
+        s_surrender = required_operators.get('S_surrender')
+        if s_surrender is not None and s_surrender > 0.7:
             effects.append("Initial loss of sense of control")
 
         at_attachment = required_operators.get('At_attachment')

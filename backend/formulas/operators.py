@@ -47,7 +47,7 @@ class OperatorDefinition:
     description: str
     range_min: float = 0.0
     range_max: float = 1.0
-    default: float = 0.5
+    default: Optional[float] = None
     extraction_method: str = "semantic"  # semantic, behavioral, physiological
     dependencies: List[str] = field(default_factory=list)
     formula: str = ""

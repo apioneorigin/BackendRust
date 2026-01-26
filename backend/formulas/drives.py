@@ -575,7 +575,10 @@ class DrivesEngine:
 
         # Causeless_Joy = (1 - External_Dependency) × S_level / 8
         external_dependency = at * 0.7 + (1 - p) * 0.3
-        s_level = ops.get("s_level", 4.0)
+        s_level = ops.get("s_level") or ops.get("S_level")
+        if s_level is None:
+            logger.warning("[calculate_bliss_components] missing s_level, returning None")
+            return None
         causeless_joy = (1 - external_dependency) * s_level / 8
 
         # Divine_Connection = G × (1 - M) × Devotion

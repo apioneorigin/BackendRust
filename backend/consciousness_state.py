@@ -749,6 +749,14 @@ class ConsciousnessState:
     query_pattern: str = ""  # From evidence.get('query_pattern')
     # search_guidance is already available via ArticulationContext
 
+    # ZERO-DEFAULT ARCHITECTURE: Split calculated vs non-calculated values
+    # calculated_values: metrics that were successfully computed from available operators
+    calculated_values: Dict[str, Any] = field(default_factory=dict)
+    # non_calculated_values: metrics that returned None due to missing operator data
+    non_calculated_values: List[str] = field(default_factory=list)
+    # LLM Call 1 priority ordering for which missing operators to ask about first
+    missing_operator_priority: List[str] = field(default_factory=list)
+
 
 @dataclass
 class UserContext:

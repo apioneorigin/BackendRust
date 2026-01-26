@@ -724,7 +724,11 @@ def calculate_geodesic_deviation(
     metric_dist = 0
 
     for i, key in enumerate(keys):
-        delta = end_point.get(key, 0) - start_point.get(key, 0)
+        end_val = end_point.get(key)
+        start_val = start_point.get(key)
+        if end_val is None or start_val is None:
+            continue
+        delta = end_val - start_val
         euclidean_dist += delta ** 2
         metric_dist += metric[i][i] * delta ** 2
 
@@ -754,7 +758,9 @@ def calculate_consciousness_hamiltonian(
     """
     energy = 0.0
     for k, n_k in occupation_numbers.items():
-        omega_k = mode_frequencies.get(k, 1.0)
+        omega_k = mode_frequencies.get(k)
+        if omega_k is None:
+            continue
         energy += PLANCK_CONSTANT_REDUCED * omega_k * n_k
     return energy
 

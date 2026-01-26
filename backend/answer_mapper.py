@@ -222,7 +222,9 @@ class AnswerMapper:
             MappingConfidence.LOW: 0.5,
             MappingConfidence.UNCERTAIN: 0.3
         }
-        result = weights.get(confidence, 0.5)
+        result = weights.get(confidence)
+        if result is None:
+            return None
         logger.debug(f"[_confidence_to_weight] {confidence.value} -> {result:.3f}")
         return result
 
@@ -234,7 +236,9 @@ class AnswerMapper:
             MappingConfidence.LOW: 2,
             MappingConfidence.UNCERTAIN: 1
         }
-        result = ranks.get(confidence, 0)
+        result = ranks.get(confidence)
+        if result is None:
+            return None
         logger.debug(f"[_confidence_rank] {confidence.value} -> {result}")
         return result
 

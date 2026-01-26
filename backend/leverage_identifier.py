@@ -19,6 +19,8 @@ from formulas.unity_principle import (
     SEPARATION_AMPLIFYING_OPERATORS,
     UNITY_DIRECTION,
     calculate_unity_vector,
+    calculate_unity_amplification,
+    calculate_separation_amplification,
 )
 
 
@@ -112,13 +114,20 @@ class LeverageIdentifier:
 
             if multiplier > 1.2:
                 # Calculate unity alignment - both coherence and grace are unity-amplifying
+                ud_co = UNITY_DIRECTION.get('Co_coherence')
+                ud_g = UNITY_DIRECTION.get('G_grace')
+                if ud_co is None or ud_g is None:
+                    return leverage_points
                 unity_alignment = (
-                    UNITY_DIRECTION.get('Co_coherence', 0) * coherence +
-                    UNITY_DIRECTION.get('G_grace', 0) * grace
+                    ud_co * coherence +
+                    ud_g * grace
                 ) / 2.0
 
                 # This is a pure unity pathway leverage
-                amplification_mult = UNITY_AMPLIFYING_OPERATORS.get('G_grace', 0.8) * grace
+                grace_amp = calculate_unity_amplification('G_grace', grace)
+                if grace_amp is None:
+                    return leverage_points
+                amplification_mult = grace_amp
                 effective_impact = multiplier * (1 + unity_alignment)
 
                 leverage_points.append(LeveragePoint(
@@ -155,10 +164,11 @@ class LeverageIdentifier:
 
             # Grace-Surrender is the ultimate unity pathway
             unity_alignment = (grace + surrender) / 2.0  # Both highly unity-aligned
-            amplification_mult = (
-                UNITY_AMPLIFYING_OPERATORS.get('G_grace', 0.95) * grace +
-                UNITY_AMPLIFYING_OPERATORS.get('S_surrender', 0.90) * surrender
-            ) / 2.0
+            grace_amp = calculate_unity_amplification('G_grace', grace)
+            surrender_amp = calculate_unity_amplification('S_surrender', surrender)
+            if grace_amp is None or surrender_amp is None:
+                return leverage_points
+            amplification_mult = (grace_amp + surrender_amp) / 2.0
             effective_impact = multiplier * (1 + unity_alignment * 0.5)
 
             leverage_points.append(LeveragePoint(
@@ -178,8 +188,12 @@ class LeverageIdentifier:
             potential_mult = 2.0 + (grace * 0.8 * 3)
 
             # This is a hybrid situation - grace is unity-aligned, but low surrender indicates separation patterns
-            current_unity = grace * UNITY_DIRECTION.get('G_grace', 1.0)
-            separation_block = (1 - surrender) * SEPARATION_AMPLIFYING_OPERATORS.get('At_attachment', 0.9)
+            ud_grace = UNITY_DIRECTION.get('G_grace')
+            sep_at = SEPARATION_AMPLIFYING_OPERATORS.get('At_attachment')
+            if ud_grace is None or sep_at is None:
+                return leverage_points
+            current_unity = grace * ud_grace
+            separation_block = (1 - surrender) * sep_at
 
             leverage_points.append(LeveragePoint(
                 description="Potential Grace Activation",
@@ -276,17 +290,23 @@ class LeverageIdentifier:
             multiplier = 1.3 + (witness * awareness * presence)
 
             # Witness-Awareness-Presence is the core unity triad
+            ud_w = UNITY_DIRECTION.get('W_witness')
+            ud_a = UNITY_DIRECTION.get('A_aware')
+            ud_p = UNITY_DIRECTION.get('P_presence')
+            if ud_w is None or ud_a is None or ud_p is None:
+                return leverage_points
             unity_alignment = (
-                UNITY_DIRECTION.get('W_witness', 1.0) * witness +
-                UNITY_DIRECTION.get('A_aware', 1.0) * awareness +
-                UNITY_DIRECTION.get('P_presence', 1.0) * presence
+                ud_w * witness +
+                ud_a * awareness +
+                ud_p * presence
             ) / 3.0
 
-            amplification_mult = (
-                UNITY_AMPLIFYING_OPERATORS.get('W_witness', 0.95) * witness +
-                UNITY_AMPLIFYING_OPERATORS.get('A_aware', 0.85) * awareness +
-                UNITY_AMPLIFYING_OPERATORS.get('P_presence', 0.80) * presence
-            ) / 3.0
+            w_amp = calculate_unity_amplification('W_witness', witness)
+            a_amp = calculate_unity_amplification('A_aware', awareness)
+            p_amp = calculate_unity_amplification('P_presence', presence)
+            if w_amp is None or a_amp is None or p_amp is None:
+                return leverage_points
+            amplification_mult = (w_amp + a_amp + p_amp) / 3.0
 
             effective_impact = multiplier * (1 + unity_alignment * 0.4)
 
@@ -320,7 +340,10 @@ class LeverageIdentifier:
             multiplier = network.coherence_multiplier * (1 + network.acceleration_factor)
 
             # Network effects amplify unity when coherence is high
-            unity_alignment = coherence * UNITY_DIRECTION.get('Co_coherence', 0.8)
+            ud_coherence = UNITY_DIRECTION.get('Co_coherence')
+            if ud_coherence is None:
+                return leverage_points
+            unity_alignment = coherence * ud_coherence
             amplification_mult = network.coherence_multiplier - 1.0
 
             leverage_points.append(LeveragePoint(

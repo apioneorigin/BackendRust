@@ -274,8 +274,12 @@ def calculate_unity_vector(
         if op_value is None:
             continue
 
-        direction = UNITY_DIRECTION.get(op_name, 0.0)
-        weight = UNITY_IMPACT_WEIGHTS.get(op_name, 0.3)
+        # ZERO-FALLBACK: skip operators not in direction/weight maps
+        if op_name not in UNITY_DIRECTION or op_name not in UNITY_IMPACT_WEIGHTS:
+            continue
+
+        direction = UNITY_DIRECTION[op_name]
+        weight = UNITY_IMPACT_WEIGHTS[op_name]
 
         contribution = op_value * direction * weight
         contributions[op_name] = contribution
@@ -376,7 +380,7 @@ def calculate_grace_multiplier(unity_vector: Optional[float]) -> Optional[float]
 def calculate_separation_amplification(
     operator: str,
     operator_value: Optional[float]
-) -> float:
+) -> Optional[float]:
     """
     Calculate how much a specific operator amplifies separation.
 
@@ -387,12 +391,15 @@ def calculate_separation_amplification(
         operator_value: Operator value (0.0 to 1.0) or None
 
     Returns:
-        Separation amplification score (0.0 to 1.0)
+        Separation amplification score (0.0 to 1.0) or None if unknown/missing
     """
     if operator_value is None:
-        return 0.0
+        return None
 
-    base_amplification = SEPARATION_AMPLIFYING_OPERATORS.get(operator, 0.0)
+    if operator not in SEPARATION_AMPLIFYING_OPERATORS:
+        return None
+
+    base_amplification = SEPARATION_AMPLIFYING_OPERATORS[operator]
 
     # Amplification proportional to operator value
     # High attachment (0.8) with base 0.9 = 0.72 separation amplification
@@ -402,7 +409,7 @@ def calculate_separation_amplification(
 def calculate_unity_amplification(
     operator: str,
     operator_value: Optional[float]
-) -> float:
+) -> Optional[float]:
     """
     Calculate how much a specific operator amplifies unity.
 
@@ -413,12 +420,15 @@ def calculate_unity_amplification(
         operator_value: Operator value (0.0 to 1.0) or None
 
     Returns:
-        Unity amplification score (0.0 to 1.0)
+        Unity amplification score (0.0 to 1.0) or None if unknown/missing
     """
     if operator_value is None:
-        return 0.0
+        return None
 
-    base_amplification = UNITY_AMPLIFYING_OPERATORS.get(operator, 0.0)
+    if operator not in UNITY_AMPLIFYING_OPERATORS:
+        return None
+
+    base_amplification = UNITY_AMPLIFYING_OPERATORS[operator]
 
     return base_amplification * operator_value
 

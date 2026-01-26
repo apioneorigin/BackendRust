@@ -60,8 +60,8 @@ class DeathSequence:
     deaths_required: List[SequencedDeathProcess]
     sequence_order: List[str]  # Order to work on deaths
     total_death_work: float  # 0-1 overall death work needed
-    void_tolerance_required: float
-    current_void_tolerance: float
+    void_tolerance_required: Optional[float]
+    current_void_tolerance: Optional[float]
     can_proceed: bool
     blocking_deaths: List[str]  # Deaths that must be completed first
     parallel_deaths: List[str]  # Deaths that can be worked simultaneously
@@ -529,7 +529,9 @@ class DeathSequencer:
             4: 0.6, 5: 0.65, 6: 0.75, 7: 0.85
         }
 
-        result = tolerance_map.get(max_depth, 0.5)
+        result = tolerance_map.get(max_depth)
+        if result is None:
+            return None
         logger.debug(f"[_calculate_void_tolerance_needed] max_depth={max_depth} tolerance={result:.3f}")
         return result
 

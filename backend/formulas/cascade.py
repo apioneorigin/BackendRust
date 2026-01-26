@@ -303,9 +303,8 @@ class CascadeCalculator:
         elif level == 3:  # Memory (Chitta)
             # Memory cleanliness = low samskaras, high cleaning
             # Formula: C3 = Ce × (1 - Sa) × (1 - K × 0.5)
-            # Sa might be None even if passed missing check (optional operator)
-            sa_val = Sa if Sa is not None else 0.5  # Only Sa has fallback as optional
-            result = Ce * (1 - sa_val * 0.7) * (1 - K * 0.4)
+            # Sa_samskara is required for level 3 — guaranteed non-None here
+            result = Ce * (1 - Sa * 0.7) * (1 - K * 0.4)
             logger.debug(f"[_calculate_level_cleanliness] result: level=3, cleanliness={result:.3f}")
             return result, []
 
@@ -810,7 +809,7 @@ class CascadeCalculator:
             7: 0.20,  # Body - physical environment
         }
 
-        base_contamination = level_contamination_weights.get(level, 0.15)
+        base_contamination = level_contamination_weights[level]  # All 7 levels defined above
         contamination_rate = base_contamination * (hf * 0.5 + m * 0.3 + 0.2)
 
         return cleaning_rate, contamination_rate

@@ -1284,8 +1284,17 @@ JSON structure:
     {{"var": "Ch", "value": 0.45, "confidence": 0.5, "reasoning": "..."}}
   ],
   "targets": ["At_attachment", "F_fear", "R_resistance", "M_maya", "breakthrough_probability", "bottleneck_primary", "leverage_highest", "matrix_truth", "matrix_power", "cascade_cleanliness", "grace_availability", "karma_burn_rate", "death_d1_identity", "transformation_vector", "pipeline_flow_rate", "network_coherence", "quantum_tunneling_prob"],
-  "relevant_oof_components": ["Sacred Chain", "Cascade", "UCB", "Seven Matrices", "Death Architecture"]
+  "relevant_oof_components": ["Sacred Chain", "Cascade", "UCB", "Seven Matrices", "Death Architecture"],
+  "missing_operator_priority": ["V", "Se", "Ce", "Su"]
 }}
+
+MISSING OPERATOR PRIORITY (CRITICAL):
+- 'missing_operator_priority' lists operators you could NOT confidently extract from the user input
+- Order them by IMPORTANCE to the user's specific query — most critical missing data first
+- These operators will be targeted in follow-up constellation questions
+- Only include operators where you had to GUESS (confidence < 0.4) or had NO data at all
+- The backend will use this list to prioritize which missing data to ask about first
+- This is the LLM's OPINION on what data matters most for THIS user's query — the backend does NOT decide this
 
 CRITICAL REQUIREMENTS FOR TARGET SELECTION:
 - 'targets' must be QUERY-SPECIFIC based on query pattern analysis (not the generic example)
@@ -1556,9 +1565,14 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
                                             }
                                         },
                                         "targets": {"type": "array", "items": {"type": "string"}},
-                                        "relevant_oof_components": {"type": "array", "items": {"type": "string"}}
+                                        "relevant_oof_components": {"type": "array", "items": {"type": "string"}},
+                                        "missing_operator_priority": {
+                                            "type": "array",
+                                            "items": {"type": "string"},
+                                            "description": "Operators not extractable from user input, ordered by priority for follow-up questions. Most important missing operators first."
+                                        }
                                     },
-                                    "required": ["user_identity", "goal", "s_level", "query_pattern", "web_research_summary", "search_queries_used", "key_facts", "search_guidance", "observations", "targets", "relevant_oof_components"],
+                                    "required": ["user_identity", "goal", "s_level", "query_pattern", "web_research_summary", "search_queries_used", "key_facts", "search_guidance", "observations", "targets", "relevant_oof_components", "missing_operator_priority"],
                                     "additionalProperties": False
                                 },
                                 "strict": True

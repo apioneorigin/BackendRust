@@ -66,19 +66,19 @@ def calculate_separation_pathway(
         'S_surrender': operators.get('S_surrender'),
         'W_witness': operators.get('W_witness'),
     }
-    available = {k: v for k, v in required.items() if v is not None}
-    if not available:
-        logger.info("[SEP_PATHWAY] No operators available, returning None")
+    missing = [k for k, v in required.items() if v is None]
+    if missing:
+        logger.info(f"[SEP_PATHWAY] Missing required operators: {missing}, returning None")
         return None
 
-    At = required['At_attachment'] if required['At_attachment'] is not None else 0.0
-    F = required['F_fear'] if required['F_fear'] is not None else 0.0
-    R = required['R_resistance'] if required['R_resistance'] is not None else 0.0
-    M = required['M_maya'] if required['M_maya'] is not None else 0.0
-    S = required['S_surrender'] if required['S_surrender'] is not None else 0.0
-    W = required['W_witness'] if required['W_witness'] is not None else 0.0
+    At = required['At_attachment']
+    F = required['F_fear']
+    R = required['R_resistance']
+    M = required['M_maya']
+    S = required['S_surrender']
+    W = required['W_witness']
 
-    logger.debug(f"[SEP_PATHWAY] goal={goal_category} At={At:.2f} F={F:.2f} R={R:.2f} M={M:.2f} S={S:.2f} W={W:.2f} (available={len(available)}/{len(required)})")
+    logger.debug(f"[SEP_PATHWAY] goal={goal_category} At={At:.2f} F={F:.2f} R={R:.2f} M={M:.2f} S={S:.2f} W={W:.2f}")
 
     # Separation pathway: high attachment/fear -> higher initial probability but poor sustainability
     # The more attached/fearful, the more likely to force short-term success
@@ -147,18 +147,18 @@ def calculate_unity_pathway(
         'E_equanimity': operators.get('E_equanimity'),
         'P_presence': operators.get('P_presence'),
     }
-    available = {k: v for k, v in required.items() if v is not None}
-    if not available:
-        logger.info("[UNITY_PATHWAY] No operators available, returning None")
+    missing = [k for k, v in required.items() if v is None]
+    if missing:
+        logger.info(f"[UNITY_PATHWAY] Missing required operators: {missing}, returning None")
         return None
 
-    S = required['S_surrender'] if required['S_surrender'] is not None else 0.0
-    W = required['W_witness'] if required['W_witness'] is not None else 0.0
-    G = required['G_grace'] if required['G_grace'] is not None else 0.0
-    E = required['E_equanimity'] if required['E_equanimity'] is not None else 0.0
-    P = required['P_presence'] if required['P_presence'] is not None else 0.0
+    S = required['S_surrender']
+    W = required['W_witness']
+    G = required['G_grace']
+    E = required['E_equanimity']
+    P = required['P_presence']
 
-    logger.debug(f"[UNITY_PATHWAY] goal={goal_category} S={S:.2f} W={W:.2f} G={G:.2f} E={E:.2f} P={P:.2f} (available={len(available)}/{len(required)})")
+    logger.debug(f"[UNITY_PATHWAY] goal={goal_category} S={S:.2f} W={W:.2f} G={G:.2f} E={E:.2f} P={P:.2f}")
 
     # Unity pathway: moderate initial probability but excellent sustainability
     # Depends on surrender, witness, and grace
@@ -245,10 +245,13 @@ def _calculate_weighted_success(pathway: PathwayMetrics) -> float:
 
     Weights: 30% initial, 40% sustainability, 30% fulfillment
     """
-    initial = pathway.initial_success_probability or 0.0
-    sustainability = pathway.sustainability_probability or 0.0
-    fulfillment = pathway.fulfillment_quality or 0.0
-    return (initial * 0.3) + (sustainability * 0.4) + (fulfillment * 0.3)
+    if any(v is None for v in [
+        pathway.initial_success_probability,
+        pathway.sustainability_probability,
+        pathway.fulfillment_quality
+    ]):
+        return None
+    return (pathway.initial_success_probability * 0.3) + (pathway.sustainability_probability * 0.4) + (pathway.fulfillment_quality * 0.3)
 
 
 def generate_recommendation_reasoning(
@@ -273,12 +276,15 @@ def generate_recommendation_reasoning(
     sep_weighted = _calculate_weighted_success(sep_pathway)
     unity_weighted = _calculate_weighted_success(unity_pathway)
 
+    if sep_weighted is None or unity_weighted is None:
+        return 'unknown', 'Insufficient data to determine pathway recommendation'
+
     # Decision logic
-    if (unity_pathway.initial_success_probability or 0.0) < 0.3:
+    if unity_pathway.initial_success_probability < 0.3:
         # Unity pathway not currently accessible
         recommendation = 'intermediate'
         reasoning = (
-            f"Unity pathway shows {(unity_pathway.initial_success_probability or 0.0):.0%} initial probability - "
+            f"Unity pathway shows {unity_pathway.initial_success_probability:.0%} initial probability - "
             f"not currently accessible. Build foundations first through surrender and witness development. "
             f"Consider hybrid approach: use awareness to soften separation patterns while building unity capacity."
         )
@@ -302,9 +308,9 @@ def generate_recommendation_reasoning(
         reasoning = (
             f"Unity pathway: {unity_weighted:.0%} weighted success "
             f"vs separation {sep_weighted:.0%}. "
-            f"Superior sustainability ({(unity_pathway.sustainability_probability or 0.0):.0%} vs "
-            f"{(sep_pathway.sustainability_probability or 0.0):.0%}) and fulfillment "
-            f"({(unity_pathway.fulfillment_quality or 0.0):.0%} vs {(sep_pathway.fulfillment_quality or 0.0):.0%}).{crossover_text}"
+            f"Superior sustainability ({unity_pathway.sustainability_probability:.0%} vs "
+            f"{sep_pathway.sustainability_probability:.0%}) and fulfillment "
+            f"({unity_pathway.fulfillment_quality:.0%} vs {sep_pathway.fulfillment_quality:.0%}).{crossover_text}"
         )
 
     return recommendation, reasoning

@@ -408,40 +408,46 @@ class ProgressTracker:
         indicators = []
 
         # Overall coherence indicator
-        indicators.append(Indicator(
-            name="Overall Coherence",
-            indicator_type="leading",
-            description="Sense of internal alignment and integration",
-            measurement_method="Weekly self-assessment of coherence",
-            target_value=required.get('Co_coherence', 0.7),
-            warning_threshold=0.5,
-            critical_threshold=0.4,
-            frequency="weekly"
-        ))
+        co_coherence_target = required.get('Co_coherence')
+        if co_coherence_target is not None:
+            indicators.append(Indicator(
+                name="Overall Coherence",
+                indicator_type="leading",
+                description="Sense of internal alignment and integration",
+                measurement_method="Weekly self-assessment of coherence",
+                target_value=co_coherence_target,
+                warning_threshold=0.5,
+                critical_threshold=0.4,
+                frequency="weekly"
+            ))
 
         # Energy sustainability
-        indicators.append(Indicator(
-            name="Energy Sustainability",
-            indicator_type="leading",
-            description="Consistent energy for transformation work",
-            measurement_method="Daily energy rating 1-10",
-            target_value=required.get('Sh_shakti', 0.7),
-            warning_threshold=0.5,
-            critical_threshold=0.4,
-            frequency="daily"
-        ))
+        sh_shakti_target = required.get('Sh_shakti')
+        if sh_shakti_target is not None:
+            indicators.append(Indicator(
+                name="Energy Sustainability",
+                indicator_type="leading",
+                description="Consistent energy for transformation work",
+                measurement_method="Daily energy rating 1-10",
+                target_value=sh_shakti_target,
+                warning_threshold=0.5,
+                critical_threshold=0.4,
+                frequency="daily"
+            ))
 
         # Grace flow
-        indicators.append(Indicator(
-            name="Grace Flow",
-            indicator_type="lagging",
-            description="Evidence of support beyond personal effort",
-            measurement_method="Log synchronicities and unexpected help",
-            target_value=required.get('G_grace', 0.6),
-            warning_threshold=0.4,
-            critical_threshold=0.3,
-            frequency="weekly"
-        ))
+        g_grace_target = required.get('G_grace')
+        if g_grace_target is not None:
+            indicators.append(Indicator(
+                name="Grace Flow",
+                indicator_type="lagging",
+                description="Evidence of support beyond personal effort",
+                measurement_method="Log synchronicities and unexpected help",
+                target_value=g_grace_target,
+                warning_threshold=0.4,
+                critical_threshold=0.3,
+                frequency="weekly"
+            ))
 
         # Life quality
         indicators.append(Indicator(
@@ -589,14 +595,18 @@ class ProgressTracker:
             # Check leading indicators
             report += "### Leading Indicators\n"
             for indicator in stage_config.leading_indicators:
-                reading = current_readings.get(indicator.operator_link, 0.5)
+                reading = current_readings.get(indicator.operator_link)
+                if reading is None:
+                    continue
                 status = "✓" if reading >= indicator.warning_threshold else "⚠️"
                 report += f"- {status} {indicator.name}: {reading:.0%} (target: {indicator.target_value:.0%})\n"
 
             # Check lagging indicators
             report += "\n### Lagging Indicators\n"
             for indicator in stage_config.lagging_indicators:
-                reading = current_readings.get(indicator.operator_link, 0.5)
+                reading = current_readings.get(indicator.operator_link)
+                if reading is None:
+                    continue
                 status = "✓" if reading >= indicator.warning_threshold else "⚠️"
                 report += f"- {status} {indicator.name}: {reading:.0%} (target: {indicator.target_value:.0%})\n"
 

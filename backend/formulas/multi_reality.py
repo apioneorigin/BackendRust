@@ -92,7 +92,7 @@ class MultiRealityState:
     """Complete multi-reality interaction state."""
     overlap_coefficient: float
     consensus_reality: float
-    conflict_severity: float
+    conflict_severity: Optional[float]
     morphic_resonance: float
     transmission_rate: float
     stability: float
@@ -795,7 +795,7 @@ class MultiRealityEngine:
         return MultiRealityState(
             overlap_coefficient=overlap,
             consensus_reality=consensus,
-            conflict_severity=conflict_result.get("conflict_severity") or 0.0,
+            conflict_severity=conflict_result.get("conflict_severity"),
             morphic_resonance=morphic,
             transmission_rate=transmission,
             stability=stability

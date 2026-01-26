@@ -51,6 +51,12 @@ class ValueOrganizer:
         logger.info(f"[VALUE_ORGANIZER] Organizing {values_count} computed values into consciousness state")
         logger.debug(f"[VALUE_ORGANIZER] Tier1 keys: {len(tier1_values)} | Targets: {len(tier1_values.get('targets', []))}")
 
+        # Split raw values into calculated vs non-calculated
+        calculated_values, non_calculated_values = self._split_calculated_values(raw_values)
+
+        # Extract LLM Call 1's missing operator priority (if provided)
+        missing_operator_priority = tier1_values.get('missing_operator_priority', [])
+
         state = ConsciousnessState(
             timestamp=datetime.now().isoformat(),
             user_id=user_id,
@@ -69,18 +75,57 @@ class ValueOrganizer:
             # UNITY PRINCIPLE: Extract unity metrics and dual pathways
             unity_metrics=self._extract_unity_metrics(raw_values),
             dual_pathways=self._extract_dual_pathways(raw_values),
-            goal_context=self._extract_goal_context(tier1_values)
+            goal_context=self._extract_goal_context(tier1_values),
+            # ZERO-DEFAULT ARCHITECTURE: Split calculated vs non-calculated
+            calculated_values=calculated_values,
+            non_calculated_values=non_calculated_values,
+            missing_operator_priority=missing_operator_priority
         )
 
         logger.info(
             f"[VALUE_ORGANIZER] Organization complete: "
             f"S-level={state.tier1.s_level.current} "
+            f"calculated={len(calculated_values)} non_calculated={len(non_calculated_values)} "
+            f"missing_operator_priority={len(missing_operator_priority)} "
             f"unity_metrics={'present' if state.unity_metrics else 'None'} "
             f"dual_pathways={'present' if state.dual_pathways else 'None'} "
             f"goal_context={'present' if state.goal_context else 'None'}"
         )
 
         return state
+
+    def _split_calculated_values(
+        self,
+        raw_values: Dict[str, Any]
+    ) -> tuple:
+        """
+        Split raw inference values into calculated vs non-calculated.
+
+        ZERO-DEFAULT ARCHITECTURE:
+        - calculated_values: {key: value} for all metrics that were successfully computed
+        - non_calculated_values: [key] for all metrics that returned None (missing operators)
+
+        Returns:
+            Tuple of (calculated_values dict, non_calculated_values list)
+        """
+        values = raw_values.get('values', raw_values) if isinstance(raw_values, dict) else raw_values
+        if not isinstance(values, dict):
+            return {}, []
+
+        calculated = {}
+        non_calculated = []
+
+        for key, value in values.items():
+            if value is None:
+                non_calculated.append(key)
+            else:
+                calculated[key] = value
+
+        logger.debug(
+            f"[_split_calculated_values] total={len(values)} "
+            f"calculated={len(calculated)} non_calculated={len(non_calculated)}"
+        )
+        return calculated, non_calculated
 
     def _get_value(self, values: Dict[str, Any], *keys, default: Optional[float] = None) -> Optional[float]:
         """Get value from dict, trying multiple key names. Returns None if not found (ZERO-FALLBACK)."""
@@ -133,15 +178,17 @@ class ValueOrganizer:
             O_openness=self._get_value(obs_dict, 'O', 'Openness', default=None)
         )
 
-        # Parse S-level
-        s_level_str = values.get('s_level', 'S3')
-        s_level_num = 3.0
+        # Parse S-level — ZERO-FALLBACK: None if not provided
+        s_level_str = values.get('s_level')
+        s_level_num = None
         if isinstance(s_level_str, str):
             # Extract number from strings like "S3", "S4: Service", etc.
             import re
             match = re.search(r'S(\d)', s_level_str)
             if match:
                 s_level_num = float(match.group(1))
+        elif isinstance(s_level_str, (int, float)):
+            s_level_num = float(s_level_str)
 
         s_level = SLevel(
             current=s_level_num,
@@ -288,16 +335,16 @@ class ValueOrganizer:
         )
 
         drives_internalization = DrivesInternalization(
-            love_internal_pct=self._get_value(v, 'love_internal_pct', default=50.0),
-            love_external_pct=self._get_value(v, 'love_external_pct', default=50.0),
-            peace_internal_pct=self._get_value(v, 'peace_internal_pct', default=50.0),
-            peace_external_pct=self._get_value(v, 'peace_external_pct', default=50.0),
-            bliss_internal_pct=self._get_value(v, 'bliss_internal_pct', default=50.0),
-            bliss_external_pct=self._get_value(v, 'bliss_external_pct', default=50.0),
-            satisfaction_internal_pct=self._get_value(v, 'satisfaction_internal_pct', default=50.0),
-            satisfaction_external_pct=self._get_value(v, 'satisfaction_external_pct', default=50.0),
-            freedom_internal_pct=self._get_value(v, 'freedom_internal_pct', default=50.0),
-            freedom_external_pct=self._get_value(v, 'freedom_external_pct', default=50.0)
+            love_internal_pct=self._get_value(v, 'love_internal_pct', default=None),
+            love_external_pct=self._get_value(v, 'love_external_pct', default=None),
+            peace_internal_pct=self._get_value(v, 'peace_internal_pct', default=None),
+            peace_external_pct=self._get_value(v, 'peace_external_pct', default=None),
+            bliss_internal_pct=self._get_value(v, 'bliss_internal_pct', default=None),
+            bliss_external_pct=self._get_value(v, 'bliss_external_pct', default=None),
+            satisfaction_internal_pct=self._get_value(v, 'satisfaction_internal_pct', default=None),
+            satisfaction_external_pct=self._get_value(v, 'satisfaction_external_pct', default=None),
+            freedom_internal_pct=self._get_value(v, 'freedom_internal_pct', default=None),
+            freedom_external_pct=self._get_value(v, 'freedom_external_pct', default=None)
         )
 
         logger.debug(
@@ -419,7 +466,7 @@ class ValueOrganizer:
         logger.debug("[_organize_tier4] entry")
         v = values.get('values', values)
 
-        manifestation_days = self._get_value(v, 'manifestation_time_days', default=30.0)
+        manifestation_days = self._get_value(v, 'manifestation_time_days', default=None)
         pipeline_flow = PipelineFlow(
             stage_1_turiya=self._get_value(v, 'pipeline_stage1', default=None),
             stage_2_anandamaya=self._get_value(v, 'pipeline_stage2', default=None),
@@ -450,12 +497,12 @@ class ValueOrganizer:
         grace_mechanics = GraceMechanics(
             availability=self._get_value(v, 'grace_availability', 'Grace', default=None),
             effectiveness=self._get_value(v, 'grace_effectiveness', default=None),
-            multiplication_factor=self._get_value(v, 'grace_multiplier', default=1.0),
+            multiplication_factor=self._get_value(v, 'grace_multiplier', default=None),
             timing_probability=self._get_value(v, 'grace_timing_prob', default=None)
         )
 
         network_effects = NetworkEffects(
-            coherence_multiplier=self._get_value(v, 'network_coherence_mult', default=1.0),
+            coherence_multiplier=self._get_value(v, 'network_coherence_mult', default=None),
             acceleration_factor=self._get_value(v, 'network_accel', default=None),
             collective_breakthrough_prob=self._get_value(v, 'network_breakthrough_prob', default=None),
             resonance_amplification=self._get_value(v, 'network_resonance', default=None),
@@ -502,7 +549,7 @@ class ValueOrganizer:
             to_goal=v.get('timeline_to_goal', "unknown"),
             to_next_s_level=v.get('timeline_to_next_s', "unknown"),
             evolution_rate=self._get_value(v, 'evolution_rate', default=None),
-            acceleration_factor=self._get_value(v, 'evolution_accel', default=1.0)
+            acceleration_factor=self._get_value(v, 'evolution_accel', default=None)
         )
 
         transformation_vectors = TransformationVectors(
@@ -523,11 +570,11 @@ class ValueOrganizer:
         )
 
         frequency_analysis = FrequencyAnalysis(
-            dominant_frequency=self._get_value(v, 'freq_dominant', default=7.83),
+            dominant_frequency=self._get_value(v, 'freq_dominant', default=None),
             harmonic_content=v.get('freq_harmonics', ""),
             power_spectral_density=self._get_value(v, 'freq_psd', default=None),
             resonance_strength=self._get_value(v, 'freq_resonance', default=None),
-            decoherence_time=self._get_value(v, 'freq_decoherence', default=1.0)
+            decoherence_time=self._get_value(v, 'freq_decoherence', default=None)
         )
 
         logger.debug(
@@ -681,7 +728,7 @@ class ValueOrganizer:
             implicit_goal=goal_data.get('implicit_goal', ''),
             why_category=goal_data.get('why_category', ''),
             death_architecture_required=goal_data.get('death_architecture_required', ''),
-            s_level_requirement=goal_data.get('s_level_requirement', 3.0)
+            s_level_requirement=goal_data.get('s_level_requirement')
         )
         logger.debug(
             f"[VALUE_ORGANIZER] Goal context extracted: category={gc.category} "

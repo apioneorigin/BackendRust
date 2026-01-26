@@ -151,32 +151,35 @@ class CoherenceValidator:
     CONSISTENCY_RULES = [
         {
             'name': 'grace_requires_surrender',
-            'condition': lambda ops: ops.get('G_grace', 0) > 0.7,
-            'requirement': lambda ops: ops.get('S_surrender', 0) > 0.5,
+            'condition': lambda ops: None if ops.get('G_grace') is None else ops['G_grace'] > 0.7,
+            'requirement': lambda ops: None if ops.get('S_surrender') is None else ops['S_surrender'] > 0.5,
             'message': "High grace requires surrender > 0.5"
         },
         {
             'name': 'void_requires_surrender',
-            'condition': lambda ops: ops.get('V_void', 0) > 0.6,
-            'requirement': lambda ops: ops.get('S_surrender', 0) > 0.5 and ops.get('At_attachment', 1) < 0.4,
+            'condition': lambda ops: None if ops.get('V_void') is None else ops['V_void'] > 0.6,
+            'requirement': lambda ops: (
+                None if (ops.get('S_surrender') is None or ops.get('At_attachment') is None)
+                else (ops['S_surrender'] > 0.5 and ops['At_attachment'] < 0.4)
+            ),
             'message': "Void tolerance requires surrender and low attachment"
         },
         {
             'name': 'witness_requires_awareness',
-            'condition': lambda ops: ops.get('W_witness', 0) > 0.7,
-            'requirement': lambda ops: ops.get('A_aware', 0) > 0.6,
+            'condition': lambda ops: None if ops.get('W_witness') is None else ops['W_witness'] > 0.7,
+            'requirement': lambda ops: None if ops.get('A_aware') is None else ops['A_aware'] > 0.6,
             'message': "High witness requires awareness > 0.6"
         },
         {
             'name': 'intention_requires_dharma',
-            'condition': lambda ops: ops.get('I_intention', 0) > 0.8,
-            'requirement': lambda ops: ops.get('D_dharma', 0) > 0.5,
+            'condition': lambda ops: None if ops.get('I_intention') is None else ops['I_intention'] > 0.8,
+            'requirement': lambda ops: None if ops.get('D_dharma') is None else ops['D_dharma'] > 0.5,
             'message': "Strong intention works best with dharma alignment"
         },
         {
             'name': 'service_reduces_attachment',
-            'condition': lambda ops: ops.get('Se_service', 0) > 0.7,
-            'requirement': lambda ops: ops.get('At_attachment', 1) < 0.5,
+            'condition': lambda ops: None if ops.get('Se_service') is None else ops['Se_service'] > 0.7,
+            'requirement': lambda ops: None if ops.get('At_attachment') is None else ops['At_attachment'] < 0.5,
             'message': "True service is incompatible with high attachment"
         }
     ]
@@ -289,8 +292,10 @@ class CoherenceValidator:
         scores = []
 
         for op1, op2 in self.INVERSE_PAIRS:
-            val1 = operators.get(op1, 0.5)
-            val2 = operators.get(op2, 0.5)
+            val1 = operators.get(op1)
+            val2 = operators.get(op2)
+            if val1 is None or val2 is None:
+                continue
 
             pair_sum = val1 + val2
             # Should be close to 1.0 (tolerance 0.3)
@@ -327,8 +332,10 @@ class CoherenceValidator:
         scores = []
 
         for op1, op2 in self.COMPLEMENTARY_PAIRS:
-            val1 = operators.get(op1, 0.5)
-            val2 = operators.get(op2, 0.5)
+            val1 = operators.get(op1)
+            val2 = operators.get(op2)
+            if val1 is None or val2 is None:
+                continue
 
             gap = abs(val1 - val2)
 
@@ -372,12 +379,16 @@ class CoherenceValidator:
         score = 1.0
 
         for high_op, low_ops, min_foundation in tier_requirements:
-            high_val = operators.get(high_op, 0.5)
+            high_val = operators.get(high_op)
+            if high_val is None:
+                continue
 
             if high_val > 0.6:
                 foundation_vals = []
                 for low_op in low_ops:
-                    val = operators.get(low_op, 0.5)
+                    val = operators.get(low_op)
+                    if val is None:
+                        continue
                     # For attachment, invert (low is good)
                     if 'attachment' in low_op.lower():
                         val = 1 - val
@@ -420,7 +431,9 @@ class CoherenceValidator:
         checks_count = 0
 
         for op, (min_val, max_val) in ranges.items():
-            val = operators.get(op, 0.5)
+            val = operators.get(op)
+            if val is None:
+                continue
             checks_count += 1
 
             if val < min_val - 0.1 or val > max_val + 0.1:
@@ -460,20 +473,25 @@ class CoherenceValidator:
         rules_checked = 0
 
         for rule in self.CONSISTENCY_RULES:
-            if rule['condition'](operators):
-                rules_checked += 1
+            cond = rule['condition'](operators)
+            if cond is None or not cond:
+                continue
+            rules_checked += 1
 
-                if not rule['requirement'](operators):
-                    violations.append(CoherenceViolation(
-                        violation_type='internal',
-                        operators_involved=[],
-                        expected_relationship=rule['message'],
-                        actual_relationship="Requirement not met",
-                        severity=0.5,
-                        correction_suggestion=rule['message']
-                    ))
-                else:
-                    rules_passed += 1
+            req = rule['requirement'](operators)
+            if req is None:
+                continue
+            if not req:
+                violations.append(CoherenceViolation(
+                    violation_type='internal',
+                    operators_involved=[],
+                    expected_relationship=rule['message'],
+                    actual_relationship="Requirement not met",
+                    severity=0.5,
+                    correction_suggestion=rule['message']
+                ))
+            else:
+                rules_passed += 1
 
         if rules_checked > 0:
             score = rules_passed / rules_checked
@@ -499,8 +517,10 @@ class CoherenceValidator:
                 if violation.violation_type == 'inverse':
                     # Adjust to make sum closer to 1.0
                     op1, op2 = violation.operators_involved
-                    val1 = operators.get(op1, 0.5)
-                    val2 = operators.get(op2, 0.5)
+                    val1 = operators.get(op1)
+                    val2 = operators.get(op2)
+                    if val1 is None or val2 is None:
+                        continue
                     current_sum = val1 + val2
                     adjustment = (1.0 - current_sum) / 2
 
@@ -512,8 +532,10 @@ class CoherenceValidator:
                 elif violation.violation_type == 'complementary':
                     # Bring values closer together
                     op1, op2 = violation.operators_involved
-                    val1 = operators.get(op1, 0.5)
-                    val2 = operators.get(op2, 0.5)
+                    val1 = operators.get(op1)
+                    val2 = operators.get(op2)
+                    if val1 is None or val2 is None:
+                        continue
                     avg = (val1 + val2) / 2
 
                     adjustments[op1] = val1 + (avg - val1) * 0.3

@@ -75,9 +75,9 @@ class ReverseMappingResult:
     primary_blockers: List[str]
     primary_enablers: List[str]
 
-    s_level_requirement: float
-    karma_requirement: float
-    grace_requirement: float
+    s_level_requirement: Optional[float]
+    karma_requirement: Optional[float]
+    grace_requirement: Optional[float]
 
     intermediate_goals: List[str]  # If direct path not possible
 
@@ -409,10 +409,13 @@ class ReverseCausalityEngine:
                 achieved_outcomes[outcome] = val
 
         # Calculate gap as average deviation
-        total_gap = sum(
-            abs(achieved_outcomes.get(k, 0) - v)
-            for k, v in desired_outcomes.items()
-        ) / len(desired_outcomes)
+        gap_terms = []
+        for k, v in desired_outcomes.items():
+            achieved = achieved_outcomes.get(k)
+            if achieved is None:
+                continue
+            gap_terms.append(abs(achieved - v))
+        total_gap = sum(gap_terms) / len(desired_outcomes) if gap_terms else 0.0
 
         achievement_prob = self._calculate_achievement_probability(
             current_operators, required_operators
@@ -497,8 +500,10 @@ class ReverseCausalityEngine:
             # Update operators
             for op, grad in gradients.items():
                 if abs(grad) > 0.001:
-                    # Consider difficulty (config metadata - use or 0.5)
-                    difficulty = self.OPERATORS.get(op, {}).get('difficulty') or 0.5
+                    # Consider difficulty (config metadata)
+                    difficulty = self.OPERATORS.get(op, {}).get('difficulty')
+                    if difficulty is None:
+                        continue
                     effective_lr = lr * (1 - difficulty * 0.5)
 
                     delta = effective_lr * error * (grad / (abs(grad) + 0.1))
@@ -569,8 +574,10 @@ class ReverseCausalityEngine:
                 gradient = (loss_plus - current_loss) / epsilon
 
                 # Update (gradient descent minimizes loss)
-                # difficulty is config metadata - use or 0.5
-                difficulty = self.OPERATORS.get(op, {}).get('difficulty') or 0.5
+                # difficulty is config metadata
+                difficulty = self.OPERATORS.get(op, {}).get('difficulty')
+                if difficulty is None:
+                    continue
                 effective_lr = lr * (1 - difficulty * 0.3)
 
                 new_value = operators.get(op) - effective_lr * gradient
@@ -610,8 +617,10 @@ class ReverseCausalityEngine:
             change = abs(req_val - curr_val)
 
             if change > 0.01:
-                # difficulty is config metadata - use or 0.5
-                difficulty = self.OPERATORS.get(op, {}).get('difficulty') or 0.5
+                # difficulty is config metadata
+                difficulty = self.OPERATORS.get(op, {}).get('difficulty')
+                if difficulty is None:
+                    continue
                 total_difficulty += change * difficulty
                 total_change += change
 
@@ -739,8 +748,10 @@ class ReverseCausalityEngine:
             delta = req_val - curr_val
 
             if abs(delta) > 0.02:
-                # difficulty is config metadata - use or 0.5
-                difficulty = self.OPERATORS.get(op, {}).get('difficulty') or 0.5
+                # difficulty is config metadata
+                difficulty = self.OPERATORS.get(op, {}).get('difficulty')
+                if difficulty is None:
+                    continue
 
                 if delta > 0:
                     change_type = 'increase'
@@ -811,9 +822,9 @@ class ReverseCausalityEngine:
             current_gap=gap,
             primary_blockers=blockers[:3],
             primary_enablers=enablers[:3],
-            s_level_requirement=s_level_req if s_level_req is not None else 3.0,
-            karma_requirement=(1 - karma_req) if karma_req is not None else 0.0,
-            grace_requirement=grace_req if grace_req is not None else 0.0,
+            s_level_requirement=s_level_req,
+            karma_requirement=(1 - karma_req) if karma_req is not None else None,
+            grace_requirement=grace_req,
             intermediate_goals=intermediate_goals,
             sensitivity_analysis=sensitivity
         )

@@ -138,7 +138,7 @@ class BottleneckDetector:
 
         # Sort by impact (high first)
         impact_order = {'high': 0, 'medium': 1, 'low': 2}
-        bottlenecks.sort(key=lambda b: (impact_order.get(b.impact, 3), -b.value))
+        bottlenecks.sort(key=lambda b: (impact_order.get(b.impact) if b.impact in impact_order else 3, -b.value))
 
         high_count = sum(1 for b in bottlenecks if b.impact == 'high')
         root_count = sum(1 for b in bottlenecks if b.is_root_separation_pattern)
@@ -202,7 +202,10 @@ class BottleneckDetector:
 
                 # Low flow operators indicate reduced unity capacity
                 # Separation amplification is inverse - low unity = high separation effect
-                sep_amp = (1.0 - value) * UNITY_AMPLIFYING_OPERATORS.get(var, 0.5)
+                unity_base = UNITY_AMPLIFYING_OPERATORS.get(var)
+                if unity_base is None:
+                    continue
+                sep_amp = (1.0 - value) * unity_base
                 is_root = sep_amp > 0.6
 
                 # Generate interventions for building unity capacity
@@ -243,7 +246,10 @@ class BottleneckDetector:
                 # Inverse pairs are root separation patterns by definition
                 # They represent the core Maya-Witness polarity
                 sep_amp_high = calculate_separation_amplification(high_var, high_val)
-                sep_amp_low = (1.0 - low_val) * UNITY_AMPLIFYING_OPERATORS.get(low_var, 0.5)
+                unity_base_low = UNITY_AMPLIFYING_OPERATORS.get(low_var)
+                if sep_amp_high is None or unity_base_low is None:
+                    continue
+                sep_amp_low = (1.0 - low_val) * unity_base_low
                 combined_sep_amp = (sep_amp_high + sep_amp_low) / 2.0
 
                 # Generate dual interventions

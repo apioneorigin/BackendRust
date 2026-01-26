@@ -315,29 +315,28 @@ class QuantumMechanics:
 
         barrier_config = self.BARRIER_TYPES[barrier_type]
 
-        # Calculate barrier height
+        # Calculate barrier height — ZERO-FALLBACK: all required
         barrier_op = operators.get(barrier_config['operator'])
         Hf = operators.get('Hf_habit')
         G = operators.get('G_grace')
         S = operators.get('S_surrender')
         W = operators.get('W_witness')
 
-        if barrier_op is None:
-            barrier_op = 0.0
+        required = {'barrier_op': barrier_op, 'Hf_habit': Hf, 'G_grace': G, 'S_surrender': S, 'W_witness': W}
+        missing = [k for k, v in required.items() if v is None]
+        if missing:
+            logger.warning(f"[analyze_tunneling] missing required operators: {missing}, returning None")
+            return None
+
         barrier_height = barrier_config['base_height'] * barrier_op
 
         # Barrier width (related to how deeply ingrained)
-        barrier_width = 0.5 + (Hf if Hf is not None else 0.0) * 0.5  # 0.5 to 1.0
+        barrier_width = 0.5 + Hf * 0.5  # 0.5 to 1.0
 
         # Tunneling probability formula
         # P = exp(-2 × k × width) where k depends on height
         k = math.sqrt(barrier_height) * 2
         tunneling_prob = math.exp(-2 * k * barrier_width)
-
-        # Modifiers — use 0.0 for missing (no contribution, not midpoint fabrication)
-        G = G if G is not None else 0.0
-        S = S if S is not None else 0.0
-        W = W if W is not None else 0.0
 
         # Grace dramatically increases tunneling
         grace_multiplier = 1 + G * 2
@@ -403,10 +402,26 @@ class QuantumMechanics:
             f"[analyze_collapse] outcomes={len(possible_outcomes)}, "
             f"desired_outcome={desired_outcome}, operators={len(operators)} keys"
         )
-        I = operators.get('I_intention') or 0.0
-        W = operators.get('W_witness') or 0.0
-        G = operators.get('G_grace') or 0.0
-        Co = operators.get('Co_coherence') or 0.0
+        # ZERO-FALLBACK: All operators required for collapse analysis
+        required = {
+            'I_intention': operators.get('I_intention'),
+            'W_witness': operators.get('W_witness'),
+            'G_grace': operators.get('G_grace'),
+            'Co_coherence': operators.get('Co_coherence'),
+            'Sh_shakti': operators.get('Sh_shakti'),
+            'A_aware': operators.get('A_aware'),
+        }
+        missing = [k for k, v in required.items() if v is None]
+        if missing:
+            logger.warning(f"[analyze_collapse] missing required operators: {missing}, returning None")
+            return None
+
+        I = required['I_intention']
+        W = required['W_witness']
+        G = required['G_grace']
+        Co = required['Co_coherence']
+        Sh = required['Sh_shakti']
+        A = required['A_aware']
 
         # Calculate probability for each outcome
         outcome_probs = {}
@@ -439,11 +454,9 @@ class QuantumMechanics:
         collapse_prob = W * Co * I
 
         # Catalyst strength
-        Sh = operators.get('Sh_shakti') or 0.0
         catalyst_strength = (I * 0.4 + G * 0.3 + Sh * 0.3)
 
         # Observer effect (how much observation affects outcome)
-        A = operators.get('A_aware') or 0.0
         observer_effect = W * 0.7 + A * 0.3
 
         # Timeline estimate
@@ -502,23 +515,40 @@ class QuantumMechanics:
                 'reason': 'Gap too large for quantum jump (max 3 levels)'
             }
 
+        # ZERO-FALLBACK: All operators required for jump calculation
+        required = {
+            'G_grace': operators.get('G_grace'),
+            'S_surrender': operators.get('S_surrender'),
+            'V_void': operators.get('V_void'),
+            'R_resistance': operators.get('R_resistance'),
+        }
+        missing = [k for k, v in required.items() if v is None]
+        if missing:
+            logger.warning(f"[calculate_quantum_jump_probability] missing required operators: {missing}")
+            return {
+                'probability': None,
+                'possible': False,
+                'reason': f'Missing required operators: {missing}'
+            }
+
+        G = required['G_grace']
+        S = required['S_surrender']
+        V = required['V_void']
+        R = required['R_resistance']
+
         # Base probability decreases with gap
         base_prob = 0.3 / level_gap
 
         # Grace dramatically enables jumps
-        G = operators.get('G_grace') or 0.0
         grace_factor = G ** 2 * 3  # Quadratic effect
 
         # Surrender required
-        S = operators.get('S_surrender') or 0.0
         surrender_factor = S * 1.5
 
         # Void tolerance needed
-        V = operators.get('V_void') or 0.0
         void_factor = V * 1.2
 
         # Resistance blocks jumps
-        R = operators.get('R_resistance') or 0.0
         resistance_factor = 1 - R * 0.7
 
         final_prob = base_prob * grace_factor * surrender_factor * void_factor * resistance_factor
