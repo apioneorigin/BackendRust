@@ -419,10 +419,6 @@ class MultiRealityEngine:
         branches = []
 
         for choice_id, probability in choice_probabilities.items():
-            # Check if this is a significant branching point
-            # (probability close to 0.5 indicates branching)
-            is_branching = abs(probability - 0.5) < 0.2
-
             branch = TimelineBranch(
                 branch_id=choice_id,
                 probability=probability,

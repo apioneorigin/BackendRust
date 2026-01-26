@@ -155,8 +155,6 @@ def calculate_unity_pathway(
     S = required['S_surrender'] if required['S_surrender'] is not None else 0.0
     W = required['W_witness'] if required['W_witness'] is not None else 0.0
     G = required['G_grace'] if required['G_grace'] is not None else 0.0
-    At = required['At_attachment'] if required['At_attachment'] is not None else 0.0
-    F = required['F_fear'] if required['F_fear'] is not None else 0.0
     E = required['E_equanimity'] if required['E_equanimity'] is not None else 0.0
     P = required['P_presence'] if required['P_presence'] is not None else 0.0
 

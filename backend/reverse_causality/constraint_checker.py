@@ -460,7 +460,6 @@ class ConstraintChecker:
 
         # Check if D7 (ego death) is implied without D1-D6
         required_void = required.get('V_void')
-        required_surrender = required.get('S_surrender')
         current_attachment = current.get('At_attachment')
         current_maya = current.get('M_maya')
 

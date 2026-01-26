@@ -461,8 +461,6 @@ class EmotionAnalyzer:
         # Required operators for each guna
         sattva_ops = ['E_equanimity', 'A_aware', 'W_witness', 'Co_coherence']
         rajas_ops = ['I_intention', 'At_attachment', 'Sh_shakti', 'R_resistance']
-        tamas_ops = ['F_fear', 'Hf_habit', 'M_maya', 'A_aware']
-
         def calc_guna(op_list: List[str], weights: List[float]) -> Optional[float]:
             total = 0.0
             for op, w in zip(op_list, weights):

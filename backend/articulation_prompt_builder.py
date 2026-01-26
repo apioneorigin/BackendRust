@@ -279,7 +279,6 @@ to articulate. Don't list all values - synthesize the relevant ones.
     def _build_consciousness_state_section(self, state: ConsciousnessState) -> str:
         """Build the consciousness state section with organized values"""
         ops = state.tier1.core_operators
-        drives = state.tier1.drives
         s_level = state.tier1.s_level
 
         # Tier 2 values
@@ -605,7 +604,6 @@ No major bottlenecks detected. Transformation pathway is relatively clear."""
         if high_impact:
             sections.append("**HIGH IMPACT BOTTLENECKS:**")
             for b in high_impact[:3]:
-                sep_score = getattr(b, 'separation_amplification_score', 0)
                 root_marker = " [ROOT]" if getattr(b, 'is_root_separation_pattern', False) else ""
                 sections.append(f"- [{b.category.upper()}]{root_marker} {b.description}")
                 # Show both intervention types if available
@@ -639,7 +637,6 @@ No high-multiplier opportunities currently active. Focus on clearing bottlenecks
             # Get enhanced fields with defaults
             pathway_type = getattr(lp, 'pathway_type', 'neutral')
             unity_alignment = getattr(lp, 'unity_alignment', 0.0)
-            effective_impact = getattr(lp, 'effective_impact', lp.multiplier)
             approach_desc = getattr(lp, 'approach_description', '')
 
             # Translate pathway type

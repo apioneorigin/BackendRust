@@ -166,9 +166,6 @@ class Validator:
         # Extract observations
         observations = tier1_values.get('observations', [])
 
-        # Also check for unable_to_determine list (from evidence extraction)
-        unable_to_determine = tier1_values.get('unable_to_determine', [])
-
         obs_dict = {}
 
         for obs in observations:

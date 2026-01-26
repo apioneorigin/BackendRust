@@ -150,7 +150,6 @@ class CirclesEngine:
 
         # Calculate balance
         radii = [c.radius for c in circles.values()]
-        qualities = [c.quality for c in circles.values()]
 
         mean_radius = sum(radii) / len(radii)
         radius_variance = sum((r - mean_radius) ** 2 for r in radii) / len(radii)

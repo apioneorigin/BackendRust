@@ -261,11 +261,6 @@ class ConstellationQuestionGenerator:
         Returns:
             Question text string
         """
-        # Use first 50 chars of goal text for context
-        goal_preview = goal_context.goal_text[:50]
-        if len(goal_context.goal_text) > 50:
-            goal_preview += "..."
-
         templates = {
             'achievement': f"As you move toward this goal, which of these resonates most with what's driving you?",
             'relationship': "When you imagine this relationship unfolding, which pattern feels most true?",
