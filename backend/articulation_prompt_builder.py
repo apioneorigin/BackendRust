@@ -81,8 +81,8 @@ class ArticulationPromptBuilder:
             return ""
 
         priority_count = len(search_guidance.high_priority_values)
-        query_count = len(search_guidance.evidence_search_queries) if search_guidance.evidence_search_queries else 0
-        mapping_count = len(search_guidance.consciousness_to_reality_mappings) if search_guidance.consciousness_to_reality_mappings else 0
+        query_count = len(search_guidance.evidence_search_queries) if search_guidance.evidence_search_queries else None
+        mapping_count = len(search_guidance.consciousness_to_reality_mappings) if search_guidance.consciousness_to_reality_mappings else None
         logger.debug(
             f"[_build_search_guidance_section] guidance present: "
             f"priorities={priority_count} queries={query_count} "
@@ -207,16 +207,16 @@ ones into breakthrough insights.
             f"[_build_context_section] identity={user_context.identity} "
             f"domain={user_context.domain} "
             f"goal_len={len(user_context.goal or '')} "
-            f"constraints={len(user_context.constraints) if user_context.constraints else 0} "
-            f"searches={len(web_research.searches_performed) if web_research.searches_performed else 0} "
-            f"facts={len(web_research.key_facts) if web_research.key_facts else 0}"
+            f"constraints={len(user_context.constraints) if user_context.constraints else None} "
+            f"searches={len(web_research.searches_performed) if web_research.searches_performed else None} "
+            f"facts={len(web_research.key_facts) if web_research.key_facts else None}"
         )
         constraints_str = '\n'.join(f"- {c}" for c in user_context.constraints) if user_context.constraints else "- None specified"
 
         searches_str = ""
         if web_research.searches_performed:
             searches_str = '\n'.join(
-                f"- \"{s.get('query', 'N/A')}\": {s.get('summary', 'N/A')}"
+                f"- \"{s.get('query')}\": {s.get('summary')}"
                 for s in web_research.searches_performed
             )
         else:
@@ -605,7 +605,7 @@ to articulate. Don't list all values - synthesize the relevant ones.
             total = calc_count + non_calc_count
             if total > 0:
                 has_content = True
-                coverage = (calc_count / total * 100) if total > 0 else 0
+                coverage = (calc_count / total * 100) if total > 0 else None
                 sections.append(f"**Calculation Coverage:** {calc_count}/{total} metrics computed ({coverage:.0f}%)")
                 if non_calc_count > 0:
                     non_calc_list = ', '.join(state.non_calculated_values[:15])
@@ -625,12 +625,12 @@ to articulate. Don't list all values - synthesize the relevant ones.
         if hasattr(state, 'inference_metadata') and state.inference_metadata is not None:
             meta = state.inference_metadata
             if hasattr(meta, 'populated_operators') and hasattr(meta, 'missing_operators'):
-                populated = len(meta.populated_operators) if meta.populated_operators else 0
-                missing = len(meta.missing_operators) if meta.missing_operators else 0
+                populated = len(meta.populated_operators) if meta.populated_operators else None
+                missing = len(meta.missing_operators) if meta.missing_operators else None
                 total = populated + missing
                 if total > 0:
                     has_content = True
-                    coverage = (populated / total * 100) if total > 0 else 0
+                    coverage = (populated / total * 100) if total > 0 else None
                     sections.append(f"**Operator Coverage:** {populated}/{total} ({coverage:.0f}%)")
                     if meta.missing_operators:
                         missing_list = ', '.join(list(meta.missing_operators)[:10])
@@ -642,9 +642,9 @@ to articulate. Don't list all values - synthesize the relevant ones.
             logger.debug("[_build_data_quality_section] skipped: no quality data available")
             return ""
 
-        calc_count = len(state.calculated_values) if hasattr(state, 'calculated_values') else 0
-        non_calc_count = len(state.non_calculated_values) if hasattr(state, 'non_calculated_values') else 0
-        priority_count = len(state.missing_operator_priority) if hasattr(state, 'missing_operator_priority') else 0
+        calc_count = len(state.calculated_values) if hasattr(state, 'calculated_values') else None
+        non_calc_count = len(state.non_calculated_values) if hasattr(state, 'non_calculated_values') else None
+        priority_count = len(state.missing_operator_priority) if hasattr(state, 'missing_operator_priority') else None
         logger.debug(
             f"[_build_data_quality_section] calculated={calc_count} "
             f"non_calculated={non_calc_count} priority_missing={priority_count}"
@@ -866,28 +866,28 @@ def build_articulation_context(
     # Build search_guidance from dict if provided
     search_guidance = SearchGuidance()
     if search_guidance_data:
-        search_guidance.high_priority_values = search_guidance_data.get('high_priority_values', [])
-        search_guidance.query_pattern = search_guidance_data.get('query_pattern', '')
+        search_guidance.high_priority_values = search_guidance_data.get('high_priority_values')
+        search_guidance.query_pattern = search_guidance_data.get('query_pattern')
 
         # Build evidence search queries
-        for esq in search_guidance_data.get('evidence_search_queries', []):
+        for esq in search_guidance_data.get('evidence_search_queries'):
             if isinstance(esq, dict):
                 search_guidance.evidence_search_queries.append(
                     EvidenceSearchQuery(
-                        target_value=esq.get('target_value', ''),
-                        search_query=esq.get('search_query', ''),
-                        proof_type=esq.get('proof_type', '')
+                        target_value=esq.get('target_value'),
+                        search_query=esq.get('search_query'),
+                        proof_type=esq.get('proof_type')
                     )
                 )
 
         # Build consciousness-to-reality mappings
-        for crm in search_guidance_data.get('consciousness_to_reality_mappings', []):
+        for crm in search_guidance_data.get('consciousness_to_reality_mappings'):
             if isinstance(crm, dict):
                 search_guidance.consciousness_to_reality_mappings.append(
                     ConsciousnessRealityMapping(
-                        consciousness_value=crm.get('consciousness_value', ''),
-                        observable_reality=crm.get('observable_reality', ''),
-                        proof_search=crm.get('proof_search', '')
+                        consciousness_value=crm.get('consciousness_value'),
+                        observable_reality=crm.get('observable_reality'),
+                        proof_search=crm.get('proof_search')
                     )
                 )
 

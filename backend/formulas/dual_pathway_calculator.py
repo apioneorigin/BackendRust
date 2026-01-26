@@ -416,4 +416,4 @@ def get_category_adjustment_factors(goal_category: str) -> Dict[str, float]:
         },
     }
 
-    return adjustments.get(goal_category, adjustments['achievement'])
+    return adjustments.get(goal_category)

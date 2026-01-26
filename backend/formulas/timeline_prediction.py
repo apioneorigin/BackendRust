@@ -24,7 +24,6 @@ class BreakthroughAnalysis:
     quantum_leap_probability: float
     tipping_point_proximity: float
     breakthrough_window_active: bool
-    window_duration_estimate: Optional[float]
     readiness: float
     catalyst_strength: float
     resistance: float
@@ -43,7 +42,6 @@ class TimelinePrediction:
 @dataclass
 class ChoicePoint:
     """A critical choice point in timeline."""
-    time_estimate: float
     choice_type: str
     impact_level: float
     probability: float
@@ -179,7 +177,6 @@ class BreakthroughDynamicsEngine:
             quantum_leap_probability=probability,
             tipping_point_proximity=0.0,  # Will be calculated separately
             breakthrough_window_active=window_active,
-            window_duration_estimate=window_duration,
             readiness=readiness,
             catalyst_strength=catalyst_strength,
             resistance=total_resistance
@@ -231,7 +228,7 @@ class BreakthroughDynamicsEngine:
           (resistance < 0.4) AND
           (catalyst_present == True)
 
-        Returns: Boolean + window_duration_estimate
+        Returns: Boolean
         """
         logger.debug(
             f"[detect_breakthrough_window] tipping={tipping_point_proximity:.3f}, "
@@ -381,8 +378,6 @@ class TimelinePredictionEngine:
             impact_levels,
             lead_times
         )):
-            estimated_time = current_time + lead_time
-
             # Determine choice type based on impact
             if impact > 0.8:
                 choice_type = "major_life_transition"
@@ -394,7 +389,6 @@ class TimelinePredictionEngine:
                 choice_type = "minor_adjustment"
 
             choice_points.append(ChoicePoint(
-                time_estimate=estimated_time,
                 choice_type=choice_type,
                 impact_level=impact,
                 probability=prob

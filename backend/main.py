@@ -154,7 +154,7 @@ class APISessionStore:
         expired = []
         with self._lock:
             for sid, data in self._sessions.items():
-                if now - data.get('_created_at', 0) > max_age_seconds:
+                if now - data.get('_created_at') > max_age_seconds:
                     expired.append(sid)
             for sid in expired:
                 del self._sessions[sid]
@@ -392,7 +392,7 @@ async def process_constellation_answer(
     )
 
     # Update evidence with constellation-derived operators
-    evidence = session_data.get('evidence', {})
+    evidence = session_data.get('evidence')
     for mapped_value in mapping_result.mapped_values:
         # Add to observations list
         evidence.setdefault('observations', []).append({
@@ -442,10 +442,10 @@ async def continue_inference(
     if not session_data:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    evidence = session_data.get('evidence', {})
-    model_config = session_data.get('model_config', get_model_config(DEFAULT_MODEL))
-    prompt = session_data.get('prompt', '')
-    web_search_insights = session_data.get('web_search_insights', True)
+    evidence = session_data.get('evidence')
+    model_config = session_data.get('model_config')
+    prompt = session_data.get('prompt')
+    web_search_insights = session_data.get('web_search_insights')
 
     return EventSourceResponse(
         inference_stream_continue(
@@ -512,9 +512,9 @@ async def inference_stream_continue(
             return
 
         # Log inference results
-        formula_count = posteriors.get('formula_count', 0)
-        tiers_executed = posteriors.get('tiers_executed', 0)
-        posteriors_count = len(posteriors.get('values', {}))
+        formula_count = posteriors.get('formula_count')
+        tiers_executed = posteriors.get('tiers_executed')
+        posteriors_count = len(posteriors.get('values'))
         api_logger.info(f"[INFERENCE] Formulas: {formula_count} | Tiers: {tiers_executed} | Posteriors: {posteriors_count}")
 
         yield {
@@ -557,16 +557,16 @@ async def inference_stream_continue(
 
         # Build articulation context
         articulation_context = build_articulation_context(
-            user_identity=evidence.get('user_identity', 'User'),
-            domain=evidence.get('goal_context', {}).get('domain', 'general'),
+            user_identity=evidence.get('user_identity'),
+            domain=evidence.get('goal_context').get('domain'),
             goal=prompt,
             current_situation=prompt,
             consciousness_state=consciousness_state,
-            web_research_summary=evidence.get('web_research_summary', ''),
-            key_facts=evidence.get('key_facts', []),
+            web_research_summary=evidence.get('web_research_summary'),
+            key_facts=evidence.get('key_facts'),
             framework_concealment=True,
             domain_language=True,
-            search_guidance_data=evidence.get('search_guidance', {})
+            search_guidance_data=evidence.get('search_guidance')
         )
 
         # Step 4: LLM Call 2 - Articulation via streaming bridge
@@ -582,10 +582,10 @@ async def inference_stream_continue(
             prompt, evidence, posteriors, consciousness_state, None, model_config, web_search_insights
         ):
             if isinstance(token, dict) and token.get("__token_usage__"):
-                input_tokens = token.get("input_tokens", 0)
-                output_tokens = token.get("output_tokens", 0)
-                total_tokens = token.get("total_tokens", 0)
-                pricing = model_config.get("pricing", {"input": 0, "output": 0})
+                input_tokens = token.get("input_tokens")
+                output_tokens = token.get("output_tokens")
+                total_tokens = token.get("total_tokens")
+                pricing = model_config.get("pricing")
                 cost = (input_tokens * pricing["input"] + output_tokens * pricing["output"]) / 1_000_000
                 api_logger.info(f"[TOKEN USAGE] Input: {input_tokens}, Output: {output_tokens}, Total: {total_tokens}, Cost: ${cost:.6f}")
             else:
@@ -599,12 +599,12 @@ async def inference_stream_continue(
 
         # Check if response validation question should be asked (only once per session)
         session_data = api_session_store.get(session_id)
-        already_validated = session_data.get('_validation_asked', False) if session_data else False
+        already_validated = session_data.get('_validation_asked') if session_data else False
 
         extracted_operators = {}
-        for obs in evidence.get('observations', []):
+        for obs in evidence.get('observations'):
             if isinstance(obs, dict) and 'var' in obs and 'value' in obs:
-                canonical = SHORT_TO_CANONICAL.get(obs['var'], obs['var'])
+                canonical = SHORT_TO_CANONICAL.get(obs['var'])
                 if canonical in CANONICAL_OPERATOR_NAMES:
                     extracted_operators[canonical] = obs['value']
 
@@ -740,38 +740,38 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
         }
 
         evidence = await parse_query_with_web_research(prompt, model_config, web_search_data)
-        obs_count = len(evidence.get('observations', []))
+        obs_count = len(evidence.get('observations'))
         api_logger.info(f"[EVIDENCE] Extracted {obs_count} observations")
-        api_logger.debug(f"[EVIDENCE] Goal: {evidence.get('goal', 'N/A')}")
-        api_logger.debug(f"[EVIDENCE] Domain: {evidence.get('domain', 'N/A')}")
+        api_logger.debug(f"[EVIDENCE] Goal: {evidence.get('goal')}")
+        api_logger.debug(f"[EVIDENCE] Domain: {evidence.get('domain')}")
 
         # Log evidence grounding details
-        user_identity = evidence.get('user_identity', 'Unknown')
+        user_identity = evidence.get('user_identity')
         api_logger.info(f"[EVIDENCE] Identity assumed: {user_identity}")
 
-        search_queries = evidence.get('search_queries_used', [])
+        search_queries = evidence.get('search_queries_used')
         if search_queries:
             api_logger.info(f"[EVIDENCE] Web searches performed: {len(search_queries)}")
             for query in search_queries[:5]:  # Log first 5 queries
                 api_logger.debug(f"[EVIDENCE]   - Search: {query}")
 
-        key_facts = evidence.get('key_facts', [])
+        key_facts = evidence.get('key_facts')
         if key_facts:
             api_logger.info(f"[EVIDENCE] Key facts extracted: {len(key_facts)}")
             for fact in key_facts[:3]:  # Log first 3 facts
                 if isinstance(fact, dict):
-                    api_logger.debug(f"[EVIDENCE]   - Fact: {fact.get('fact', 'N/A')[:100]}...")
+                    api_logger.debug(f"[EVIDENCE]   - Fact: {fact.get('fact')[:100]}...")
 
-        web_summary = evidence.get('web_research_summary', '')
+        web_summary = evidence.get('web_research_summary')
         if web_summary:
             api_logger.info(f"[EVIDENCE] Research summary: {web_summary[:200]}...")
 
         # Log search guidance for evidence grounding (Phase 6 metrics)
-        query_pattern = evidence.get('query_pattern', 'general')
-        search_guidance = evidence.get('search_guidance', {})
-        high_priority_values = search_guidance.get('high_priority_values', [])
-        evidence_search_queries = search_guidance.get('evidence_search_queries', [])
-        consciousness_mappings = search_guidance.get('consciousness_to_reality_mappings', [])
+        query_pattern = evidence.get('query_pattern')
+        search_guidance = evidence.get('search_guidance')
+        high_priority_values = search_guidance.get('high_priority_values')
+        evidence_search_queries = search_guidance.get('evidence_search_queries')
+        consciousness_mappings = search_guidance.get('consciousness_to_reality_mappings')
 
         api_logger.info(f"[EVIDENCE GROUNDING] Query pattern: {query_pattern}")
         api_logger.info(f"[EVIDENCE GROUNDING] High-priority values: {len(high_priority_values)}")
@@ -782,7 +782,7 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
             api_logger.debug(f"[EVIDENCE GROUNDING] Priority values: {', '.join(high_priority_values[:5])}")
         if evidence_search_queries:
             for esq in evidence_search_queries[:3]:
-                api_logger.debug(f"[EVIDENCE GROUNDING]   - Target: {esq.get('target_value', 'N/A')} | Query: {esq.get('search_query', 'N/A')[:50]}")
+                api_logger.debug(f"[EVIDENCE GROUNDING]   - Target: {esq.get('target_value')} | Query: {esq.get('search_query')[:50]}")
 
         pipeline_logger.log_step("Evidence Extraction", {
             "observations": obs_count,
@@ -803,7 +803,7 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
         question_gen = ConstellationQuestionGenerator()
         goal_context = question_gen.parse_goal_context(
             query=prompt,
-            detected_targets=evidence.get('targets', [])
+            detected_targets=evidence.get('targets')
         )
 
         evidence['goal_context'] = {
@@ -815,9 +815,9 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
 
         # Identify extracted vs missing operators (for logging and post-response question)
         extracted_operators = {}
-        for obs in evidence.get('observations', []):
+        for obs in evidence.get('observations'):
             if isinstance(obs, dict) and 'var' in obs and 'value' in obs:
-                canonical = SHORT_TO_CANONICAL.get(obs['var'], obs['var'])
+                canonical = SHORT_TO_CANONICAL.get(obs['var'])
                 if canonical in CANONICAL_OPERATOR_NAMES:
                     extracted_operators[canonical] = obs['value']
 
@@ -869,9 +869,9 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
             return
 
         # Log inference results
-        formula_count = posteriors.get('formula_count', 0)
-        tiers_executed = posteriors.get('tiers_executed', 0)
-        posteriors_count = len(posteriors.get('values', {}))
+        formula_count = posteriors.get('formula_count')
+        tiers_executed = posteriors.get('tiers_executed')
+        posteriors_count = len(posteriors.get('values'))
         api_logger.info(f"[INFERENCE] Formulas: {formula_count} | Tiers: {tiers_executed} | Posteriors: {posteriors_count}")
         pipeline_logger.log_step("Inference", {"formulas": formula_count, "tiers": tiers_executed, "posteriors": posteriors_count})
 
@@ -899,10 +899,10 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
         )
 
         # PURE ARCHITECTURE: Log that ALL values are being sent to LLM
-        posteriors_values = posteriors.get('values', posteriors)
-        total_values = len([v for v in posteriors_values.values() if v is not None]) if isinstance(posteriors_values, dict) else 0
+        posteriors_values = posteriors.get('values')
+        total_values = len([v for v in posteriors_values.values() if v is not None]) if isinstance(posteriors_values, dict) else None
         api_logger.info(f"[PURE ARCHITECTURE] Sending ALL {total_values} non-null values to LLM Call 2")
-        api_logger.info(f"[PURE ARCHITECTURE] Context provided: targets={len(evidence.get('targets', []))}, query_pattern={evidence.get('query_pattern', 'unknown')}")
+        api_logger.info(f"[PURE ARCHITECTURE] Context provided: targets={len(evidence.get('targets'))}, query_pattern={evidence.get('query_pattern')}")
 
         articulation_logger.info(f"[VALUE ORGANIZER] S-Level: {consciousness_state.tier1.s_level.current:.1f} ({consciousness_state.tier1.s_level.label})")
         articulation_logger.debug(f"[VALUE ORGANIZER] Tier1 operators: {len(vars(consciousness_state.tier1))} fields")
@@ -945,13 +945,13 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
 
             try:
                 reverse_mapping_data = await run_reverse_mapping_for_articulation(
-                    goal=evidence.get('goal', prompt),
+                    goal=evidence.get('goal'),
                     evidence=evidence,
                     consciousness_state=consciousness_state
                 )
 
-                pathway_count = reverse_mapping_data.get('pathways_generated', 0)
-                mvt_count = reverse_mapping_data.get('mvt_operators', 0)
+                pathway_count = reverse_mapping_data.get('pathways_generated')
+                mvt_count = reverse_mapping_data.get('mvt_operators')
                 reverse_logger.info(f"[REVERSE MAPPING] Complete: {pathway_count} pathways, {mvt_count} MVT operators")
                 pipeline_logger.log_step("Reverse Mapping", {"pathways": pathway_count, "mvt_operators": mvt_count})
 
@@ -990,12 +990,12 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
         ):
             # Check if this is a token usage object (yielded at end of stream)
             if isinstance(token, dict) and token.get("__token_usage__"):
-                input_tokens = token.get("input_tokens", 0)
-                output_tokens = token.get("output_tokens", 0)
-                total_tokens = token.get("total_tokens", 0)
+                input_tokens = token.get("input_tokens")
+                output_tokens = token.get("output_tokens")
+                total_tokens = token.get("total_tokens")
 
                 # Calculate cost based on model pricing
-                pricing = model_config.get("pricing", {"input": 0, "output": 0})
+                pricing = model_config.get("pricing")
                 cost = (input_tokens * pricing["input"] + output_tokens * pricing["output"]) / 1_000_000
 
                 token_usage = {
@@ -1016,9 +1016,9 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
         pipeline_logger.log_step("Articulation", {"tokens": token_count})
 
         # Log comprehensive evidence-grounding metrics
-        query_pattern = evidence.get('query_pattern', 'general')
-        search_guidance = evidence.get('search_guidance', {})
-        posteriors_values = posteriors.get('values', {})
+        query_pattern = evidence.get('query_pattern')
+        search_guidance = evidence.get('search_guidance')
+        posteriors_values = posteriors.get('values')
         extreme_values = sum(1 for v in posteriors_values.values()
                            if isinstance(v, (int, float)) and (v > 0.7 or v < 0.3))
 
@@ -1026,13 +1026,13 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
 [EVIDENCE GROUNDING METRICS]
 Query: {prompt[:100]}...
 Query Pattern: {query_pattern}
-Targets Requested: {len(evidence.get('targets', []))}
-Search Guidance Entries: {len(search_guidance.get('high_priority_values', []))}
-Evidence Search Queries: {len(search_guidance.get('evidence_search_queries', []))}
-Consciousness→Reality Mappings: {len(search_guidance.get('consciousness_to_reality_mappings', []))}
+Targets Requested: {len(evidence.get('targets'))}
+Search Guidance Entries: {len(search_guidance.get('high_priority_values'))}
+Evidence Search Queries: {len(search_guidance.get('evidence_search_queries'))}
+Consciousness→Reality Mappings: {len(search_guidance.get('consciousness_to_reality_mappings'))}
 Values Sent to LLM: {len(posteriors_values)}
 Extreme Values (>0.7 or <0.3): {extreme_values}
-Web Searches in Call 1: {len(evidence.get('search_queries_used', []))}
+Web Searches in Call 1: {len(evidence.get('search_queries_used'))}
 Web Search Enabled Call 2: {web_search_insights}
 Articulation Tokens: {token_count}
 """)
@@ -1130,7 +1130,7 @@ async def parse_query_with_web_research(prompt: str, model_config: dict, use_web
     Returns structured evidence for inference engine with search_guidance for Call 2.
     Supports both OpenAI and Anthropic providers with optional web search.
     """
-    provider = model_config.get("provider", "openai")
+    provider = model_config.get("provider")
     api_key = model_config.get("api_key")
     model = model_config.get("model")
 
@@ -1450,10 +1450,10 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
                     data = response.json()
 
                     # Log prompt cache usage for Anthropic
-                    usage = data.get("usage", {})
-                    cache_creation = usage.get("cache_creation_input_tokens", 0)
-                    cache_read = usage.get("cache_read_input_tokens", 0)
-                    input_tokens = usage.get("input_tokens", 0)
+                    usage = data.get("usage")
+                    cache_creation = usage.get("cache_creation_input_tokens")
+                    cache_read = usage.get("cache_read_input_tokens")
+                    input_tokens = usage.get("input_tokens")
                     if cache_read > 0:
                         api_logger.info(f"[PARSE CACHE] Cache HIT: {cache_read} tokens read from cache (saved ~90% on {cache_read} tokens)")
                     elif cache_creation > 0:
@@ -1462,10 +1462,10 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
                         api_logger.info(f"[PARSE CACHE] No cache activity (input_tokens={input_tokens})")
 
                     # Log web search tool uses
-                    content = data.get("content", [])
+                    content = data.get("content")
                     for block in content:
                         if block.get("type") == "tool_use" and block.get("name") == "web_search":
-                            query = block.get("input", {}).get("query", "")
+                            query = block.get("input").get("query")
                             if query:
                                 search_queries_logged.append(query)
                                 api_logger.info(f"[PARSE SEARCH] Anthropic query: {query}")
@@ -1474,7 +1474,7 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
                     response_text = ""
                     for block in content:
                         if block.get("type") == "text":
-                            response_text += block.get("text", "")
+                            response_text += block.get("text")
 
                     if not response_text:
                         api_logger.error(f"[PARSE] Anthropic returned no text. Content types: {[b.get('type') for b in content]}")
@@ -1606,15 +1606,15 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
                     api_logger.debug(f"[PARSE] OpenAI response keys: {list(data.keys())}")
 
                     # Log web search queries from OpenAI response
-                    output = data.get("output", [])
+                    output = data.get("output")
                     output_types = [item.get("type") for item in output]
                     api_logger.debug(f"[PARSE] Output types: {output_types}")
 
                     for item in output:
-                        item_type = item.get("type", "")
+                        item_type = item.get("type")
                         # Check multiple possible web search result formats
                         if item_type == "web_search_call":
-                            query = item.get("query", "")
+                            query = item.get("query")
                             if query:
                                 search_queries_logged.append(query)
                                 api_logger.info(f"[PARSE SEARCH] Query: {query}")
@@ -1625,14 +1625,14 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
                                 search_queries_logged.append(item["query"])
                         # Also check for tool_call format
                         elif item_type == "tool_call" and item.get("name") == "web_search":
-                            args = item.get("arguments", {})
+                            args = item.get("arguments")
                             if isinstance(args, str):
                                 import json as json_mod
                                 try:
                                     args = json_mod.loads(args)
                                 except:
                                     pass
-                            query = args.get("query", "") if isinstance(args, dict) else ""
+                            query = args.get("query") if isinstance(args, dict) else ""
                             if query:
                                 search_queries_logged.append(query)
                                 api_logger.info(f"[PARSE SEARCH] Query: {query}")
@@ -1649,15 +1649,15 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
                     if not response_text:
                         for item in output:
                             if item.get("type") == "message" and item.get("role") == "assistant":
-                                content = item.get("content", [])
+                                content = item.get("content")
                                 for c in content:
                                     if c.get("type") == "output_text":
-                                        response_text = c.get("text", "")
+                                        response_text = c.get("text")
                                         if response_text:
                                             api_logger.debug("[PARSE] Extracted from output[].content[].text")
                                             break
                                     elif c.get("type") == "text":
-                                        response_text = c.get("text", "")
+                                        response_text = c.get("text")
                                         if response_text:
                                             api_logger.debug("[PARSE] Extracted from output[].content[].text (text type)")
                                             break
@@ -1666,10 +1666,10 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
 
                     # Path 3: choices array (legacy format)
                     if not response_text and "choices" in data:
-                        choices = data.get("choices", [])
+                        choices = data.get("choices")
                         if choices:
-                            message = choices[0].get("message", {})
-                            response_text = message.get("content", "")
+                            message = choices[0].get("message")
+                            response_text = message.get("content")
                             if response_text:
                                 api_logger.debug("[PARSE] Extracted from choices[].message.content")
 
@@ -1716,7 +1716,7 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
                 if "observations" not in result or not result["observations"]:
                     raise ValueError("Response missing required 'observations' field")
 
-                api_logger.info(f"[PARSE] Successfully parsed response with {len(result.get('observations', []))} observations")
+                api_logger.info(f"[PARSE] Successfully parsed response with {len(result.get('observations'))} observations")
                 return result
 
         except (json.JSONDecodeError, ValueError) as e:
@@ -1773,7 +1773,7 @@ async def format_results_streaming_bridge(
     if model_config is None:
         model_config = get_model_config(DEFAULT_MODEL)
 
-    provider = model_config.get("provider", "openai")
+    provider = model_config.get("provider")
     api_key = model_config.get("api_key")
     model = model_config.get("model")
 
@@ -1786,7 +1786,7 @@ async def format_results_streaming_bridge(
     articulation_logger.info(f"  - Leverage points: {leverage_count}")
     articulation_logger.info(f"  - Reverse mapping: {has_reverse_mapping}")
     articulation_logger.debug(f"  - S-Level: {consciousness_state.tier1.s_level.current:.1f}")
-    articulation_logger.debug(f"  - Domain: {evidence.get('domain', 'general')}")
+    articulation_logger.debug(f"  - Domain: {evidence.get('domain')}")
 
     if not api_key:
         # Fallback: format results without API
@@ -1801,20 +1801,20 @@ async def format_results_streaming_bridge(
     articulation_logger.debug("[ARTICULATION BRIDGE] Building articulation context")
 
     # Extract search_guidance from evidence (from Call 1)
-    search_guidance_data = evidence.get('search_guidance', {})
-    query_pattern = evidence.get('query_pattern', 'general')
+    search_guidance_data = evidence.get('search_guidance')
+    query_pattern = evidence.get('query_pattern')
     if search_guidance_data:
         search_guidance_data['query_pattern'] = query_pattern
-        articulation_logger.info(f"[ARTICULATION BRIDGE] Search guidance: {len(search_guidance_data.get('high_priority_values', []))} high-priority values, pattern={query_pattern}")
+        articulation_logger.info(f"[ARTICULATION BRIDGE] Search guidance: {len(search_guidance_data.get('high_priority_values'))} high-priority values, pattern={query_pattern}")
 
     articulation_context = build_articulation_context(
-        user_identity=evidence.get('user_identity', 'User'),
-        domain=evidence.get('domain', 'general'),
-        goal=evidence.get('goal', prompt),
+        user_identity=evidence.get('user_identity'),
+        domain=evidence.get('domain'),
+        goal=evidence.get('goal'),
         current_situation=prompt,
         consciousness_state=consciousness_state,
-        web_research_summary=evidence.get('web_research_summary', ''),
-        key_facts=evidence.get('key_facts', []),
+        web_research_summary=evidence.get('web_research_summary'),
+        key_facts=evidence.get('key_facts'),
         framework_concealment=True,  # Hide OOF terminology in output
         domain_language=True,  # Use natural domain language
         search_guidance_data=search_guidance_data  # Pass search guidance for evidence grounding
@@ -1828,12 +1828,12 @@ async def format_results_streaming_bridge(
     if search_guidance_data:
         articulation_logger.info(f"[ARTICULATION BRIDGE] Evidence grounding enabled:")
         articulation_logger.info(f"  - Query pattern: {query_pattern}")
-        articulation_logger.info(f"  - High-priority values: {len(search_guidance_data.get('high_priority_values', []))}")
-        articulation_logger.info(f"  - Evidence search queries: {len(search_guidance_data.get('evidence_search_queries', []))}")
-        articulation_logger.info(f"  - Consciousness→reality mappings: {len(search_guidance_data.get('consciousness_to_reality_mappings', []))}")
+        articulation_logger.info(f"  - High-priority values: {len(search_guidance_data.get('high_priority_values'))}")
+        articulation_logger.info(f"  - Evidence search queries: {len(search_guidance_data.get('evidence_search_queries'))}")
+        articulation_logger.info(f"  - Consciousness→reality mappings: {len(search_guidance_data.get('consciousness_to_reality_mappings'))}")
         if search_guidance_data.get('evidence_search_queries'):
             for esq in search_guidance_data['evidence_search_queries'][:3]:
-                articulation_logger.debug(f"  [SEARCH QUERY] {esq.get('target_value', 'N/A')}: {esq.get('search_query', 'N/A')}")
+                articulation_logger.debug(f"  [SEARCH QUERY] {esq.get('target_value')}: {esq.get('search_query')}")
     else:
         articulation_logger.info("[ARTICULATION BRIDGE] No search guidance provided - basic articulation mode")
 
@@ -1846,27 +1846,27 @@ This user has a future-oriented goal. The following transformation data has been
 calculated by working backward from their desired outcome:
 
 **Target State:**
-- Goal: {reverse_mapping.get('goal', 'Not specified')}
-- Target S-Level: {reverse_mapping.get('target_s_level', 'N/A')}
-- Feasibility: {'✓ Achievable' if reverse_mapping.get('feasible', False) else '⚠️ Requires intermediate steps'}
-- Coherence: {'✓ Coherent' if reverse_mapping.get('coherent', False) else '⚠️ Needs adjustment'}
+- Goal: {reverse_mapping.get('goal')}
+- Target S-Level: {reverse_mapping.get('target_s_level')}
+- Feasibility: {'✓ Achievable' if reverse_mapping.get('feasible') else '⚠️ Requires intermediate steps'}
+- Coherence: {'✓ Coherent' if reverse_mapping.get('coherent') else '⚠️ Needs adjustment'}
 
 **Minimum Viable Transformation (MVT):**
 Focus changes on these key operators (in order):
-{' → '.join(reverse_mapping.get('mvt', {}).get('implementation_order', ['Not calculated']))}
+{' → '.join(reverse_mapping.get('mvt').get('implementation_order'))}
 
 **Recommended Pathway:**
-{reverse_mapping.get('best_pathway', 'Direct transformation')}
-Timeline estimate: {reverse_mapping.get('timeline', 'Variable')}
+{reverse_mapping.get('best_pathway')}
+Timeline estimate: {reverse_mapping.get('timeline')}
 
 **Grace Dependency:**
-{reverse_mapping.get('grace_dependency', 0):.0%} of this transformation depends on grace activation
+{reverse_mapping.get('grace_dependency'):.0%} of this transformation depends on grace activation
 
 **Death Processes Required:**
-{reverse_mapping.get('deaths_required', 0)} identity deaths in sequence: {', '.join(reverse_mapping.get('death_sequence', ['None']))}
+{reverse_mapping.get('deaths_required')} identity deaths in sequence: {', '.join(reverse_mapping.get('death_sequence'))}
 
 **Monitoring Indicators:**
-Check-in schedule: {reverse_mapping.get('check_in_schedule', 'Weekly')}
+Check-in schedule: {reverse_mapping.get('check_in_schedule')}
 === END REVERSE CAUSALITY MAPPING ===
 """
         articulation_prompt += reverse_mapping_section
@@ -2250,31 +2250,31 @@ SECTION 5: FIRST STEPS
                                 try:
                                     data = json.loads(data_str)
                                     if isinstance(data, dict):
-                                        event_type = data.get("type", "")
+                                        event_type = data.get("type")
                                         # Handle Anthropic streaming events
                                         if event_type == "message_start":
                                             # Input tokens and cache metrics come in message_start
-                                            usage = data.get("message", {}).get("usage", {})
-                                            input_tokens = usage.get("input_tokens", 0)
-                                            cache_creation_tokens = usage.get("cache_creation_input_tokens", 0)
-                                            cache_read_tokens = usage.get("cache_read_input_tokens", 0)
+                                            usage = data.get("message").get("usage")
+                                            input_tokens = usage.get("input_tokens")
+                                            cache_creation_tokens = usage.get("cache_creation_input_tokens")
+                                            cache_read_tokens = usage.get("cache_read_input_tokens")
                                             # Log cache activity
                                             if cache_read_tokens > 0:
                                                 api_logger.info(f"[ARTICULATION CACHE] Cache HIT: {cache_read_tokens} tokens read from cache")
                                             elif cache_creation_tokens > 0:
                                                 api_logger.info(f"[ARTICULATION CACHE] Cache WRITE: {cache_creation_tokens} tokens written to cache")
                                         elif event_type == "content_block_delta":
-                                            delta = data.get("delta", {})
+                                            delta = data.get("delta")
                                             if delta.get("type") == "text_delta":
-                                                text = delta.get("text", "")
+                                                text = delta.get("text")
                                                 if text:
                                                     content_yielded = True
                                                     tokens_streamed += 1
                                                     yield text
                                         elif event_type == "message_delta":
                                             # Output tokens come in message_delta
-                                            usage = data.get("usage", {})
-                                            output_tokens = usage.get("output_tokens", 0)
+                                            usage = data.get("usage")
+                                            output_tokens = usage.get("output_tokens")
                                 except json.JSONDecodeError:
                                     continue
 
@@ -2340,36 +2340,36 @@ SECTION 5: FIRST STEPS
                                     if isinstance(data, dict):
                                         # Log web search queries
                                         if "tool_calls" in data:
-                                            tool_calls = data.get("tool_calls", [])
+                                            tool_calls = data.get("tool_calls")
                                             if isinstance(tool_calls, list):
                                                 for tool in tool_calls:
                                                     if isinstance(tool, dict) and tool.get("type") == "web_search":
-                                                        query = tool.get("query", "")
+                                                        query = tool.get("query")
                                                         if not query and "arguments" in tool:
-                                                            args = tool.get("arguments", {})
+                                                            args = tool.get("arguments")
                                                             if isinstance(args, dict):
-                                                                query = args.get("query", "")
+                                                                query = args.get("query")
                                                         if query:
                                                             articulation_logger.info(f"[ARTICULATION SEARCH] Query: {query}")
 
                                         # Log web search results for grounding
-                                        event_type = data.get("type", "")
-                                        if event_type == "web_search_call" or "web_search" in str(data.get("tool", "")):
+                                        event_type = data.get("type")
+                                        if event_type == "web_search_call" or "web_search" in str(data.get("tool")):
                                             articulation_logger.debug(f"[ARTICULATION SEARCH] Initiated web search")
                                         if "search_results" in data or "results" in data:
-                                            results = data.get("search_results", data.get("results", []))
+                                            results = data.get("search_results")
                                             if isinstance(results, list) and results:
                                                 articulation_logger.info(f"[ARTICULATION SEARCH] Retrieved {len(results)} results")
                                                 for r in results[:3]:
                                                     if isinstance(r, dict):
-                                                        title = r.get("title", r.get("name", "Unknown"))
-                                                        url = r.get("url", r.get("link", "N/A"))
+                                                        title = r.get("title")
+                                                        url = r.get("url")
                                                         articulation_logger.debug(f"[ARTICULATION SEARCH]   - {title}: {url}")
 
                                     # Extract text from streaming response - ONLY handle delta events
                                     # Do NOT handle final/complete events to avoid duplication
                                     if isinstance(data, dict):
-                                        event_type = data.get("type", "")
+                                        event_type = data.get("type")
 
                                         # ONLY handle incremental delta events - ignore complete/done events
                                         if event_type == "response.output_text.delta":
@@ -2385,9 +2385,9 @@ SECTION 5: FIRST STEPS
                                                 yield data["delta"]["text"]
                                         # Capture token usage from response.completed event
                                         elif event_type == "response.completed":
-                                            usage = data.get("response", {}).get("usage", {})
-                                            input_tokens = usage.get("input_tokens", 0)
-                                            output_tokens = usage.get("output_tokens", 0)
+                                            usage = data.get("response").get("usage")
+                                            input_tokens = usage.get("input_tokens")
+                                            output_tokens = usage.get("output_tokens")
                                         # Skip all other events - they contain duplicates or metadata
                                         elif event_type and "error" in event_type.lower():
                                             articulation_logger.error(f"[STREAM ERROR] {data}")
@@ -2445,7 +2445,7 @@ def format_results_fallback(prompt: str, evidence: dict, posteriors: dict) -> st
         f"### Evidence Detected",
     ]
 
-    for obs in evidence.get("observations", []):
+    for obs in evidence.get("observations"):
         if isinstance(obs, dict) and 'var' in obs and 'value' in obs:
             conf_val = obs.get('confidence')
             conf_str = f"{conf_val:.2f}" if conf_val is not None else "N/A"
@@ -2456,7 +2456,7 @@ def format_results_fallback(prompt: str, evidence: dict, posteriors: dict) -> st
 
     # Show top posteriors
     sorted_posteriors = sorted(
-        posteriors.get("values", {}).items(),
+        posteriors.get("values").items(),
         key=lambda x: abs(x[1] - 0.5),
         reverse=True
     )[:10]
@@ -2680,7 +2680,6 @@ async def reverse_map_stream(
                     {
                         "name": p.name,
                         "strategy": p.strategy,
-                        "duration": p.total_duration_estimate,
                         "success_prob": p.success_probability,
                         "steps": len(p.steps)
                     }
@@ -2705,7 +2704,6 @@ async def reverse_map_stream(
                 "operators_to_change": mvt.total_operators_changed,
                 "full_operators": mvt.full_transformation_operators,
                 "efficiency": mvt.mvt_efficiency,
-                "estimated_time": mvt.estimated_time,
                 "success_probability": mvt.success_probability,
                 "changes": [
                     {
@@ -2735,8 +2733,7 @@ async def reverse_map_stream(
                 "deaths_required": len(death_sequence.deaths_required),
                 "sequence": death_sequence.sequence_order,
                 "void_tolerance_required": death_sequence.void_tolerance_required,
-                "current_void_tolerance": death_sequence.current_void_tolerance,
-                "timeline": death_sequence.timeline_estimate
+                "current_void_tolerance": death_sequence.current_void_tolerance
             })
         }
 
@@ -2801,7 +2798,6 @@ async def reverse_map_stream(
                 "implementation_order": mvt.implementation_order
             },
             "best_pathway": optimization_result.best_pathway.pathway_name,
-            "timeline": mvt.estimated_time,
             "grace_dependency": grace_req.grace_dependency
         }
 
@@ -2821,8 +2817,7 @@ async def reverse_map_stream(
                 "summary": {
                     "goal_achievable": constraint_result.feasible,
                     "mvt_operators": mvt.total_operators_changed,
-                    "pathways_generated": len(pathways),
-                    "estimated_timeline": mvt.estimated_time
+                    "pathways_generated": len(pathways)
                 }
             })
         }
@@ -2855,7 +2850,7 @@ async def run_reverse_mapping_for_articulation(
     # This uses properly computed tier-1 values after formula execution
     current_operators = _extract_operators_from_consciousness_state(consciousness_state)
     reverse_logger.debug(f"[REVERSE MAPPING] Extracted {len(current_operators)} operators from consciousness state")
-    reverse_logger.debug(f"[REVERSE MAPPING] Sample operators: Psi={current_operators.get('Psi_quality', 0):.2f}, G={current_operators.get('G_grace', 0):.2f}, K={current_operators.get('K_karma', 0):.2f}")
+    reverse_logger.debug(f"[REVERSE MAPPING] Sample operators: Psi={current_operators.get('Psi_quality'):.2f}, G={current_operators.get('G_grace'):.2f}, K={current_operators.get('K_karma'):.2f}")
 
     # Get current S-level from consciousness state
     current_s_level = consciousness_state.tier1.s_level.current
@@ -2974,7 +2969,6 @@ async def run_reverse_mapping_for_articulation(
         },
         "best_pathway": optimization_result.best_pathway.pathway_name if optimization_result else "Direct",
         "pathways_generated": len(pathways),
-        "timeline": mvt.estimated_time,
         "grace_dependency": grace_req.grace_dependency,
         "grace_availability": grace_req.current_grace_availability,
         "deaths_required": len(death_sequence.deaths_required),
@@ -2996,7 +2990,7 @@ def _validate_evidence(evidence: dict) -> List[str]:
     errors = []
 
     # Check for observations
-    observations = evidence.get('observations', [])
+    observations = evidence.get('observations')
     if not observations:
         errors.append("No observations found in evidence")
         return errors  # Can't continue validation without observations
@@ -3013,7 +3007,7 @@ def _validate_evidence(evidence: dict) -> List[str]:
             continue
 
         if 'value' not in obs:
-            errors.append(f"Observation {i} ({obs.get('var', 'unknown')}) missing 'value' field")
+            errors.append(f"Observation {i} ({obs.get('var')}) missing 'value' field")
             continue
 
         value = obs.get('value')
@@ -3143,9 +3137,9 @@ def _extract_operators_from_evidence(evidence: dict) -> Tuple[Dict[str, float], 
         'Ch': 'Ch_chitta', 'Chitta': 'Ch_chitta',
     }
 
-    for obs in evidence.get('observations', []):
+    for obs in evidence.get('observations'):
         if isinstance(obs, dict):
-            var = obs.get('var', '')
+            var = obs.get('var')
             value = obs.get('value')
             conf = obs.get('confidence')
 
@@ -3154,7 +3148,7 @@ def _extract_operators_from_evidence(evidence: dict) -> Tuple[Dict[str, float], 
                 continue
             value = max(0.0, min(1.0, float(value)))
 
-            op_name = var_to_op.get(var, var)
+            op_name = var_to_op.get(var)
             operators[op_name] = value
             confidence[op_name] = conf
 
@@ -3279,7 +3273,7 @@ Provide transformation guidance that:
                         try:
                             data = json.loads(data_str)
                             # ONLY handle delta events to avoid duplication
-                            event_type = data.get("type", "") if isinstance(data, dict) else ""
+                            event_type = data.get("type") if isinstance(data, dict) else ""
                             if event_type == "response.output_text.delta" and "delta" in data:
                                 yield data["delta"]
                             elif event_type == "response.content_part.delta":

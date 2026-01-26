@@ -59,7 +59,6 @@ class StageMonitoring:
     """Monitoring configuration for a single stage"""
     stage_number: int
     stage_name: str
-    duration_estimate: str
     leading_indicators: List[Indicator]
     lagging_indicators: List[Indicator]
     decision_points: List[DecisionPoint]
@@ -291,7 +290,6 @@ class ProgressTracker:
         return StageMonitoring(
             stage_number=stage_number,
             stage_name=step.description,
-            duration_estimate=step.duration_estimate,
             leading_indicators=leading_indicators[:4],
             lagging_indicators=lagging_indicators[:4],
             decision_points=decision_points,
@@ -589,8 +587,7 @@ class ProgressTracker:
 
         if stage <= len(plan.stages):
             stage_config = plan.stages[stage - 1]
-            report += f"**Current Stage:** {stage_config.stage_name}\n"
-            report += f"**Expected Duration:** {stage_config.duration_estimate}\n\n"
+            report += f"**Current Stage:** {stage_config.stage_name}\n\n"
 
             # Check leading indicators
             report += "### Leading Indicators\n"

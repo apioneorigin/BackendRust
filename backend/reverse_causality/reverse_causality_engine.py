@@ -279,7 +279,7 @@ class ReverseCausalityEngine:
         formula_config = self.OUTCOME_FORMULAS[desired_outcome]
         formula = formula_config['formula']
         relevant_operators = formula_config['operators']
-        inverse_operators = formula_config.get('inverse', [])
+        inverse_operators = formula_config.get('inverse')
 
         # Calculate current outcome value
         current_value = formula(current_operators)
@@ -372,7 +372,7 @@ class ReverseCausalityEngine:
             if outcome in self.OUTCOME_FORMULAS:
                 config = self.OUTCOME_FORMULAS[outcome]
                 all_operators.update(config['operators'])
-                all_inverse.update(config.get('inverse', []))
+                all_inverse.update(config.get('inverse'))
 
         # Combined loss function
         def combined_loss(ops: Dict[str, float]) -> Optional[float]:
@@ -415,7 +415,7 @@ class ReverseCausalityEngine:
             if achieved is None:
                 continue
             gap_terms.append(abs(achieved - v))
-        total_gap = sum(gap_terms) / len(desired_outcomes) if gap_terms else 0.0
+        total_gap = sum(gap_terms) / len(desired_outcomes) if gap_terms else None
 
         achievement_prob = self._calculate_achievement_probability(
             current_operators, required_operators
@@ -501,7 +501,7 @@ class ReverseCausalityEngine:
             for op, grad in gradients.items():
                 if abs(grad) > 0.001:
                     # Consider difficulty (config metadata)
-                    difficulty = self.OPERATORS.get(op, {}).get('difficulty')
+                    difficulty = self.OPERATORS.get(op).get('difficulty')
                     if difficulty is None:
                         continue
                     effective_lr = lr * (1 - difficulty * 0.5)
@@ -575,7 +575,7 @@ class ReverseCausalityEngine:
 
                 # Update (gradient descent minimizes loss)
                 # difficulty is config metadata
-                difficulty = self.OPERATORS.get(op, {}).get('difficulty')
+                difficulty = self.OPERATORS.get(op).get('difficulty')
                 if difficulty is None:
                     continue
                 effective_lr = lr * (1 - difficulty * 0.3)
@@ -618,7 +618,7 @@ class ReverseCausalityEngine:
 
             if change > 0.01:
                 # difficulty is config metadata
-                difficulty = self.OPERATORS.get(op, {}).get('difficulty')
+                difficulty = self.OPERATORS.get(op).get('difficulty')
                 if difficulty is None:
                     continue
                 total_difficulty += change * difficulty
@@ -749,7 +749,7 @@ class ReverseCausalityEngine:
 
             if abs(delta) > 0.02:
                 # difficulty is config metadata
-                difficulty = self.OPERATORS.get(op, {}).get('difficulty')
+                difficulty = self.OPERATORS.get(op).get('difficulty')
                 if difficulty is None:
                     continue
 
@@ -794,7 +794,7 @@ class ReverseCausalityEngine:
                 enablers.append(f"Increase {change.operator} to {change.required_value:.2f}")
 
         # Calculate requirements
-        s_level_req = self._estimate_s_level_requirement(required_operators)
+        s_level_req = None
         karma_req = required_operators.get('K_karma')
         grace_req = required_operators.get('G_grace')
 
@@ -828,30 +828,6 @@ class ReverseCausalityEngine:
             intermediate_goals=intermediate_goals,
             sensitivity_analysis=sensitivity
         )
-
-    def _estimate_s_level_requirement(self, operators: Dict[str, float]) -> Optional[float]:
-        """
-        Estimate the S-level required for this operator configuration.
-        Returns None if any required operator value is missing.
-        """
-        # Higher spiritual operators suggest higher S-level
-        spiritual_ops = ['S_surrender', 'G_grace', 'V_void', 'W_witness', 'A_aware']
-        spiritual_vals = [operators.get(op) for op in spiritual_ops]
-
-        # Binding operators reduce accessible S-level
-        binding_ops = ['At_attachment', 'K_karma', 'Hf_habit', 'M_maya']
-        binding_vals = [operators.get(op) for op in binding_ops]
-
-        if any(v is None for v in spiritual_vals + binding_vals):
-            return None
-
-        spiritual_avg = sum(spiritual_vals) / len(spiritual_ops)
-        binding_avg = sum(binding_vals) / len(binding_ops)
-
-        # S-level estimate (1-8 scale)
-        s_level = 3.0 + spiritual_avg * 4 - binding_avg * 2
-
-        return max(1.0, min(8.0, s_level))
 
     def _calculate_sensitivity(
         self,
@@ -910,8 +886,4 @@ class ReverseCausalityEngine:
 
     def get_operator_info(self, operator: str) -> Dict[str, Any]:
         """Get information about an operator."""
-        return self.OPERATORS.get(operator, {
-            'default': 0.5,
-            'difficulty': 0.5,
-            'category': 'unknown'
-        })
+        return self.OPERATORS.get(operator)

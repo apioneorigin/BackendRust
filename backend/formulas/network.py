@@ -510,7 +510,7 @@ class NetworkEmergenceCalculator:
             'group_meditation': {'base': 1.8, 'ops': ['Co_coherence', 'P_presence', 'Rs_resonance']}
         }
 
-        config = practice_multipliers.get(practice_type, {'base': 1.0, 'ops': []})
+        config = practice_multipliers.get(practice_type)
 
         # Calculate contribution - ZERO-FALLBACK: track missing
         relevant_values = []

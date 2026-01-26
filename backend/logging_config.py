@@ -57,7 +57,7 @@ class ColoredFormatter(logging.Formatter):
 
     def format(self, record):
         # Add color based on level
-        level_color = self.COLORS.get(record.levelname, '')
+        level_color = self.COLORS.get(record.levelname)
         reset = self.COLORS['RESET']
 
         # Format the message
@@ -82,7 +82,7 @@ def get_logger(name: str, level: Optional[int] = None) -> logging.Logger:
     if not logger.handlers:
         # Set level from component config or default
         base_component = name.split('.')[0]
-        log_level = level or COMPONENT_LEVELS.get(base_component, logging.DEBUG)
+        log_level = level or COMPONENT_LEVELS.get(base_component)
         logger.setLevel(log_level)
 
         # Console handler with colors
@@ -186,7 +186,7 @@ class PipelineLogger:
 
     def log_step(self, step_name: str, details: dict = None):
         """Log a pipeline step"""
-        elapsed = (datetime.now() - self.start_time).total_seconds() if self.start_time else 0
+        elapsed = (datetime.now() - self.start_time).total_seconds() if self.start_time else None
         self.steps.append((step_name, elapsed))
 
         detail_str = ""
@@ -197,7 +197,7 @@ class PipelineLogger:
 
     def end_pipeline(self, success: bool = True):
         """Log pipeline completion"""
-        elapsed = (datetime.now() - self.start_time).total_seconds() if self.start_time else 0
+        elapsed = (datetime.now() - self.start_time).total_seconds() if self.start_time else None
         status = "SUCCESS" if success else "FAILED"
 
         self.logger.info(f"{'='*60}")

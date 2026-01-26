@@ -176,7 +176,7 @@ class EmotionAnalyzer:
             'english': 'Disgust/Aversion',
             'valence': 'negative',
             'operators': {
-                'Av_aversion': 0.9 if 'Av_aversion' else 0.0,
+                'Av_aversion': 0.9 if 'Av_aversion' else None,
                 'R_resistance': 0.7,
                 'O_openness': -0.6,
                 'F_fear': 0.3,
@@ -342,7 +342,7 @@ class EmotionAnalyzer:
 
         ZERO-FALLBACK: Returns None intensity if required operators are missing.
         """
-        op_weights = definition.get('operators', {})
+        op_weights = definition.get('operators')
         missing_ops = []
         components = {}
 
@@ -394,9 +394,9 @@ class EmotionAnalyzer:
 
         return EmotionState(
             name=name,
-            sanskrit=definition.get('sanskrit', name.title()),
+            sanskrit=definition.get('sanskrit'),
             intensity=intensity,
-            valence=definition.get('valence', 'neutral'),
+            valence=definition.get('valence'),
             components=components,
             description=description,
             missing_operators=missing_ops

@@ -460,7 +460,7 @@ class OOFInferenceEngine:
                     if name in lib_weights and value is not None:
                         lib_sum += value * lib_weights[name]
                         lib_weight_total += lib_weights[name]
-                profile.liberation_index = lib_sum / lib_weight_total if lib_weight_total > 0 else 0.5
+                profile.liberation_index = lib_sum / lib_weight_total if lib_weight_total > 0 else None
 
                 # Integration score (how well modules align)
                 if len(values) > 1:
@@ -468,7 +468,7 @@ class OOFInferenceEngine:
                     variance = sum((v - mean_val) ** 2 for v in values) / len(values)
                     profile.integration_score = 1 - (variance ** 0.5)
                 else:
-                    profile.integration_score = 0.5
+                    profile.integration_score = None
 
                 # Transformation potential
                 if profile.panchakritya_profile and profile.death_profile:
@@ -511,8 +511,8 @@ class OOFInferenceEngine:
             practices = self.distortion_engine.get_purification_practices(
                 profile.distortion_profile
             )
-            recommendations["practice"].extend(practices.get("immediate", []))
-            recommendations["practice"].extend(practices.get("ongoing", []))
+            recommendations["practice"].extend(practices.get("immediate"))
+            recommendations["practice"].extend(practices.get("ongoing"))
 
         # Gather from kosha
         if profile.kosha_profile:
@@ -526,16 +526,16 @@ class OOFInferenceEngine:
             osafc_recs = self.osafc_engine.get_layer_recommendations(
                 profile.osafc_profile
             )
-            recommendations["development"].extend(osafc_recs.get("strengthen", []))
-            recommendations["caution"].extend(osafc_recs.get("transcend", []))
+            recommendations["development"].extend(osafc_recs.get("strengthen"))
+            recommendations["caution"].extend(osafc_recs.get("transcend"))
 
         # Gather from panchakritya
         if profile.panchakritya_profile:
             pancha_recs = self.panchakritya_engine.get_act_recommendations(
                 profile.panchakritya_profile
             )
-            recommendations["practice"].extend(pancha_recs.get("support", []))
-            recommendations["caution"].extend(pancha_recs.get("release", []))
+            recommendations["practice"].extend(pancha_recs.get("support"))
+            recommendations["caution"].extend(pancha_recs.get("release"))
 
         # Overall S-level guidance — only if s_level available
         if profile.s_level is not None:
@@ -576,7 +576,7 @@ class OOFInferenceEngine:
         Returns:
             dict with values, confidence, formula_count, metadata
         """
-        obs_count = len(evidence.get('observations', []))
+        obs_count = len(evidence.get('observations'))
         has_goal = 'goal_context' in evidence
         inference_logger.debug(
             f"[run_inference] entry: observations={obs_count} "
@@ -589,9 +589,9 @@ class OOFInferenceEngine:
         populated_operators = set()
         missing_operators = set()
 
-        observations = evidence.get('observations', [])
+        observations = evidence.get('observations')
         for obs in observations:
-            var_name = obs.get('var', '')
+            var_name = obs.get('var')
             value = obs.get('value')
             conf = obs.get('confidence')
 
@@ -601,7 +601,7 @@ class OOFInferenceEngine:
                 continue
 
             # Map short names (K, M, W) to canonical names (K_karma, M_maya, W_witness)
-            canonical_name = SHORT_TO_CANONICAL.get(var_name, var_name)
+            canonical_name = SHORT_TO_CANONICAL.get(var_name)
 
             operators[canonical_name] = float(value)
             confidence[canonical_name] = float(conf) if conf is not None else None
@@ -612,11 +612,9 @@ class OOFInferenceEngine:
             if op not in operators:
                 missing_operators.add(op)
 
-        # Get S-level — ZERO-FALLBACK: no default, None if not provided
-        s_level = operators.get('S_level', operators.get('s_level'))
+        s_level = operators.get('S_level') or operators.get('s_level')
         if s_level is None:
             inference_logger.warning("[run_inference] S_level not found in operators — missing from LLM extraction")
-            # S_level is critical for most calculations; track as missing
             missing_operators.add('S_level')
 
         # Run full calculation
@@ -633,8 +631,8 @@ class OOFInferenceEngine:
                 'At_attachment', 'F_fear', 'M_maya', 'R_resistance', 'Co_coherence'
             ]}
             dual = calculate_dual_pathways(
-                goal=goal_context.get('goal', ''),
-                goal_category=goal_context.get('category', 'achievement'),
+                goal=goal_context.get('goal'),
+                goal_category=goal_context.get('category'),
                 operators=unity_ops,
                 unity_metrics=profile.unity_profile
             )

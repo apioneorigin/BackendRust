@@ -419,7 +419,7 @@ class LeverageIdentifier:
                     amplification_multiplier=round(amplification_mult, 3),
                     effective_impact=round(1.8 * (1 + amplification_mult * 0.3), 3),
                     pathway_type='unity' if unity_alignment > 0 else 'intermediate',
-                    approach_description=matrix_unity_approaches.get(name, "Allow transformation through awareness.")
+                    approach_description=matrix_unity_approaches.get(name)
                 ))
 
         return leverage_points

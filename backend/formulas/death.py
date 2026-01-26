@@ -581,7 +581,7 @@ class DeathEngine:
     # INTEGRATION
     # -------------------------------------------------------------------------
 
-    def calculate_all_deaths(self, ops: Dict[str, float], s_level: float = 4.0) -> Dict[str, Optional[DeathScore]]:
+    def calculate_all_deaths(self, ops: Dict[str, float], s_level: Optional[float]) -> Dict[str, Optional[DeathScore]]:
         """Calculate all death type scores. Individual scores may be None if operators are missing."""
         logger.debug(f"[calculate_all_deaths] inputs: operator_count={len(ops)}, s_level={s_level:.1f}")
         results = {
@@ -637,11 +637,11 @@ class DeathEngine:
 
         # Calculate overall transformation intensity
         intensities = [d.intensity for d in valid_deaths.values()]
-        overall_intensity = sum(intensities) / len(intensities) if intensities else 0.0
+        overall_intensity = sum(intensities) / len(intensities) if intensities else None
 
         # Calculate death readiness (overall)
         readiness_scores = [d.s_level_readiness for d in valid_deaths.values()]
-        death_readiness = sum(readiness_scores) / len(readiness_scores) if readiness_scores else 0.0
+        death_readiness = sum(readiness_scores) / len(readiness_scores) if readiness_scores else None
 
         # Rebirth potential
         rebirth_potential = w * (1 - at) * psi * grace_support
@@ -665,7 +665,7 @@ class DeathEngine:
 
 def get_death_type_info(death_type: DeathType) -> Dict[str, Any]:
     """Get information about a specific death type."""
-    return DEATH_DEFINITIONS.get(death_type, {})
+    return DEATH_DEFINITIONS.get(death_type)
 
 
 def get_phase_description(phase: DeathPhase) -> str:
@@ -679,7 +679,7 @@ def get_phase_description(phase: DeathPhase) -> str:
         DeathPhase.SURRENDER: "Fully releasing into the death process",
         DeathPhase.REBIRTH: "Emerging renewed from the dissolution",
     }
-    return descriptions.get(phase, "")
+    return descriptions.get(phase)
 
 
 # =============================================================================

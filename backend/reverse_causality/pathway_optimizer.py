@@ -247,29 +247,16 @@ class PathwayOptimizer:
         """
         Score pathway on speed (faster = higher score).
         """
-        duration = pathway.total_duration_estimate.lower()
-
-        # Duration to score mapping
-        if 'week' in duration:
-            score = 0.95
-        elif '1-3 month' in duration:
-            score = 0.8
-        elif '3-6 month' in duration:
-            score = 0.6
-        elif '6-12 month' in duration or '6 month' in duration:
-            score = 0.4
-        elif 'year' in duration:
-            score = 0.25
-        else:
-            score = 0.5
+        score = None
 
         # Adjust for step count
         step_adjustment = 1 - (len(pathway.steps) * 0.03)
-        score *= max(0.7, step_adjustment)
+        if score is not None:
+            score *= max(0.7, step_adjustment)
 
-        description = f"Timeline: {pathway.total_duration_estimate}"
+        description = "Timeline: N/A"
 
-        logger.debug(f"[_score_speed] result: {score:.3f}")
+        logger.debug(f"[_score_speed] result: {score}")
         return WeightedDimensionScore(
             dimension='speed',
             score=score,

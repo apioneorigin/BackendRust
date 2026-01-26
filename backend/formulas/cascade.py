@@ -224,7 +224,7 @@ class CascadeCalculator:
             for choice in level.demux_choices:
                 demux_probs.append(choice.higher_path_prob)
         demux_summary = {
-            "avg_higher_path_prob": sum(demux_probs) / len(demux_probs) if demux_probs else 0.0,
+            "avg_higher_path_prob": sum(demux_probs) / len(demux_probs) if demux_probs else None,
             "total_choices": len(demux_probs),
         }
 
@@ -266,7 +266,7 @@ class CascadeCalculator:
             7: ['Ce_cleaning', 'P_presence', 'At_attachment', 'F_fear', 'Hf_habit'],  # Body
         }
 
-        required = level_requirements.get(level, [])
+        required = level_requirements.get(level)
         missing = [op for op in required if op not in operators or operators.get(op) is None]
 
         if missing:
@@ -483,7 +483,7 @@ class CascadeCalculator:
             }
         }
 
-        level_desc = descriptions.get(level, {'low': '', 'mid': '', 'high': ''})
+        level_desc = descriptions.get(level)
 
         if pct < 40:
             return level_desc['low']
@@ -670,7 +670,7 @@ class CascadeCalculator:
         }
 
         choices = []
-        for choice_name, description in choice_definitions.get(level, []):
+        for choice_name, description in choice_definitions.get(level):
             choices.append(DemuxChoice(
                 level=level,
                 choice_name=choice_name,

@@ -305,22 +305,22 @@ class MatricesEngine:
             "illusion": StateScore(
                 name="illusion", score=scores[0],
                 indicators={"maya": m, "witness_lack": 1 - w},
-                description=self.state_descriptions.get("truth_illusion", "")
+                description=self.state_descriptions.get("truth_illusion")
             ),
             "confusion": StateScore(
                 name="confusion", score=scores[1],
                 indicators={"maya_partial": m * 0.5, "awareness_emerging": psi * 0.5},
-                description=self.state_descriptions.get("truth_confusion", "")
+                description=self.state_descriptions.get("truth_confusion")
             ),
             "clarity": StateScore(
                 name="clarity", score=scores[2],
                 indicators={"low_maya": 1 - m, "high_witness": w},
-                description=self.state_descriptions.get("truth_clarity", "")
+                description=self.state_descriptions.get("truth_clarity")
             ),
             "truth": StateScore(
                 name="truth", score=scores[3],
                 indicators={"full_discrimination": psi, "s_level_factor": s_level / 8},
-                description=self.state_descriptions.get("truth_truth", "")
+                description=self.state_descriptions.get("truth_truth")
             ),
         }
 
@@ -389,22 +389,22 @@ class MatricesEngine:
             "separation": StateScore(
                 name="separation", score=scores[0],
                 indicators={"ego_boundaries": ego_boundaries, "fear": fear},
-                description=self.state_descriptions.get("love_separation", "")
+                description=self.state_descriptions.get("love_separation")
             ),
             "connection": StateScore(
                 name="connection", score=scores[1],
                 indicators={"empathy": empathy, "relationship_quality": relationship_quality},
-                description=self.state_descriptions.get("love_connection", "")
+                description=self.state_descriptions.get("love_connection")
             ),
             "unity": StateScore(
                 name="unity", score=scores[2],
                 indicators={"service": se, "we_space": we_space},
-                description=self.state_descriptions.get("love_unity", "")
+                description=self.state_descriptions.get("love_unity")
             ),
             "oneness": StateScore(
                 name="oneness", score=scores[3],
                 indicators={"non_duality": 1 - duality, "psi": psi},
-                description=self.state_descriptions.get("love_oneness", "")
+                description=self.state_descriptions.get("love_oneness")
             ),
         }
 
@@ -476,22 +476,22 @@ class MatricesEngine:
             "victim": StateScore(
                 name="victim", score=scores[0],
                 indicators={"external_locus": external_locus, "powerlessness": powerlessness},
-                description=self.state_descriptions.get("power_victim", "")
+                description=self.state_descriptions.get("power_victim")
             ),
             "responsibility": StateScore(
                 name="responsibility", score=scores[1],
                 indicators={"internal_locus": internal_locus, "choice_recognition": choice_recognition},
-                description=self.state_descriptions.get("power_responsibility", "")
+                description=self.state_descriptions.get("power_responsibility")
             ),
             "mastery": StateScore(
                 name="mastery", score=scores[2],
                 indicators={"skill": skill_level, "confidence": confidence},
-                description=self.state_descriptions.get("power_mastery", "")
+                description=self.state_descriptions.get("power_mastery")
             ),
             "service": StateScore(
                 name="service", score=scores[3],
                 indicators={"service_orientation": se, "low_ego": 1 - ego_attachment},
-                description=self.state_descriptions.get("power_service", "")
+                description=self.state_descriptions.get("power_service")
             ),
         }
 
@@ -558,22 +558,22 @@ class MatricesEngine:
             "bondage": StateScore(
                 name="bondage", score=scores[0],
                 indicators={"karma": k, "habit": hf, "attachment": at},
-                description=self.state_descriptions.get("freedom_bondage", "")
+                description=self.state_descriptions.get("freedom_bondage")
             ),
             "choice": StateScore(
                 name="choice", score=scores[1],
                 indicators={"free_will": free_will, "awareness": w},
-                description=self.state_descriptions.get("freedom_choice", "")
+                description=self.state_descriptions.get("freedom_choice")
             ),
             "liberation": StateScore(
                 name="liberation", score=scores[2],
                 indicators={"low_karma": 1 - k, "freedom_exp": freedom_experience},
-                description=self.state_descriptions.get("freedom_liberation", "")
+                description=self.state_descriptions.get("freedom_liberation")
             ),
             "transcendence": StateScore(
                 name="transcendence", score=scores[3],
                 indicators={"s_level_high": s_factor, "divine_alignment": divine_alignment},
-                description=self.state_descriptions.get("freedom_transcendence", "")
+                description=self.state_descriptions.get("freedom_transcendence")
             ),
         }
 
@@ -636,22 +636,22 @@ class MatricesEngine:
             "destruction": StateScore(
                 name="destruction", score=scores[0],
                 indicators={"dissolution": dissolution, "transformation": 1 - m},
-                description=self.state_descriptions.get("creation_destruction", "")
+                description=self.state_descriptions.get("creation_destruction")
             ),
             "maintenance": StateScore(
                 name="maintenance", score=scores[1],
                 indicators={"stability": at, "structure": s_struct},
-                description=self.state_descriptions.get("creation_maintenance", "")
+                description=self.state_descriptions.get("creation_maintenance")
             ),
             "creation": StateScore(
                 name="creation", score=scores[2],
                 indicators={"intention": i, "creative_force": creative_force},
-                description=self.state_descriptions.get("creation_creation", "")
+                description=self.state_descriptions.get("creation_creation")
             ),
             "source": StateScore(
                 name="source", score=scores[3],
                 indicators={"grace": g, "psi": psi, "s_factor": s_factor},
-                description=self.state_descriptions.get("creation_source", "")
+                description=self.state_descriptions.get("creation_source")
             ),
         }
 
@@ -710,22 +710,22 @@ class MatricesEngine:
             "past_future": StateScore(
                 name="past_future", score=scores[0],
                 indicators={"temporal_focus": t_temporal, "attachment": at},
-                description=self.state_descriptions.get("time_past_future", "")
+                description=self.state_descriptions.get("time_past_future")
             ),
             "present": StateScore(
                 name="present", score=scores[1],
                 indicators={"presence": p, "absorption": 1 - at},
-                description=self.state_descriptions.get("time_present", "")
+                description=self.state_descriptions.get("time_present")
             ),
             "eternal": StateScore(
                 name="eternal", score=scores[2],
                 indicators={"witness": w, "timeless": psi * w},
-                description=self.state_descriptions.get("time_eternal", "")
+                description=self.state_descriptions.get("time_eternal")
             ),
             "beyond_time": StateScore(
                 name="beyond_time", score=scores[3],
                 indicators={"s_factor": s_factor, "transcendence": psi * w},
-                description=self.state_descriptions.get("time_beyond_time", "")
+                description=self.state_descriptions.get("time_beyond_time")
             ),
         }
 
@@ -786,22 +786,22 @@ class MatricesEngine:
             "clinging": StateScore(
                 name="clinging", score=scores[0],
                 indicators={"attachment": at, "death_fear": ab},
-                description=self.state_descriptions.get("death_clinging", "")
+                description=self.state_descriptions.get("death_clinging")
             ),
             "acceptance": StateScore(
                 name="acceptance", score=scores[1],
                 indicators={"witness": w, "emotional_balance": e},
-                description=self.state_descriptions.get("death_acceptance", "")
+                description=self.state_descriptions.get("death_acceptance")
             ),
             "surrender": StateScore(
                 name="surrender", score=scores[2],
                 indicators={"letting_go": surrender, "grace": g},
-                description=self.state_descriptions.get("death_surrender", "")
+                description=self.state_descriptions.get("death_surrender")
             ),
             "rebirth": StateScore(
                 name="rebirth", score=scores[3],
                 indicators={"transformation": transformation_complete, "s_level": s_factor},
-                description=self.state_descriptions.get("death_rebirth", "")
+                description=self.state_descriptions.get("death_rebirth")
             ),
         }
 
@@ -880,7 +880,7 @@ class MatricesEngine:
 
 def get_matrix_states(matrix_type: MatrixType) -> List[str]:
     """Get state names for a specific matrix."""
-    return MATRIX_STATES.get(matrix_type, [])
+    return MATRIX_STATES.get(matrix_type)
 
 
 def get_all_state_names() -> List[str]:

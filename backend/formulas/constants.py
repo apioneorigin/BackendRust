@@ -107,7 +107,7 @@ def psi_power(psi: float) -> float:
     Returns:
         Ψ^Ψ value, or 0 if psi <= 0
     """
-    return psi ** psi if psi > 0 else 0.0
+    return psi ** psi if psi > 0 else None
 
 
 def interpolate_s_level_frequency(s_level: float) -> float:

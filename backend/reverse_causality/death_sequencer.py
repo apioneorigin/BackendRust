@@ -50,7 +50,6 @@ class SequencedDeathProcess:
     gap: float  # Required - Current
     primary_indicator: str  # Main operator indicating this death
     supporting_practices: List[str]
-    estimated_duration: str
     intensity_level: str  # "gentle", "moderate", "intense"
 
 
@@ -65,7 +64,6 @@ class DeathSequence:
     can_proceed: bool
     blocking_deaths: List[str]  # Deaths that must be completed first
     parallel_deaths: List[str]  # Deaths that can be worked simultaneously
-    timeline_estimate: str
     intensity_recommendation: str
     support_recommendations: List[str]
 
@@ -199,9 +197,6 @@ class DeathSequencer:
                 # Determine phase
                 phase = self._determine_phase(current_status['completion'])
 
-                # Calculate duration
-                duration = self._estimate_duration(gap, death_info['intensity_default'])
-
                 death_process = SequencedDeathProcess(
                     death_type=death_id,
                     name=death_info['name'],
@@ -211,7 +206,6 @@ class DeathSequencer:
                     gap=gap,
                     primary_indicator=death_info['primary_operator'],
                     supporting_practices=death_info['practices'],
-                    estimated_duration=duration,
                     intensity_level=self._determine_intensity(gap, death_id)
                 )
 
@@ -246,9 +240,6 @@ class DeathSequencer:
             for d in blocking_deaths
         )
 
-        # Timeline estimate
-        timeline = self._estimate_total_timeline(deaths_required)
-
         # Intensity recommendation
         intensity_rec = self._recommend_intensity(
             current_operators, deaths_required
@@ -269,7 +260,6 @@ class DeathSequencer:
             can_proceed=can_proceed,
             blocking_deaths=blocking_deaths,
             parallel_deaths=parallel_deaths,
-            timeline_estimate=timeline,
             intensity_recommendation=intensity_rec,
             support_recommendations=support_recs
         )
@@ -416,32 +406,6 @@ class DeathSequencer:
         logger.debug(f"[_determine_intensity] {death_id} gap={gap:.3f} result={result}")
         return result
 
-    def _estimate_duration(self, gap: float, intensity: str) -> str:
-        """
-        Estimate duration for a death process.
-        """
-        # Base duration in days
-        base_days = gap * 90  # ~3 months for full death
-
-        # Adjust for intensity
-        if intensity == "gentle":
-            days = base_days * 1.5
-        elif intensity == "intense":
-            days = base_days * 0.6
-        else:
-            days = base_days
-
-        if days < 14:
-            return "1-2 weeks"
-        elif days < 30:
-            return "2-4 weeks"
-        elif days < 60:
-            return "1-2 months"
-        elif days < 90:
-            return "2-3 months"
-        else:
-            return "3-6 months"
-
     def _determine_sequence_order(
         self,
         deaths: List[SequencedDeathProcess],
@@ -535,44 +499,6 @@ class DeathSequencer:
         logger.debug(f"[_calculate_void_tolerance_needed] max_depth={max_depth} tolerance={result:.3f}")
         return result
 
-    def _estimate_total_timeline(
-        self,
-        deaths: List[SequencedDeathProcess]
-    ) -> str:
-        """
-        Estimate total timeline for all death work.
-        """
-        logger.debug(f"[_estimate_total_timeline] {len(deaths)} deaths to estimate")
-        # Sum up individual durations
-        total_weeks = 0
-        for death in deaths:
-            dur = death.estimated_duration.lower()
-            if 'week' in dur:
-                weeks = 3
-            elif '1-2 month' in dur:
-                weeks = 6
-            elif '2-3 month' in dur:
-                weeks = 10
-            elif '3-6 month' in dur:
-                weeks = 18
-            else:
-                weeks = 4
-            total_weeks += weeks
-
-        # Some can be parallel, reduce by 30%
-        total_weeks = int(total_weeks * 0.7)
-
-        if total_weeks < 4:
-            return "2-4 weeks"
-        elif total_weeks < 8:
-            return "1-2 months"
-        elif total_weeks < 16:
-            return "3-4 months"
-        elif total_weeks < 26:
-            return "6 months"
-        else:
-            return "6-12 months"
-
     def _recommend_intensity(
         self,
         operators: Dict[str, float],
@@ -657,11 +583,11 @@ class DeathSequencer:
                     'void': '◒',
                     'rebirth': '◓',
                     'complete': '●'
-                }.get(death.current_phase.phase, '○')
+                }.get(death.current_phase.phase)
 
                 summary += f"- {phase_icon} {death.death_type}: {death.name}\n"
                 summary += f"  Current: {death.overall_completion:.0%} → Required: {death.required_completion:.0%}\n"
-                summary += f"  Phase: {death.current_phase.phase.title()}, Duration: {death.estimated_duration}\n"
+                summary += f"  Phase: {death.current_phase.phase.title()}\n"
 
         summary += f"\n**Sequence Order:** {' → '.join(sequence.sequence_order)}\n"
 
@@ -673,7 +599,6 @@ class DeathSequencer:
 
         summary += f"\n**Void Tolerance:** Current {sequence.current_void_tolerance:.0%}, Required {sequence.void_tolerance_required:.0%}\n"
 
-        summary += f"\n**Timeline:** {sequence.timeline_estimate}\n"
         summary += f"\n**Intensity:** {sequence.intensity_recommendation}\n"
 
         if sequence.support_recommendations:

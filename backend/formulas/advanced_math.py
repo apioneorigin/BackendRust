@@ -308,7 +308,7 @@ def calculate_consciousness_complex_function(
       Ψ_magnitude = Ψ^Ψ (real consciousness level)
       θ = phase angle (temporal/cyclical aspect)
     """
-    psi_psi = psi_magnitude ** psi_magnitude if psi_magnitude > 0 else 0
+    psi_psi = psi_magnitude ** psi_magnitude if psi_magnitude > 0 else None
     return psi_psi * cmath.exp(1j * theta)
 
 
@@ -406,7 +406,7 @@ def get_platonic_solid_correspondence(s_level: float) -> Dict[str, Any]:
     }
 
     level = min(6, max(2, round(s_level)))
-    return correspondences.get(level, correspondences[2])
+    return correspondences.get(level)
 
 
 def calculate_sacred_geometry_coherence(
@@ -636,7 +636,7 @@ def apply_noether_theorem(symmetry: str) -> List[str]:
         "SU(2)": ["consciousness_spin", "witness_angular_momentum"],
         "SO(3)": ["total_consciousness_vector", "transformation_momentum"],
     }
-    return conservation_map.get(symmetry, ["unknown_quantity"])
+    return conservation_map.get(symmetry)
 
 
 def calculate_lie_algebra_commutator(
@@ -782,7 +782,7 @@ def calculate_excitation_from_vacuum(
     Represents: Localized consciousness arising from void
     """
     new_state = occupation_numbers.copy()
-    new_state[mode] = new_state.get(mode, 0) + 1
+    new_state[mode] = new_state.get(mode) + 1
     return new_state
 
 

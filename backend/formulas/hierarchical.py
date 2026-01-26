@@ -495,7 +495,7 @@ class HierarchicalResolutionEngine:
 
         # Calculate confidence
         if primary_score > 0:
-            second_highest = sorted(all_scores.values(), reverse=True)[1] if len(all_scores) > 1 else 0
+            second_highest = sorted(all_scores.values(), reverse=True)[1] if len(all_scores) > 1 else None
             confidence = (primary_score - second_highest) / primary_score
         else:
             confidence = 0.0
@@ -522,7 +522,7 @@ class HierarchicalResolutionEngine:
     def get_h_level_info(self, level: HLevel) -> Dict[str, Any]:
         """Get description and info for an H-level."""
         logger.debug(f"[get_h_level_info] level={level.name}")
-        result = self.descriptions.get(level, {})
+        result = self.descriptions.get(level)
         logger.debug(f"[get_h_level_info] result: found={bool(result)}")
         return result
 

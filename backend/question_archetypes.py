@@ -572,7 +572,7 @@ def get_constellations_for_goal(goal_category: str) -> Dict[str, OperatorConstel
         ],
     }
 
-    constellations = mapping.get(goal_category, mapping['achievement'])
+    constellations = mapping.get(goal_category)
 
     # Return as numbered dict for easy selection
     return {

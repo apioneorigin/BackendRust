@@ -1078,38 +1078,6 @@ class OperatorEngine:
         logger.debug(f"[get_operator_signature] result: sig_keys={len(result)}, missing={none_count}")
         return result
 
-    def estimate_s_level(self, values: Dict[str, float]) -> Optional[float]:
-        """
-        Estimate S-level from operator configuration.
-
-        Returns None if no relevant operators are available.
-        """
-        logger.debug(f"[estimate_s_level] inputs: Psi={values.get('Psi_quality')}, W={values.get('W_witness')}, M={values.get('M_maya')}")
-        weights = {
-            "Psi_quality": 2.5, "W_witness": 2.0, "M_maya": -1.5,
-            "At_attachment": -1.5, "Se_service": 1.0, "G_grace": 0.5,
-        }
-        available = {}
-        for op, weight in weights.items():
-            val = values.get(op)
-            if val is not None:
-                available[op] = (val, weight)
-
-        if not available:
-            logger.warning("[estimate_s_level] missing required: no relevant operators available")
-            return None
-
-        s = 1.0
-        for op, (val, weight) in available.items():
-            if weight < 0:
-                s += (1 - val) * abs(weight)
-            else:
-                s += val * weight
-
-        result = min(8.0, max(1.0, s))
-        logger.debug(f"[estimate_s_level] result: s_level={result:.2f}, operators_used={len(available)}")
-        return result
-
 
 # =============================================================================
 # UTILITY FUNCTIONS
@@ -1253,8 +1221,6 @@ if __name__ == "__main__":
     print(f"Psi quality: {derived['Psi_quality_computed']:.3f}")
     print(f"Grace availability: {derived['G_grace_computed']:.3f}")
     print(f"Evolution rate: {derived['Evolution_rate']:.3f}")
-    print(f"Estimated S-level: {engine.estimate_s_level(test_values):.2f}")
-
     # Test categories
     print(f"\n--- Categories ---")
     categories = get_operator_categories()

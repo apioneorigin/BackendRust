@@ -325,8 +325,8 @@ class BottleneckDetector:
                     category='matrix',
                     separation_amplification_score=sep_amp,
                     is_root_separation_pattern=is_root,
-                    unity_aligned_intervention=matrix_unity_interventions.get(matrix_type, ""),
-                    separation_based_intervention=matrix_separation_interventions.get(matrix_type, "")
+                    unity_aligned_intervention=matrix_unity_interventions.get(matrix_type),
+                    separation_based_intervention=matrix_separation_interventions.get(matrix_type)
                 ))
 
         logger.debug(f"[_check_matrix_positions] result: {len(bottlenecks)} bottlenecks")
@@ -379,8 +379,8 @@ class BottleneckDetector:
                     category='klesha',
                     separation_amplification_score=sep_amp,
                     is_root_separation_pattern=is_root,
-                    unity_aligned_intervention=klesha_unity_interventions.get(var, ""),
-                    separation_based_intervention=klesha_separation_interventions.get(var, "")
+                    unity_aligned_intervention=klesha_unity_interventions.get(var),
+                    separation_based_intervention=klesha_separation_interventions.get(var)
                 ))
 
         logger.debug(f"[_check_distortions] result: {len(bottlenecks)} bottlenecks")
@@ -400,7 +400,7 @@ class BottleneckDetector:
         high_impact = [b for b in bottlenecks if b.impact == 'high']
         categories = {}
         for b in bottlenecks:
-            categories[b.category] = categories.get(b.category, 0) + 1
+            categories[b.category] = categories.get(b.category) + 1
 
         return {
             'total_count': len(bottlenecks),

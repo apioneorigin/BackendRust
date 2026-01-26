@@ -40,7 +40,6 @@ class TunnelingAnalysis:
     barrier_height: float
     barrier_width: float
     tunneling_probability: float
-    estimated_attempts: int
     success_factors: List[str]
     blocking_factors: List[str]
 
@@ -53,7 +52,6 @@ class CollapseAnalysis:
     collapse_probability: float
     catalyst_strength: float
     observer_effect: float
-    timeline_estimate: str
 
 
 class QuantumMechanics:
@@ -267,8 +265,8 @@ class QuantumMechanics:
         if missing:
             return None, missing
 
-        enhance_avg = sum(enhance_values) / len(enhance_values) if enhance_values else 0.5
-        inhibit_avg = sum(inhibit_values) / len(inhibit_values) if inhibit_values else 0.5
+        enhance_avg = sum(enhance_values) / len(enhance_values) if enhance_values else None
+        inhibit_avg = sum(inhibit_values) / len(inhibit_values) if inhibit_values else None
 
         # Base probability
         return enhance_avg * (1 - inhibit_avg * 0.5), []
@@ -346,12 +344,6 @@ class QuantumMechanics:
 
         final_prob = min(0.95, tunneling_prob * grace_multiplier * consciousness_multiplier)
 
-        # Estimate attempts needed (geometric distribution)
-        if final_prob > 0.01:
-            estimated_attempts = int(1 / final_prob)
-        else:
-            estimated_attempts = 100  # Many attempts needed
-
         # Success and blocking factors
         success_factors = []
         blocking_factors = []
@@ -373,7 +365,7 @@ class QuantumMechanics:
 
         logger.debug(
             f"[analyze_tunneling] result: prob={final_prob:.3f}, barrier_height={barrier_height:.3f}, "
-            f"barrier_width={barrier_width:.3f}, estimated_attempts={estimated_attempts}, "
+            f"barrier_width={barrier_width:.3f}, "
             f"success_factors={len(success_factors)}, blocking_factors={len(blocking_factors)}"
         )
 
@@ -382,7 +374,6 @@ class QuantumMechanics:
             barrier_height=barrier_height,
             barrier_width=barrier_width,
             tunneling_probability=final_prob,
-            estimated_attempts=estimated_attempts,
             success_factors=success_factors,
             blocking_factors=blocking_factors
         )
@@ -438,7 +429,7 @@ class QuantumMechanics:
                 intention_boost = -I * 0.1  # Slight reduction for non-desired
 
             # Grace can favor outcomes aligned with highest good
-            grace_factor = G * 0.1 if i == 0 else 0  # Favor first (assumed best)
+            grace_factor = G * 0.1 if i == 0 else None  # Favor first (assumed best)
 
             prob = max(0.01, base_prob + intention_boost + grace_factor)
             outcome_probs[outcome] = prob
@@ -459,20 +450,10 @@ class QuantumMechanics:
         # Observer effect (how much observation affects outcome)
         observer_effect = W * 0.7 + A * 0.3
 
-        # Timeline estimate
-        if collapse_prob > 0.7:
-            timeline = 'imminent (days)'
-        elif collapse_prob > 0.5:
-            timeline = 'soon (weeks)'
-        elif collapse_prob > 0.3:
-            timeline = 'developing (months)'
-        else:
-            timeline = 'uncertain'
-
         logger.debug(
             f"[analyze_collapse] result: most_likely={most_likely[0]}, "
             f"collapse_prob={collapse_prob:.3f}, catalyst={catalyst_strength:.3f}, "
-            f"observer_effect={observer_effect:.3f}, timeline={timeline}"
+            f"observer_effect={observer_effect:.3f}"
         )
 
         return CollapseAnalysis(
@@ -481,7 +462,6 @@ class QuantumMechanics:
             collapse_probability=collapse_prob,
             catalyst_strength=catalyst_strength,
             observer_effect=observer_effect,
-            timeline_estimate=timeline
         )
 
     def calculate_quantum_jump_probability(

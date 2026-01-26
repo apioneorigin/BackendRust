@@ -399,11 +399,11 @@ def get_s_level_info(s_value: float) -> Dict[str, Any]:
     level = int(s_value)
     level = max(1, min(8, level))  # Clamp to 1-8
 
-    info = S_LEVEL_DEFINITIONS.get(level, S_LEVEL_DEFINITIONS[1])
+    info = S_LEVEL_DEFINITIONS.get(level)
 
     # Add computed fields
     range_min, range_max = info["range"]
-    progress_in_level = (s_value - range_min) / (range_max - range_min) if s_value >= range_min else 0.0
+    progress_in_level = (s_value - range_min) / (range_max - range_min) if s_value >= range_min else None
     progress_in_level = max(0.0, min(1.0, progress_in_level))
 
     return {

@@ -228,9 +228,7 @@ class GraceCalculator:
         activation_steps = self._generate_activation_steps(
             channels, blockers, current_operators
         )
-        timeline = self._estimate_activation_timeline(
-            current_availability, required_availability
-        )
+        timeline = None
         intensity = self._recommend_intensity(grace_dependency, blockers)
 
         logger.debug(f"[calculate_grace_requirements] result: dependency={grace_dependency:.3f} availability={current_availability:.3f} gap={max(0, required_availability - current_availability):.3f}")
@@ -531,29 +529,6 @@ class GraceCalculator:
             steps.append("Deepen surrender through trust exercises and letting go")
 
         return steps[:6]
-
-    def _estimate_activation_timeline(
-        self,
-        current: float,
-        required: float
-    ) -> str:
-        """
-        Estimate timeline to achieve required grace availability.
-        """
-        gap = required - current
-
-        if gap <= 0:
-            return "Grace already available"
-        elif gap < 0.1:
-            return "1-2 weeks of focused practice"
-        elif gap < 0.2:
-            return "2-4 weeks of dedicated practice"
-        elif gap < 0.3:
-            return "1-2 months of consistent practice"
-        elif gap < 0.5:
-            return "2-4 months of deepening practice"
-        else:
-            return "4-6 months or more of sustained practice"
 
     def _recommend_intensity(
         self,

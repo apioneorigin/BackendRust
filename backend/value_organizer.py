@@ -47,15 +47,15 @@ class ValueOrganizer:
         PURE ARCHITECTURE: Pass context from Call 1 to guide Call 2 value selection.
         UNITY PRINCIPLE: Extract unity metrics and dual pathways for Jeevatma-Paramatma analysis.
         """
-        values_count = len(raw_values.get('values', {})) if isinstance(raw_values, dict) and 'values' in raw_values else len(raw_values)
+        values_count = len(raw_values.get('values')) if isinstance(raw_values, dict) and 'values' in raw_values else len(raw_values)
         logger.info(f"[VALUE_ORGANIZER] Organizing {values_count} computed values into consciousness state")
-        logger.debug(f"[VALUE_ORGANIZER] Tier1 keys: {len(tier1_values)} | Targets: {len(tier1_values.get('targets', []))}")
+        logger.debug(f"[VALUE_ORGANIZER] Tier1 keys: {len(tier1_values)} | Targets: {len(tier1_values.get('targets'))}")
 
         # Split raw values into calculated vs non-calculated
         calculated_values, non_calculated_values = self._split_calculated_values(raw_values)
 
         # Extract LLM Call 1's missing operator priority (if provided)
-        missing_operator_priority = tier1_values.get('missing_operator_priority', [])
+        missing_operator_priority = tier1_values.get('missing_operator_priority')
 
         state = ConsciousnessState(
             timestamp=datetime.now().isoformat(),
@@ -70,8 +70,8 @@ class ValueOrganizer:
             bottlenecks=[],  # Will be populated by BottleneckDetector
             leverage_points=[],  # Will be populated by LeverageIdentifier
             # PURE ARCHITECTURE: Pass Call 1 context to guide Call 2 value selection
-            targets=tier1_values.get('targets', []),
-            query_pattern=tier1_values.get('query_pattern', ''),
+            targets=tier1_values.get('targets'),
+            query_pattern=tier1_values.get('query_pattern'),
             # UNITY PRINCIPLE: Extract unity metrics and dual pathways
             unity_metrics=self._extract_unity_metrics(raw_values),
             dual_pathways=self._extract_dual_pathways(raw_values),
@@ -108,7 +108,7 @@ class ValueOrganizer:
         Returns:
             Tuple of (calculated_values dict, non_calculated_values list)
         """
-        values = raw_values.get('values', raw_values) if isinstance(raw_values, dict) else raw_values
+        values = raw_values.get('values') if isinstance(raw_values, dict) else raw_values
         if not isinstance(values, dict):
             return {}, []
 
@@ -140,7 +140,7 @@ class ValueOrganizer:
         """Organize Tier 1 values (from LLM Call 1)"""
         logger.debug("[_organize_tier1] entry")
         # Extract core operators from observations
-        observations = values.get('observations', [])
+        observations = values.get('observations')
         obs_dict = {}
         for obs in observations:
             if isinstance(obs, dict) and 'var' in obs and 'value' in obs:
@@ -230,7 +230,7 @@ class ValueOrganizer:
     def _organize_tier2(self, values: Dict[str, Any]) -> Tier2:
         """Organize Tier 2 values (simple derivations)"""
         logger.debug("[_organize_tier2] entry")
-        v = values.get('values', values)
+        v = values.get('values')
 
         distortions = Distortions(
             avarana_shakti=self._get_value(v, 'avarana', 'avarana_shakti', default=None),
@@ -369,7 +369,7 @@ class ValueOrganizer:
     def _organize_tier3(self, values: Dict[str, Any]) -> Tier3:
         """Organize Tier 3 values (complex combinations)"""
         logger.debug("[_organize_tier3] entry")
-        v = values.get('values', values)
+        v = values.get('values')
 
         coherence_metrics = CoherenceMetrics(
             fundamental=self._get_value(v, 'coherence_fundamental', default=None),
@@ -406,14 +406,14 @@ class ValueOrganizer:
         )
 
         pattern_detection = PatternDetection(
-            zero_detection=v.get('pattern_zero', False),
-            bottleneck_scan=v.get('pattern_bottlenecks', []),
-            inverse_pair_check=v.get('pattern_inverse_pairs', {"found": False, "pairs": []}),
-            power_trinity_check=v.get('pattern_power_trinity', {"found": False, "operators": []}),
-            golden_ratio_validation=v.get('pattern_golden_ratio', {"found": False, "ratios": []})
+            zero_detection=v.get('pattern_zero'),
+            bottleneck_scan=v.get('pattern_bottlenecks'),
+            inverse_pair_check=v.get('pattern_inverse_pairs'),
+            power_trinity_check=v.get('pattern_power_trinity'),
+            golden_ratio_validation=v.get('pattern_golden_ratio')
         )
 
-        active_process = v.get('death_active', None)
+        active_process = v.get('death_active')
         death_architecture = DeathArchitecture(
             d1_identity=self._get_value(v, 'death_d1', default=None),
             d2_belief=self._get_value(v, 'death_d2', default=None),
@@ -464,7 +464,7 @@ class ValueOrganizer:
     def _organize_tier4(self, values: Dict[str, Any]) -> Tier4:
         """Organize Tier 4 values (network & dynamics)"""
         logger.debug("[_organize_tier4] entry")
-        v = values.get('values', values)
+        v = values.get('values')
 
         manifestation_days = self._get_value(v, 'manifestation_time_days', default=None)
         pipeline_flow = PipelineFlow(
@@ -483,7 +483,7 @@ class ValueOrganizer:
             probability=self._get_value(v, 'breakthrough_prob', default=None),
             tipping_point_distance=self._get_value(v, 'breakthrough_tipping', default=None),
             quantum_jump_prob=self._get_value(v, 'quantum_jump_prob', default=None),
-            operators_at_threshold=v.get('breakthrough_operators', [])
+            operators_at_threshold=v.get('breakthrough_operators')
         )
 
         karma_dynamics = KarmaDynamics(
@@ -506,7 +506,7 @@ class ValueOrganizer:
             acceleration_factor=self._get_value(v, 'network_accel', default=None),
             collective_breakthrough_prob=self._get_value(v, 'network_breakthrough_prob', default=None),
             resonance_amplification=self._get_value(v, 'network_resonance', default=None),
-            group_mind_iq=v.get('network_group_iq', None)
+            group_mind_iq=v.get('network_group_iq')
         )
 
         pomdp_gaps = POMDPGaps(
@@ -543,35 +543,35 @@ class ValueOrganizer:
     def _organize_tier5(self, values: Dict[str, Any]) -> Tier5:
         """Organize Tier 5 values (predictions & advanced)"""
         logger.debug("[_organize_tier5] entry")
-        v = values.get('values', values)
+        v = values.get('values')
 
         timeline_predictions = TimelinePredictions(
-            to_goal=v.get('timeline_to_goal', "unknown"),
-            to_next_s_level=v.get('timeline_to_next_s', "unknown"),
+            to_goal=v.get('timeline_to_goal'),
+            to_next_s_level=v.get('timeline_to_next_s'),
             evolution_rate=self._get_value(v, 'evolution_rate', default=None),
             acceleration_factor=self._get_value(v, 'evolution_accel', default=None)
         )
 
         transformation_vectors = TransformationVectors(
-            current_state_summary=v.get('transform_current', ""),
-            target_state_summary=v.get('transform_target', ""),
-            core_shift_required=v.get('transform_shift', ""),
-            primary_obstacle=v.get('transform_obstacle', ""),
-            primary_enabler=v.get('transform_enabler', ""),
-            leverage_point=v.get('transform_leverage', ""),
-            evolution_direction=v.get('transform_direction', "")
+            current_state_summary=v.get('transform_current'),
+            target_state_summary=v.get('transform_target'),
+            core_shift_required=v.get('transform_shift'),
+            primary_obstacle=v.get('transform_obstacle'),
+            primary_enabler=v.get('transform_enabler'),
+            leverage_point=v.get('transform_leverage'),
+            evolution_direction=v.get('transform_direction')
         )
 
         quantum_mechanics = QuantumMetricsSnapshot(
             wave_function_amplitude=self._get_value(v, 'quantum_amplitude', default=None),
-            collapse_probability=v.get('quantum_collapse_prob', {}),
+            collapse_probability=v.get('quantum_collapse_prob'),
             tunneling_probability=self._get_value(v, 'quantum_tunnel_prob', default=None),
             interference_strength=self._get_value(v, 'quantum_interference', default=None)
         )
 
         frequency_analysis = FrequencyAnalysis(
             dominant_frequency=self._get_value(v, 'freq_dominant', default=None),
-            harmonic_content=v.get('freq_harmonics', ""),
+            harmonic_content=v.get('freq_harmonics'),
             power_spectral_density=self._get_value(v, 'freq_psd', default=None),
             resonance_strength=self._get_value(v, 'freq_resonance', default=None),
             decoherence_time=self._get_value(v, 'freq_decoherence', default=None)
@@ -594,7 +594,7 @@ class ValueOrganizer:
     def _organize_tier6(self, values: Dict[str, Any]) -> Tier6:
         """Organize Tier 6 values (quantum fields)"""
         logger.debug("[_organize_tier6] entry")
-        v = values.get('values', values)
+        v = values.get('values')
 
         field_charge = self._get_value(v, 'field_charge', default=None)
         field_current = self._get_value(v, 'field_current', default=None)
@@ -622,14 +622,14 @@ class ValueOrganizer:
         - unity_vector: Net direction toward unity (-1 to +1)
         """
         logger.debug("[_extract_unity_metrics] entry")
-        v = values.get('values', values)
+        v = values.get('values')
 
         metrics = UnitySeparationMetrics(
             separation_distance=self._get_value(v, 'unity_separation_distance', default=None),
             distortion_field=self._get_value(v, 'unity_distortion_field', default=None),
             percolation_quality=self._get_value(v, 'unity_percolation_quality', default=None),
             unity_vector=self._get_value(v, 'unity_vector', default=None),
-            net_direction=v.get('unity_net_direction', 'neutral')
+            net_direction=v.get('unity_net_direction')
         )
 
         none_fields = [
@@ -661,7 +661,7 @@ class ValueOrganizer:
         The crossover point shows when unity pathway overtakes separation.
         """
         logger.debug("[_extract_dual_pathways] entry")
-        v = values.get('values', values)
+        v = values.get('values')
 
         # Build separation pathway metrics
         separation_pathway = PathwayMetrics(
@@ -691,7 +691,7 @@ class ValueOrganizer:
             separation_pathway=separation_pathway,
             unity_pathway=unity_pathway,
             crossover_point_months=self._get_value(v, 'pathway_crossover_months', default=None),
-            recommended_pathway=v.get('pathway_recommendation', 'unity'),
+            recommended_pathway=v.get('pathway_recommendation'),
             optimal_blend_ratio=self._get_value(v, 'pathway_blend_ratio', default=None)
         )
 
@@ -718,16 +718,16 @@ class ValueOrganizer:
         - implicit_goal: What the consciousness state reveals
         """
         logger.debug("[_extract_goal_context] entry")
-        goal_data = tier1_values.get('goal_context', {})
+        goal_data = tier1_values.get('goal_context')
         if not goal_data:
             logger.warning("[_extract_goal_context] missing: no goal_context in tier1_values")
 
         gc = GoalContext(
-            category=goal_data.get('category', 'achievement'),
-            explicit_goal=goal_data.get('explicit_goal', tier1_values.get('goal', '')),
-            implicit_goal=goal_data.get('implicit_goal', ''),
-            why_category=goal_data.get('why_category', ''),
-            death_architecture_required=goal_data.get('death_architecture_required', ''),
+            category=goal_data.get('category'),
+            explicit_goal=goal_data.get('explicit_goal'),
+            implicit_goal=goal_data.get('implicit_goal'),
+            why_category=goal_data.get('why_category'),
+            death_architecture_required=goal_data.get('death_architecture_required'),
             s_level_requirement=goal_data.get('s_level_requirement')
         )
         logger.debug(

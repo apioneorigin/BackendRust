@@ -126,7 +126,7 @@ class CirclesEngine:
             time_alloc = 0.2
 
         else:  # Universal
-            s_factor = (s_level - 4) / 4 if s_level > 4 else 0
+            s_factor = (s_level - 4) / 4 if s_level > 4 else None
             radius = se * (1 - at) * s_factor
             quality = w * se * s_factor
             energy = se * (1 - at)

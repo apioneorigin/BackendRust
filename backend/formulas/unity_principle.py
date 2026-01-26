@@ -338,8 +338,8 @@ def calculate_dharmic_karma(
         logger.debug("[DHARMIC_KARMA] No dharmic or adharmic values available")
         return None, None, None
 
-    dharmic = sum(dharmic_values) / len(dharmic_values) if dharmic_values else 0.0
-    adharmic = sum(adharmic_values) / len(adharmic_values) if adharmic_values else 0.0
+    dharmic = sum(dharmic_values) / len(dharmic_values) if dharmic_values else None
+    adharmic = sum(adharmic_values) / len(adharmic_values) if adharmic_values else None
     net = dharmic - adharmic
     logger.debug(f"[DHARMIC_KARMA] dharmic={dharmic:.3f} adharmic={adharmic:.3f} net={net:.3f}")
 

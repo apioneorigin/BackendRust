@@ -964,7 +964,7 @@ class DrivesEngine:
 
 def get_drive_components(drive_type: DriveType) -> Dict[str, DriveComponent]:
     """Get components for a specific drive."""
-    return ALL_DRIVE_COMPONENTS.get(drive_type, {})
+    return ALL_DRIVE_COMPONENTS.get(drive_type)
 
 
 def get_all_component_names() -> List[str]:

@@ -61,8 +61,6 @@ class MinimumViableTransformation:
     mvt_efficiency: float  # MVT operators / full operators (lower = better)
 
     # Estimates
-    estimated_effort: float  # 0-1
-    estimated_time: str
     success_probability: float
 
     # Instructions
@@ -180,9 +178,9 @@ class MVTCalculator:
         efficiency = len(mvt_changes) / max(1, full_change_count)
 
         # Estimate effort and time
-        effort = self._estimate_effort(mvt_changes)
-        time_est = self._estimate_time(mvt_changes, effort)
-        success_prob = self._estimate_success(mvt_changes, sensitivities)
+        effort = None
+        time_est = None
+        success_prob = None
 
         # Generate implementation order
         impl_order = [c.operator for c in sorted(mvt_changes, key=lambda x: x.priority)]
@@ -200,8 +198,6 @@ class MVTCalculator:
             cascade_map=cascade_map,
             full_transformation_operators=full_change_count,
             mvt_efficiency=efficiency,
-            estimated_effort=effort,
-            estimated_time=time_est,
             success_probability=success_prob,
             implementation_order=impl_order,
             critical_first_step=impl_order[0] if impl_order else "",
@@ -233,7 +229,7 @@ class MVTCalculator:
             base_sensitivity = change_needed
 
             # Leverage from cascade effects
-            cascade_effects = self.CASCADE_MAP.get(op, [])
+            cascade_effects = self.CASCADE_MAP.get(op)
             cascade_bonus = len(cascade_effects) * 0.1
 
             leverage = 1 + cascade_bonus
@@ -393,80 +389,6 @@ class MVTCalculator:
         logger.debug(f"[_select_mvt_operators] result: {len(selected)} operators selected")
         return selected
 
-    def _estimate_effort(self, changes: List[MVTChange]) -> float:
-        """
-        Estimate total effort for the MVT.
-        """
-        total_effort = 0
-
-        for change in changes:
-            difficulty = self.CHANGE_DIFFICULTY.get(change.operator)
-            if difficulty is None:
-                continue
-            effort = change.change_magnitude * difficulty
-            total_effort += effort
-
-        # Normalize to 0-1
-        result = min(1.0, total_effort / max(1, len(changes)))
-        logger.debug(f"[_estimate_effort] result: {result:.3f}")
-        return result
-
-    def _estimate_time(
-        self,
-        changes: List[MVTChange],
-        effort: float
-    ) -> str:
-        """
-        Estimate time for MVT completion.
-        """
-        # Base time from total change magnitude
-        total_mag = sum(c.change_magnitude for c in changes)
-        base_weeks = total_mag * 12
-
-        # Adjust for effort
-        weeks = base_weeks * (0.5 + effort)
-
-        if weeks < 2:
-            result = "1-2 weeks"
-        elif weeks < 4:
-            result = "2-4 weeks"
-        elif weeks < 8:
-            result = "1-2 months"
-        elif weeks < 12:
-            result = "2-3 months"
-        else:
-            result = "3-6 months"
-        logger.debug(f"[_estimate_time] result: {result} (weeks={weeks:.1f})")
-        return result
-
-    def _estimate_success(
-        self,
-        changes: List[MVTChange],
-        sensitivities: List[OperatorSensitivity]
-    ) -> float:
-        """
-        Estimate success probability of MVT.
-        """
-        # Higher leverage = higher success
-        leverage_sum = sum(
-            next((s.leverage_multiplier for s in sensitivities if s.operator == c.operator), 1.0)
-            for c in changes
-        )
-        avg_leverage = leverage_sum / max(1, len(changes))
-
-        # Lower total change = higher success
-        total_change = sum(c.change_magnitude for c in changes)
-        change_factor = 1 - (total_change * 0.2)
-
-        # Fewer operators = higher success
-        op_factor = 1 - (len(changes) * 0.05)
-
-        success = 0.7 * avg_leverage * change_factor * op_factor
-
-        result = max(0.3, min(0.95, success))
-        logger.debug(f"[_estimate_success] result: {result:.3f}")
-        return result
-
     def _identify_blockers(
         self,
         changes: List[MVTChange],
@@ -511,7 +433,6 @@ class MVTCalculator:
         summary += f"**Operators to Change:** {mvt.total_operators_changed} "
         summary += f"(vs {mvt.full_transformation_operators} for full transformation)\n"
         summary += f"**MVT Efficiency:** {mvt.mvt_efficiency:.0%}\n"
-        summary += f"**Estimated Time:** {mvt.estimated_time}\n"
         summary += f"**Success Probability:** {mvt.success_probability:.0%}\n\n"
 
         summary += "## The Changes\n\n"
@@ -563,8 +484,6 @@ class MVTCalculator:
         )
         comparison += f"{full_change:.2f} |\n"
 
-        comparison += f"| Estimated Effort | {mvt.estimated_effort:.0%} | 100% |\n"
-        comparison += f"| Estimated Time | {mvt.estimated_time} | Longer |\n"
 
         comparison += "\n## Why MVT Works\n\n"
         comparison += "The MVT leverages cascade effects:\n"

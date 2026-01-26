@@ -425,7 +425,7 @@ class CoherenceValidator:
         logger.debug(f"[_check_s_level_coherence] target_s_level={target_s_level:.3f}")
         violations = []
         level = max(1, min(8, int(target_s_level)))
-        ranges = self.S_LEVEL_RANGES.get(level, {})
+        ranges = self.S_LEVEL_RANGES.get(level)
 
         violations_count = 0
         checks_count = 0
@@ -574,7 +574,7 @@ class CoherenceValidator:
         if result.suggested_adjustments:
             summary += "\n**Suggested Adjustments:**\n"
             for op, val in list(result.suggested_adjustments.items())[:5]:
-                summary += f"- {op}: {val:.2f} ({result.adjustment_rationale.get(op, '')})\n"
+                summary += f"- {op}: {val:.2f} ({result.adjustment_rationale.get(op)})\n"
 
         if result.blocking_issues:
             summary += "\n**Blocking Issues:**\n"

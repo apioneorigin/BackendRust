@@ -29,7 +29,6 @@ class PathwayStep:
     order: int
     operator_changes: Dict[str, Tuple[float, float]]  # operator -> (current, target)
     description: str
-    duration_estimate: str  # "days", "weeks", "months"
     energy_required: float  # 0-1
     difficulty: float  # 0-1
     practices: List[str]  # Recommended practices
@@ -46,7 +45,6 @@ class TransformationPathway:
 
     steps: List[PathwayStep]
 
-    total_duration_estimate: str
     overall_difficulty: float
     stability_score: float  # 0-1, higher = more stable
     grace_dependency: float  # 0-1, higher = more grace-dependent
@@ -220,9 +218,6 @@ class PathwayGenerator:
             num_steps=num_steps
         )
 
-        # Calculate total duration
-        total_duration = self._estimate_total_duration(steps, pathway_type)
-
         # Calculate success probability
         success_prob = self._calculate_success_probability(
             pathway_type=pathway_type,
@@ -242,7 +237,6 @@ class PathwayGenerator:
             strategy=pathway_type,
             description=config['description'],
             steps=steps,
-            total_duration_estimate=total_duration,
             overall_difficulty=sum(s.difficulty for s in steps) / len(steps),
             stability_score=config['stability'],
             grace_dependency=config['grace_dependency'],
@@ -318,14 +312,13 @@ class PathwayGenerator:
                     progress = (step_idx + 1) / num_steps
 
                 target_val = curr_val + (req_val - curr_val) * progress
-                step_changes[op] = (current_state.get(op, curr_val), target_val)
+                step_changes[op] = (current_state.get(op), target_val)
 
                 # Update current state for next step
                 current_state[op] = target_val
 
             # Determine step characteristics
             difficulty = self._calculate_step_difficulty(step_changes, pathway_type)
-            duration = self._estimate_step_duration(step_changes, pathway_type)
             energy = self._calculate_energy_required(step_changes, pathway_type)
             practices = self._get_practices_for_step(step_changes, pathway_type)
             indicators = self._get_indicators_for_step(step_changes)
@@ -335,7 +328,6 @@ class PathwayGenerator:
                 order=step_idx + 1,
                 operator_changes=step_changes,
                 description=description,
-                duration_estimate=duration,
                 energy_required=energy,
                 difficulty=difficulty,
                 practices=practices,
@@ -382,7 +374,7 @@ class PathwayGenerator:
         }
 
         logger.debug(f"[_prioritize_operators] type={pathway_type} changes={len(changes_needed)}")
-        priority_map = priorities.get(pathway_type, priorities['hybrid'])
+        priority_map = priorities.get(pathway_type)
 
         # Sort operators by priority and change magnitude
         sorted_ops = []
@@ -442,40 +434,6 @@ class PathwayGenerator:
         logger.debug(f"[_calculate_step_difficulty] result: {result:.3f}")
         return result
 
-    def _estimate_step_duration(
-        self,
-        changes: Dict[str, Tuple[float, float]],
-        pathway_type: str
-    ) -> str:
-        """
-        Estimate duration for a step.
-        """
-        total_change = sum(abs(t - c) for c, t in changes.values())
-
-        # Base duration in days
-        base_days = total_change * 30
-
-        # Adjust for pathway type
-        if pathway_type == 'direct':
-            days = base_days * 0.6
-        elif pathway_type == 'gradual':
-            days = base_days * 1.5
-        elif pathway_type == 'grace':
-            days = base_days * 0.8
-        else:
-            days = base_days
-
-        if days < 7:
-            result = "days"
-        elif days < 30:
-            result = "weeks"
-        elif days < 90:
-            result = "1-2 months"
-        else:
-            result = "months"
-        logger.debug(f"[_estimate_step_duration] result: {result} (days={days:.1f})")
-        return result
-
     def _calculate_energy_required(
         self,
         changes: Dict[str, Tuple[float, float]],
@@ -506,7 +464,7 @@ class PathwayGenerator:
         practices = set()
 
         for op in changes:
-            op_practices = self.OPERATOR_PRACTICES.get(op, [])
+            op_practices = self.OPERATOR_PRACTICES.get(op)
             # Add 1-2 practices per operator
             for practice in op_practices[:2]:
                 practices.add(practice)
@@ -582,7 +540,7 @@ class PathwayGenerator:
             'K_karma': 'karma release', 'M_maya': 'clarity'
         }
 
-        focus_areas = [op_names.get(op, op) for op in main_ops]
+        focus_areas = [op_names.get(op) for op in main_ops]
 
         if pathway_type == 'direct':
             action = "Intensively develop"
@@ -596,38 +554,6 @@ class PathwayGenerator:
             action = "Balance and develop"
 
         return f"Step {step_idx + 1}: {action} {', '.join(focus_areas)}"
-
-    def _estimate_total_duration(
-        self,
-        steps: List[PathwayStep],
-        pathway_type: str
-    ) -> str:
-        """
-        Estimate total pathway duration.
-        """
-        # Sum step durations
-        duration_days = 0
-
-        for step in steps:
-            if step.duration_estimate == "days":
-                duration_days += 5
-            elif step.duration_estimate == "weeks":
-                duration_days += 21
-            elif step.duration_estimate == "1-2 months":
-                duration_days += 45
-            else:
-                duration_days += 90
-
-        if duration_days < 30:
-            return "2-4 weeks"
-        elif duration_days < 90:
-            return "1-3 months"
-        elif duration_days < 180:
-            return "3-6 months"
-        elif duration_days < 365:
-            return "6-12 months"
-        else:
-            return "1-2 years"
 
     def _calculate_success_probability(
         self,
@@ -760,7 +686,7 @@ class PathwayGenerator:
             ]
         }
 
-        return benefits.get(pathway_type, ["Balanced transformation approach"])
+        return benefits.get(pathway_type)
 
     def _calculate_gap(
         self,

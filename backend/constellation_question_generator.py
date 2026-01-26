@@ -277,7 +277,7 @@ class ConstellationQuestionGenerator:
 
         # Use question_type for validation questions, otherwise use goal_category
         lookup_key = goal_context.question_type if goal_context.question_type == 'response_validation' else goal_context.goal_category
-        result = templates.get(lookup_key, templates['achievement'])
+        result = templates.get(lookup_key)
         logger.debug(f"[generate_question_text] category={lookup_key} text='{result[:50]}'")
         return result
 

@@ -252,21 +252,21 @@ class PathwaysEngine:
                 score=observation_score,
                 perfection_pct=observation_score * 100,
                 components=observation_components,
-                description=self.descriptions.get("witnessing_observation", ""),
+                description=self.descriptions.get("witnessing_observation"),
             ),
             "perception": DimensionScore(
                 name="perception",
                 score=perception_score,
                 perfection_pct=perception_score * 100,
                 components=perception_components,
-                description=self.descriptions.get("witnessing_perception", ""),
+                description=self.descriptions.get("witnessing_perception"),
             ),
             "expression": DimensionScore(
                 name="expression",
                 score=expression_score,
                 perfection_pct=expression_score * 100,
                 components=expression_components,
-                description=self.descriptions.get("witnessing_expression", ""),
+                description=self.descriptions.get("witnessing_expression"),
             ),
         }
 
@@ -358,21 +358,21 @@ class PathwaysEngine:
                 score=intention_score,
                 perfection_pct=intention_score * 100,
                 components=intention_components,
-                description=self.descriptions.get("creating_intention", ""),
+                description=self.descriptions.get("creating_intention"),
             ),
             "attention": DimensionScore(
                 name="attention",
                 score=attention_score,
                 perfection_pct=attention_score * 100,
                 components=attention_components,
-                description=self.descriptions.get("creating_attention", ""),
+                description=self.descriptions.get("creating_attention"),
             ),
             "manifestation": DimensionScore(
                 name="manifestation",
                 score=manifestation_score,
                 perfection_pct=manifestation_score * 100,
                 components=manifestation_components,
-                description=self.descriptions.get("creating_manifestation", ""),
+                description=self.descriptions.get("creating_manifestation"),
             ),
         }
 
@@ -466,21 +466,21 @@ class PathwaysEngine:
                 score=thoughts_score,
                 perfection_pct=thoughts_score * 100,
                 components=thoughts_components,
-                description=self.descriptions.get("embodying_thoughts", ""),
+                description=self.descriptions.get("embodying_thoughts"),
             ),
             "words": DimensionScore(
                 name="words",
                 score=words_score,
                 perfection_pct=words_score * 100,
                 components=words_components,
-                description=self.descriptions.get("embodying_words", ""),
+                description=self.descriptions.get("embodying_words"),
             ),
             "actions": DimensionScore(
                 name="actions",
                 score=actions_score,
                 perfection_pct=actions_score * 100,
                 components=actions_components,
-                description=self.descriptions.get("embodying_actions", ""),
+                description=self.descriptions.get("embodying_actions"),
             ),
         }
 
@@ -591,7 +591,7 @@ class PathwaysEngine:
 
 def get_pathway_dimensions(pathway_type: PathwayType) -> List[str]:
     """Get dimension names for a specific pathway."""
-    return PATHWAY_DIMENSIONS.get(pathway_type, [])
+    return PATHWAY_DIMENSIONS.get(pathway_type)
 
 
 def get_all_dimension_names() -> List[str]:
@@ -606,7 +606,7 @@ def get_all_dimension_names() -> List[str]:
 def get_dimension_description(pathway_type: PathwayType, dimension: str) -> str:
     """Get description for a specific dimension."""
     key = f"{pathway_type.value}_{dimension}"
-    return DIMENSION_DESCRIPTIONS.get(key, "")
+    return DIMENSION_DESCRIPTIONS.get(key)
 
 
 # =============================================================================

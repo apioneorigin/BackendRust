@@ -924,7 +924,7 @@ class RealismEngine:
             active = []
 
         # Calculate coherence (how well realisms integrate)
-        coherence = self._calculate_realism_coherence(active) if active else 0.0
+        coherence = self._calculate_realism_coherence(active) if active else None
 
         # Determine evolution direction
         evolution_direction = self._determine_evolution_direction(s_level, dominant_name) if dominant_name else "Cannot determine - insufficient data"
@@ -1074,11 +1074,11 @@ class RealismEngine:
         category_order = ['biological', 'seeking', 'achievement', 'service', 'integrated', 'wisdom', 'absolute', 'cross_domain', 'specialized']
 
         for cat in current_cats:
-            idx = category_order.index(cat) if cat in category_order else 0
+            idx = category_order.index(cat) if cat in category_order else None
             if idx < len(category_order) - 1:
                 next_cat = category_order[idx + 1]
                 # Find a realism in next category appropriate for S-level
-                for realism_name in self.CATEGORIES.get(next_cat, []):
+                for realism_name in self.CATEGORIES.get(next_cat):
                     realism = self.REALISM_TYPES.get(realism_name)
                     if realism and realism.s_level_range[0] <= s_level + 0.5:
                         recommendations.append(realism_name)
@@ -1167,7 +1167,7 @@ class RealismEngine:
         if context in desc:
             base = desc[context]
         else:
-            base = desc.get('general', desc.get('personal', ''))
+            base = desc.get('general')
 
         # Intensity modifiers based on weight
         if weight >= 0.8:

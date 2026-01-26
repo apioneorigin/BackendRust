@@ -315,4 +315,4 @@ SHORT_TO_CANONICAL = {
 
 def map_to_canonical(name: str) -> str:
     """Map a short/alternate variable name to canonical name."""
-    return SHORT_TO_CANONICAL.get(name, name)
+    return SHORT_TO_CANONICAL.get(name)
