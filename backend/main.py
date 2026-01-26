@@ -797,18 +797,13 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
             "data": json.dumps({"message": f"Extracted {obs_count} tier-1 operator values..."})
         }
 
-        # =====================================================================
-        # CONSTELLATION QUESTION FLOW - After LLM Call 1
-        # =====================================================================
-
-        # Parse goal context from evidence
+        # Parse goal context from evidence (used downstream and for post-response question)
         question_gen = ConstellationQuestionGenerator()
         goal_context = question_gen.parse_goal_context(
             query=prompt,
             detected_targets=evidence.get('targets', [])
         )
 
-        # Store goal_context in evidence for downstream use
         evidence['goal_context'] = {
             'goal_text': goal_context.goal_text,
             'goal_category': goal_context.goal_category,
@@ -816,77 +811,19 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
             'domain': goal_context.domain
         }
 
-        # Identify which operators were extracted vs missing
+        # Identify extracted vs missing operators (for logging and post-response question)
         extracted_operators = {}
         for obs in evidence.get('observations', []):
             if isinstance(obs, dict) and 'var' in obs and 'value' in obs:
                 extracted_operators[obs['var']] = obs['value']
 
-        # Get set of missing operators (use centralized canonical names)
         missing_operators = CANONICAL_OPERATOR_NAMES - set(extracted_operators.keys())
+        api_logger.info(f"[OPERATORS] Extracted: {len(extracted_operators)} | Missing: {len(missing_operators)}")
 
-        # Determine if question should be asked (only if significant operators missing)
-        should_ask_question = len(missing_operators) >= 5  # Threshold: ask if 5+ operators missing
-
-        if should_ask_question:
-            question = question_gen.generate_single_question(
-                goal_context=goal_context,
-                missing_operators=missing_operators,
-                known_operators=extracted_operators
-            )
-
-            if question:
-                # Store session data for answer processing
-                session_data = api_session_store.get(session_id)
-                session_data['evidence'] = evidence
-                session_data['_pending_question'] = question
-                session_data['_question_asked'] = True
-                api_session_store.update(session_id, session_data)
-
-                # Yield question to user and wait for answer
-                yield {
-                    "event": "question",
-                    "data": json.dumps({
-                        "session_id": session_id,
-                        "question_id": question.question_id,
-                        "question_text": question.question_text,
-                        "options": [
-                            {
-                                "id": opt_id,
-                                "text": opt.description
-                            }
-                            for opt_id, opt in question.answer_options.items()
-                        ],
-                        "diagnostic_power": question.diagnostic_power,
-                        "purposes_served": question.purposes_served
-                    })
-                }
-
-                api_logger.info(f"[CONSTELLATION] Question asked: {question.question_id}")
-                api_logger.info(f"[CONSTELLATION] Goal category: {goal_context.goal_category}")
-                api_logger.info(f"[CONSTELLATION] Missing operators: {len(missing_operators)}")
-
-                # Return here - client must call /api/answer and then /api/run/continue
-                yield {
-                    "event": "awaiting_answer",
-                    "data": json.dumps({
-                        "message": "Waiting for constellation selection...",
-                        "session_id": session_id,
-                        "continue_after_answer": f"/api/run/continue?session_id={session_id}"
-                    })
-                }
-                return
-
-        # No question needed - continue with existing operators
-        api_logger.info(f"[CONSTELLATION] No question needed - {len(extracted_operators)} operators extracted")
+        # Store evidence in session
         session_data = api_session_store.get(session_id)
         session_data['evidence'] = evidence
-        session_data['_question_asked'] = False
         api_session_store.update(session_id, session_data)
-
-        # =====================================================================
-        # END CONSTELLATION QUESTION FLOW
-        # =====================================================================
 
         # Step 1.5: Validate evidence before inference
         validation_errors = _validate_evidence(evidence)
@@ -1102,7 +1039,60 @@ Articulation Tokens: {token_count}
             "data": json.dumps(token_usage)
         }
 
-        # Done
+        # =====================================================================
+        # CONSTELLATION QUESTION FLOW - After full response
+        # =====================================================================
+        should_ask_question = len(missing_operators) >= 5
+
+        if should_ask_question:
+            question = question_gen.generate_single_question(
+                goal_context=goal_context,
+                missing_operators=missing_operators,
+                known_operators=extracted_operators
+            )
+
+            if question:
+                session_data = api_session_store.get(session_id)
+                session_data['evidence'] = evidence
+                session_data['_pending_question'] = question
+                session_data['_question_asked'] = True
+                api_session_store.update(session_id, session_data)
+
+                yield {
+                    "event": "question",
+                    "data": json.dumps({
+                        "session_id": session_id,
+                        "question_id": question.question_id,
+                        "question_text": question.question_text,
+                        "options": [
+                            {
+                                "id": opt_id,
+                                "text": opt.description
+                            }
+                            for opt_id, opt in question.answer_options.items()
+                        ],
+                        "diagnostic_power": question.diagnostic_power,
+                        "purposes_served": question.purposes_served
+                    })
+                }
+
+                api_logger.info(f"[CONSTELLATION] Question asked after response: {question.question_id}")
+                api_logger.info(f"[CONSTELLATION] Missing operators: {len(missing_operators)}")
+
+                yield {
+                    "event": "awaiting_answer",
+                    "data": json.dumps({
+                        "message": "Waiting for constellation selection...",
+                        "session_id": session_id,
+                        "continue_after_answer": f"/api/run/continue?session_id={session_id}"
+                    })
+                }
+                return
+        # =====================================================================
+        # END CONSTELLATION QUESTION FLOW
+        # =====================================================================
+
+        # Done - no question needed
         elapsed = time.time() - start_time
         api_logger.info(f"[PIPELINE COMPLETE] Total time: {elapsed:.2f}s | Mode: {query_mode} | Reverse mapping: {reverse_mapping_data is not None}")
         pipeline_logger.end_pipeline(success=True)
