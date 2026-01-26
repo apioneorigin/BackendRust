@@ -318,7 +318,7 @@ class EmotionAnalyzer:
         # Calculate guna influence on emotions
         guna_influence = self._calculate_guna_influence(operators)
 
-        logger.debug(f"[analyze] result: dominant_emotion={dominant_rasa}, coherence={coherence:.3f if coherence is not None else 'None'}")
+        logger.debug(f"[analyze] result: dominant_emotion={dominant_rasa}, coherence={coherence:.3f}" if coherence is not None else f"[analyze] result: dominant_emotion={dominant_rasa}, coherence=None")
         logger.info(f"[analyze] calculable_rasas={calculable_rasas}/9, missing_operators={len(all_missing)}")
         return EmotionalProfile(
             rasas=rasas,
@@ -543,7 +543,7 @@ class EmotionAnalyzer:
 
         ZERO-FALLBACK: Handles None values gracefully.
         """
-        logger.debug(f"[get_emotional_recommendations] inputs: dominant_rasa={profile.dominant_rasa}, coherence={profile.emotional_coherence:.3f if profile.emotional_coherence is not None else 'None'}")
+        logger.debug(f"[get_emotional_recommendations] inputs: dominant_rasa={profile.dominant_rasa}, coherence={profile.emotional_coherence:.3f}" if profile.emotional_coherence is not None else f"[get_emotional_recommendations] inputs: dominant_rasa={profile.dominant_rasa}, coherence=None")
         recommendations = []
 
         # Check for negative dominant states
