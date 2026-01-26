@@ -203,10 +203,13 @@ def get_manifestation_time_label(days: float) -> str:
 
 
 def get_dominant(values: Dict[str, float]) -> str:
-    """Get the key with the highest value from a dict"""
+    """Get the key with the highest value from a dict, ignoring None values"""
     if not values:
         return "unknown"
-    return max(values.items(), key=lambda x: x[1])[0]
+    valid = {k: v for k, v in values.items() if v is not None}
+    if not valid:
+        return "unknown"
+    return max(valid.items(), key=lambda x: x[1])[0]
 
 
 # Variable mapping from short/alternate names to canonical names
