@@ -549,32 +549,45 @@ async def inference_stream_continue(
 
         # Build articulation context
         articulation_context = build_articulation_context(
-            user_identity="User",
+            user_identity=evidence.get('user_identity', 'User'),
             domain=evidence.get('goal_context', {}).get('domain', 'general'),
             goal=prompt,
             current_situation=prompt,
             consciousness_state=consciousness_state,
+            web_research_summary=evidence.get('web_research_summary', ''),
+            key_facts=evidence.get('key_facts', []),
             framework_concealment=True,
-            domain_language=True
+            domain_language=True,
+            search_guidance_data=evidence.get('search_guidance', {})
         )
 
-        # Build prompt for LLM Call 2
-        articulation_prompt = articulation_prompt_builder.build_prompt(articulation_context)
-
-        # Step 4: LLM Call 2 - Articulation
-        api_logger.info("[STEP 4] LLM Call 2 - Articulation")
+        # Step 4: LLM Call 2 - Articulation via streaming bridge
+        api_logger.info("[STEP 4] LLM Call 2 - Articulation (streaming bridge)")
         yield {
             "event": "status",
             "data": json.dumps({"message": "Generating insights (streaming)..."})
         }
 
-        # Stream articulation response
-        async for token_data in stream_articulation_response(
-            articulation_prompt,
-            model_config,
-            web_search_insights
+        # Stream articulation response using the unified bridge
+        token_count = 0
+        async for token in format_results_streaming_bridge(
+            prompt, evidence, posteriors, consciousness_state, None, model_config, web_search_insights
         ):
-            yield token_data
+            if isinstance(token, dict) and token.get("__token_usage__"):
+                input_tokens = token.get("input_tokens", 0)
+                output_tokens = token.get("output_tokens", 0)
+                total_tokens = token.get("total_tokens", 0)
+                pricing = model_config.get("pricing", {"input": 0, "output": 0})
+                cost = (input_tokens * pricing["input"] + output_tokens * pricing["output"]) / 1_000_000
+                api_logger.info(f"[TOKEN USAGE] Input: {input_tokens}, Output: {output_tokens}, Total: {total_tokens}, Cost: ${cost:.6f}")
+            else:
+                token_count += 1
+                yield {
+                    "event": "token",
+                    "data": json.dumps({"text": token})
+                }
+
+        api_logger.info(f"[ARTICULATION] Streamed {token_count} tokens")
 
         # Check if response validation question should be asked (only once per session)
         session_data = api_session_store.get(session_id)
