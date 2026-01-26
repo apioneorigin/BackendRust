@@ -209,6 +209,63 @@ def is_retryable_streaming_error(error: Exception) -> bool:
 
     return False
 
+
+def repair_truncated_json(text: str) -> str:
+    """
+    Repair truncated JSON from LLM responses.
+
+    LLMs sometimes produce JSON that gets cut off mid-value, leaving
+    unclosed strings, arrays, or objects. This scans the JSON structure
+    and closes anything left open.
+
+    Returns the original text if already structurally valid.
+    """
+    in_string = False
+    escape = False
+    stack = []
+
+    for ch in text:
+        if escape:
+            escape = False
+            continue
+        if in_string:
+            if ch == '\\':
+                escape = True
+            elif ch == '"':
+                in_string = False
+            continue
+        if ch == '"':
+            in_string = True
+        elif ch == '{':
+            stack.append('}')
+        elif ch == '[':
+            stack.append(']')
+        elif ch in ('}', ']') and stack and stack[-1] == ch:
+            stack.pop()
+
+    if not stack and not in_string:
+        return text
+
+    repaired = text
+
+    # Close truncated string
+    if in_string:
+        if repaired.endswith('\\'):
+            repaired = repaired[:-1]
+        repaired += '"'
+
+    # Strip trailing comma/colon left from truncation
+    repaired = repaired.rstrip()
+    while repaired and repaired[-1] in (',', ':'):
+        repaired = repaired[:-1].rstrip()
+
+    # Close all open structures
+    for closer in reversed(stack):
+        repaired += closer
+
+    return repaired
+
+
 # API Configuration - Multi-model support
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
@@ -1696,17 +1753,19 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
                             json_text = part
                             break
 
-                # Remove any leading/trailing non-JSON content
+                # Remove any leading non-JSON content
                 if not json_text.startswith("{"):
                     start_idx = json_text.find("{")
                     if start_idx != -1:
                         json_text = json_text[start_idx:]
-                if not json_text.endswith("}"):
-                    end_idx = json_text.rfind("}")
-                    if end_idx != -1:
-                        json_text = json_text[:end_idx + 1]
 
-                result = json.loads(json_text)
+                try:
+                    result = json.loads(json_text)
+                except json.JSONDecodeError as json_err:
+                    api_logger.warning(f"[PARSE] JSON decode failed at pos {json_err.pos}, attempting repair...")
+                    repaired_text = repair_truncated_json(json_text)
+                    result = json.loads(repaired_text)
+                    api_logger.info(f"[PARSE] JSON repair successful")
 
                 # Inject logged search queries if not present in result
                 if search_queries_logged and not result.get("search_queries_used"):
