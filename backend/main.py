@@ -3018,22 +3018,6 @@ def _validate_evidence(evidence: dict) -> List[str]:
     if valid_obs_count < MIN_OBSERVATIONS:
         errors.append(f"Insufficient valid observations: {valid_obs_count} < {MIN_OBSERVATIONS} required")
 
-    # Map observation vars to canonical operator names
-    found_operators = set()
-    for obs in observations:
-        if isinstance(obs, dict):
-            var = obs.get('var', '')
-            # Resolve to canonical name (handles canonical, short, or unknown forms)
-            canonical = SHORT_TO_CANONICAL.get(var, var)
-            if canonical in CANONICAL_OPERATOR_NAMES:
-                found_operators.add(canonical)
-
-    # Require all 24 canonical operators
-    total = len(CANONICAL_OPERATOR_NAMES)
-    if len(found_operators) < total:
-        missing = CANONICAL_OPERATOR_NAMES - found_operators
-        errors.append(f"Missing core operators: found {len(found_operators)}/{total} (missing: {', '.join(sorted(missing))})")
-
     return errors
 
 
