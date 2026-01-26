@@ -178,6 +178,14 @@ STREAMING_RETRYABLE_ERRORS = (
     "server disconnected",
     "RemoteProtocolError",
     "ReadError",
+    "502",
+    "503",
+    "429",
+    "bad gateway",
+    "service unavailable",
+    "rate limit",
+    "overloaded",
+    "internal server error",
 )
 
 
