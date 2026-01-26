@@ -24,6 +24,9 @@ from typing import Dict, List, Optional, Any, Tuple
 from enum import Enum
 import math
 
+from logging_config import get_logger
+logger = get_logger('formulas.distortions')
+
 
 class MayaMode(Enum):
     """Modes of Maya's operation."""
@@ -127,6 +130,7 @@ class DistortionEngine:
         s_level: float
     ) -> MayaScore:
         """Calculate Maya distortion scores."""
+        logger.debug(f"[calculate_maya] inputs: M={operators.get('M_maya')}, W={operators.get('W_witness')}, s_level={s_level:.1f}")
         # Extract operators
         m = operators.get("M_maya")
         w = operators.get("W_witness")
@@ -134,6 +138,7 @@ class DistortionEngine:
         p = operators.get("P_presence")
         e = operators.get("E_equanimity")
         if any(v is None for v in [m, w, at, p, e]):
+            logger.warning("[calculate_maya] missing required: one of M/W/At/P/E is None")
             return None
 
         # S-level reduces maya
@@ -170,6 +175,7 @@ class DistortionEngine:
         # Clarity index (inverse of maya)
         clarity_index = 1 - total_maya
 
+        logger.debug(f"[calculate_maya] result: total_maya={total_maya:.3f}, dominant_guna={dominant_guna.value}, clarity={clarity_index:.3f}")
         return MayaScore(
             total_maya=total_maya,
             avarana=avarana,
@@ -188,12 +194,14 @@ class DistortionEngine:
         s_level: float
     ) -> KleshaScore:
         """Calculate a single klesha."""
+        logger.debug(f"[calculate_klesha] inputs: klesha={klesha.value}, s_level={s_level:.1f}")
         defn = KLESHA_DEFINITIONS[klesha]
 
         # Get relevant operators
         primary = operators.get(defn["operator_key"])
         inverse = operators.get(defn["inverse_key"])
         if any(v is None for v in [primary, inverse]):
+            logger.warning(f"[calculate_klesha] missing required: primary={defn['operator_key']} or inverse={defn['inverse_key']}")
             return None
 
         # S-level reduces klesha intensity
@@ -250,6 +258,7 @@ class DistortionEngine:
         # Dissolution progress based on inverse operator and S-level
         dissolution_progress = inverse * (s_level / 8)
 
+        logger.debug(f"[calculate_klesha] result: klesha={klesha.value}, intensity={intensity:.3f}, active={active}")
         return KleshaScore(
             klesha=klesha,
             sanskrit=defn["sanskrit"],
@@ -266,9 +275,11 @@ class DistortionEngine:
         s_level: float = 4.0
     ) -> DistortionProfile:
         """Calculate complete distortion profile."""
+        logger.debug(f"[calculate_distortion_profile] inputs: operator_count={len(operators)}, s_level={s_level:.1f}")
         # Calculate Maya
         maya = self.calculate_maya(operators, s_level)
         if maya is None:
+            logger.warning("[calculate_distortion_profile] missing required: maya calculation returned None")
             return None
 
         # Calculate all kleshas
@@ -276,12 +287,14 @@ class DistortionEngine:
         for klesha in Klesha:
             result = self.calculate_klesha(klesha, operators, s_level)
             if result is None:
+                logger.warning(f"[calculate_distortion_profile] missing required: klesha {klesha.value} returned None")
                 return None
             kleshas[klesha.value] = result
 
         # Total distortion index
         w = operators.get("W_witness")
         if w is None:
+            logger.warning("[calculate_distortion_profile] missing required: W_witness is None")
             return None
         klesha_sum = sum(k.intensity for k in kleshas.values())
         total_distortion = maya.total_maya * klesha_sum / (1 + w)
@@ -307,6 +320,8 @@ class DistortionEngine:
             if k.intensity > 0.5 and k.active:
                 purification_needs.append(f"Address {k.sanskrit}: {k.description}")
 
+        logger.debug(f"[calculate_distortion_profile] result: total_distortion={total_distortion:.3f}, primary_klesha={primary_klesha.value}, liberation_index={liberation_index:.3f}")
+        logger.info(f"[calculate_distortion_profile] purification_needs={len(purification_needs)}, s_level={s_level:.1f}")
         return DistortionProfile(
             maya=maya,
             kleshas=kleshas,
@@ -322,6 +337,7 @@ class DistortionEngine:
         profile: DistortionProfile
     ) -> List[Tuple[str, str, float]]:
         """Calculate how kleshas cascade from root (avidya) to branches."""
+        logger.debug(f"[calculate_klesha_cascade] inputs: klesha_count={len(profile.kleshas)}")
         cascades = []
 
         # Avidya is root of all
@@ -343,6 +359,7 @@ class DistortionEngine:
         cascades.append(("raga", "abhinivesha", raga.intensity * abhi.intensity))
         cascades.append(("dvesha", "abhinivesha", dvesha.intensity * abhi.intensity))
 
+        logger.debug(f"[calculate_klesha_cascade] result: cascade_count={len(cascades)}")
         return cascades
 
     def get_purification_practices(
@@ -350,6 +367,7 @@ class DistortionEngine:
         profile: DistortionProfile
     ) -> Dict[str, List[str]]:
         """Get recommended practices for purification."""
+        logger.debug(f"[get_purification_practices] inputs: primary_klesha={profile.primary_klesha.value}, dominant_guna={profile.maya.dominant_guna.value}")
         practices = {
             "immediate": [],
             "ongoing": [],
@@ -387,6 +405,8 @@ class DistortionEngine:
             practices["advanced"].append("Neti-neti inquiry")
             practices["advanced"].append("Turiya cultivation")
 
+        total = sum(len(v) for v in practices.values())
+        logger.debug(f"[get_purification_practices] result: total_practices={total}")
         return practices
 
 

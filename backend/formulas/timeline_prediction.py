@@ -14,6 +14,9 @@ from typing import Dict, Any, List, Optional, Tuple
 from dataclasses import dataclass, field
 import math
 
+from logging_config import get_logger
+logger = get_logger('formulas.timeline')
+
 
 @dataclass
 class BreakthroughAnalysis:
@@ -119,6 +122,12 @@ class BreakthroughDynamicsEngine:
           0.7-0.9: Breakthrough probable
           0.9-1.0: Breakthrough imminent/occurring
         """
+        logger.debug(
+            f"[calculate_quantum_leap_probability] purification={purification_level:.3f}, "
+            f"capacity={capacity_developed:.3f}, surrender_depth={surrender_depth:.3f}, "
+            f"aspiration={aspiration_intensity:.3f}, crisis={crisis_intensity:.3f}, "
+            f"grace={grace_intervention:.3f}, resistance={resistance:.3f}, fear={fear:.3f}"
+        )
         # Calculate readiness
         readiness = purification_level * capacity_developed * surrender_depth * aspiration_intensity
 
@@ -160,6 +169,12 @@ class BreakthroughDynamicsEngine:
         if window_active:
             window_duration = 1.0 / max(0.1, total_resistance)  # Longer with less resistance
 
+        logger.debug(
+            f"[calculate_quantum_leap_probability] result: prob={probability:.3f}, "
+            f"readiness={readiness:.3f}, catalyst={catalyst_strength:.3f}, "
+            f"resistance={total_resistance:.3f}, window_active={window_active}"
+        )
+
         return BreakthroughAnalysis(
             quantum_leap_probability=probability,
             tipping_point_proximity=0.0,  # Will be calculated separately
@@ -190,10 +205,17 @@ class BreakthroughDynamicsEngine:
           0.95-1.0: At threshold
           > 1.0: Tipping point passed, leap occurring
         """
+        logger.debug(
+            f"[calculate_tipping_point_proximity] accumulated={accumulated_transformation:.3f}, "
+            f"required={required_transformation:.3f}"
+        )
         if required_transformation == 0:
+            logger.warning(f"[calculate_tipping_point_proximity] required_transformation=0, returning inf")
             return float('inf')
 
-        return accumulated_transformation / required_transformation
+        result = accumulated_transformation / required_transformation
+        logger.debug(f"[calculate_tipping_point_proximity] result: {result:.3f}")
+        return result
 
     def detect_breakthrough_window(
         self,
@@ -211,6 +233,11 @@ class BreakthroughDynamicsEngine:
 
         Returns: Boolean + window_duration_estimate
         """
+        logger.debug(
+            f"[detect_breakthrough_window] tipping={tipping_point_proximity:.3f}, "
+            f"grace={grace_availability:.3f}, resistance={resistance:.3f}, "
+            f"catalyst={catalyst_present}"
+        )
         window_active = (
             tipping_point_proximity > 0.8 and
             grace_availability > 0.6 and
@@ -228,6 +255,10 @@ class BreakthroughDynamicsEngine:
             ) / 3
             duration_estimate = condition_quality * 10  # Arbitrary time units
 
+        logger.debug(
+            f"[detect_breakthrough_window] result: active={window_active}, "
+            f"duration={duration_estimate}"
+        )
         return window_active, duration_estimate
 
 
@@ -272,6 +303,12 @@ class TimelinePredictionEngine:
           Low grace + high resistance: 10-20 years per level
           S7→S8: Often requires special grace, unpredictable
         """
+        logger.debug(
+            f"[predict_time_to_next_s_level] s_level={current_s_level:.3f}, "
+            f"karma={karma_load:.3f}, grace={grace_availability:.3f}, "
+            f"resistance={resistance:.3f}, flow={grace_flow:.3f}, "
+            f"aspiration={aspiration:.3f}, practice={practice_intensity:.3f}"
+        )
         next_s_level = math.ceil(current_s_level)
         if next_s_level <= current_s_level:
             next_s_level = current_s_level + 1
@@ -301,6 +338,12 @@ class TimelinePredictionEngine:
             confidence *= 0.3
             time_to_next *= 2  # More uncertain
 
+        logger.debug(
+            f"[predict_time_to_next_s_level] result: time={time_to_next:.3f}, "
+            f"distance={distance_to_next:.3f}, velocity={transformation_velocity:.3f}, "
+            f"difficulty={difficulty_factor:.3f}, confidence={confidence:.3f}"
+        )
+
         return TimelinePrediction(
             time_to_next_s_level=time_to_next,
             distance_to_next=distance_to_next,
@@ -327,6 +370,10 @@ class TimelinePredictionEngine:
 
         Returns: List of [(time, choice_type, impact_level)]
         """
+        logger.debug(
+            f"[identify_critical_choice_points] probabilities={len(choice_point_probabilities)}, "
+            f"impacts={len(impact_levels)}, lead_times={len(lead_times)}, current_time={current_time:.3f}"
+        )
         choice_points = []
 
         for i, (prob, impact, lead_time) in enumerate(zip(
@@ -356,6 +403,7 @@ class TimelinePredictionEngine:
         # Sort by weighted importance (probability × impact)
         choice_points.sort(key=lambda cp: cp.probability * cp.impact_level, reverse=True)
 
+        logger.debug(f"[identify_critical_choice_points] result: {len(choice_points)} choice points")
         return choice_points
 
     def identify_breakthrough_windows(
@@ -370,6 +418,10 @@ class TimelinePredictionEngine:
 
         Returns: List of time ranges where breakthrough is likely
         """
+        logger.debug(
+            f"[identify_breakthrough_windows] time_range={time_range}, "
+            f"data_points={len(quantum_leap_probabilities)}, threshold={threshold:.3f}"
+        )
         windows = []
         in_window = False
         window_start = None
@@ -407,6 +459,7 @@ class TimelinePredictionEngine:
                 conditions=self._get_window_conditions(avg_prob)
             ))
 
+        logger.debug(f"[identify_breakthrough_windows] result: {len(windows)} windows found")
         return windows
 
     def _get_window_conditions(self, probability: float) -> List[str]:
@@ -441,6 +494,10 @@ class EvolutionDynamicsEngine:
         context: Optional[Dict[str, Any]] = None
     ) -> EvolutionDynamicsState:
         """Calculate complete evolution dynamics state."""
+        logger.debug(
+            f"[calculate_full_evolution_dynamics] s_level={s_level:.3f}, "
+            f"operators={len(operators)} keys, has_context={context is not None}"
+        )
 
         # Extract operators (using canonical names)
         psi = operators.get('Psi_quality')
@@ -457,6 +514,7 @@ class EvolutionDynamicsEngine:
 
         if any(v is None for v in [psi, maya, witness, grace, surrender, karma,
                                     attachment, resistance, fear, presence, coherence]):
+            logger.warning(f"[calculate_full_evolution_dynamics] missing required operators")
             return None
 
         # Context
@@ -471,6 +529,7 @@ class EvolutionDynamicsEngine:
 
         if any(v is None for v in [crisis_intensity, teaching_transmission,
                                     network_breakthrough, practice_intensity, aspiration]):
+            logger.warning(f"[calculate_full_evolution_dynamics] missing required context fields")
             return None
 
         # Calculate breakthrough analysis
@@ -536,6 +595,13 @@ class EvolutionDynamicsEngine:
             trajectory = "gradual"
         else:
             trajectory = "plateau"
+
+        logger.debug(
+            f"[calculate_full_evolution_dynamics] result: trajectory={trajectory}, "
+            f"leap_prob={breakthrough.quantum_leap_probability:.3f}, "
+            f"time_to_next={timeline.time_to_next_s_level:.3f}, "
+            f"choice_points={len(choice_points)}, windows={len(breakthrough_windows)}"
+        )
 
         return EvolutionDynamicsState(
             breakthrough=breakthrough,

@@ -18,6 +18,9 @@ from dataclasses import dataclass, field
 import math
 import cmath
 
+from logging_config import get_logger
+logger = get_logger('formulas.multi_reality')
+
 
 @dataclass
 class RealityWave:
@@ -135,6 +138,10 @@ class MultiRealityEngine:
           V = (I_max - I_min)/(I_max + I_min)
           where V ∈ [0,1], V=1 for perfect coherence
         """
+        logger.debug(
+            f"[calculate_reality_interference] r1(amp={reality1.amplitude:.3f}, phase={reality1.phase:.3f}), "
+            f"r2(amp={reality2.amplitude:.3f}, phase={reality2.phase:.3f})"
+        )
         delta_phi = reality1.phase - reality2.phase
         sqrt_intensities = math.sqrt(reality1.intensity * reality2.intensity)
 
@@ -160,6 +167,11 @@ class MultiRealityEngine:
             visibility = (i_max - i_min) / (i_max + i_min)
         else:
             visibility = 0.0
+
+        logger.debug(
+            f"[calculate_reality_interference] result: type={interference_type}, "
+            f"combined_amp={combined:.3f}, visibility={visibility:.3f}"
+        )
 
         return InterferencePattern(
             combined_amplitude=combined,
@@ -192,6 +204,10 @@ class MultiRealityEngine:
           τ_decoherence = ℏ/(k_B T × Coupling_to_environment)
           Higher consciousness → Lower coupling → Longer superposition
         """
+        logger.debug(
+            f"[calculate_reality_superposition] amplitudes={len(reality_amplitudes)}, "
+            f"temperature={temperature:.3f}, coupling={coupling_to_environment:.3f}"
+        )
         # Normalize amplitudes
         total_norm = math.sqrt(sum(abs(c) ** 2 for c in reality_amplitudes.values()))
         if total_norm == 0:
@@ -211,6 +227,11 @@ class MultiRealityEngine:
         else:
             decoherence_time = float('inf')
 
+        logger.debug(
+            f"[calculate_reality_superposition] result: dominant={dominant}, "
+            f"probabilities={len(probabilities)}, decoherence_time={decoherence_time:.3f}"
+        )
+
         return RealitySuperposition(
             states=normalized,
             probabilities=probabilities,
@@ -228,11 +249,14 @@ class MultiRealityEngine:
         Collapse superposition to single reality.
         If chosen_reality not specified, collapse to dominant.
         """
+        logger.debug(f"[collapse_superposition] chosen_reality={chosen_reality}")
         if chosen_reality is None:
             chosen_reality = superposition.dominant_reality
 
         collapsed_states = {chosen_reality: complex(1.0, 0.0)}
         collapsed_probs = {chosen_reality: 1.0}
+
+        logger.debug(f"[collapse_superposition] result: collapsed to '{chosen_reality}'")
 
         return RealitySuperposition(
             states=collapsed_states,
@@ -268,6 +292,10 @@ class MultiRealityEngine:
         Distance_independence:
           Entanglement_strength independent of physical separation
         """
+        logger.debug(
+            f"[calculate_reality_entanglement] op1_len={len(correlation_operator1)}, "
+            f"op2_len={len(correlation_operator2)}, has_measurements={measurements is not None}"
+        )
         # Calculate correlation strength
         # C = ⟨Op₁ ⊗ Op₂⟩ - ⟨Op₁⟩⟨Op₂⟩
         mean_op1 = sum(correlation_operator1) / len(correlation_operator1) if correlation_operator1 else 0
@@ -291,6 +319,11 @@ class MultiRealityEngine:
             bell_violation = S
             if S > 2:
                 is_entangled = True
+
+        logger.debug(
+            f"[calculate_reality_entanglement] result: correlation={correlation_strength:.3f}, "
+            f"entangled={is_entangled}, bell_violation={bell_violation}"
+        )
 
         return RealityEntanglement(
             correlation_strength=correlation_strength,
@@ -326,6 +359,11 @@ class MultiRealityEngine:
           τ_tunnel ≈ ℏ/ΔE
           Higher grace → Higher ΔE → Shorter tunnel time
         """
+        logger.debug(
+            f"[calculate_reality_tunneling] barrier_h={barrier_height:.3f}, "
+            f"barrier_w={barrier_width:.3f}, energy={consciousness_energy:.3f}, "
+            f"grace={grace_factor:.3f}, surrender={surrender_level:.3f}, resistance={resistance:.3f}"
+        )
         # Basic tunneling probability
         if consciousness_energy > 0:
             exponent = -barrier_height * barrier_width / consciousness_energy
@@ -346,6 +384,11 @@ class MultiRealityEngine:
             tunneling_time = PLANCK_CONSTANT_REDUCED / delta_E
         else:
             tunneling_time = float('inf')
+
+        logger.debug(
+            f"[calculate_reality_tunneling] result: prob={min(1.0, tunneling_probability):.3f}, "
+            f"tunneling_time={tunneling_time:.3f}"
+        )
 
         return RealityTunnelingResult(
             tunneling_probability=min(1.0, tunneling_probability),
@@ -376,6 +419,10 @@ class MultiRealityEngine:
           Higher UCB → Lower environmental coupling → Slower decoherence
           → Can maintain superposition longer
         """
+        logger.debug(
+            f"[calculate_decoherence_rate] coupling={coupling_strength:.3f}, "
+            f"noise={environmental_noise:.3f}, ucb={ucb_level:.3f}"
+        )
         # Base decoherence rate
         gamma = 0.1  # Base decay constant
 
@@ -389,6 +436,10 @@ class MultiRealityEngine:
             coherence_halflife = math.log(2) / decoherence_rate
         else:
             coherence_halflife = float('inf')
+
+        logger.debug(
+            f"[calculate_decoherence_rate] result: rate={decoherence_rate:.3f}, halflife={coherence_halflife:.3f}"
+        )
 
         return decoherence_rate, coherence_halflife
 
@@ -416,6 +467,10 @@ class MultiRealityEngine:
           N_branches(t) = N₀ × exp(λt)
           where λ = decision_rate × significance
         """
+        logger.debug(
+            f"[calculate_timeline_branching] choices={len(choice_probabilities)}, "
+            f"decision_rate={decision_rate:.3f}, significance={significance:.3f}"
+        )
         branches = []
 
         for choice_id, probability in choice_probabilities.items():
@@ -427,6 +482,7 @@ class MultiRealityEngine:
             )
             branches.append(branch)
 
+        logger.debug(f"[calculate_timeline_branching] result: {len(branches)} branches")
         return branches
 
     def calculate_branch_count(
@@ -440,8 +496,13 @@ class MultiRealityEngine:
         N_branches(t) = N₀ × exp(λt)
         where λ = decision_rate × significance
         """
+        logger.debug(
+            f"[calculate_branch_count] initial={initial_branches}, time={time:.3f}, "
+            f"decision_rate={decision_rate:.3f}, significance={significance:.3f}"
+        )
         lambda_rate = decision_rate * significance
         branch_count = initial_branches * math.exp(lambda_rate * time)
+        logger.debug(f"[calculate_branch_count] result: {int(branch_count)} branches")
         return int(branch_count)
 
     # ==========================================================================
@@ -467,12 +528,17 @@ class MultiRealityEngine:
           Low coherence → "Split life", multiple contradictory realities
           High coherence → Unified, integrated reality
         """
+        logger.debug(
+            f"[calculate_reality_blending] realities={len(realities)}, "
+            f"alignments={len(consciousness_alignments)}, permissions={len(karma_permissions)}"
+        )
         # Calculate weights
         raw_weights = {}
         for reality_id in realities:
             alignment = consciousness_alignments.get(reality_id)
             permission = karma_permissions.get(reality_id)
             if alignment is None or permission is None:
+                logger.warning(f"[calculate_reality_blending] missing alignment or permission for reality '{reality_id}'")
                 return None
             raw_weights[reality_id] = alignment * permission
 
@@ -497,6 +563,11 @@ class MultiRealityEngine:
                     coherence -= weights[id_i] * weights[id_j] * distance
 
         coherence = max(0.0, coherence)
+
+        logger.debug(
+            f"[calculate_reality_blending] result: coherence={coherence:.3f}, "
+            f"is_unified={coherence > 0.7}, weights={len(weights)}"
+        )
 
         return BlendedReality(
             blended_state=blended_state,
@@ -523,10 +594,17 @@ class MultiRealityEngine:
 
         Range: [0, 1]
         """
+        logger.debug(
+            f"[calculate_reality_overlap] beliefs={shared_beliefs:.3f}, "
+            f"consciousness={shared_consciousness_level:.3f}, freq={interaction_frequency:.3f}, "
+            f"participants={num_participants}"
+        )
         if num_participants == 0:
+            logger.warning(f"[calculate_reality_overlap] zero participants, returning 0.0")
             return 0.0
 
         overlap = (shared_beliefs * shared_consciousness_level * interaction_frequency) / num_participants
+        logger.debug(f"[calculate_reality_overlap] result: {min(1.0, overlap):.3f}")
         return min(1.0, overlap)
 
     def calculate_consensus_reality(
@@ -541,6 +619,10 @@ class MultiRealityEngine:
         where:
           Weight_i = (Ψ_i^Ψ_i)^C(creator)_i / Σ(all_weights)
         """
+        logger.debug(
+            f"[calculate_consensus_reality] realities={len(individual_realities)}, "
+            f"consciousness={len(consciousness_levels)}, exponents={len(creator_exponents)}"
+        )
         weights = []
         for psi, c_exp in zip(consciousness_levels, creator_exponents):
             psi_psi = psi_power(psi)
@@ -552,6 +634,7 @@ class MultiRealityEngine:
             return sum(individual_realities) / max(1, len(individual_realities))
 
         consensus = sum(r * w for r, w in zip(individual_realities, weights)) / total_weight
+        logger.debug(f"[calculate_consensus_reality] result: {consensus:.3f}")
         return consensus
 
     def calculate_reality_conflict_resolution(
@@ -572,6 +655,10 @@ class MultiRealityEngine:
         If Strong_Attachment: Conflict persists
           Conflict_Severity = Σ(|Reality_i - Reality_j| × At_i × At_j)
         """
+        logger.debug(
+            f"[calculate_reality_conflict_resolution] realities={len(realities)}, "
+            f"consciousness={len(consciousness_levels)}, attachments={len(attachments)}"
+        )
         if not realities:
             return {"resolution_type": "none", "result": 0.0}
 
@@ -585,6 +672,7 @@ class MultiRealityEngine:
                 break
 
         if dominant_idx is not None:
+            logger.debug(f"[calculate_reality_conflict_resolution] result: dominance, idx={dominant_idx}")
             return {
                 "resolution_type": "dominance",
                 "result": realities[dominant_idx],
@@ -601,6 +689,7 @@ class MultiRealityEngine:
             else:
                 blended = sum(realities) / len(realities)
 
+            logger.debug(f"[calculate_reality_conflict_resolution] result: blend, value={blended:.3f}")
             return {
                 "resolution_type": "blend",
                 "result": blended
@@ -612,6 +701,9 @@ class MultiRealityEngine:
             for j in range(i + 1, len(realities)):
                 conflict_severity += abs(realities[i] - realities[j]) * attachments[i] * attachments[j]
 
+        logger.debug(
+            f"[calculate_reality_conflict_resolution] result: conflict, severity={conflict_severity:.3f}"
+        )
         return {
             "resolution_type": "conflict",
             "result": sum(realities) / len(realities),
@@ -633,10 +725,17 @@ class MultiRealityEngine:
 
         Range: [0, ∞]
         """
+        logger.debug(
+            f"[calculate_collective_stability] believers={num_believers}, "
+            f"belief_strength={avg_belief_strength:.3f}, duration={duration:.3f}, "
+            f"conflicts={conflicting_realities}, challenge={challenge_strength:.3f}"
+        )
         numerator = num_believers * avg_belief_strength * duration
         denominator = max(0.1, conflicting_realities * challenge_strength)
 
-        return numerator / denominator
+        result = numerator / denominator
+        logger.debug(f"[calculate_collective_stability] result: {result:.3f}")
+        return result
 
     def calculate_full_multi_reality_state(
         self,
@@ -650,6 +749,13 @@ class MultiRealityEngine:
         resonance: float
     ) -> MultiRealityState:
         """Calculate complete multi-reality interaction state."""
+        logger.debug(
+            f"[calculate_full_multi_reality_state] beliefs={shared_beliefs:.3f}, "
+            f"consciousness={shared_consciousness:.3f}, freq={interaction_frequency:.3f}, "
+            f"participants={num_participants}, realities={len(individual_realities)}, "
+            f"levels={len(consciousness_levels)}, attachments={len(attachments)}, "
+            f"resonance={resonance:.3f}"
+        )
 
         overlap = self.calculate_reality_overlap(
             shared_beliefs, shared_consciousness, interaction_frequency, num_participants
@@ -678,6 +784,12 @@ class MultiRealityEngine:
             1.0,  # duration
             max(1, len(set(individual_realities))),
             1.0 - overlap
+        )
+
+        logger.debug(
+            f"[calculate_full_multi_reality_state] result: overlap={overlap:.3f}, "
+            f"consensus={consensus:.3f}, morphic={morphic:.3f}, "
+            f"transmission={transmission:.3f}, stability={stability:.3f}"
         )
 
         return MultiRealityState(

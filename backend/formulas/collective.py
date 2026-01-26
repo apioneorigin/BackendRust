@@ -21,6 +21,9 @@ from typing import Dict, List, Optional, Any
 from enum import Enum
 import math
 
+from logging_config import get_logger
+logger = get_logger('formulas.collective')
+
 
 class NetworkType(Enum):
     """Types of collective networks."""
@@ -91,6 +94,7 @@ class CollectiveEngine:
         Formula: Network_Effect = R^N × Coherence²
         Critical_Mass = 0.035 × Population
         """
+        logger.debug(f"[calculate_network_effect] inputs: network_size={network_size}, resonance={base_resonance:.3f}, coherence={coherence:.3f}")
         # Network effect formula
         effect = (base_resonance ** network_size) * (coherence ** 2)
         effect = min(1.0, effect)  # Normalize
@@ -100,6 +104,7 @@ class CollectiveEngine:
         distance = critical_mass - network_size
         is_critical = network_size >= critical_mass
 
+        logger.debug(f"[calculate_network_effect] result: network_effect={effect:.3f}, is_critical={is_critical}")
         return NetworkEffect(
             network_size=network_size,
             base_resonance=base_resonance,
@@ -122,6 +127,7 @@ class CollectiveEngine:
         Formula: Field_Strength = Repetitions × Participants × Coherence
         Access_Probability = Resonance × Field_Strength
         """
+        logger.debug(f"[calculate_morphic_field] inputs: repetitions={repetitions}, participants={participants}, coherence={coherence:.3f}")
         # Field strength
         strength = math.log1p(repetitions) * math.log1p(participants) * coherence
         strength = strength / 10  # Normalize
@@ -134,6 +140,7 @@ class CollectiveEngine:
         # Transmission speed (near-instantaneous at high S-levels)
         transmission = 0.5 + (s_level_avg / 16)  # 0.5 to 1.0
 
+        logger.debug(f"[calculate_morphic_field] result: field_strength={strength:.3f}, access_prob={access_prob:.3f}")
         return MorphicField(
             field_strength=strength,
             repetitions=repetitions,
@@ -153,11 +160,13 @@ class CollectiveEngine:
 
         Formula: We_Space_Quality = Coherence × Shared_S_level × Alignment
         """
+        logger.debug(f"[calculate_we_space] inputs: coherence={network_coherence:.3f}, shared_s_level={shared_s_level:.3f}, op_count={len(operators)}")
         # Alignment from operators
         se = operators.get("Se_service")
         at = operators.get("At_attachment")
         w = operators.get("W_witness")
         if any(v is None for v in [se, at, w]):
+            logger.warning("[calculate_we_space] missing: required operators (Se, At, W)")
             return None
 
         alignment = se * (1 - at) * w
@@ -170,6 +179,7 @@ class CollectiveEngine:
         # Group_Mind_IQ > Sum(Individual_IQs) when coherence is high
         iq_boost = 1.0 + (network_coherence - 0.5) * 0.5 if network_coherence > 0.5 else 1.0
 
+        logger.debug(f"[calculate_we_space] result: quality={quality:.3f}, alignment={alignment:.3f}, iq_boost={iq_boost:.3f}")
         return WeSpace(
             quality=quality,
             coherence=network_coherence,
@@ -187,11 +197,13 @@ class CollectiveEngine:
         shared_s_level: float = 4.0
     ) -> CollectiveProfile:
         """Calculate complete collective consciousness profile."""
+        logger.debug(f"[calculate_collective_profile] inputs: network_size={network_size}, population={population}, s_level={shared_s_level:.3f}")
         # Base values from operators
         psi = operators.get("Psi_quality")
         r = operators.get("Rs_resonance")
         g = operators.get("G_grace")
         if any(v is None for v in [psi, r, g]):
+            logger.warning("[calculate_collective_profile] missing: required operators (Psi, Rs, G)")
             return None
         coherence = operators.get("Co_coherence")
         if coherence is None:
@@ -214,6 +226,7 @@ class CollectiveEngine:
         # Collective Grace multiplication
         evolution_rate = g * coherence * we_space.alignment * (shared_s_level / 8)
 
+        logger.debug(f"[calculate_collective_profile] result: collective_consciousness={collective:.3f}, emergence={emergence:.3f}")
         return CollectiveProfile(
             network_effect=network,
             morphic_field=morphic,

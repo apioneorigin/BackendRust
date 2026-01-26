@@ -25,6 +25,9 @@ from typing import Dict, List, Optional, Tuple, Any
 from enum import Enum
 import math
 
+from logging_config import get_logger
+logger = get_logger('formulas.death')
+
 
 class DeathType(Enum):
     """The seven death architectures."""
@@ -221,6 +224,7 @@ class DeathEngine:
 
         Active when mortality awareness is high, body changes significant.
         """
+        logger.debug(f"[calculate_d1] inputs: Ab={ops.get('Ab_abhinivesha')}, V={ops.get('V_void')}, P={ops.get('P_presence')}")
         ab = ops.get("Ab_abhinivesha")  # Fear of death
         v = ops.get("V_void")
         p = ops.get("P_presence")
@@ -229,6 +233,7 @@ class DeathEngine:
         m = ops.get("M_maya")
         w = ops.get("W_witness")
         if any(val is None for val in [ab, v, p, g, at, m, w]):
+            logger.warning("[calculate_d1] missing required: one of Ab/V/P/G/At/M/W is None")
             return None
 
         # Physical death indicators
@@ -247,6 +252,7 @@ class DeathEngine:
         phase = self._determine_phase(intensity, acceptance, surrender)
         readiness = self._calculate_s_level_readiness(1, s_level)
 
+        logger.debug(f"[calculate_d1] result: intensity={intensity:.3f}, depth={depth:.3f}, phase={phase.value}")
         return DeathScore(
             death_type=DeathType.D1_PHYSICAL,
             intensity=intensity,
@@ -267,16 +273,19 @@ class DeathEngine:
 
         Active when significant bonds are ending or transforming.
         """
+        logger.debug(f"[calculate_d2] inputs: At={ops.get('At_attachment')}, Se={ops.get('Se_service')}, E={ops.get('E_equanimity')}")
         at = ops.get("At_attachment")
         se = ops.get("Se_service")
         e = ops.get("E_equanimity")
         w = ops.get("W_witness")
         g = ops.get("G_grace")
         if any(val is None for val in [at, se, e, w, g]):
+            logger.warning("[calculate_d2] missing required: one of At/Se/E/W/G is None")
             return None
 
         ego_sep = self._calculate_ego_separation(ops)
         if ego_sep is None:
+            logger.warning("[calculate_d2] missing required: ego_separation returned None")
             return None
 
         # Relationship death indicators
@@ -294,6 +303,7 @@ class DeathEngine:
         phase = self._determine_phase(intensity, acceptance, surrender)
         readiness = self._calculate_s_level_readiness(2, s_level)
 
+        logger.debug(f"[calculate_d2] result: intensity={intensity:.3f}, depth={depth:.3f}, phase={phase.value}")
         return DeathScore(
             death_type=DeathType.D2_RELATIONSHIP,
             intensity=intensity,
@@ -315,16 +325,19 @@ class DeathEngine:
         Active when self-concept is dissolving or transforming.
         Formula: Role_Loss × Identity_Attachment × Ego_Dissolution × (1 - New_Identity_Formed)
         """
+        logger.debug(f"[calculate_d3] inputs: At={ops.get('At_attachment')}, As={ops.get('As_asmita')}, W={ops.get('W_witness')}")
         at = ops.get("At_attachment")
         as_ = ops.get("As_asmita")
         w = ops.get("W_witness")
         m = ops.get("M_maya")
         g = ops.get("G_grace")
         if any(val is None for val in [at, as_, w, m, g]):
+            logger.warning("[calculate_d3] missing required: one of At/As/W/M/G is None")
             return None
 
         ego_sep = self._calculate_ego_separation(ops)
         if ego_sep is None:
+            logger.warning("[calculate_d3] missing required: ego_separation returned None")
             return None
 
         # Identity death indicators
@@ -344,6 +357,7 @@ class DeathEngine:
         phase = self._determine_phase(intensity, acceptance, surrender)
         readiness = self._calculate_s_level_readiness(3, s_level)
 
+        logger.debug(f"[calculate_d3] result: intensity={intensity:.3f}, depth={depth:.3f}, phase={phase.value}")
         return DeathScore(
             death_type=DeathType.D3_IDENTITY,
             intensity=intensity,
@@ -365,6 +379,7 @@ class DeathEngine:
 
         Active when worldview or paradigm is collapsing.
         """
+        logger.debug(f"[calculate_d4] inputs: M={ops.get('M_maya')}, W={ops.get('W_witness')}, BN={ops.get('BN_belief')}")
         m = ops.get("M_maya")
         w = ops.get("W_witness")
         psi = ops.get("Psi_quality")
@@ -372,6 +387,7 @@ class DeathEngine:
         g = ops.get("G_grace")
         bn = ops.get("BN_belief")
         if any(val is None for val in [m, w, psi, at, g, bn]):
+            logger.warning("[calculate_d4] missing required: one of M/W/Psi/At/G/BN is None")
             return None
 
         # Belief death indicators
@@ -389,6 +405,7 @@ class DeathEngine:
         phase = self._determine_phase(intensity, acceptance, surrender)
         readiness = self._calculate_s_level_readiness(4, s_level)
 
+        logger.debug(f"[calculate_d4] result: intensity={intensity:.3f}, depth={depth:.3f}, phase={phase.value}")
         return DeathScore(
             death_type=DeathType.D4_BELIEF,
             intensity=intensity,
@@ -409,6 +426,7 @@ class DeathEngine:
 
         Active when attachments and cravings are dissolving.
         """
+        logger.debug(f"[calculate_d5] inputs: At={ops.get('At_attachment')}, Ra={ops.get('Ra_raga')}, Dv={ops.get('Dv_dvesha')}")
         at = ops.get("At_attachment")
         ra = ops.get("Ra_raga")
         dv = ops.get("Dv_dvesha")
@@ -416,6 +434,7 @@ class DeathEngine:
         g = ops.get("G_grace")
         p = ops.get("P_presence")
         if any(val is None for val in [at, ra, dv, w, g, p]):
+            logger.warning("[calculate_d5] missing required: one of At/Ra/Dv/W/G/P is None")
             return None
 
         # Desire death indicators (vairagya = dispassion)
@@ -433,6 +452,7 @@ class DeathEngine:
         phase = self._determine_phase(intensity, acceptance, surrender)
         readiness = self._calculate_s_level_readiness(5, s_level)
 
+        logger.debug(f"[calculate_d5] result: intensity={intensity:.3f}, depth={depth:.3f}, phase={phase.value}")
         return DeathScore(
             death_type=DeathType.D5_DESIRE,
             intensity=intensity,
@@ -453,6 +473,7 @@ class DeathEngine:
 
         Active when boundaries and duality are dissolving.
         """
+        logger.debug(f"[calculate_d6] inputs: At={ops.get('At_attachment')}, M={ops.get('M_maya')}, Psi={ops.get('Psi_quality')}")
         at = ops.get("At_attachment")
         m = ops.get("M_maya")
         w = ops.get("W_witness")
@@ -460,10 +481,12 @@ class DeathEngine:
         g = ops.get("G_grace")
         se = ops.get("Se_service")
         if any(val is None for val in [at, m, w, psi, g, se]):
+            logger.warning("[calculate_d6] missing required: one of At/M/W/Psi/G/Se is None")
             return None
 
         ego_sep = self._calculate_ego_separation(ops)
         if ego_sep is None:
+            logger.warning("[calculate_d6] missing required: ego_separation returned None")
             return None
 
         # Separation death indicators
@@ -481,6 +504,7 @@ class DeathEngine:
         phase = self._determine_phase(intensity, acceptance, surrender)
         readiness = self._calculate_s_level_readiness(6, s_level)
 
+        logger.debug(f"[calculate_d6] result: intensity={intensity:.3f}, depth={depth:.3f}, phase={phase.value}")
         return DeathScore(
             death_type=DeathType.D6_SEPARATION,
             intensity=intensity,
@@ -502,6 +526,7 @@ class DeathEngine:
         Complete dissolution of separate self-sense.
         Formula: Ego_Dissolution × (1 - Asmita) × Witness_Emergence × (S_level ≥ 7)
         """
+        logger.debug(f"[calculate_d7] inputs: At={ops.get('At_attachment')}, As={ops.get('As_asmita')}, W={ops.get('W_witness')}, s_level={s_level:.1f}")
         at = ops.get("At_attachment")
         as_ = ops.get("As_asmita")
         w = ops.get("W_witness")
@@ -509,10 +534,12 @@ class DeathEngine:
         g = ops.get("G_grace")
         m = ops.get("M_maya")
         if any(val is None for val in [at, as_, w, psi, g, m]):
+            logger.warning("[calculate_d7] missing required: one of At/As/W/Psi/G/M is None")
             return None
 
         ego_sep = self._calculate_ego_separation(ops)
         if ego_sep is None:
+            logger.warning("[calculate_d7] missing required: ego_separation returned None")
             return None
 
         # S-level factor
@@ -534,6 +561,7 @@ class DeathEngine:
         phase = self._determine_phase(intensity, acceptance, surrender)
         readiness = self._calculate_s_level_readiness(7, s_level)
 
+        logger.debug(f"[calculate_d7] result: intensity={intensity:.3f}, depth={depth:.3f}, phase={phase.value}")
         return DeathScore(
             death_type=DeathType.D7_EGO,
             intensity=intensity,
@@ -555,7 +583,8 @@ class DeathEngine:
 
     def calculate_all_deaths(self, ops: Dict[str, float], s_level: float = 4.0) -> Dict[str, Optional[DeathScore]]:
         """Calculate all death type scores. Individual scores may be None if operators are missing."""
-        return {
+        logger.debug(f"[calculate_all_deaths] inputs: operator_count={len(ops)}, s_level={s_level:.1f}")
+        results = {
             DeathType.D1_PHYSICAL.value: self.calculate_d1_physical(ops, s_level),
             DeathType.D2_RELATIONSHIP.value: self.calculate_d2_relationship(ops, s_level),
             DeathType.D3_IDENTITY.value: self.calculate_d3_identity(ops, s_level),
@@ -564,6 +593,9 @@ class DeathEngine:
             DeathType.D6_SEPARATION.value: self.calculate_d6_separation(ops, s_level),
             DeathType.D7_EGO.value: self.calculate_d7_ego(ops, s_level),
         }
+        valid_count = sum(1 for v in results.values() if v is not None)
+        logger.debug(f"[calculate_all_deaths] result: valid_deaths={valid_count}/7")
+        return results
 
     def calculate_death_profile(
         self,
@@ -580,12 +612,14 @@ class DeathEngine:
         Returns:
             Complete DeathProfile, or None if required operators are missing
         """
+        logger.debug(f"[calculate_death_profile] inputs: operator_count={len(operators)}, s_level={s_level:.1f}")
         # Check operators used directly by this method
         grace_support = operators.get("G_grace")
         w = operators.get("W_witness")
         at = operators.get("At_attachment")
         psi = operators.get("Psi_quality")
         if any(val is None for val in [grace_support, w, at, psi]):
+            logger.warning("[calculate_death_profile] missing required: one of G/W/At/Psi is None")
             return None
 
         deaths = self.calculate_all_deaths(operators, s_level)
@@ -612,6 +646,8 @@ class DeathEngine:
         # Rebirth potential
         rebirth_potential = w * (1 - at) * psi * grace_support
 
+        logger.debug(f"[calculate_death_profile] result: active_death={active_death_type.value if active_death_type else 'None'}, overall_intensity={overall_intensity:.3f}")
+        logger.info(f"[calculate_death_profile] valid_deaths={len(valid_deaths)}/7, s_level={s_level:.1f}")
         return DeathProfile(
             deaths=valid_deaths,
             active_death_type=active_death_type,

@@ -19,6 +19,9 @@ from typing import Dict, Any, List, Optional, Tuple, Set
 from dataclasses import dataclass, field
 import math
 
+from logging_config import get_logger
+logger = get_logger('formulas.realism')
+
 
 @dataclass
 class RealismType:
@@ -889,6 +892,7 @@ class RealismEngine:
 
         ZERO-FALLBACK: Tracks missing operators, allows partial calculations.
         """
+        logger.debug(f"[calculate_realism_profile] s_level={s_level:.3f}, operators={len(operators)} keys")
         # Calculate weight for each realism type
         realism_weights = {}
         all_missing: Set[str] = set()
@@ -927,6 +931,14 @@ class RealismEngine:
 
         # Recommend expansions
         recommended = self._recommend_realism_expansion(s_level, active)
+
+        if all_missing:
+            logger.warning(f"[calculate_realism_profile] missing operators: {len(all_missing)}")
+        logger.debug(
+            f"[calculate_realism_profile] result: dominant={dominant_name}, "
+            f"dominant_weight={dominant_weight:.3f}, active={len(active)}, "
+            f"coherence={coherence if coherence is not None else 'None'}"
+        )
 
         return RealismProfile(
             active_realisms=active,
@@ -1107,6 +1119,11 @@ class RealismEngine:
         - d_i = fractal depth contribution
         - C = creator coefficient
         """
+        logger.debug(
+            f"[calculate_realism_blend] fractal_depth={fractal_depth:.3f}, "
+            f"creator_coefficient={creator_coefficient:.3f}, "
+            f"blend_entries={len(profile.realism_blend)}"
+        )
         blend = 0.0
 
         for realism_name, weight in profile.realism_blend.items():
@@ -1123,7 +1140,9 @@ class RealismEngine:
 
             blend += weight * depth_factor
 
-        return blend ** creator_coefficient
+        result = blend ** creator_coefficient
+        logger.debug(f"[calculate_realism_blend] result: {result:.3f}")
+        return result
 
     def get_semantic_description(self, realism_name: str, weight: float, context: str = 'general') -> str:
         """
@@ -1137,7 +1156,9 @@ class RealismEngine:
         Returns:
             Human-readable description of how this realism manifests
         """
+        logger.debug(f"[get_semantic_description] realism={realism_name}, weight={weight:.3f}, context={context}")
         if realism_name not in REALISM_SEMANTIC_DESCRIPTIONS:
+            logger.warning(f"[get_semantic_description] missing description for realism '{realism_name}'")
             return f"{realism_name.replace('_', ' ').title()} is active"
 
         desc = REALISM_SEMANTIC_DESCRIPTIONS[realism_name]
@@ -1158,7 +1179,9 @@ class RealismEngine:
         else:
             intensity = "somewhat"
 
-        return f"{intensity} {base}"
+        result = f"{intensity} {base}"
+        logger.debug(f"[get_semantic_description] result: '{result[:80]}'")
+        return result
 
 
 # Semantic descriptions for natural language articulation

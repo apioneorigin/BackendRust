@@ -77,7 +77,17 @@ class ArticulationPromptBuilder:
     def _build_search_guidance_section(self, search_guidance: SearchGuidance) -> str:
         """Build the search guidance section for evidence grounding in Call 2"""
         if not search_guidance or not search_guidance.high_priority_values:
+            logger.debug("[_build_search_guidance_section] skipped: no search guidance or no high-priority values")
             return ""
+
+        priority_count = len(search_guidance.high_priority_values)
+        query_count = len(search_guidance.evidence_search_queries) if search_guidance.evidence_search_queries else 0
+        mapping_count = len(search_guidance.consciousness_to_reality_mappings) if search_guidance.consciousness_to_reality_mappings else 0
+        logger.debug(
+            f"[_build_search_guidance_section] guidance present: "
+            f"priorities={priority_count} queries={query_count} "
+            f"mappings={mapping_count} pattern={search_guidance.query_pattern}"
+        )
 
         sections = ["## SEARCH GUIDANCE FOR EVIDENCE GROUNDING\n"]
 
@@ -193,6 +203,14 @@ ones into breakthrough insights.
         web_research: WebResearch
     ) -> str:
         """Build user context and web research section"""
+        logger.debug(
+            f"[_build_context_section] identity={user_context.identity} "
+            f"domain={user_context.domain} "
+            f"goal_len={len(user_context.goal or '')} "
+            f"constraints={len(user_context.constraints) if user_context.constraints else 0} "
+            f"searches={len(web_research.searches_performed) if web_research.searches_performed else 0} "
+            f"facts={len(web_research.key_facts) if web_research.key_facts else 0}"
+        )
         constraints_str = '\n'.join(f"- {c}" for c in user_context.constraints) if user_context.constraints else "- None specified"
 
         searches_str = ""
@@ -278,6 +296,7 @@ to articulate. Don't list all values - synthesize the relevant ones.
 
     def _build_consciousness_state_section(self, state: ConsciousnessState) -> str:
         """Build the consciousness state section with organized values"""
+        logger.debug("[_build_consciousness_state_section] entry")
         ops = state.tier1.core_operators
         s_level = state.tier1.s_level
 
@@ -321,6 +340,21 @@ to articulate. Don't list all values - synthesize the relevant ones.
 
         # Build data quality section if we have metadata
         data_quality_section = self._build_data_quality_section(state)
+
+        # Log operator population details
+        op_fields = [
+            ops.P_presence, ops.A_aware, ops.M_maya, ops.At_attachment,
+            ops.G_grace, ops.W_witness, ops.S_surrender, ops.Co_coherence,
+            ops.R_resistance, ops.F_fear, ops.E_equanimity, ops.Se_service,
+            ops.D_dharma, ops.K_karma, ops.I_intention, ops.Hf_habit,
+        ]
+        populated_count = sum(1 for v in op_fields if v is not None)
+        none_count = len(op_fields) - populated_count
+        logger.debug(
+            f"[_build_consciousness_state_section] operators: populated={populated_count} "
+            f"none={none_count} s_level={s_level.current} "
+            f"dominant_act={five_acts.dominant} dominant_guna={gunas.dominant}"
+        )
 
         return f"""## CALCULATED CONSCIOUSNESS STATE
 
@@ -430,13 +464,22 @@ to articulate. Don't list all values - synthesize the relevant ones.
         """
         # Check if unity metrics are available
         if not hasattr(state, 'unity_metrics') or state.unity_metrics is None:
+            logger.debug("[_build_unity_metrics_section] skipped: unity_metrics not present")
             return ""
 
         um = state.unity_metrics
 
         # Skip if all default values (not calculated)
         if um.separation_distance == 0.5 and um.unity_vector == 0.0:
+            logger.debug("[_build_unity_metrics_section] skipped: default values (not calculated)")
             return ""
+
+        logger.debug(
+            f"[_build_unity_metrics_section] unity data present: "
+            f"sep_dist={um.separation_distance:.3f} vector={um.unity_vector:.3f} "
+            f"percolation={um.percolation_quality:.3f} distortion={um.distortion_field:.3f} "
+            f"direction={um.net_direction}"
+        )
 
         # Translate unity_vector to direction description
         if um.unity_vector > 0.3:
@@ -493,13 +536,23 @@ to articulate. Don't list all values - synthesize the relevant ones.
         """
         # Check if dual pathways are available
         if not hasattr(state, 'dual_pathways') or state.dual_pathways is None:
+            logger.debug("[_build_dual_pathway_section] skipped: dual_pathways not present")
             return ""
 
         dp = state.dual_pathways
 
         # Skip if all default values
         if dp.separation_pathway.initial_success_probability == 0.0 and dp.unity_pathway.initial_success_probability == 0.0:
+            logger.debug("[_build_dual_pathway_section] skipped: default values (not calculated)")
             return ""
+
+        logger.debug(
+            f"[_build_dual_pathway_section] pathway data present: "
+            f"recommended={dp.recommended_pathway} "
+            f"sep_success={dp.separation_pathway.initial_success_probability} "
+            f"unity_success={dp.unity_pathway.initial_success_probability} "
+            f"crossover={dp.crossover_point_months}"
+        )
 
         # Build comparison
         sep = dp.separation_pathway
@@ -541,6 +594,7 @@ to articulate. Don't list all values - synthesize the relevant ones.
         """Build data quality/metadata section showing what's missing."""
         # Check if we have inference metadata
         if not hasattr(state, 'inference_metadata') or state.inference_metadata is None:
+            logger.debug("[_build_data_quality_section] skipped: no inference_metadata")
             return ""
 
         meta = state.inference_metadata
@@ -570,6 +624,11 @@ to articulate. Don't list all values - synthesize the relevant ones.
             sections.append(f"**Blocked Calculations:** {blocked_list}")
             sections.append("(Some calculations show N/A due to missing input operators)")
 
+        logger.debug(
+            f"[_build_data_quality_section] coverage={coverage:.0f}% "
+            f"populated={populated} missing={missing} "
+            f"blocked={len(meta.blocked_formulas) if hasattr(meta, 'blocked_formulas') and meta.blocked_formulas else 0}"
+        )
         return '\n'.join(sections) + "\n"
 
     def _build_bottleneck_section(self, bottlenecks: List[Bottleneck]) -> str:
@@ -580,12 +639,17 @@ to articulate. Don't list all values - synthesize the relevant ones.
         Identify root separation patterns vs surface symptoms.
         """
         if not bottlenecks:
+            logger.debug("[_build_bottleneck_section] no bottlenecks detected")
             return """## BOTTLENECK ANALYSIS
 
 No major bottlenecks detected. Transformation pathway is relatively clear."""
 
         high_impact = [b for b in bottlenecks if b.impact == 'high']
         medium_impact = [b for b in bottlenecks if b.impact == 'medium']
+        logger.debug(
+            f"[_build_bottleneck_section] bottleneck_count={len(bottlenecks)} "
+            f"high={len(high_impact)} medium={len(medium_impact)}"
+        )
 
         # Identify root separation patterns
         root_patterns = [b for b in bottlenecks if getattr(b, 'is_root_separation_pattern', False)]
@@ -627,10 +691,12 @@ No major bottlenecks detected. Transformation pathway is relatively clear."""
         UNITY PRINCIPLE: Show pathway type and effective impact for each leverage point.
         """
         if not leverage_points:
+            logger.debug("[_build_leverage_section] no leverage points detected")
             return """## LEVERAGE OPPORTUNITIES
 
 No high-multiplier opportunities currently active. Focus on clearing bottlenecks to activate leverage."""
 
+        logger.debug(f"[_build_leverage_section] leverage_point_count={len(leverage_points)}")
         sections = ["## LEVERAGE OPPORTUNITIES\n"]
 
         for i, lp in enumerate(leverage_points[:3], 1):
@@ -662,6 +728,11 @@ No high-multiplier opportunities currently active. Focus on clearing bottlenecks
 
     def _build_generation_instructions(self, instructions: ArticulationInstructions) -> str:
         """Build generation instructions - FREEDOM-RESPECTING VERSION"""
+        logger.debug(
+            f"[_build_generation_instructions] style={instructions.articulation_style} "
+            f"concealment={instructions.framework_concealment} "
+            f"priorities={instructions.insight_priorities}"
+        )
         # Build concealment note
         concealment_note = """- **Framework Concealment:** Never use technical terms
 like "Maya operator", "S-level", "transformation matrix". Translate everything
@@ -736,6 +807,8 @@ When consciousness values are calculated, ground them in observable reality:
 
     def _build_user_query(self, user_context: UserContext) -> str:
         """Build the user query section"""
+        query_text = user_context.goal or user_context.current_situation or 'Transform my situation'
+        logger.debug(f"[_build_user_query] query_length={len(query_text)}")
         return f"""## USER'S ORIGINAL QUERY
 
 "{user_context.goal or user_context.current_situation or 'Transform my situation'}"

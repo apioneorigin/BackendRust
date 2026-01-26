@@ -17,6 +17,9 @@ from dataclasses import dataclass, field
 import math
 import random
 
+from logging_config import get_logger
+logger = get_logger('formulas.quantum')
+
 
 @dataclass
 class QuantumState:
@@ -86,6 +89,7 @@ class QuantumMechanics:
 
         Higher S-levels maintain quantum properties longer.
         """
+        logger.debug(f"[calculate_quantum_state] s_level={s_level:.3f}, operators={len(operators)} keys")
         # Calculate superposition states (uses s_level, minimal operator dependency)
         superposition = self._calculate_superposition(operators, s_level)
 
@@ -103,6 +107,14 @@ class QuantumMechanics:
 
         # Dominant state
         dominant = max(superposition.items(), key=lambda x: x[1])[0]
+
+        logger.debug(
+            f"[calculate_quantum_state] result: dominant={dominant}, "
+            f"coherence_time={coherence_time if coherence_time is not None else 'None'}, "
+            f"entanglement={entanglement if entanglement is not None else 'None'}, "
+            f"tunneling={tunneling if tunneling is not None else 'None'}, "
+            f"collapse_readiness={collapse_readiness if collapse_readiness is not None else 'None'}"
+        )
 
         return QuantumState(
             superposition_states=superposition,
@@ -296,7 +308,9 @@ class QuantumMechanics:
         Tunneling allows bypassing obstacles that seem insurmountable
         through classical means.
         """
+        logger.debug(f"[analyze_tunneling] barrier_type={barrier_type}, operators={len(operators)} keys")
         if barrier_type not in self.BARRIER_TYPES:
+            logger.warning(f"[analyze_tunneling] unknown barrier_type '{barrier_type}', defaulting to 'belief'")
             barrier_type = 'belief'  # Default
 
         barrier_config = self.BARRIER_TYPES[barrier_type]
@@ -358,6 +372,12 @@ class QuantumMechanics:
         if R_val is not None and R_val > 0.6:
             blocking_factors.append('Resistance collapsing tunneling attempts')
 
+        logger.debug(
+            f"[analyze_tunneling] result: prob={final_prob:.3f}, barrier_height={barrier_height:.3f}, "
+            f"barrier_width={barrier_width:.3f}, estimated_attempts={estimated_attempts}, "
+            f"success_factors={len(success_factors)}, blocking_factors={len(blocking_factors)}"
+        )
+
         return TunnelingAnalysis(
             barrier_type=barrier_type,
             barrier_height=barrier_height,
@@ -379,6 +399,10 @@ class QuantumMechanics:
 
         Determines probability of specific outcomes manifesting.
         """
+        logger.debug(
+            f"[analyze_collapse] outcomes={len(possible_outcomes)}, "
+            f"desired_outcome={desired_outcome}, operators={len(operators)} keys"
+        )
         I = operators.get('I_intention') or 0.0
         W = operators.get('W_witness') or 0.0
         G = operators.get('G_grace') or 0.0
@@ -432,6 +456,12 @@ class QuantumMechanics:
         else:
             timeline = 'uncertain'
 
+        logger.debug(
+            f"[analyze_collapse] result: most_likely={most_likely[0]}, "
+            f"collapse_prob={collapse_prob:.3f}, catalyst={catalyst_strength:.3f}, "
+            f"observer_effect={observer_effect:.3f}, timeline={timeline}"
+        )
+
         return CollapseAnalysis(
             possible_outcomes=outcome_probs,
             most_likely_outcome=most_likely[0],
@@ -452,6 +482,10 @@ class QuantumMechanics:
 
         Quantum jumps bypass gradual evolution, allowing sudden transformation.
         """
+        logger.debug(
+            f"[calculate_quantum_jump_probability] current_s={current_s_level:.3f}, "
+            f"target_s={target_s_level:.3f}, operators={len(operators)} keys"
+        )
         level_gap = target_s_level - current_s_level
 
         if level_gap <= 0:
@@ -489,7 +523,7 @@ class QuantumMechanics:
 
         final_prob = base_prob * grace_factor * surrender_factor * void_factor * resistance_factor
 
-        return {
+        result = {
             'probability': min(0.5, final_prob),  # Cap at 50%
             'possible': final_prob > 0.05,
             'level_gap': level_gap,
@@ -507,6 +541,13 @@ class QuantumMechanics:
             )
         }
 
+        logger.debug(
+            f"[calculate_quantum_jump_probability] result: prob={result['probability']:.3f}, "
+            f"possible={result['possible']}, gap={level_gap:.3f}"
+        )
+
+        return result
+
     def simulate_measurement(
         self,
         quantum_state: QuantumState,
@@ -518,11 +559,17 @@ class QuantumMechanics:
         Strong measurement collapses superposition.
         Weak measurement partially collapses.
         """
+        logger.debug(
+            f"[simulate_measurement] measurement_strength={measurement_strength:.3f}, "
+            f"dominant_state={quantum_state.dominant_state}, "
+            f"superposition_states={len(quantum_state.superposition_states)}"
+        )
         states = quantum_state.superposition_states
 
         if measurement_strength >= 0.9:
             # Strong measurement - full collapse
             collapsed_state = max(states.items(), key=lambda x: x[1])[0]
+            logger.debug(f"[simulate_measurement] result: strong collapse to {collapsed_state}")
             return {
                 'collapsed': True,
                 'result_state': collapsed_state,
@@ -546,6 +593,7 @@ class QuantumMechanics:
             total = sum(adjusted_states.values())
             adjusted_states = {k: v / total for k, v in adjusted_states.items()}
 
+            logger.debug(f"[simulate_measurement] result: partial collapse, {len(adjusted_states)} states remain")
             return {
                 'collapsed': False,
                 'result_state': None,
@@ -555,6 +603,7 @@ class QuantumMechanics:
 
         else:
             # Weak measurement - minimal effect
+            logger.debug(f"[simulate_measurement] result: weak measurement, no collapse")
             return {
                 'collapsed': False,
                 'result_state': None,

@@ -95,6 +95,7 @@ class LeverageIdentifier:
         ops: Any
     ) -> List[LeveragePoint]:
         """Check for grace + coherence multiplier effect (unity-aligned leverage)"""
+        logger.debug(f"[_check_grace_coherence_leverage] coherence={ops.Co_coherence:.3f} grace={ops.G_grace:.3f}")
         leverage_points = []
 
         coherence = ops.Co_coherence
@@ -140,6 +141,7 @@ class LeverageIdentifier:
         ops: Any
     ) -> List[LeveragePoint]:
         """Check for grace + surrender exponential leverage (highest unity leverage)"""
+        logger.debug(f"[_check_grace_surrender_leverage] grace={ops.G_grace:.3f} surrender={ops.S_surrender:.3f}")
         leverage_points = []
 
         grace = ops.G_grace
@@ -199,6 +201,7 @@ class LeverageIdentifier:
         ops: Any
     ) -> List[LeveragePoint]:
         """Check for breakthrough/tipping point leverage (can be either pathway)"""
+        logger.debug(f"[_check_breakthrough_leverage] prob={state.tier4.breakthrough_dynamics.probability:.3f}")
         leverage_points = []
 
         breakthrough = state.tier4.breakthrough_dynamics
@@ -261,6 +264,7 @@ class LeverageIdentifier:
         ops: Any
     ) -> List[LeveragePoint]:
         """Check for witness-awareness consciousness leverage (pure unity pathway)"""
+        logger.debug(f"[_check_witness_awareness_leverage] witness={ops.W_witness:.3f} aware={ops.A_aware:.3f}")
         leverage_points = []
 
         witness = ops.W_witness
@@ -306,6 +310,7 @@ class LeverageIdentifier:
         ops: Any
     ) -> List[LeveragePoint]:
         """Check for network/collective leverage (unity amplification through resonance)"""
+        logger.debug(f"[_check_network_leverage] coherence_mult={state.tier4.network_effects.coherence_multiplier:.3f}")
         leverage_points = []
 
         network = state.tier4.network_effects
@@ -353,6 +358,7 @@ class LeverageIdentifier:
         ops: Any
     ) -> List[LeveragePoint]:
         """Check for transformation matrix leverage points (death architecture transitions)"""
+        logger.debug("[_check_matrix_leverage] checking 4 matrix transition points")
         leverage_points = []
         matrices = state.tier3.transformation_matrices
 
@@ -401,6 +407,7 @@ class LeverageIdentifier:
         ops: Any
     ) -> List[LeveragePoint]:
         """Check for S-level transition leverage (Jeevatma-Paramatma distance reduction)"""
+        logger.debug(f"[_check_s_level_leverage] s_level={state.tier1.s_level.current:.3f}")
         leverage_points = []
 
         s_level = state.tier1.s_level.current
@@ -435,6 +442,7 @@ class LeverageIdentifier:
 
     def get_summary(self, leverage_points: List[LeveragePoint]) -> Dict[str, Any]:
         """Get summary of leverage analysis"""
+        logger.debug(f"[get_summary] summarizing {len(leverage_points)} leverage points")
         if not leverage_points:
             return {
                 'total_count': 0,

@@ -22,6 +22,9 @@ from typing import Dict, List, Optional, Any
 from enum import Enum
 import math
 
+from logging_config import get_logger
+logger = get_logger('formulas.kosha')
+
 
 class KoshaType(Enum):
     """The five koshas (sheaths)."""
@@ -112,6 +115,7 @@ class KoshaEngine:
         s_level: float
     ) -> KoshaScore:
         """Calculate a single kosha."""
+        logger.debug(f"[calculate_kosha] inputs: kosha_type={kosha_type.value}, op_count={len(operators)}, s_level={s_level:.3f}")
         defn = KOSHA_DEFINITIONS[kosha_type]
         blockages = []
 
@@ -124,6 +128,7 @@ class KoshaEngine:
         ce = operators.get("Ce_cleaning")
         se = operators.get("Se_service")
         if any(v is None for v in [p, w, e, at, m, ce, se]):
+            logger.warning(f"[calculate_kosha] missing: base operators for {kosha_type.value}")
             return None
 
         # Kosha-specific calculations
@@ -162,6 +167,7 @@ class KoshaEngine:
             d = operators.get("D_dharma")
             i = operators.get("I_intention")
             if any(v is None for v in [d, i]):
+                logger.warning(f"[calculate_kosha] missing: D_dharma or I_intention for {kosha_type.value}")
                 return None
             purity = w * d * (1 - m * 0.3)
             permeability = 0.4 + w * 0.4
@@ -183,6 +189,7 @@ class KoshaEngine:
         # Calculate health score
         health = purity * permeability * integration
 
+        logger.debug(f"[calculate_kosha] result: {kosha_type.value} health={health:.3f}, purity={purity:.3f}, blockages={len(blockages)}")
         return KoshaScore(
             kosha_type=kosha_type,
             name=defn["name"],
@@ -201,10 +208,12 @@ class KoshaEngine:
         s_level: float = 4.0
     ) -> KoshaProfile:
         """Calculate complete five kosha profile."""
+        logger.debug(f"[calculate_kosha_profile] inputs: op_count={len(operators)}, s_level={s_level:.3f}")
         koshas = {}
         for kosha_type in KoshaType:
             result = self.calculate_kosha(kosha_type, operators, s_level)
             if result is None:
+                logger.warning(f"[calculate_kosha_profile] missing: kosha {kosha_type.value} returned None")
                 return None
             koshas[kosha_type.value] = result
 
@@ -234,6 +243,7 @@ class KoshaEngine:
             else:
                 break
 
+        logger.debug(f"[calculate_kosha_profile] result: overall_integration={overall_integration:.3f}, penetration_depth={depth:.3f}, dominant={dominant.value}")
         return KoshaProfile(
             koshas=koshas,
             overall_integration=overall_integration,
@@ -250,6 +260,7 @@ class KoshaEngine:
         profile: KoshaProfile
     ) -> List[str]:
         """Get recommendations for kosha development."""
+        logger.debug(f"[get_kosha_recommendations] inputs: kosha_count={len(profile.koshas)}, penetration_depth={profile.penetration_depth:.3f}")
         recommendations = []
 
         # Check each kosha for blockages
@@ -287,6 +298,7 @@ class KoshaEngine:
                 "Anandamaya access limited - cultivate witness consciousness"
             )
 
+        logger.debug(f"[get_kosha_recommendations] result: recommendation_count={len(recommendations)}")
         return recommendations
 
 

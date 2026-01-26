@@ -19,6 +19,9 @@ from typing import Dict, Any, List, Tuple, Optional, Set
 from dataclasses import dataclass, field
 import math
 
+from logging_config import get_logger
+logger = get_logger('formulas.dynamics')
+
 
 @dataclass
 class GraceState:
@@ -89,6 +92,7 @@ class GraceKarmaDynamics:
 
         ZERO-FALLBACK: Tracks all missing operators.
         """
+        logger.debug(f"[calculate_all] operators={len(operators)} keys")
         grace = self._calculate_grace(operators)
         karma = self._calculate_karma(operators)
 
@@ -100,6 +104,15 @@ class GraceKarmaDynamics:
         grace_karma_ratio = self._calculate_grace_karma_ratio(grace, karma)
         momentum = self._calculate_momentum(operators, grace, karma)
         acceleration = self._calculate_acceleration(grace, momentum)
+
+        if all_missing:
+            logger.warning(f"[calculate_all] missing operators: {len(all_missing)}")
+        logger.debug(
+            f"[calculate_all] result: grace_karma_ratio="
+            f"{grace_karma_ratio if grace_karma_ratio is not None else 'None'}, "
+            f"momentum={momentum if momentum is not None else 'None'}, "
+            f"acceleration={acceleration if acceleration is not None else 'None'}"
+        )
 
         return DynamicsState(
             grace=grace,
@@ -459,6 +472,10 @@ class GraceKarmaDynamics:
             situation_difficulty: 0.0-1.0 difficulty level
             s_level: Current S-level (higher = more grace access)
         """
+        logger.debug(
+            f"[calculate_grace_intervention_probability] difficulty={situation_difficulty:.3f}, "
+            f"s_level={s_level:.3f}, channels_open={len(grace.channels_open)}"
+        )
         # Base probability from grace timing
         base_prob = grace.timing_probability
 
@@ -473,7 +490,7 @@ class GraceKarmaDynamics:
 
         final_prob = base_prob * difficulty_factor * s_level_factor + channel_bonus
 
-        return {
+        result = {
             'probability': min(0.95, final_prob),  # Cap at 95%
             'base_probability': base_prob,
             'difficulty_factor': difficulty_factor,
@@ -485,6 +502,8 @@ class GraceKarmaDynamics:
                 "Grace intervention likely - trust the process"
             )
         }
+        logger.debug(f"[calculate_grace_intervention_probability] result: prob={result['probability']:.3f}")
+        return result
 
     def project_karma_timeline(
         self,
@@ -496,6 +515,11 @@ class GraceKarmaDynamics:
 
         Returns monthly projections of karma levels.
         """
+        logger.debug(
+            f"[project_karma_timeline] months={months}, "
+            f"sanchita={karma.sanchita if karma.sanchita is not None else 'None'}, "
+            f"net_change={karma.net_change if karma.net_change is not None else 'None'}"
+        )
         projections = []
         current_sanchita = karma.sanchita
 
@@ -520,6 +544,7 @@ class GraceKarmaDynamics:
 
             current_sanchita = new_sanchita
 
+        logger.debug(f"[project_karma_timeline] result: {len(projections)} monthly projections")
         return projections
 
     def calculate_dharmic_alignment(
@@ -530,12 +555,14 @@ class GraceKarmaDynamics:
         Calculate alignment with dharma (righteous path).
         High alignment increases grace and reduces karma accumulation.
         """
+        logger.debug(f"[calculate_dharmic_alignment] operators={len(operators)} keys")
         D = operators.get('D_dharma')
         Se = operators.get('Se_service')
         A = operators.get('A_aware')
         I = operators.get('I_intention')
         At = operators.get('At_attachment')
         if any(v is None for v in [D, Se, A, I, At]):
+            logger.warning(f"[calculate_dharmic_alignment] missing required operators")
             return None
 
         # Dharmic alignment formula
@@ -555,6 +582,9 @@ class GraceKarmaDynamics:
             quality = 'Misaligned'
             effect = 'Actions primarily creating binding karma'
 
+        logger.debug(
+            f"[calculate_dharmic_alignment] result: alignment={alignment:.3f}, quality={quality}"
+        )
         return {
             'alignment_score': alignment,
             'quality': quality,

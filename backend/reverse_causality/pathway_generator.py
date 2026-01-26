@@ -19,6 +19,9 @@ from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass, field
 import math
 
+from logging_config import get_logger
+logger = get_logger('reverse_causality.pathways')
+
 
 @dataclass
 class PathwayStep:
@@ -158,6 +161,7 @@ class PathwayGenerator:
         Returns:
             List of TransformationPathway objects
         """
+        logger.debug(f"[generate_pathways] outcome operators={len(current_operators)} num_pathways={num_pathways}")
         pathways = []
 
         # Calculate total gap
@@ -179,6 +183,7 @@ class PathwayGenerator:
             )
             pathways.append(pathway)
 
+        logger.debug(f"[generate_pathways] result: {len(pathways)} pathways generated")
         return pathways
 
     def _generate_pathway(
@@ -194,6 +199,7 @@ class PathwayGenerator:
         """
         Generate a single pathway of a specific type.
         """
+        logger.debug(f"[_generate_pathway] type={pathway_type} gap={total_gap:.3f} s_gap={s_level_gap:.3f}")
         config = self.PATHWAY_TYPES[pathway_type]
 
         # Determine step count based on pathway type
@@ -258,6 +264,7 @@ class PathwayGenerator:
         """
         Generate the steps for a pathway.
         """
+        logger.debug(f"[_generate_steps] type={pathway_type} num_steps={num_steps}")
         steps = []
 
         # Calculate changes needed for each operator
@@ -374,6 +381,7 @@ class PathwayGenerator:
             }
         }
 
+        logger.debug(f"[_prioritize_operators] type={pathway_type} changes={len(changes_needed)}")
         priority_map = priorities.get(pathway_type, priorities['hybrid'])
 
         # Sort operators by priority and change magnitude
@@ -428,7 +436,9 @@ class PathwayGenerator:
         elif pathway_type == 'gradual':
             avg_difficulty *= 0.7
 
-        return min(1.0, avg_difficulty)
+        result = min(1.0, avg_difficulty)
+        logger.debug(f"[_calculate_step_difficulty] result: {result:.3f}")
+        return result
 
     def _estimate_step_duration(
         self,
@@ -454,13 +464,15 @@ class PathwayGenerator:
             days = base_days
 
         if days < 7:
-            return "days"
+            result = "days"
         elif days < 30:
-            return "weeks"
+            result = "weeks"
         elif days < 90:
-            return "1-2 months"
+            result = "1-2 months"
         else:
-            return "months"
+            result = "months"
+        logger.debug(f"[_estimate_step_duration] result: {result} (days={days:.1f})")
+        return result
 
     def _calculate_energy_required(
         self,
@@ -648,7 +660,9 @@ class PathwayGenerator:
 
         probability = base * gap_factor * s_level_factor * step_factor * type_factor
 
-        return max(0.2, min(0.95, probability))
+        result = max(0.2, min(0.95, probability))
+        logger.debug(f"[_calculate_success_probability] result: {result:.3f} type={pathway_type}")
+        return result
 
     def _identify_side_effects(
         self,
@@ -678,6 +692,7 @@ class PathwayGenerator:
         elif pathway_type == 'grace':
             effects.append("Periods of waiting and uncertainty")
 
+        logger.debug(f"[_identify_side_effects] result: {len(effects[:3])} effects for type={pathway_type}")
         return effects[:3]
 
     def _identify_risks(
@@ -704,6 +719,7 @@ class PathwayGenerator:
         if not risks:
             risks.append("Minimal identified risks with proper support")
 
+        logger.debug(f"[_identify_risks] result: {len(risks[:3])} risks for type={pathway_type}")
         return risks[:3]
 
     def _identify_benefits(self, pathway_type: str) -> List[str]:

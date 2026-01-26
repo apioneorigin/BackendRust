@@ -16,6 +16,9 @@ from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass, field
 import math
 
+from logging_config import get_logger
+logger = get_logger('reverse_causality.constraints')
+
 
 @dataclass
 class ConstraintViolation:
@@ -99,6 +102,7 @@ class ConstraintChecker:
         Returns:
             ConstraintResult with all constraint evaluations
         """
+        logger.debug(f"[check_all_constraints] s_level={current_s_level:.3f} target={target_s_level:.3f} operators={len(current_operators)}")
         violations = []
 
         # 1. Sacred Chain constraint
@@ -168,6 +172,7 @@ class ConstraintChecker:
             violations, current_s_level, target_s_level, current_operators
         )
 
+        logger.debug(f"[check_all_constraints] result: feasible={feasible} score={feasibility_score:.3f} blocking={blocking_count} warnings={warning_count}")
         return ConstraintResult(
             feasible=feasible,
             overall_feasibility_score=feasibility_score,
@@ -194,6 +199,7 @@ class ConstraintChecker:
         """
         Check Sacred Chain constraint - can't skip S-levels.
         """
+        logger.debug(f"[_check_sacred_chain] current={current_s:.3f} target={target_s:.3f}")
         gap = target_s - current_s
 
         if gap <= self.MAX_S_LEVEL_JUMP:
@@ -219,6 +225,7 @@ class ConstraintChecker:
         """
         Check karma constraint - high karma limits manifestation.
         """
+        logger.debug(f"[_check_karma] checking karma constraint")
         current_karma = current.get('K_karma')
 
         # High karma (>0.7) limits ability to make major changes
@@ -258,6 +265,7 @@ class ConstraintChecker:
         """
         Check belief compatibility - can't manifest beyond belief system.
         """
+        logger.debug(f"[_check_belief_compatibility] s_level={s_level:.3f}")
         # Get belief flexibility for current S-level
         level_int = max(1, min(8, int(s_level)))
         belief_flexibility = self.S_LEVEL_CHARACTERISTICS[level_int]['belief_flexibility']
@@ -314,6 +322,7 @@ class ConstraintChecker:
         Check collective reality field alignment.
         Can't manifest completely disconnected from morphogenetic field.
         """
+        logger.debug(f"[_check_collective_field] s_level={s_level:.3f}")
         # At lower S-levels, more bound to collective field
         level_int = max(1, min(8, int(s_level)))
         collective_binding = 1 - (level_int / 10)  # S1=0.9, S8=0.2
@@ -349,6 +358,7 @@ class ConstraintChecker:
         """
         Check energy sustainability - can't maintain what energy doesn't support.
         """
+        logger.debug("[_check_energy_sustainability] checking energy constraint")
         current_shakti = current.get('Sh_shakti')
         required_shakti = required.get('Sh_shakti')
 
@@ -386,6 +396,7 @@ class ConstraintChecker:
         """
         Check fractal coherence - changes must maintain 85% coherence.
         """
+        logger.debug("[_check_coherence] checking fractal coherence constraint")
         # Check operator pairs that should be coherent
 
         # Inverse pairs (should sum to ~1)
@@ -449,6 +460,7 @@ class ConstraintChecker:
         """
         Check death architecture sequence - certain deaths must precede others.
         """
+        logger.debug("[_check_death_sequence] checking death architecture constraint")
         # Death indicators in operators
         # D1 (Identity) - requires low attachment to self-image
         # D2 (Belief) - requires low maya
@@ -491,6 +503,7 @@ class ConstraintChecker:
         """
         Generate recommendations based on violations.
         """
+        logger.debug(f"[_generate_recommendations] {len(violations)} violations to process")
         prerequisites = []
         adjustments = []
         intermediate_goals = []

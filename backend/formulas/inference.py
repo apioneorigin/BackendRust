@@ -25,6 +25,8 @@ from dataclasses import dataclass, field, asdict
 from typing import Dict, List, Optional, Any, Tuple
 import json
 
+from logging_config import inference_logger
+
 # Import all OOF modules
 from .nomenclature import resolve_ambiguous, CORE_VARIABLES
 from .operators import OperatorEngine, CORE_OPERATORS, CANONICAL_OPERATOR_NAMES, SHORT_TO_CANONICAL
@@ -161,6 +163,11 @@ class OOFInferenceEngine:
         Returns:
             IntegratedProfile with all calculated results
         """
+        inference_logger.debug(
+            f"[calculate_full_profile] entry: operator_count={len(operators)} "
+            f"s_level={s_level:.3f} include_modules={include_modules}"
+        )
+
         # Default to all modules if not specified
         if include_modules is None:
             include_modules = [
@@ -171,44 +178,55 @@ class OOFInferenceEngine:
                 "dynamics", "network", "quantum", "realism", "unity"
             ]
 
+        inference_logger.debug(f"[calculate_full_profile] modules to execute: {len(include_modules)}")
+
         profile = IntegratedProfile(
             operators=operators,
             s_level=s_level
         )
 
         # Calculate each requested module
+        computed_modules = []
+
         if "operators" in include_modules:
             profile.operator_scores = self.operator_engine.calculate_all_derived(
                 operators
             )
+            computed_modules.append("operators")
 
         if "drives" in include_modules:
             profile.drives_profile = self.drives_engine.calculate_all_drives(
                 operators, s_level
             )
+            computed_modules.append("drives")
 
         if "matrices" in include_modules:
             profile.matrices_profile = self.matrices_engine.calculate_all_matrices(
                 operators, s_level
             )
+            computed_modules.append("matrices")
 
         if "pathways" in include_modules:
             profile.pathways_profile = self.pathways_engine.calculate_all_pathways(
                 operators, s_level
             )
+            computed_modules.append("pathways")
 
         if "cascade" in include_modules:
             profile.cascade_profile = self.cascade_calculator.calculate_cascade(
                 operators
             )
+            computed_modules.append("cascade")
 
         if "emotions" in include_modules:
             profile.emotion_profile = self.emotion_analyzer.analyze(operators)
+            computed_modules.append("emotions")
 
         if "death" in include_modules:
             profile.death_profile = self.death_engine.calculate_death_profile(
                 operators, s_level
             )
+            computed_modules.append("death")
 
         if "collective" in include_modules:
             # Default network parameters
@@ -225,43 +243,51 @@ class OOFInferenceEngine:
                     shared_s_level=s_level
                 ) if operators.get("Ce_cleaning") is not None else None
             }
+            computed_modules.append("collective")
 
         if "circles" in include_modules:
             profile.circles_profile = self.circles_engine.calculate_circles_profile(
                 operators, s_level
             )
+            computed_modules.append("circles")
 
         if "kosha" in include_modules:
             profile.kosha_profile = self.kosha_engine.calculate_kosha_profile(
                 operators, s_level
             )
+            computed_modules.append("kosha")
 
         if "osafc" in include_modules:
             profile.osafc_profile = self.osafc_engine.calculate_osafc_profile(
                 operators, s_level
             )
+            computed_modules.append("osafc")
 
         if "distortions" in include_modules:
             profile.distortion_profile = self.distortion_engine.calculate_distortion_profile(
                 operators, s_level
             )
+            computed_modules.append("distortions")
 
         if "panchakritya" in include_modules:
             profile.panchakritya_profile = self.panchakritya_engine.calculate_panchakritya_profile(
                 operators, s_level
             )
+            computed_modules.append("panchakritya")
 
         # Part XI Advanced Math modules
         if "advanced_math" in include_modules:
             profile.advanced_math_profile = self.advanced_math_engine.calculate_full_profile(
                 operators, s_level
             )
+            computed_modules.append("advanced_math")
 
         if "hierarchical" in include_modules:
             # H-level detection requires text context - use operator-based defaults
             profile.hierarchical_profile = self.hierarchical_engine.get_h_level_info(
                 HLevel.H1_PERSONAL  # Default to personal level without text
             )
+            computed_modules.append("hierarchical")
 
         if "platform" in include_modules:
             # Platform profiles for common platforms
@@ -273,6 +299,7 @@ class OOFInferenceEngine:
                     technical_literacy=operators.get("D_dharma")
                 ) if operators.get("W_witness") is not None and operators.get("D_dharma") is not None else None
             }
+            computed_modules.append("platform")
 
         if "multi_reality" in include_modules:
             ce = operators.get("Ce_cleaning")
@@ -289,15 +316,18 @@ class OOFInferenceEngine:
                     attachments=[at_val],
                     resonance=p_val
                 )
+                computed_modules.append("multi_reality")
 
         if "timeline" in include_modules:
             profile.timeline_profile = self.evolution_engine.calculate_full_evolution_dynamics(
                 operators, s_level
             )
+            computed_modules.append("timeline")
 
         # Additional calculation modules
         if "dynamics" in include_modules:
             profile.dynamics_profile = self.dynamics_engine.calculate_all(operators)
+            computed_modules.append("dynamics")
 
         if "network" in include_modules:
             coherence = operators.get('Co_coherence')
@@ -307,12 +337,15 @@ class OOFInferenceEngine:
                     individual_s_level=s_level,
                     connected_nodes=1
                 )
+                computed_modules.append("network")
 
         if "quantum" in include_modules:
             profile.quantum_profile = self.quantum_engine.calculate_quantum_state(operators, s_level)
+            computed_modules.append("quantum")
 
         if "realism" in include_modules:
             profile.realism_profile = self.realism_engine.calculate_realism_profile(operators, s_level)
+            computed_modules.append("realism")
 
         if "unity" in include_modules:
             unity_ops = {
@@ -328,9 +361,20 @@ class OOFInferenceEngine:
                 'Co_coherence': operators.get('Co_coherence'),
             }
             profile.unity_profile = get_unity_metrics(unity_ops, s_level)
+            computed_modules.append("unity")
+
+        inference_logger.debug(f"[calculate_full_profile] computed modules: {computed_modules}")
 
         # Calculate summary metrics
         profile = self._calculate_summary_metrics(profile)
+
+        inference_logger.info(
+            f"[calculate_full_profile] result: modules_computed={len(computed_modules)} "
+            f"overall_health={profile.overall_health:.3f} "
+            f"liberation_index={profile.liberation_index:.3f} "
+            f"integration_score={profile.integration_score:.3f} "
+            f"transformation_potential={profile.transformation_potential:.3f}"
+        )
 
         return profile
 
@@ -435,6 +479,7 @@ class OOFInferenceEngine:
         - practice: Suggested practices
         - caution: Areas needing attention
         """
+        inference_logger.debug(f"[get_recommendations] entry: s_level={profile.s_level:.3f}")
         recommendations = {
             "immediate": [],
             "development": [],
@@ -490,6 +535,14 @@ class OOFInferenceEngine:
                 f"S-level {profile.s_level:.1f} - support integration and service"
             )
 
+        total_recs = sum(len(v) for v in recommendations.values())
+        inference_logger.debug(
+            f"[get_recommendations] result: total={total_recs} "
+            f"immediate={len(recommendations['immediate'])} "
+            f"development={len(recommendations['development'])} "
+            f"practice={len(recommendations['practice'])} "
+            f"caution={len(recommendations['caution'])}"
+        )
         return recommendations
 
     def run_inference(self, evidence: dict) -> dict:
@@ -506,6 +559,13 @@ class OOFInferenceEngine:
         Returns:
             dict with values, confidence, formula_count, metadata
         """
+        obs_count = len(evidence.get('observations', []))
+        has_goal = 'goal_context' in evidence
+        inference_logger.debug(
+            f"[run_inference] entry: observations={obs_count} "
+            f"has_goal_context={has_goal}"
+        )
+
         # Extract operators from observations
         operators: Dict[str, float] = {}
         confidence: Dict[str, float] = {}
@@ -566,7 +626,7 @@ class OOFInferenceEngine:
                 confidence['pathway_unity_success'] = 0.8
                 confidence['pathway_crossover_months'] = 0.8
 
-        return {
+        result = {
             "values": values,
             "confidence": {k: confidence.get(k, 0.8) for k in values},
             "formula_count": 287,  # Total formulas across all modules
@@ -578,8 +638,16 @@ class OOFInferenceEngine:
             }
         }
 
+        inference_logger.info(
+            f"[run_inference] result: populated={len(populated_operators)} "
+            f"missing={len(missing_operators)} total_values={len(values)} "
+            f"s_level={s_level:.3f}"
+        )
+        return result
+
     def _flatten_profile(self, profile: IntegratedProfile, confidence: Dict[str, float]) -> Dict[str, Any]:
         """Flatten profile to flat values dict."""
+        inference_logger.debug("[_flatten_profile] entry: flattening integrated profile")
         values: Dict[str, Any] = {}
 
         # Extract from each profile using prefixes
@@ -604,16 +672,20 @@ class OOFInferenceEngine:
             (profile.timeline_profile, "timeline"),
         ]
 
+        per_prefix_counts = {}
         for obj, prefix in profile_mappings:
             if obj is None:
+                inference_logger.debug(f"[_flatten_profile] skipped: prefix={prefix} (None)")
                 continue
             if isinstance(obj, dict):
                 items = obj.items()
             elif hasattr(obj, '__dict__'):
                 items = vars(obj).items()
             else:
+                inference_logger.debug(f"[_flatten_profile] skipped: prefix={prefix} (not dict or object)")
                 continue
 
+            count = 0
             for key, val in items:
                 if key.startswith('_'):
                     continue
@@ -621,8 +693,11 @@ class OOFInferenceEngine:
                     full_key = f"{prefix}_{key}"
                     values[full_key] = val
                     confidence[full_key] = 0.8
+                    count += 1
                 elif isinstance(val, str) and len(val) < 100:
                     values[f"{prefix}_{key}"] = val
+                    count += 1
+            per_prefix_counts[prefix] = count
 
         # Summary metrics
         values['overall_health'] = profile.overall_health
@@ -683,10 +758,15 @@ class OOFInferenceEngine:
                       'unity_percolation_quality', 'unity_vector', 'unity_net_direction']:
                 confidence[k] = 0.85
 
+        inference_logger.debug(
+            f"[_flatten_profile] result: total_values={len(values)} "
+            f"per_prefix={per_prefix_counts}"
+        )
         return values
 
     def to_dict(self, profile: IntegratedProfile) -> Dict[str, Any]:
         """Convert profile to serializable dictionary."""
+        inference_logger.debug("[to_dict] entry: converting IntegratedProfile to dict")
         result = {
             "operators": profile.operators,
             "s_level": profile.s_level,
@@ -752,6 +832,11 @@ class OOFInferenceEngine:
         if profile.timeline_profile:
             result["timeline"] = asdict(profile.timeline_profile)
 
+        sections_included = [k for k in result.keys() if k not in ("operators", "s_level", "summary")]
+        inference_logger.debug(
+            f"[to_dict] result: top_level_keys={len(result)} "
+            f"sections_included={sections_included}"
+        )
         return result
 
 
@@ -770,9 +855,14 @@ def run_inference(
     Returns:
         Dict with all inference results
     """
+    inference_logger.debug(
+        f"[run_inference] entry: operator_count={len(operators)} s_level={s_level:.3f}"
+    )
     engine = OOFInferenceEngine()
     profile = engine.calculate_full_profile(operators, s_level)
-    return engine.to_dict(profile)
+    result = engine.to_dict(profile)
+    inference_logger.debug(f"[run_inference] result: keys={len(result)}")
+    return result
 
 
 

@@ -16,6 +16,9 @@ from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass, field
 import math
 
+from logging_config import get_logger
+logger = get_logger('reverse_causality.coherence')
+
 
 @dataclass
 class CoherenceViolation:
@@ -196,6 +199,7 @@ class CoherenceValidator:
         Returns:
             CoherenceResult with complete validation
         """
+        logger.debug(f"[validate_coherence] operators={len(operators)} target_s_level={target_s_level:.3f}")
         violations = []
 
         # 1. Check inverse pairs
@@ -255,6 +259,7 @@ class CoherenceValidator:
                 for v in violations if v.severity > 0.7
             ][:3]
 
+        logger.debug(f"[validate_coherence] result: coherent={is_coherent} score={overall_score:.3f} violations={len(violations)} (critical={critical_count})")
         return CoherenceResult(
             is_coherent=is_coherent,
             coherence_score=overall_score,
@@ -279,6 +284,7 @@ class CoherenceValidator:
         """
         Check inverse pair relationships.
         """
+        logger.debug(f"[_check_inverse_pairs] checking {len(self.INVERSE_PAIRS)} pairs")
         violations = []
         scores = []
 
@@ -306,6 +312,7 @@ class CoherenceValidator:
             scores.append(pair_score)
 
         avg_score = sum(scores) / len(scores) if scores else 1.0
+        logger.debug(f"[_check_inverse_pairs] result: score={avg_score:.3f} violations={len(violations)}")
         return avg_score, violations
 
     def _check_complementary_pairs(
@@ -315,6 +322,7 @@ class CoherenceValidator:
         """
         Check complementary pair relationships.
         """
+        logger.debug(f"[_check_complementary_pairs] checking {len(self.COMPLEMENTARY_PAIRS)} pairs")
         violations = []
         scores = []
 
@@ -340,6 +348,7 @@ class CoherenceValidator:
             scores.append(pair_score)
 
         avg_score = sum(scores) / len(scores) if scores else 1.0
+        logger.debug(f"[_check_complementary_pairs] result: score={avg_score:.3f} violations={len(violations)}")
         return avg_score, violations
 
     def _check_tier_coherence(
@@ -391,6 +400,7 @@ class CoherenceValidator:
 
                     score -= severity * 0.2
 
+        logger.debug(f"[_check_tier_coherence] result: score={max(0.0, score):.3f} violations={len(violations)}")
         return max(0.0, score), violations
 
     def _check_s_level_coherence(
@@ -401,6 +411,7 @@ class CoherenceValidator:
         """
         Check that operator values match S-level characteristics.
         """
+        logger.debug(f"[_check_s_level_coherence] target_s_level={target_s_level:.3f}")
         violations = []
         level = max(1, min(8, int(target_s_level)))
         ranges = self.S_LEVEL_RANGES.get(level, {})
@@ -433,6 +444,7 @@ class CoherenceValidator:
         else:
             score = 1.0
 
+        logger.debug(f"[_check_s_level_coherence] result: score={score:.3f} violations={len(violations)}")
         return score, violations
 
     def _check_internal_consistency(
@@ -442,6 +454,7 @@ class CoherenceValidator:
         """
         Check internal consistency rules.
         """
+        logger.debug(f"[_check_internal_consistency] checking {len(self.CONSISTENCY_RULES)} rules")
         violations = []
         rules_passed = 0
         rules_checked = 0
@@ -477,6 +490,7 @@ class CoherenceValidator:
         """
         Generate suggested corrections for violations.
         """
+        logger.debug(f"[_generate_corrections] {len(violations)} violations to correct")
         adjustments = {}
         rationale = {}
 

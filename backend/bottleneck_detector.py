@@ -153,6 +153,7 @@ class BottleneckDetector:
 
     def _check_attachment_operators(self, ops: Dict[str, float]) -> List[Bottleneck]:
         """Check for high attachment-type operators"""
+        logger.debug(f"[_check_attachment_operators] checking {len(self.ATTACHMENT_OPERATORS)} operators")
         bottlenecks = []
 
         for var, name, category in self.ATTACHMENT_OPERATORS:
@@ -181,10 +182,12 @@ class BottleneckDetector:
                     separation_based_intervention=sep_int
                 ))
 
+        logger.debug(f"[_check_attachment_operators] result: {len(bottlenecks)} bottlenecks")
         return bottlenecks
 
     def _check_flow_operators(self, ops: Dict[str, float]) -> List[Bottleneck]:
         """Check for low flow-type operators (unity-amplifying when high)"""
+        logger.debug(f"[_check_flow_operators] checking {len(self.FLOW_OPERATORS)} operators")
         bottlenecks = []
 
         for var, name, category in self.FLOW_OPERATORS:
@@ -214,10 +217,12 @@ class BottleneckDetector:
                     separation_based_intervention=sep_int
                 ))
 
+        logger.debug(f"[_check_flow_operators] result: {len(bottlenecks)} bottlenecks")
         return bottlenecks
 
     def _check_inverse_pairs(self, ops: Dict[str, float]) -> List[Bottleneck]:
         """Check for inverse pair imbalances (separation vs unity dynamics)"""
+        logger.debug(f"[_check_inverse_pairs] checking {len(self.INVERSE_PAIRS)} pairs")
         bottlenecks = []
 
         for high_var, low_var, description in self.INVERSE_PAIRS:
@@ -251,10 +256,12 @@ class BottleneckDetector:
                     separation_based_intervention=sep_int
                 ))
 
+        logger.debug(f"[_check_inverse_pairs] result: {len(bottlenecks)} bottlenecks")
         return bottlenecks
 
     def _check_matrix_positions(self, state: ConsciousnessState) -> List[Bottleneck]:
         """Check for negative matrix positions (death architecture patterns)"""
+        logger.debug("[_check_matrix_positions] checking 7 matrices")
         bottlenecks = []
         matrices = state.tier3.transformation_matrices
 
@@ -310,10 +317,12 @@ class BottleneckDetector:
                     separation_based_intervention=matrix_separation_interventions.get(matrix_type, "")
                 ))
 
+        logger.debug(f"[_check_matrix_positions] result: {len(bottlenecks)} bottlenecks")
         return bottlenecks
 
     def _check_distortions(self, state: ConsciousnessState) -> List[Bottleneck]:
         """Check Tier 2 distortions (kleshas) - root separation patterns"""
+        logger.debug("[_check_distortions] checking tier 2 kleshas")
         bottlenecks = []
         distortions = state.tier2.distortions
 
@@ -362,10 +371,12 @@ class BottleneckDetector:
                     separation_based_intervention=klesha_separation_interventions.get(var, "")
                 ))
 
+        logger.debug(f"[_check_distortions] result: {len(bottlenecks)} bottlenecks")
         return bottlenecks
 
     def get_summary(self, bottlenecks: List[Bottleneck]) -> Dict[str, Any]:
         """Get summary of bottleneck analysis"""
+        logger.debug(f"[get_summary] summarizing {len(bottlenecks)} bottlenecks")
         if not bottlenecks:
             return {
                 'total_count': 0,

@@ -16,6 +16,9 @@ from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass, field
 import math
 
+from logging_config import get_logger
+logger = get_logger('reverse_causality.mvt')
+
 
 @dataclass
 class OperatorSensitivity:
@@ -141,6 +144,7 @@ class MVTCalculator:
         Returns:
             MinimumViableTransformation with optimized change set
         """
+        logger.debug(f"[calculate_mvt] operators={len(current_operators)} max_ops={max_operators}")
         # Calculate sensitivities
         sensitivities = self._calculate_sensitivities(
             current_operators, required_operators
@@ -186,6 +190,7 @@ class MVTCalculator:
         # Identify potential blockers
         blockers = self._identify_blockers(mvt_changes, current_operators)
 
+        logger.debug(f"[calculate_mvt] result: {len(mvt_changes)} changes, efficiency={efficiency:.3f} success_prob={success_prob:.3f}")
         return MinimumViableTransformation(
             changes=mvt_changes,
             total_operators_changed=len(mvt_changes),
@@ -211,6 +216,7 @@ class MVTCalculator:
         """
         Calculate sensitivity of outcome to each operator change.
         """
+        logger.debug(f"[_calculate_sensitivities] analyzing {len(required)} operators")
         sensitivities = []
 
         for op in required:
@@ -257,6 +263,7 @@ class MVTCalculator:
         # Sort by impact per effort
         sensitivities.sort(key=lambda x: -x.impact_per_effort)
 
+        logger.debug(f"[_calculate_sensitivities] result: {len(sensitivities)} operators analyzed")
         return sensitivities
 
     def _identify_keystones(
@@ -278,6 +285,7 @@ class MVTCalculator:
                 if sens.operator not in keystones:
                     keystones.append(sens.operator)
 
+        logger.debug(f"[_identify_keystones] result: {len(keystones[:4])} keystones")
         return keystones[:4]
 
     def _build_cascade_map(
@@ -304,6 +312,7 @@ class MVTCalculator:
                 if relevant_cascades:
                     cascade_map[op] = relevant_cascades
 
+        logger.debug(f"[_build_cascade_map] result: {len(cascade_map)} cascade entries")
         return cascade_map
 
     def _select_mvt_operators(
@@ -318,6 +327,7 @@ class MVTCalculator:
         """
         Select the minimum set of operators using greedy optimization.
         """
+        logger.debug(f"[_select_mvt_operators] keystones={len(keystones)} max_ops={max_ops}")
         selected = []
         covered_by_cascade = set()
 
@@ -380,6 +390,7 @@ class MVTCalculator:
             covered_by_cascade.update(sens.cascade_effects)
             priority += 1
 
+        logger.debug(f"[_select_mvt_operators] result: {len(selected)} operators selected")
         return selected
 
     def _estimate_effort(self, changes: List[MVTChange]) -> float:
@@ -396,7 +407,9 @@ class MVTCalculator:
             total_effort += effort
 
         # Normalize to 0-1
-        return min(1.0, total_effort / max(1, len(changes)))
+        result = min(1.0, total_effort / max(1, len(changes)))
+        logger.debug(f"[_estimate_effort] result: {result:.3f}")
+        return result
 
     def _estimate_time(
         self,
@@ -414,15 +427,17 @@ class MVTCalculator:
         weeks = base_weeks * (0.5 + effort)
 
         if weeks < 2:
-            return "1-2 weeks"
+            result = "1-2 weeks"
         elif weeks < 4:
-            return "2-4 weeks"
+            result = "2-4 weeks"
         elif weeks < 8:
-            return "1-2 months"
+            result = "1-2 months"
         elif weeks < 12:
-            return "2-3 months"
+            result = "2-3 months"
         else:
-            return "3-6 months"
+            result = "3-6 months"
+        logger.debug(f"[_estimate_time] result: {result} (weeks={weeks:.1f})")
+        return result
 
     def _estimate_success(
         self,
@@ -448,7 +463,9 @@ class MVTCalculator:
 
         success = 0.7 * avg_leverage * change_factor * op_factor
 
-        return max(0.3, min(0.95, success))
+        result = max(0.3, min(0.95, success))
+        logger.debug(f"[_estimate_success] result: {result:.3f}")
+        return result
 
     def _identify_blockers(
         self,
@@ -483,6 +500,7 @@ class MVTCalculator:
         if not blockers:
             blockers.append("No significant blockers identified")
 
+        logger.debug(f"[_identify_blockers] result: {len(blockers[:3])} blockers")
         return blockers[:3]
 
     def get_mvt_summary(self, mvt: MinimumViableTransformation) -> str:

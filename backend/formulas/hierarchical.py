@@ -19,6 +19,9 @@ from enum import Enum
 import re
 import math
 
+from logging_config import get_logger
+logger = get_logger('formulas.hierarchical')
+
 # Import shared constants (single source of truth)
 from .constants import S_LEVEL_BASE_FREQUENCIES, interpolate_s_level_frequency, psi_power
 
@@ -179,6 +182,7 @@ class HierarchicalResolutionEngine:
         From OOF_Math.txt:
           H1_score = matches("individual", "personal", "self", "my") × (1 - scope_indicators)
         """
+        logger.debug(f"[calculate_h1_personal_score] text_len={len(text)}, scope_indicators={scope_indicators:.3f}")
         text_lower = text.lower()
         matches = []
 
@@ -193,6 +197,7 @@ class HierarchicalResolutionEngine:
         match_score = len(matches) / max(1, len(text.split()) / 10)
         score = match_score * (1 - scope_indicators)
 
+        logger.debug(f"[calculate_h1_personal_score] result: score={min(1.0, score):.3f}, matches={len(matches)}")
         return min(1.0, score), matches
 
     def calculate_h2_interpersonal_score(
@@ -206,6 +211,7 @@ class HierarchicalResolutionEngine:
         From OOF_Math.txt:
           H2_score = matches("relationship", "partner", "team", "us")
         """
+        logger.debug(f"[calculate_h2_interpersonal_score] text_len={len(text)}")
         text_lower = text.lower()
         matches = []
 
@@ -222,6 +228,7 @@ class HierarchicalResolutionEngine:
 
         score = (len(matches) / max(1, len(text.split()) / 10)) * two_person
 
+        logger.debug(f"[calculate_h2_interpersonal_score] result: score={min(1.0, score):.3f}, matches={len(matches)}")
         return min(1.0, score), matches
 
     def calculate_h3_collective_score(
@@ -235,6 +242,7 @@ class HierarchicalResolutionEngine:
         From OOF_Math.txt:
           H3_score = matches("organization", "company", "business")
         """
+        logger.debug(f"[calculate_h3_collective_score] text_len={len(text)}")
         text_lower = text.lower()
         matches = []
 
@@ -248,6 +256,7 @@ class HierarchicalResolutionEngine:
 
         score = len(matches) / max(1, len(text.split()) / 10)
 
+        logger.debug(f"[calculate_h3_collective_score] result: score={min(1.0, score):.3f}, matches={len(matches)}")
         return min(1.0, score), matches
 
     def calculate_h4_cultural_score(
@@ -261,6 +270,7 @@ class HierarchicalResolutionEngine:
         From OOF_Math.txt:
           H4_score = matches("industry", "sector", "market")
         """
+        logger.debug(f"[calculate_h4_cultural_score] text_len={len(text)}")
         text_lower = text.lower()
         matches = []
 
@@ -274,6 +284,7 @@ class HierarchicalResolutionEngine:
 
         score = len(matches) / max(1, len(text.split()) / 10)
 
+        logger.debug(f"[calculate_h4_cultural_score] result: score={min(1.0, score):.3f}, matches={len(matches)}")
         return min(1.0, score), matches
 
     def calculate_h5_archetypal_score(
@@ -287,6 +298,7 @@ class HierarchicalResolutionEngine:
         From OOF_Math.txt:
           H5_score = matches("society", "culture", "nation") [extended to archetypal]
         """
+        logger.debug(f"[calculate_h5_archetypal_score] text_len={len(text)}")
         text_lower = text.lower()
         matches = []
 
@@ -300,6 +312,7 @@ class HierarchicalResolutionEngine:
 
         score = len(matches) / max(1, len(text.split()) / 10)
 
+        logger.debug(f"[calculate_h5_archetypal_score] result: score={min(1.0, score):.3f}, matches={len(matches)}")
         return min(1.0, score), matches
 
     def calculate_h6_universal_score(
@@ -313,6 +326,7 @@ class HierarchicalResolutionEngine:
         From OOF_Math.txt:
           H6_score = matches("humanity", "species", "civilization")
         """
+        logger.debug(f"[calculate_h6_universal_score] text_len={len(text)}")
         text_lower = text.lower()
         matches = []
 
@@ -326,6 +340,7 @@ class HierarchicalResolutionEngine:
 
         score = len(matches) / max(1, len(text.split()) / 10)
 
+        logger.debug(f"[calculate_h6_universal_score] result: score={min(1.0, score):.3f}, matches={len(matches)}")
         return min(1.0, score), matches
 
     def calculate_h7_absolute_score(
@@ -339,6 +354,7 @@ class HierarchicalResolutionEngine:
         From OOF_Math.txt:
           H7_score = matches("consciousness", "existence", "reality")
         """
+        logger.debug(f"[calculate_h7_absolute_score] text_len={len(text)}")
         text_lower = text.lower()
         matches = []
 
@@ -352,6 +368,7 @@ class HierarchicalResolutionEngine:
 
         score = len(matches) / max(1, len(text.split()) / 10)
 
+        logger.debug(f"[calculate_h7_absolute_score] result: score={min(1.0, score):.3f}, matches={len(matches)}")
         return min(1.0, score), matches
 
     def calculate_h8_void_score(
@@ -365,6 +382,7 @@ class HierarchicalResolutionEngine:
         From OOF_Math.txt:
           H8_score = matches("universe", "all", "everything", "totality")
         """
+        logger.debug(f"[calculate_h8_void_score] text_len={len(text)}")
         text_lower = text.lower()
         matches = []
 
@@ -378,6 +396,7 @@ class HierarchicalResolutionEngine:
 
         score = len(matches) / max(1, len(text.split()) / 10)
 
+        logger.debug(f"[calculate_h8_void_score] result: score={min(1.0, score):.3f}, matches={len(matches)}")
         return min(1.0, score), matches
 
     def calculate_scope_indicators(self, text: str) -> float:
@@ -423,6 +442,7 @@ class HierarchicalResolutionEngine:
 
         From OOF_Math.txt lines 1672-1702
         """
+        logger.debug(f"[detect_h_level] text_len={len(text)}, has_context={context is not None}")
         scope_indicators = self.calculate_scope_indicators(text)
 
         # Calculate all H-level scores
@@ -483,6 +503,12 @@ class HierarchicalResolutionEngine:
         # Calculate multiplication factor
         mult_factor = self.calculate_hierarchical_multiplication_factor(primary_level.value)
 
+        logger.debug(
+            f"[detect_h_level] result: primary={primary_level.name}, "
+            f"score={primary_score:.3f}, multi_level={is_multi_level}, "
+            f"significant={len(significant_levels)}, confidence={confidence:.3f}"
+        )
+
         return HLevelDetectionResult(
             primary_level=primary_level,
             primary_score=primary_score,
@@ -495,7 +521,10 @@ class HierarchicalResolutionEngine:
 
     def get_h_level_info(self, level: HLevel) -> Dict[str, Any]:
         """Get description and info for an H-level."""
-        return self.descriptions.get(level, {})
+        logger.debug(f"[get_h_level_info] level={level.name}")
+        result = self.descriptions.get(level, {})
+        logger.debug(f"[get_h_level_info] result: found={bool(result)}")
+        return result
 
 
 # ==========================================================================

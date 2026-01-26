@@ -12,6 +12,9 @@ from typing import Dict, Any, List, Optional, Tuple
 from dataclasses import dataclass, field
 from enum import Enum
 
+from logging_config import get_logger
+logger = get_logger('formulas.platform')
+
 
 class Platform(Enum):
     """Supported platforms."""
@@ -195,6 +198,7 @@ class PlatformSpecificEngine:
           IF Tone_Mismatch: Translate tone
           IF Format_Incompatible: Reformat
         """
+        logger.debug(f"[calculate_output_for_platform] platform={platform.value}, content_len={len(base_reality)}")
         constraints = self.get_platform_constraints(platform)
         adaptations = []
         compliance = 1.0
@@ -224,6 +228,11 @@ class PlatformSpecificEngine:
         for req in constraints.structure_requirements:
             adaptations.append(f"Structure: {req}")
 
+        logger.debug(
+            f"[calculate_output_for_platform] result: compliance={compliance:.3f}, "
+            f"adaptations={len(adaptations)}, output_len={len(output)}"
+        )
+
         return PlatformOutput(
             content=output,
             platform=platform,
@@ -238,6 +247,7 @@ class PlatformSpecificEngine:
         platform: Platform
     ) -> Dict[str, Any]:
         """Check if content complies with platform constraints."""
+        logger.debug(f"[check_constraint_compliance] platform={platform.value}, content_len={len(content)}")
         constraints = self.get_platform_constraints(platform)
         issues = []
         score = 1.0
@@ -254,6 +264,10 @@ class PlatformSpecificEngine:
                 issues.append(f"Content too short: {content_len} < {min_len}")
                 score *= 0.8
 
+        logger.debug(
+            f"[check_constraint_compliance] result: compliant={len(issues) == 0}, "
+            f"score={score:.3f}, issues={len(issues)}"
+        )
         return {
             "compliant": len(issues) == 0,
             "score": score,
@@ -294,6 +308,10 @@ class IntelligenceAdaptationEngine:
           0.6-0.8: Advanced (high abstraction, technical)
           0.8-1.0: Expert (maximum depth, assume knowledge)
         """
+        logger.debug(
+            f"[detect_intelligence_level] complexity={complexity_handled:.3f}, "
+            f"abstraction={abstraction_comfort:.3f}, technical={technical_literacy:.3f}"
+        )
         level = complexity_handled * abstraction_comfort * technical_literacy
 
         # Clamp to [0, 1]
@@ -308,6 +326,8 @@ class IntelligenceAdaptationEngine:
             category = "advanced"
         else:
             category = "expert"
+
+        logger.debug(f"[detect_intelligence_level] result: level={level:.3f}, category={category}")
 
         return IntelligenceLevel(
             level=level,
@@ -348,36 +368,48 @@ class IntelligenceAdaptationEngine:
           Use_Technical_Terms = Freely
           Explanation_Style = Dense_efficient
         """
+        logger.debug(
+            f"[calculate_response_adaptation] intelligence={intelligence.level:.3f}, "
+            f"base_depth={base_depth:.3f}, interest={interest_signal:.3f}"
+        )
         intelligence_multiplier = intelligence.level * 2
         explanation_depth = base_depth * intelligence_multiplier * interest_signal
 
         if intelligence.level < 0.4:
-            return ResponseAdaptation(
+            style = "step_by_step"
+            result = ResponseAdaptation(
                 explanation_depth=explanation_depth,
                 use_analogies=True,
                 example_type="concrete",
                 use_technical_terms=False,
-                explanation_style="step_by_step",
+                explanation_style=style,
                 word_difficulty_level=intelligence.level
             )
         elif intelligence.level < 0.7:
-            return ResponseAdaptation(
+            style = "balanced"
+            result = ResponseAdaptation(
                 explanation_depth=explanation_depth,
                 use_analogies=True,  # Sometimes
                 example_type="mix",
                 use_technical_terms=True,  # Define first
-                explanation_style="balanced",
+                explanation_style=style,
                 word_difficulty_level=intelligence.level
             )
         else:
-            return ResponseAdaptation(
+            style = "dense_efficient"
+            result = ResponseAdaptation(
                 explanation_depth=explanation_depth,
                 use_analogies=False,  # Rare
                 example_type="abstract",
                 use_technical_terms=True,  # Freely
-                explanation_style="dense_efficient",
+                explanation_style=style,
                 word_difficulty_level=intelligence.level
             )
+
+        logger.debug(
+            f"[calculate_response_adaptation] result: depth={explanation_depth:.3f}, style={style}"
+        )
+        return result
 
     def adapt_vocabulary(
         self,
@@ -397,6 +429,10 @@ class IntelligenceAdaptationEngine:
             ELSE:
               Return technical_term(concept)
         """
+        logger.debug(
+            f"[adapt_vocabulary] concept='{concept}', "
+            f"difficulty={word_difficulty_level:.3f}, familiarity={domain_familiarity:.3f}"
+        )
         combined_level = word_difficulty_level * domain_familiarity
 
         # Simplified vocabulary mapping
@@ -421,12 +457,16 @@ class IntelligenceAdaptationEngine:
         if concept.lower() in vocabulary_map:
             vocab = vocabulary_map[concept.lower()]
             if combined_level < 0.3:
+                logger.debug(f"[adapt_vocabulary] result: '{vocab['simple']}' (simple)")
                 return vocab["simple"]
             elif combined_level < 0.7:
+                logger.debug(f"[adapt_vocabulary] result: '{vocab['standard']}' (standard)")
                 return vocab["standard"]
             else:
+                logger.debug(f"[adapt_vocabulary] result: '{vocab['technical']}' (technical)")
                 return vocab["technical"]
 
+        logger.debug(f"[adapt_vocabulary] result: concept '{concept}' not in vocabulary map, returning as-is")
         return concept
 
 

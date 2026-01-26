@@ -19,6 +19,9 @@ from typing import Dict, List, Optional, Any, Tuple
 from enum import Enum
 import math
 
+from logging_config import get_logger
+logger = get_logger('formulas.panchakritya')
+
 
 class KrityaType(Enum):
     """The five divine acts."""
@@ -106,6 +109,7 @@ class PanchakrityaEngine:
         s_level: float
     ) -> KrityaScore:
         """Calculate a single divine act."""
+        logger.debug(f"[calculate_kritya] inputs: act_type={kritya.value}, op_count={len(operators)}, s_level={s_level:.3f}")
         defn = KRITYA_DEFINITIONS[kritya]
         manifestations = []
 
@@ -119,6 +123,7 @@ class PanchakrityaEngine:
         d = operators.get("D_dharma")
         se = operators.get("Se_service")
         if any(v is None for v in [i, p, w, at, m, e, d, se]):
+            logger.warning(f"[calculate_kritya] missing: required operators for {kritya.value}")
             return None
 
         # S-level factor
@@ -186,6 +191,7 @@ class PanchakrityaEngine:
         else:
             dominant_scale = KrityaScale.MOMENTARY
 
+        logger.debug(f"[calculate_kritya] result: {kritya.value} intensity={intensity:.3f}, alignment={alignment:.3f}")
         return KrityaScore(
             kritya=kritya,
             sanskrit=defn["sanskrit"],
@@ -203,10 +209,12 @@ class PanchakrityaEngine:
         s_level: float = 4.0
     ) -> PanchakrityaProfile:
         """Calculate complete five acts profile."""
+        logger.debug(f"[calculate_panchakritya_profile] inputs: op_count={len(operators)}, s_level={s_level:.3f}")
         acts = {}
         for kritya in KrityaType:
             result = self.calculate_kritya(kritya, operators, s_level)
             if result is None:
+                logger.warning(f"[calculate_panchakritya_profile] missing: kritya {kritya.value} returned None")
                 return None
             acts[kritya.value] = result
 
@@ -235,6 +243,7 @@ class PanchakrityaEngine:
         # Creative flow (balance of creation-destruction)
         creative_flow = (srishti + samhara) / 2 * (1 - abs(srishti - samhara))
 
+        logger.debug(f"[calculate_panchakritya_profile] result: dominant={dominant_act.value}, cycle_phase={cycle_phase}, grace_receptivity={grace_receptivity:.3f}")
         return PanchakrityaProfile(
             acts=acts,
             dominant_act=dominant_act,
@@ -250,6 +259,7 @@ class PanchakrityaEngine:
         profile: PanchakrityaProfile
     ) -> Dict[str, Tuple[str, str, float]]:
         """Calculate the natural cycles between acts."""
+        logger.debug(f"[calculate_act_cycles] inputs: act_count={len(profile.acts)}")
         cycles = {}
 
         # Srishti -> Sthiti (creation leads to maintenance)
@@ -281,6 +291,7 @@ class PanchakrityaEngine:
             t.intensity * a.alignment
         )
 
+        logger.debug(f"[calculate_act_cycles] result: cycle_count={len(cycles)}")
         return cycles
 
     def get_act_recommendations(
@@ -288,6 +299,7 @@ class PanchakrityaEngine:
         profile: PanchakrityaProfile
     ) -> Dict[str, List[str]]:
         """Get recommendations for working with the five acts."""
+        logger.debug(f"[get_act_recommendations] inputs: dominant={profile.dominant_act.value}, suppressed={profile.suppressed_act.value}")
         recommendations = {
             "support": [],
             "release": [],
@@ -340,6 +352,7 @@ class PanchakrityaEngine:
                 "Creative flow blocked - balance creation and release"
             )
 
+        logger.debug(f"[get_act_recommendations] result: support={len(recommendations['support'])}, release={len(recommendations['release'])}, cultivate={len(recommendations['cultivate'])}")
         return recommendations
 
 

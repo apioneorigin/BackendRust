@@ -22,6 +22,9 @@ from typing import Dict, List, Optional, Any
 from enum import Enum
 import math
 
+from logging_config import get_logger
+logger = get_logger('formulas.circles')
+
 
 class CircleType(Enum):
     """The five circles of being."""
@@ -74,6 +77,7 @@ class CirclesEngine:
         s_level: float
     ) -> CircleScore:
         """Calculate a single circle."""
+        logger.debug(f"[calculate_circle] inputs: circle_type={circle_type.value}, op_count={len(operators)}, s_level={s_level:.3f}")
         defn = CIRCLE_DEFINITIONS[circle_type]
 
         # Extract relevant operators
@@ -84,6 +88,7 @@ class CirclesEngine:
         e = operators.get("E_equanimity")
         d = operators.get("D_dharma")
         if any(v is None for v in [p, at, se, w, e, d]):
+            logger.warning(f"[calculate_circle] missing: base operators for {circle_type.value}")
             return None
 
         # Circle-specific calculations
@@ -91,6 +96,7 @@ class CirclesEngine:
             radius = p * w * (1 - at * 0.3)
             m_maya = operators.get("M_maya")
             if m_maya is None:
+                logger.warning(f"[calculate_circle] missing: M_maya for {circle_type.value}")
                 return None
             quality = w * (1 - m_maya)
             energy = p
@@ -112,6 +118,7 @@ class CirclesEngine:
             i_intention = operators.get("I_intention")
             hf_habit = operators.get("Hf_habit")
             if any(v is None for v in [i_intention, hf_habit]):
+                logger.warning(f"[calculate_circle] missing: I_intention or Hf_habit for {circle_type.value}")
                 return None
             radius = d * i_intention
             quality = d * (1 - hf_habit * 0.3)
@@ -125,6 +132,7 @@ class CirclesEngine:
             energy = se * (1 - at)
             time_alloc = 0.05 + s_factor * 0.1
 
+        logger.debug(f"[calculate_circle] result: {circle_type.value} radius={radius:.3f}, quality={quality:.3f}")
         return CircleScore(
             circle_type=circle_type,
             sanskrit=defn["sanskrit"],
@@ -141,10 +149,12 @@ class CirclesEngine:
         s_level: float = 4.0
     ) -> CirclesProfile:
         """Calculate complete five circles profile."""
+        logger.debug(f"[calculate_circles_profile] inputs: op_count={len(operators)}, s_level={s_level:.3f}")
         circles = {}
         for circle_type in CircleType:
             result = self.calculate_circle(circle_type, operators, s_level)
             if result is None:
+                logger.warning(f"[calculate_circles_profile] missing: circle {circle_type.value} returned None")
                 return None
             circles[circle_type.value] = result
 
@@ -167,6 +177,7 @@ class CirclesEngine:
         dominant = max(circles.values(), key=lambda c: c.radius).circle_type
         neglected = min(circles.values(), key=lambda c: c.radius).circle_type
 
+        logger.debug(f"[calculate_circles_profile] result: overall_balance={overall_balance:.3f}, dominant={dominant.value}, neglected={neglected.value}")
         return CirclesProfile(
             circles=circles,
             overall_balance=overall_balance,

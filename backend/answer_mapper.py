@@ -131,6 +131,7 @@ class AnswerMapper:
         Returns:
             Tuple of (is_valid, list_of_conflicts)
         """
+        logger.debug(f"[validate_constellation_consistency] checking {len(constellation.operators)} ops against {len(existing_operators)} existing")
         conflicts = []
         CONFLICT_THRESHOLD = 0.4  # Values differing by more than this are conflicts
 
@@ -177,6 +178,7 @@ class AnswerMapper:
         Returns:
             Merged operator dict
         """
+        logger.debug(f"[merge_constellation_operators] strategy={merge_strategy} existing={len(existing_operators)} new={len(constellation_result.mapped_values)}")
         merged = dict(existing_operators)
 
         if merge_strategy == 'constellation_priority':
@@ -209,6 +211,7 @@ class AnswerMapper:
                 if mv.operator not in merged:
                     merged[mv.operator] = mv.value
 
+        logger.debug(f"[merge_constellation_operators] result: {len(merged)} operators after merge")
         return merged
 
     def _confidence_to_weight(self, confidence: MappingConfidence) -> float:
@@ -219,7 +222,9 @@ class AnswerMapper:
             MappingConfidence.LOW: 0.5,
             MappingConfidence.UNCERTAIN: 0.3
         }
-        return weights.get(confidence, 0.5)
+        result = weights.get(confidence, 0.5)
+        logger.debug(f"[_confidence_to_weight] {confidence.value} -> {result:.3f}")
+        return result
 
     def _confidence_rank(self, confidence: MappingConfidence) -> int:
         """Convert confidence to numeric rank for comparison."""
@@ -229,7 +234,9 @@ class AnswerMapper:
             MappingConfidence.LOW: 2,
             MappingConfidence.UNCERTAIN: 1
         }
-        return ranks.get(confidence, 0)
+        result = ranks.get(confidence, 0)
+        logger.debug(f"[_confidence_rank] {confidence.value} -> {result}")
+        return result
 
     def extract_constellation_metadata(
         self,
@@ -244,7 +251,7 @@ class AnswerMapper:
         Returns:
             Dict with pattern info, unity_vector, s_level_range, etc.
         """
-        return {
+        metadata = {
             'pattern_name': constellation.pattern_name,
             'unity_vector': constellation.unity_vector,
             's_level_range': constellation.s_level_range,
@@ -253,6 +260,8 @@ class AnswerMapper:
             'emotional_undertone': constellation.emotional_undertone,
             'operators_count': len(constellation.operators),
         }
+        logger.debug(f"[extract_constellation_metadata] pattern={metadata['pattern_name']} ops={metadata['operators_count']}")
+        return metadata
 
     def validate_mapping(
         self,
@@ -267,6 +276,10 @@ class AnswerMapper:
         """
         covered = {mv.operator for mv in mapped_values}
         missing = list(required_operators - covered)
+        if missing:
+            logger.warning(f"[validate_mapping] missing {len(missing)} operators: {missing}")
+        else:
+            logger.debug(f"[validate_mapping] all {len(required_operators)} required operators covered")
         return len(missing) == 0, missing
 
     def create_operator_dict(
@@ -278,7 +291,9 @@ class AnswerMapper:
 
         Used for passing to inference engine.
         """
-        return {mv.operator: mv.value for mv in mapped_values}
+        result = {mv.operator: mv.value for mv in mapped_values}
+        logger.debug(f"[create_operator_dict] created dict with {len(result)} operators")
+        return result
 
     def map_validation_answer(
         self,
@@ -363,6 +378,7 @@ class AnswerMapper:
         Returns:
             Merged operator dict
         """
+        logger.debug(f"[merge_with_existing] new={len(new_mappings)} existing={len(existing)} prefer_new={prefer_new}")
         result = dict(existing)
 
         for mv in new_mappings:
@@ -372,6 +388,7 @@ class AnswerMapper:
                 # High confidence always wins
                 result[mv.operator] = mv.value
 
+        logger.debug(f"[merge_with_existing] result: {len(result)} operators")
         return result
 
 

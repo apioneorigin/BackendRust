@@ -21,6 +21,9 @@ from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass, field
 import math
 
+from logging_config import get_logger
+logger = get_logger('reverse_causality.grace')
+
 
 @dataclass
 class GraceChannel:
@@ -182,6 +185,7 @@ class GraceCalculator:
         Returns:
             GraceRequirement with complete analysis
         """
+        logger.debug(f"[calculate_grace_requirements] operators={len(current_operators)} goal='{goal_description[:50]}'")
         # Calculate grace dependency
         grace_dependency = self._calculate_grace_dependency(
             required_operators, goal_description
@@ -229,6 +233,7 @@ class GraceCalculator:
         )
         intensity = self._recommend_intensity(grace_dependency, blockers)
 
+        logger.debug(f"[calculate_grace_requirements] result: dependency={grace_dependency:.3f} availability={current_availability:.3f} gap={max(0, required_availability - current_availability):.3f}")
         return GraceRequirement(
             grace_dependency=grace_dependency,
             current_grace_availability=current_availability,
@@ -258,12 +263,14 @@ class GraceCalculator:
         """
         Calculate how much the goal depends on grace vs effort.
         """
+        logger.debug(f"[_calculate_grace_dependency] goal='{goal[:50]}'")
         # Check required grace-related operators
         grace = required.get('G_grace')
         surrender = required.get('S_surrender')
         void = required.get('V_void')
 
         if any(v is None for v in [grace, surrender, void]):
+            logger.warning("[_calculate_grace_dependency] missing required operator (G_grace, S_surrender, or V_void)")
             return None
 
         # Higher values indicate more grace dependency
@@ -284,6 +291,7 @@ class GraceCalculator:
         elif effort_matches > grace_matches:
             base_dependency = max(0.2, base_dependency - 0.1)
 
+        logger.debug(f"[_calculate_grace_dependency] result: {base_dependency:.3f}")
         return base_dependency
 
     def _calculate_grace_availability(
@@ -311,7 +319,9 @@ class GraceCalculator:
                 excess = op_value - config['threshold']
                 blocker_reduction += excess * config['weight']
 
-        return max(0.0, min(1.0, availability - blocker_reduction))
+        result = max(0.0, min(1.0, availability - blocker_reduction))
+        logger.debug(f"[_calculate_grace_availability] result: {result:.3f} (raw={availability:.3f} blocker_reduction={blocker_reduction:.3f})")
+        return result
 
     def _calculate_required_grace(
         self,
@@ -325,10 +335,13 @@ class GraceCalculator:
         base = required.get('G_grace')
 
         if base is None:
+            logger.warning("[_calculate_required_grace] missing G_grace in required operators")
             return None
 
         # Adjust for dependency
-        return base * (0.5 + dependency * 0.5)
+        result = base * (0.5 + dependency * 0.5)
+        logger.debug(f"[_calculate_required_grace] result: {result:.3f}")
+        return result
 
     def _analyze_channels(
         self,
@@ -338,6 +351,7 @@ class GraceCalculator:
         """
         Analyze each grace channel.
         """
+        logger.debug(f"[_analyze_channels] analyzing {len(self.GRACE_CHANNELS)} channels")
         channels = []
 
         for channel_name, config in self.GRACE_CHANNELS.items():
@@ -369,6 +383,7 @@ class GraceCalculator:
         """
         Analyze current grace blockers.
         """
+        logger.debug(f"[_analyze_blockers] checking {len(self.GRACE_BLOCKERS)} potential blockers")
         blockers = []
 
         for blocker_name, config in self.GRACE_BLOCKERS.items():
@@ -426,7 +441,9 @@ class GraceCalculator:
             if abs(req_val - curr_val) < 0.2:
                 alignment += 0.05
 
-        return min(0.95, base + alignment)
+        result = min(0.95, base + alignment)
+        logger.debug(f"[_calculate_timing_probability] result: {result:.3f}")
+        return result
 
     def _get_optimal_timing_conditions(
         self,
@@ -480,6 +497,7 @@ class GraceCalculator:
 
         multiplication = 1.0 + (grace * surrender * dharma * 3)
 
+        logger.debug(f"[_calculate_multiplication_factor] result: {multiplication:.3f}")
         return multiplication
 
     def _generate_activation_steps(

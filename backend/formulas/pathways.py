@@ -28,6 +28,9 @@ from typing import Dict, List, Optional, Tuple, Any
 from enum import Enum
 import math
 
+from logging_config import get_logger
+logger = get_logger('formulas.pathways')
+
 
 class PathwayType(Enum):
     """The three perfection pathways."""
@@ -209,7 +212,9 @@ class PathwaysEngine:
         e = ops.get("E_equanimity")
         at = ops.get("At_attachment")
         if any(v is None for v in [w, m, p, psi, e, at]):
+            logger.warning("[calculate_witnessing_pathway] missing required operators")
             return None
+        logger.debug(f"[calculate_witnessing_pathway] inputs: W={w:.3f}, M={m:.3f}, P={p:.3f}, Psi={psi:.3f}")
 
         # Observation = W × (1 - M) × P
         # Quality of pure noticing
@@ -272,6 +277,7 @@ class PathwaysEngine:
         dominant = max(dimensions.keys(), key=lambda k: dimensions[k].score)
         weakest = min(dimensions.keys(), key=lambda k: dimensions[k].score)
 
+        logger.debug(f"[calculate_witnessing_pathway] result: pathway_score={pathway_score:.3f}, alignment={alignment:.3f}")
         return PathwayProfile(
             pathway_type=PathwayType.WITNESSING,
             dimensions=dimensions,
@@ -309,7 +315,9 @@ class PathwaysEngine:
         se = ops.get("Se_service")
         ce = ops.get("Ce_cleaning")
         if any(val is None for val in [i, p, m, psi, at, v, d, se, ce]):
+            logger.warning("[calculate_creating_pathway] missing required operators")
             return None
+        logger.debug(f"[calculate_creating_pathway] inputs: I={i:.3f}, P={p:.3f}, Psi={psi:.3f}, D={d:.3f}")
 
         # Intention = I × Purity × Alignment
         # Clarity of purpose
@@ -375,6 +383,7 @@ class PathwaysEngine:
         dominant = max(dimensions.keys(), key=lambda k: dimensions[k].score)
         weakest = min(dimensions.keys(), key=lambda k: dimensions[k].score)
 
+        logger.debug(f"[calculate_creating_pathway] result: pathway_score={pathway_score:.3f}, alignment={alignment:.3f}")
         return PathwayProfile(
             pathway_type=PathwayType.CREATING,
             dimensions=dimensions,
@@ -412,7 +421,9 @@ class PathwaysEngine:
         hf = ops.get("Hf_habit")
         p = ops.get("P_presence")
         if any(v is None for v in [w, m, psi, d, se, at, e, hf, p]):
+            logger.warning("[calculate_embodying_pathway] missing required operators")
             return None
+        logger.debug(f"[calculate_embodying_pathway] inputs: W={w:.3f}, D={d:.3f}, Se={se:.3f}, P={p:.3f}")
 
         # Thoughts = Mental_Alignment × (1 - M) × Truth
         # Alignment of thinking with truth
@@ -480,6 +491,7 @@ class PathwaysEngine:
         dominant = max(dimensions.keys(), key=lambda k: dimensions[k].score)
         weakest = min(dimensions.keys(), key=lambda k: dimensions[k].score)
 
+        logger.debug(f"[calculate_embodying_pathway] result: pathway_score={pathway_score:.3f}, alignment={alignment:.3f}")
         return PathwayProfile(
             pathway_type=PathwayType.EMBODYING,
             dimensions=dimensions,
@@ -496,14 +508,20 @@ class PathwaysEngine:
 
     def calculate_pathway_balance(self, pathways: List[PathwayProfile]) -> float:
         """Calculate how balanced the three pathways are."""
+        logger.debug(f"[calculate_pathway_balance] inputs: pathway_count={len(pathways)}")
         if not pathways:
+            logger.warning("[calculate_pathway_balance] missing: no pathways provided")
             return 0.0
         scores = [p.pathway_score for p in pathways]
-        return self._calculate_alignment(scores)
+        result = self._calculate_alignment(scores)
+        logger.debug(f"[calculate_pathway_balance] result: balance={result:.3f}")
+        return result
 
     def calculate_integration(self, pathways: List[PathwayProfile]) -> float:
         """Calculate cross-pathway integration/coherence."""
+        logger.debug(f"[calculate_integration] inputs: pathway_count={len(pathways)}")
         if not pathways:
+            logger.warning("[calculate_integration] missing: no pathways provided")
             return 0.0
 
         # Integration = average of alignments × average score
@@ -513,7 +531,9 @@ class PathwaysEngine:
         avg_alignment = sum(alignments) / len(alignments)
         avg_score = sum(scores) / len(scores)
 
-        return avg_alignment * avg_score
+        result = avg_alignment * avg_score
+        logger.debug(f"[calculate_integration] result: integration={result:.3f}")
+        return result
 
     def calculate_all_pathways(
         self,
@@ -531,10 +551,12 @@ class PathwaysEngine:
             Complete PathwaysProfile with all 9 dimensions, or None if
             any required operator is missing.
         """
+        logger.debug(f"[calculate_all_pathways] inputs: op_count={len(operators)}, s_level={s_level:.3f}")
         witnessing = self.calculate_witnessing_pathway(operators, s_level)
         creating = self.calculate_creating_pathway(operators, s_level)
         embodying = self.calculate_embodying_pathway(operators, s_level)
         if any(v is None for v in [witnessing, creating, embodying]):
+            logger.warning("[calculate_all_pathways] missing: one or more pathways returned None")
             return None
 
         all_pathways = [witnessing, creating, embodying]
@@ -550,6 +572,7 @@ class PathwaysEngine:
         # Dominant pathway
         dominant = max(all_pathways, key=lambda p: p.pathway_score)
 
+        logger.debug(f"[calculate_all_pathways] result: overall_perfection={overall:.3f}, dominant={dominant.pathway_type.value}, balance={balance:.3f}")
         return PathwaysProfile(
             witnessing=witnessing,
             creating=creating,

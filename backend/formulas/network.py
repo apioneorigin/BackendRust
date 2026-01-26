@@ -18,6 +18,9 @@ from typing import Dict, Any, List, Optional, Tuple, Set
 from dataclasses import dataclass, field
 import math
 
+from logging_config import get_logger
+logger = get_logger('formulas.network')
+
 from .collective import CollectiveEngine
 
 
@@ -89,6 +92,11 @@ class NetworkEmergenceCalculator:
             average_network_s_level: Average S-level of network
             population_context: Relevant population for critical mass
         """
+        logger.debug(
+            f"[calculate_network_state] coherence={individual_coherence:.3f}, "
+            f"s_level={individual_s_level:.3f}, nodes={connected_nodes}, "
+            f"avg_net_coherence={average_network_coherence:.3f}, pop={population_context}"
+        )
         # Coherence multiplier
         # Formula: multiplier = 1 + (N × R^2) where N = nodes, R = avg resonance
         avg_resonance = (individual_coherence + average_network_coherence) / 2
@@ -144,6 +152,12 @@ class NetworkEmergenceCalculator:
             coherence_multiplier,
             group_mind_active,
             critical_mass_proximity
+        )
+
+        logger.debug(
+            f"[calculate_network_state] result: multiplier={min(10.0, coherence_multiplier):.3f}, "
+            f"critical_mass={min(1.0, critical_mass_proximity):.3f}, "
+            f"group_mind={group_mind_active}, morphic={morphic_strength:.3f}"
         )
 
         return NetworkState(
@@ -241,6 +255,10 @@ class NetworkEmergenceCalculator:
 
         ZERO-FALLBACK: Uses available operators, returns partial results if some missing.
         """
+        logger.debug(
+            f"[calculate_emergence] operators={len(individual_operators)} keys, "
+            f"network_nodes={network_state.connected_nodes}"
+        )
         # Get values — use 0.0 for missing (no contribution)
         Co = individual_operators.get('Co_coherence') or 0.0
         A = individual_operators.get('A_aware') or 0.0
@@ -280,6 +298,12 @@ class NetworkEmergenceCalculator:
 
         # Acceleration factor
         acceleration = 1.0 + emergence_strength + network_state.resonance_amplification
+
+        logger.debug(
+            f"[calculate_emergence] result: strength={min(1.0, emergence_strength):.3f}, "
+            f"type={emergence_type}, phase_prob={phase_prob:.3f}, "
+            f"tipping={tipping_proximity if tipping_proximity is not None else 'None'}"
+        )
 
         return EmergenceState(
             emergence_strength=min(1.0, emergence_strength),
@@ -347,6 +371,7 @@ class NetworkEmergenceCalculator:
         Calculate resonance patterns between network nodes.
         How much each node influences the target.
         """
+        logger.debug(f"[calculate_resonance_pattern] nodes={len(nodes)}, target={target_node.id}")
         if not nodes:
             return {
                 'total_resonance': 0.0,
@@ -383,6 +408,11 @@ class NetworkEmergenceCalculator:
         # Find dominant influence
         dominant = max(influences, key=lambda x: x['resonance']) if influences else None
 
+        logger.debug(
+            f"[calculate_resonance_pattern] result: total_resonance={total_resonance:.3f}, "
+            f"influences={len(influences)}, dominant={dominant['node_id'] if dominant else 'None'}"
+        )
+
         return {
             'total_resonance': total_resonance,
             'influences': sorted(influences, key=lambda x: -x['resonance'])[:5],
@@ -405,6 +435,10 @@ class NetworkEmergenceCalculator:
             growth_rate: Monthly growth rate (0.1 = 10%)
             months: Projection period
         """
+        logger.debug(
+            f"[project_network_growth] nodes={current_nodes}, coherence={current_coherence:.3f}, "
+            f"growth_rate={growth_rate:.3f}, months={months}"
+        )
         projections = []
         nodes = current_nodes
         coherence = current_coherence
@@ -435,6 +469,7 @@ class NetworkEmergenceCalculator:
                 'collective_breakthrough_prob': state.collective_breakthrough_prob
             })
 
+        logger.debug(f"[project_network_growth] result: {len(projections)} monthly projections")
         return projections
 
     def calculate_field_contribution(
@@ -449,6 +484,10 @@ class NetworkEmergenceCalculator:
 
         ZERO-FALLBACK: Returns partial results with missing operators noted.
         """
+        logger.debug(
+            f"[calculate_field_contribution] practice_type={practice_type}, "
+            f"operators={len(individual_operators)} keys"
+        )
         Co = individual_operators.get('Co_coherence')
 
         # Practice type multipliers
@@ -473,6 +512,10 @@ class NetworkEmergenceCalculator:
                 missing_ops.append(op)
 
         if not relevant_values or Co is None:
+            logger.warning(
+                f"[calculate_field_contribution] missing operators: "
+                f"{missing_ops if missing_ops else ['Co_coherence']}"
+            )
             return {
                 'contribution_strength': None,
                 'practice_type': practice_type,
@@ -485,6 +528,8 @@ class NetworkEmergenceCalculator:
 
         relevant_sum = sum(relevant_values) / len(relevant_values)
         contribution = relevant_sum * config['base'] * Co
+
+        logger.debug(f"[calculate_field_contribution] result: contribution={min(1.0, contribution):.3f}")
 
         return {
             'contribution_strength': min(1.0, contribution),

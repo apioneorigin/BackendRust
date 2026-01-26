@@ -24,6 +24,9 @@ import math
 
 from formulas.death import DeathPhase
 
+from logging_config import get_logger
+logger = get_logger('reverse_causality.death_seq')
+
 
 @dataclass
 class DeathPhaseProgress:
@@ -166,6 +169,7 @@ class DeathSequencer:
         Returns:
             DeathSequence with complete analysis
         """
+        logger.debug(f"[analyze_death_requirements] operators={len(current_operators)} goal='{goal_description[:50]}'")
         deaths_required = []
         blocking_deaths = []
         parallel_deaths = []
@@ -255,6 +259,7 @@ class DeathSequencer:
             deaths_required, current_operators
         )
 
+        logger.debug(f"[analyze_death_requirements] result: {len(deaths_required)} deaths required, order={sequence_order}")
         return DeathSequence(
             deaths_required=deaths_required,
             sequence_order=sequence_order,
@@ -283,6 +288,7 @@ class DeathSequencer:
 
         primary_value = operators.get(primary_op)
         if primary_value is None:
+            logger.warning(f"[_assess_death_status] missing operator {primary_op} for {death_id}")
             return None
 
         # For most deaths, lower attachment/maya = more complete
@@ -295,6 +301,7 @@ class DeathSequencer:
             completion = 1 - (primary_value / (1 - threshold + 0.01))
 
         completion = max(0.0, min(1.0, completion))
+        logger.debug(f"[_assess_death_status] {death_id} completion={completion:.3f}")
 
         return {
             'completion': completion,
@@ -316,6 +323,7 @@ class DeathSequencer:
 
         required_value = required.get(primary_op)
         if required_value is None:
+            logger.warning(f"[_assess_required_death] missing required operator {primary_op} for {death_id}")
             return None
 
         # Same logic as status
@@ -326,7 +334,9 @@ class DeathSequencer:
         else:
             required_completion = 1 - (required_value / (1 - threshold + 0.01))
 
-        return max(0.0, min(1.0, required_completion))
+        result = max(0.0, min(1.0, required_completion))
+        logger.debug(f"[_assess_required_death] {death_id} required_completion={result:.3f}")
+        return result
 
     def _is_death_complete(
         self,
@@ -339,12 +349,15 @@ class DeathSequencer:
         status = self._assess_death_status(death_id, operators)
         if status is None:
             return False
-        return status['completion'] > 0.7
+        complete = status['completion'] > 0.7
+        logger.debug(f"[_is_death_complete] {death_id} complete={complete}")
+        return complete
 
     def _determine_phase(self, completion: float) -> DeathPhaseProgress:
         """
         Determine current phase based on completion.
         """
+        logger.debug(f"[_determine_phase] completion={completion:.3f}")
         if completion < 0.1:
             return DeathPhaseProgress(
                 phase=DeathPhase.DENIAL,
@@ -395,11 +408,13 @@ class DeathSequencer:
         default = self.DEATH_PROCESSES[death_id]['intensity_default']
 
         if gap > 0.6:
-            return "intense"
+            result = "intense"
         elif gap > 0.3:
-            return default
+            result = default
         else:
-            return "gentle"
+            result = "gentle"
+        logger.debug(f"[_determine_intensity] {death_id} gap={gap:.3f} result={result}")
+        return result
 
     def _estimate_duration(self, gap: float, intensity: str) -> str:
         """
@@ -435,6 +450,7 @@ class DeathSequencer:
         """
         Determine optimal order to work on deaths.
         """
+        logger.debug(f"[_determine_sequence_order] {len(deaths)} deaths to sequence")
         # Start with deaths that have no prerequisites
         ordered = []
         remaining = [d.death_type for d in deaths]
@@ -479,6 +495,7 @@ class DeathSequencer:
         """
         Identify deaths that can be worked on simultaneously.
         """
+        logger.debug(f"[_identify_parallel_deaths] evaluating {len(deaths)} deaths")
         death_ids = [d.death_type for d in deaths]
 
         # D1 and D2 can be parallel
@@ -512,7 +529,9 @@ class DeathSequencer:
             4: 0.6, 5: 0.65, 6: 0.75, 7: 0.85
         }
 
-        return tolerance_map.get(max_depth, 0.5)
+        result = tolerance_map.get(max_depth, 0.5)
+        logger.debug(f"[_calculate_void_tolerance_needed] max_depth={max_depth} tolerance={result:.3f}")
+        return result
 
     def _estimate_total_timeline(
         self,
@@ -521,6 +540,7 @@ class DeathSequencer:
         """
         Estimate total timeline for all death work.
         """
+        logger.debug(f"[_estimate_total_timeline] {len(deaths)} deaths to estimate")
         # Sum up individual durations
         total_weeks = 0
         for death in deaths:

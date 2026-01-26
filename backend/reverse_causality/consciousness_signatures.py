@@ -15,6 +15,9 @@ from dataclasses import dataclass, field
 import json
 from pathlib import Path
 
+from logging_config import get_logger
+logger = get_logger('reverse_causality.signatures')
+
 
 @dataclass
 class MatrixRequirement:
@@ -681,6 +684,7 @@ class ConsciousnessSignatureLibrary:
         Returns:
             List of matching signatures, sorted by relevance
         """
+        logger.debug(f"[find_signatures_for_goal] goal='{goal_text[:50]}' s_level={current_s_level:.3f}")
         goal_lower = goal_text.lower()
         matches = []
 
@@ -708,14 +712,19 @@ class ConsciousnessSignatureLibrary:
         # Sort by relevance
         matches.sort(key=lambda x: -x[1])
 
-        return [sig for sig, _ in matches]
+        result = [sig for sig, _ in matches]
+        logger.debug(f"[find_signatures_for_goal] result: {len(result)} matching signatures")
+        return result
 
     def find_signatures_by_category(self, category: str) -> List[ConsciousnessSignature]:
         """Get all signatures in a category"""
-        return [
+        logger.debug(f"[find_signatures_by_category] category={category}")
+        result = [
             sig for sig in self.signatures.values()
             if sig.category == category
         ]
+        logger.debug(f"[find_signatures_by_category] result: {len(result)} signatures")
+        return result
 
     def get_prerequisite_chain(
         self,
@@ -724,8 +733,10 @@ class ConsciousnessSignatureLibrary:
         """
         Get the full chain of prerequisites for a signature.
         """
+        logger.debug(f"[get_prerequisite_chain] target={target_signature_id}")
         target = self.signatures.get(target_signature_id)
         if not target:
+            logger.warning(f"[get_prerequisite_chain] signature not found: {target_signature_id}")
             return []
 
         chain = []
@@ -743,6 +754,7 @@ class ConsciousnessSignatureLibrary:
                 chain.append(sig)
 
         collect_prereqs(target_signature_id)
+        logger.debug(f"[get_prerequisite_chain] result: {len(chain)} signatures in chain")
         return chain
 
     def get_all_categories(self) -> List[str]:

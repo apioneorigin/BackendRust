@@ -22,6 +22,9 @@ from typing import Dict, List, Optional, Tuple, Any, Callable
 from enum import Enum
 import math
 
+from logging_config import get_logger
+logger = get_logger('formulas.operators')
+
 
 class OperatorCategory(Enum):
     """Categories of core operators."""
@@ -827,6 +830,7 @@ class OperatorEngine:
         Formula: KL = (Av + As + Ra + Dv + Ab) / 5
         Returns None if all sub-components are missing.
         """
+        logger.debug(f"[calculate_klesha_total] inputs: Av={values.get('Av_avidya')}, As={values.get('As_asmita')}, Ra={values.get('Ra_raga')}")
         components = {
             'Av_avidya': values.get("Av_avidya"),
             'As_asmita': values.get("As_asmita"),
@@ -836,8 +840,11 @@ class OperatorEngine:
         }
         available = {k: v for k, v in components.items() if v is not None}
         if not available:
+            logger.warning("[calculate_klesha_total] missing required: all klesha sub-components are None")
             return None
-        return sum(available.values()) / len(available)
+        result = sum(available.values()) / len(available)
+        logger.debug(f"[calculate_klesha_total] result: kl_total={result:.3f}, available={len(available)}/5")
+        return result
 
     def calculate_maya_effective(self, values: Dict[str, float]) -> Optional[float]:
         """
@@ -846,17 +853,22 @@ class OperatorEngine:
         Formula: M_eff = M × (1 - W) × (1 + KL) / 2
         Returns None if M is missing.
         """
+        logger.debug(f"[calculate_maya_effective] inputs: M={values.get('M_maya')}, W={values.get('W_witness')}")
         m = values.get("M_maya")
         if m is None:
+            logger.warning("[calculate_maya_effective] missing required: M_maya is None")
             return None
         w = values.get("W_witness")
         if w is None:
+            logger.warning("[calculate_maya_effective] missing required: W_witness is None")
             return None
         kl = self.calculate_klesha_total(values)
         if kl is None:
             kl = 0.0  # Klesha sub-components are rarely provided; treat as zero contribution
 
-        return m * (1 - w) * (1 + kl) / 2
+        result = m * (1 - w) * (1 + kl) / 2
+        logger.debug(f"[calculate_maya_effective] result: m_eff={result:.3f}")
+        return result
 
     def calculate_consciousness_quality(self, values: Dict[str, float]) -> Optional[float]:
         """
@@ -865,16 +877,20 @@ class OperatorEngine:
         Formula: Ψ^Ψ = P × W × (1 - M_eff) × (1 - At)
         Returns None if any core operator is missing.
         """
+        logger.debug(f"[calculate_consciousness_quality] inputs: P={values.get('P_presence')}, W={values.get('W_witness')}, At={values.get('At_attachment')}")
         p = values.get("P_presence")
         w = values.get("W_witness")
         at = values.get("At_attachment")
         if any(v is None for v in [p, w, at]):
+            logger.warning("[calculate_consciousness_quality] missing required: one of P/W/At is None")
             return None
         m_eff = self.calculate_maya_effective(values)
         if m_eff is None:
             return None
 
-        return p * w * (1 - m_eff) * (1 - at)
+        result = p * w * (1 - m_eff) * (1 - at)
+        logger.debug(f"[calculate_consciousness_quality] result: psi_quality={result:.3f}")
+        return result
 
     def calculate_grace_availability(self, values: Dict[str, float]) -> Optional[float]:
         """
@@ -883,17 +899,21 @@ class OperatorEngine:
         Formula: G = Surrender × Ce × Readiness × (1 - At)
         Returns None if required operators are missing.
         """
+        logger.debug(f"[calculate_grace_availability] inputs: At={values.get('At_attachment')}, Ce={values.get('Ce_cleaning')}")
         at = values.get("At_attachment")
         ce = values.get("Ce_cleaning")
         p = values.get("P_presence")
         w = values.get("W_witness")
         if any(v is None for v in [at, ce, p, w]):
+            logger.warning("[calculate_grace_availability] missing required: one of At/Ce/P/W is None")
             return None
 
         surrender = 1 - at
         readiness = p * w
 
-        return surrender * ce * readiness * (1 - at)
+        result = surrender * ce * readiness * (1 - at)
+        logger.debug(f"[calculate_grace_availability] result: grace={result:.3f}")
+        return result
 
     def calculate_karma_binding(self, values: Dict[str, float]) -> Optional[float]:
         """
@@ -902,16 +922,20 @@ class OperatorEngine:
         Formula: K_bind = K × Hf × (1 - Ce × G)
         Returns None if required operators are missing.
         """
+        logger.debug(f"[calculate_karma_binding] inputs: K={values.get('K_karma')}, Hf={values.get('Hf_habit')}, Ce={values.get('Ce_cleaning')}")
         k = values.get("K_karma")
         hf = values.get("Hf_habit")
         ce = values.get("Ce_cleaning")
         if any(v is None for v in [k, hf, ce]):
+            logger.warning("[calculate_karma_binding] missing required: one of K/Hf/Ce is None")
             return None
         g = self.calculate_grace_availability(values)
         if g is None:
             return None
 
-        return k * hf * (1 - ce * g)
+        result = k * hf * (1 - ce * g)
+        logger.debug(f"[calculate_karma_binding] result: k_bind={result:.3f}")
+        return result
 
     def calculate_ego_separation(self, values: Dict[str, float]) -> Optional[float]:
         """
@@ -920,14 +944,18 @@ class OperatorEngine:
         Formula: Ego_Sep = At × (1 - Se) × As × (1 - W)
         Returns None if required operators are missing.
         """
+        logger.debug(f"[calculate_ego_separation] inputs: At={values.get('At_attachment')}, Se={values.get('Se_service')}, As={values.get('As_asmita')}")
         at = values.get("At_attachment")
         se = values.get("Se_service")
         as_ = values.get("As_asmita")
         w = values.get("W_witness")
         if any(v is None for v in [at, se, as_, w]):
+            logger.warning("[calculate_ego_separation] missing required: one of At/Se/As/W is None")
             return None
 
-        return at * (1 - se) * as_ * (1 - w)
+        result = at * (1 - se) * as_ * (1 - w)
+        logger.debug(f"[calculate_ego_separation] result: ego_sep={result:.3f}")
+        return result
 
     def calculate_resistance(self, values: Dict[str, float]) -> Optional[float]:
         """
@@ -936,13 +964,17 @@ class OperatorEngine:
         Formula: Resistance = (At + Hf + (1 - E)) / 3
         Returns None if required operators are missing.
         """
+        logger.debug(f"[calculate_resistance] inputs: At={values.get('At_attachment')}, Hf={values.get('Hf_habit')}, E={values.get('E_equanimity')}")
         at = values.get("At_attachment")
         hf = values.get("Hf_habit")
         e = values.get("E_equanimity")
         if any(v is None for v in [at, hf, e]):
+            logger.warning("[calculate_resistance] missing required: one of At/Hf/E is None")
             return None
 
-        return (at + hf + (1 - e)) / 3
+        result = (at + hf + (1 - e)) / 3
+        logger.debug(f"[calculate_resistance] result: resistance={result:.3f}")
+        return result
 
     def calculate_evolution_rate(self, values: Dict[str, float]) -> Optional[float]:
         """
@@ -951,10 +983,12 @@ class OperatorEngine:
         Formula: dS/dt = k₁(Awareness) + k₂(Practice) + k₃(Grace) - k₄(Resistance)
         Returns None if required operators are missing.
         """
+        logger.debug(f"[calculate_evolution_rate] inputs: W={values.get('W_witness')}, P={values.get('P_presence')}, Ce={values.get('Ce_cleaning')}")
         w = values.get("W_witness")
         p = values.get("P_presence")
         ce = values.get("Ce_cleaning")
         if any(v is None for v in [w, p, ce]):
+            logger.warning("[calculate_evolution_rate] missing required: one of W/P/Ce is None")
             return None
         grace = self.calculate_grace_availability(values)
         resistance = self.calculate_resistance(values)
@@ -965,7 +999,9 @@ class OperatorEngine:
         awareness = w * p
         practice = ce
 
-        return k1 * awareness + k2 * practice + k3 * grace - k4 * resistance
+        result = k1 * awareness + k2 * practice + k3 * grace - k4 * resistance
+        logger.debug(f"[calculate_evolution_rate] result: dS_dt={result:.3f}")
+        return result
 
     def calculate_love_fear_balance(self, values: Dict[str, float]) -> Optional[float]:
         """
@@ -974,18 +1010,23 @@ class OperatorEngine:
         Formula: Lf = Love / (Love + Fear)
         Returns None if required operators are missing.
         """
+        logger.debug(f"[calculate_love_fear_balance] inputs: At={values.get('At_attachment')}, Ab={values.get('Ab_abhinivesha')}, P={values.get('P_presence')}")
         at = values.get("At_attachment")
         ab = values.get("Ab_abhinivesha")
         p = values.get("P_presence")
         if any(v is None for v in [at, ab, p]):
+            logger.warning("[calculate_love_fear_balance] missing required: one of At/Ab/P is None")
             return None
 
         love = 1 - at
         fear = ab * (1 - p)
 
         if love + fear == 0:
+            logger.warning("[calculate_love_fear_balance] missing required: love + fear = 0, cannot divide")
             return None
-        return love / (love + fear)
+        result = love / (love + fear)
+        logger.debug(f"[calculate_love_fear_balance] result: lf_balance={result:.3f}")
+        return result
 
     def calculate_all_derived(self, base_values: Dict[str, float]) -> Dict[str, float]:
         """
@@ -994,6 +1035,7 @@ class OperatorEngine:
         Returns operator set with computed values. Derived values that
         cannot be calculated (missing inputs) are omitted, not defaulted.
         """
+        logger.debug(f"[calculate_all_derived] inputs: base_count={len(base_values)}")
         derived = base_values.copy()
 
         # Calculate derived values — only include if calculable
@@ -1014,6 +1056,8 @@ class OperatorEngine:
             if result is not None:
                 derived[key] = result
 
+        derived_count = len(derived) - len(base_values)
+        logger.debug(f"[calculate_all_derived] result: derived_count={derived_count}, total_keys={len(derived)}")
         return derived
 
     def get_operator_signature(self, values: Dict[str, float]) -> Dict[str, Optional[float]]:
@@ -1022,13 +1066,17 @@ class OperatorEngine:
 
         Returns key operators for pattern matching. Missing operators are None.
         """
+        logger.debug(f"[get_operator_signature] inputs: value_count={len(values)}")
         keys = {
             "Psi": "Psi_quality", "M": "M_maya", "W": "W_witness",
             "At": "At_attachment", "Se": "Se_service", "G": "G_grace",
             "P": "P_presence", "E": "E_equanimity", "K": "K_karma",
             "D": "D_dharma",
         }
-        return {short: values.get(canonical) for short, canonical in keys.items()}
+        result = {short: values.get(canonical) for short, canonical in keys.items()}
+        none_count = sum(1 for v in result.values() if v is None)
+        logger.debug(f"[get_operator_signature] result: sig_keys={len(result)}, missing={none_count}")
+        return result
 
     def estimate_s_level(self, values: Dict[str, float]) -> Optional[float]:
         """
@@ -1036,6 +1084,7 @@ class OperatorEngine:
 
         Returns None if no relevant operators are available.
         """
+        logger.debug(f"[estimate_s_level] inputs: Psi={values.get('Psi_quality')}, W={values.get('W_witness')}, M={values.get('M_maya')}")
         weights = {
             "Psi_quality": 2.5, "W_witness": 2.0, "M_maya": -1.5,
             "At_attachment": -1.5, "Se_service": 1.0, "G_grace": 0.5,
@@ -1047,6 +1096,7 @@ class OperatorEngine:
                 available[op] = (val, weight)
 
         if not available:
+            logger.warning("[estimate_s_level] missing required: no relevant operators available")
             return None
 
         s = 1.0
@@ -1056,7 +1106,9 @@ class OperatorEngine:
             else:
                 s += val * weight
 
-        return min(8.0, max(1.0, s))
+        result = min(8.0, max(1.0, s))
+        logger.debug(f"[estimate_s_level] result: s_level={result:.2f}, operators_used={len(available)}")
+        return result
 
 
 # =============================================================================

@@ -198,6 +198,7 @@ class ConstellationQuestionGenerator:
         Returns:
             List of pivot operator names
         """
+        logger.debug(f"[identify_pivot_operators] category={goal_context.goal_category} missing={len(missing_operators)} known={len(known_operators)}")
         pivots = CATEGORY_PIVOT_OPERATORS.get(
             goal_context.goal_category,
             CATEGORY_PIVOT_OPERATORS['achievement']
@@ -206,6 +207,7 @@ class ConstellationQuestionGenerator:
         # Return pivots that are actually missing
         missing_pivots = [op for op in pivots if op in missing_operators]
 
+        logger.debug(f"[identify_pivot_operators] result: {len(missing_pivots)} missing pivots")
         return missing_pivots
 
     def calculate_diagnostic_power(
@@ -229,9 +231,11 @@ class ConstellationQuestionGenerator:
         Returns:
             Diagnostic power score
         """
+        logger.debug(f"[calculate_diagnostic_power] pivots={len(pivot_operators)} known={len(known_operators)}")
         # If we already know the pivot operators, diagnostic power is low
         known_pivots = [op for op in pivot_operators if op in known_operators]
         if len(known_pivots) == len(pivot_operators):
+            logger.debug("[calculate_diagnostic_power] result: 0.200 (all pivots known)")
             return 0.2  # Already know everything
 
         # If we're missing all pivot operators, diagnostic power is maximum
@@ -246,7 +250,9 @@ class ConstellationQuestionGenerator:
         if high_impact_missing:
             power *= 1.2
 
-        return min(1.0, power)
+        result = min(1.0, power)
+        logger.debug(f"[calculate_diagnostic_power] result: {result:.3f}")
+        return result
 
     def generate_question_text(
         self,
@@ -271,7 +277,9 @@ class ConstellationQuestionGenerator:
 
         # Use question_type for validation questions, otherwise use goal_category
         lookup_key = goal_context.question_type if goal_context.question_type == 'response_validation' else goal_context.goal_category
-        return templates.get(lookup_key, templates['achievement'])
+        result = templates.get(lookup_key, templates['achievement'])
+        logger.debug(f"[generate_question_text] category={lookup_key} text='{result[:50]}'")
+        return result
 
     def should_ask_question(
         self,
@@ -294,10 +302,12 @@ class ConstellationQuestionGenerator:
         Returns:
             True if question should be asked
         """
+        logger.debug(f"[should_ask_question] missing={len(missing_operators)} known={len(known_operators)}")
         pivot_ops = self.identify_pivot_operators(goal_context, missing_operators, known_operators)
 
         if not pivot_ops:
             # All pivot operators known
+            logger.debug("[should_ask_question] result: False (all pivots known)")
             return False
 
         # Need at least 40% operator coverage for meaningful diagnosis without question
@@ -305,8 +315,10 @@ class ConstellationQuestionGenerator:
 
         if coverage > 0.6 and len(pivot_ops) < 2:
             # High coverage and only 1 pivot missing - probably okay without question
+            logger.debug(f"[should_ask_question] result: False (coverage={coverage:.3f} pivots_missing={len(pivot_ops)})")
             return False
 
+        logger.debug(f"[should_ask_question] result: True (coverage={coverage:.3f} pivots_missing={len(pivot_ops)})")
         return True
 
     def generate_single_question(

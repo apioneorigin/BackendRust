@@ -39,6 +39,9 @@ from typing import Dict, Any, List, Tuple, Optional, Set
 from dataclasses import dataclass, field
 import math
 
+from logging_config import get_logger
+logger = get_logger('formulas.emotions')
+
 
 @dataclass
 class EmotionState:
@@ -272,6 +275,7 @@ class EmotionAnalyzer:
 
         ZERO-FALLBACK: Tracks missing operators and handles None intensities.
         """
+        logger.debug(f"[analyze] inputs: operator_count={len(operators)}")
         all_missing: Set[str] = set()
 
         # Calculate all rasas
@@ -314,6 +318,8 @@ class EmotionAnalyzer:
         # Calculate guna influence on emotions
         guna_influence = self._calculate_guna_influence(operators)
 
+        logger.debug(f"[analyze] result: dominant_emotion={dominant_rasa}, coherence={coherence:.3f if coherence is not None else 'None'}")
+        logger.info(f"[analyze] calculable_rasas={calculable_rasas}/9, missing_operators={len(all_missing)}")
         return EmotionalProfile(
             rasas=rasas,
             secondary_emotions=secondary,
@@ -537,6 +543,7 @@ class EmotionAnalyzer:
 
         ZERO-FALLBACK: Handles None values gracefully.
         """
+        logger.debug(f"[get_emotional_recommendations] inputs: dominant_rasa={profile.dominant_rasa}, coherence={profile.emotional_coherence:.3f if profile.emotional_coherence is not None else 'None'}")
         recommendations = []
 
         # Check for negative dominant states
@@ -573,6 +580,7 @@ class EmotionAnalyzer:
         if profile.missing_operators:
             recommendations.append(f"Note: {len(profile.missing_operators)} operators missing for complete analysis")
 
+        logger.debug(f"[get_emotional_recommendations] result: recommendation_count={len(recommendations)}")
         return recommendations
 
     def calculate_emotional_evolution(
@@ -588,11 +596,14 @@ class EmotionAnalyzer:
 
         Returns operator changes needed to shift emotional dominant.
         """
+        logger.debug(f"[calculate_emotional_evolution] inputs: target={target_rasa}, s_level={s_level:.1f}, current_dominant={current.dominant_rasa}")
         if target_rasa not in self.RASAS:
+            logger.warning(f"[calculate_emotional_evolution] missing required: unknown target rasa '{target_rasa}'")
             return {'error': f'Unknown target rasa: {target_rasa}'}
 
         current_dominant = current.dominant_rasa
         if current_dominant is None:
+            logger.warning("[calculate_emotional_evolution] missing required: current dominant rasa is None")
             return {'error': 'Cannot determine current dominant rasa - insufficient operator data'}
 
         target_def = self.RASAS[target_rasa]
@@ -631,4 +642,5 @@ class EmotionAnalyzer:
             result['missing_operators'] = missing_for_analysis
             result['note'] = 'Some operators missing - analysis may be incomplete'
 
+        logger.debug(f"[calculate_emotional_evolution] result: changes_needed={len(required_changes)}, missing={len(missing_for_analysis)}")
         return result

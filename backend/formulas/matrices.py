@@ -24,6 +24,9 @@ from typing import Dict, List, Optional, Tuple, Any
 from enum import Enum
 import math
 
+from logging_config import get_logger
+logger = get_logger('formulas.matrices')
+
 
 class MatrixType(Enum):
     """The seven transformation matrices."""
@@ -274,7 +277,9 @@ class MatricesEngine:
         at = ops.get("At_attachment")
         psi = ops.get("Psi_quality")
         if any(v is None for v in [m, w, at, psi]):
+            logger.warning("[calculate_truth_matrix] missing required operators")
             return None
+        logger.debug(f"[calculate_truth_matrix] inputs: M={m:.3f}, W={w:.3f}, At={at:.3f}, Psi={psi:.3f}")
 
         # Illusion_Score = M × (1 - W) × (1 - A)
         illusion_score = m * (1 - w) * (1 - psi * 0.5)
@@ -322,6 +327,7 @@ class MatricesEngine:
         position = self._weighted_position(scores)
         transition_active, direction = self._check_transition(scores)
 
+        logger.debug(f"[calculate_truth_matrix] result: position={position:.3f}, direction={direction}")
         return MatrixProfile(
             matrix_type=MatrixType.TRUTH,
             states=states,
@@ -349,7 +355,9 @@ class MatricesEngine:
         ab = ops.get("Ab_abhinivesha")
         e = ops.get("E_equanimity")
         if any(v is None for v in [at, se, w, m, psi, as_, ab, e]):
+            logger.warning("[calculate_love_matrix] missing required operators")
             return None
+        logger.debug(f"[calculate_love_matrix] inputs: At={at:.3f}, Se={se:.3f}, W={w:.3f}, Psi={psi:.3f}")
 
         ego_sep = self._calculate_ego_separation(ops)
         fear = ab
@@ -403,6 +411,7 @@ class MatricesEngine:
         position = self._weighted_position(scores)
         transition_active, direction = self._check_transition(scores)
 
+        logger.debug(f"[calculate_love_matrix] result: position={position:.3f}, direction={direction}")
         return MatrixProfile(
             matrix_type=MatrixType.LOVE,
             states=states,
@@ -433,7 +442,9 @@ class MatricesEngine:
         ab = ops.get("Ab_abhinivesha")
         as_ = ops.get("As_asmita")
         if any(v is None for v in [at, se, m, i, w, d, vit, hf, ce, ab, as_]):
+            logger.warning("[calculate_power_matrix] missing required operators")
             return None
+        logger.debug(f"[calculate_power_matrix] inputs: At={at:.3f}, Se={se:.3f}, I={i:.3f}, D={d:.3f}")
 
         # Victim_Score = External_Locus × Powerlessness × Blame
         external_locus = (1 - m) * (1 - i)
@@ -487,6 +498,7 @@ class MatricesEngine:
         position = self._weighted_position(scores)
         transition_active, direction = self._check_transition(scores)
 
+        logger.debug(f"[calculate_power_matrix] result: position={position:.3f}, direction={direction}")
         return MatrixProfile(
             matrix_type=MatrixType.POWER,
             states=states,
@@ -514,7 +526,9 @@ class MatricesEngine:
         p = ops.get("P_presence")
         i = ops.get("I_intention")
         if any(v is None for v in [at, k, hf, w, g, kl, p, i]):
+            logger.warning("[calculate_freedom_matrix] missing required operators")
             return None
+        logger.debug(f"[calculate_freedom_matrix] inputs: At={at:.3f}, K={k:.3f}, Hf={hf:.3f}, G={g:.3f}")
 
         # Bondage_Score = Hf × K × (1 - Awareness) × Constraint_Perception
         constraint_perception = at + k
@@ -566,6 +580,7 @@ class MatricesEngine:
         position = self._weighted_position(scores)
         transition_active, direction = self._check_transition(scores)
 
+        logger.debug(f"[calculate_freedom_matrix] result: position={position:.3f}, direction={direction}")
         return MatrixProfile(
             matrix_type=MatrixType.FREEDOM,
             states=states,
@@ -593,7 +608,9 @@ class MatricesEngine:
         s_struct = ops.get("Ss_struct")
         vit = ops.get("V_void")
         if any(v is None for v in [m, i, psi, g, at, ce, s_struct, vit]):
+            logger.warning("[calculate_creation_matrix] missing required operators")
             return None
+        logger.debug(f"[calculate_creation_matrix] inputs: I={i:.3f}, Psi={psi:.3f}, G={g:.3f}, V={vit:.3f}")
 
         # Destruction_Score = Breaking_down patterns
         dissolution = (1 - at) * ce
@@ -641,6 +658,7 @@ class MatricesEngine:
         position = self._weighted_position(scores)
         transition_active, direction = self._check_transition(scores)
 
+        logger.debug(f"[calculate_creation_matrix] result: position={position:.3f}, direction={direction}")
         return MatrixProfile(
             matrix_type=MatrixType.CREATION,
             states=states,
@@ -666,7 +684,9 @@ class MatricesEngine:
         m = ops.get("M_maya")
         t_temporal = ops.get("T_temporal")
         if any(v is None for v in [p, w, at, psi, m, t_temporal]):
+            logger.warning("[calculate_time_matrix] missing required operators")
             return None
+        logger.debug(f"[calculate_time_matrix] inputs: P={p:.3f}, W={w:.3f}, T={t_temporal:.3f}, Psi={psi:.3f}")
 
         # Past_Future_Score = Caught in time
         past_future_score = (1 - p) * (t_temporal + at * 0.5)
@@ -712,6 +732,7 @@ class MatricesEngine:
         position = self._weighted_position(scores)
         transition_active, direction = self._check_transition(scores)
 
+        logger.debug(f"[calculate_time_matrix] result: position={position:.3f}, direction={direction}")
         return MatrixProfile(
             matrix_type=MatrixType.TIME,
             states=states,
@@ -737,7 +758,9 @@ class MatricesEngine:
         psi = ops.get("Psi_quality")
         e = ops.get("E_equanimity")
         if any(v is None for v in [at, ab, w, g, psi, e]):
+            logger.warning("[calculate_death_matrix] missing required operators")
             return None
+        logger.debug(f"[calculate_death_matrix] inputs: At={at:.3f}, Ab={ab:.3f}, W={w:.3f}, G={g:.3f}")
 
         # Clinging_Score = Holding on
         clinging_score = at * ab * (1 - w)
@@ -785,6 +808,7 @@ class MatricesEngine:
         position = self._weighted_position(scores)
         transition_active, direction = self._check_transition(scores)
 
+        logger.debug(f"[calculate_death_matrix] result: position={position:.3f}, direction={direction}")
         return MatrixProfile(
             matrix_type=MatrixType.DEATH,
             states=states,
@@ -814,6 +838,7 @@ class MatricesEngine:
         Returns:
             Complete MatricesProfile
         """
+        logger.debug(f"[calculate_all_matrices] inputs: op_count={len(operators)}, s_level={s_level:.3f}")
         truth = self.calculate_truth_matrix(operators, s_level)
         love = self.calculate_love_matrix(operators, s_level)
         power = self.calculate_power_matrix(operators, s_level)
@@ -824,6 +849,7 @@ class MatricesEngine:
 
         all_matrices = [truth, love, power, freedom, creation, time, death]
         if any(m is None for m in all_matrices):
+            logger.warning("[calculate_all_matrices] missing: one or more matrices returned None")
             return None
 
         # Calculate overall evolution
@@ -833,6 +859,7 @@ class MatricesEngine:
         # Find dominant matrix (most progress)
         dominant = max(all_matrices, key=lambda m: m.progress_pct)
 
+        logger.debug(f"[calculate_all_matrices] result: dominant_matrix={dominant.matrix_type.value}, overall_evolution={overall_evolution:.3f}")
         return MatricesProfile(
             truth=truth,
             love=love,

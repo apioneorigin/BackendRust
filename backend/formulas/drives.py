@@ -23,6 +23,9 @@ from typing import Dict, List, Optional, Tuple, Any
 from enum import Enum
 import math
 
+from logging_config import get_logger
+logger = get_logger('formulas.drives')
+
 
 class DriveType(Enum):
     """The five sacred drives."""
@@ -360,6 +363,7 @@ class DrivesEngine:
 
     def calculate_love_components(self, ops: Dict[str, float]) -> Dict[str, float]:
         """Calculate Love drive sub-components."""
+        logger.debug(f"[calculate_love_components] inputs: At={ops.get('At_attachment')}, Se={ops.get('Se_service')}, W={ops.get('W_witness')}")
         at = ops.get("At_attachment")
         se = ops.get("Se_service")
         e = ops.get("E_equanimity")
@@ -371,10 +375,12 @@ class DrivesEngine:
         dv = ops.get("Dv_dvesha")
         focus = ops.get("I_intention")
         if any(v is None for v in [at, se, e, p, w, sh, m, ra, dv, focus]):
+            logger.warning("[calculate_love_components] missing required: one or more operators are None")
             return None
 
         ego_sep = self._calculate_ego_separation(ops)
         if ego_sep is None:
+            logger.warning("[calculate_love_components] missing required: ego_separation returned None")
             return None
 
         # Heart_Open = (1 - Ego_Separation) × Emotional_Availability × Vulnerability
@@ -399,21 +405,25 @@ class DrivesEngine:
         suffering_awareness = w * se
         compassion = heart_open * suffering_awareness * (1 - ego_sep)
 
-        return {
+        result = {
             "heart_open": heart_open,
             "self_love": self_love,
             "unconditional_capacity": unconditional_capacity,
             "devotion": devotion,
             "compassion": compassion,
         }
+        logger.debug(f"[calculate_love_components] result: heart_open={heart_open:.3f}, compassion={compassion:.3f}")
+        return result
 
     def calculate_love_drive(self, ops: Dict[str, float], s_level: float) -> DriveProfile:
         """Calculate complete Love drive profile."""
+        logger.debug(f"[calculate_love_drive] inputs: At={ops.get('At_attachment')}, Sa={ops.get('Sa_samskara')}")
         at = ops.get("At_attachment")
         sa = ops.get("Sa_samskara")
         ce = ops.get("Ce_cleaning")
         w = ops.get("W_witness")
         if any(v is None for v in [at, sa, ce, w]):
+            logger.warning("[calculate_love_drive] missing required: one of At/Sa/Ce/W is None")
             return None
 
         components = self.calculate_love_components(ops)
@@ -439,6 +449,7 @@ class DrivesEngine:
         # Fulfillment
         fulfillment = love_internal * (1 + components["compassion"]) / 2
 
+        logger.debug(f"[calculate_love_drive] result: strength={drive_strength:.3f}, fulfillment={fulfillment:.3f}")
         return DriveProfile(
             drive_type=DriveType.LOVE,
             internal_seeking_pct=love_internal * 100,
@@ -454,6 +465,7 @@ class DrivesEngine:
 
     def calculate_peace_components(self, ops: Dict[str, float]) -> Dict[str, float]:
         """Calculate Peace drive sub-components."""
+        logger.debug(f"[calculate_peace_components] inputs: P={ops.get('P_presence')}, E={ops.get('E_equanimity')}")
         p = ops.get("P_presence")
         w = ops.get("W_witness")
         m = ops.get("M_maya")
@@ -462,6 +474,7 @@ class DrivesEngine:
         dv = ops.get("Dv_dvesha")
         t_future = ops.get("T_temporal")
         if any(v is None for v in [p, w, m, e, at, dv, t_future]):
+            logger.warning("[calculate_peace_components] missing required: one or more operators are None")
             return None
 
         # Mental_Stillness = (1 - Mind_Proliferation) × P × Meditation_Depth
@@ -483,19 +496,23 @@ class DrivesEngine:
         internal_dialogue = (1 - p) * (1 - w)
         inner_silence = mental_stillness * (1 - internal_dialogue)
 
-        return {
+        result = {
             "mental_stillness": mental_stillness,
             "emotional_equanimity": emotional_equanimity,
             "present_moment": present_moment,
             "acceptance": acceptance,
             "inner_silence": inner_silence,
         }
+        logger.debug(f"[calculate_peace_components] result: stillness={mental_stillness:.3f}, equanimity={emotional_equanimity:.3f}")
+        return result
 
     def calculate_peace_drive(self, ops: Dict[str, float], s_level: float) -> DriveProfile:
         """Calculate complete Peace drive profile."""
+        logger.debug(f"[calculate_peace_drive] inputs: P={ops.get('P_presence')}, V={ops.get('V_void')}")
         p = ops.get("P_presence")
         v = ops.get("V_void")
         if any(val is None for val in [p, v]):
+            logger.warning("[calculate_peace_drive] missing required: P or V is None")
             return None
 
         components = self.calculate_peace_components(ops)
@@ -520,6 +537,7 @@ class DrivesEngine:
         # Fulfillment
         fulfillment = peace_internal * (1 + components["acceptance"]) / 2
 
+        logger.debug(f"[calculate_peace_drive] result: strength={drive_strength:.3f}, fulfillment={fulfillment:.3f}")
         return DriveProfile(
             drive_type=DriveType.PEACE,
             internal_seeking_pct=peace_internal * 100,
@@ -535,6 +553,7 @@ class DrivesEngine:
 
     def calculate_bliss_components(self, ops: Dict[str, float]) -> Dict[str, float]:
         """Calculate Bliss drive sub-components."""
+        logger.debug(f"[calculate_bliss_components] inputs: Psi={ops.get('Psi_quality')}, G={ops.get('G_grace')}")
         psi = ops.get("Psi_quality")
         at = ops.get("At_attachment")
         m = ops.get("M_maya")
@@ -545,6 +564,7 @@ class DrivesEngine:
         p = ops.get("P_presence")
         i_intention = ops.get("I_intention")
         if any(val is None for val in [psi, at, m, g, w, kl, v, p, i_intention]):
+            logger.warning("[calculate_bliss_components] missing required: one or more operators are None")
             return None
 
         # Spiritual_Ecstasy = Psi × (1 - Separation) × Grace_Connection
@@ -570,16 +590,19 @@ class DrivesEngine:
         openness = (1 - at) * (1 - m)
         rapture = spiritual_ecstasy * energy_peak * openness
 
-        return {
+        result = {
             "spiritual_ecstasy": spiritual_ecstasy,
             "causeless_joy": causeless_joy,
             "divine_connection": divine_connection,
             "ananda": ananda,
             "rapture": rapture,
         }
+        logger.debug(f"[calculate_bliss_components] result: ecstasy={spiritual_ecstasy:.3f}, ananda={ananda:.3f}")
+        return result
 
     def calculate_bliss_drive(self, ops: Dict[str, float], s_level: float) -> DriveProfile:
         """Calculate complete Bliss drive profile."""
+        logger.debug(f"[calculate_bliss_drive] inputs: s_level={s_level:.1f}")
         components = self.calculate_bliss_components(ops)
         if components is None:
             return None
@@ -600,6 +623,7 @@ class DrivesEngine:
         # Fulfillment
         fulfillment = (components["ananda"] + bliss_internal) / 2
 
+        logger.debug(f"[calculate_bliss_drive] result: strength={drive_strength:.3f}, fulfillment={fulfillment:.3f}")
         return DriveProfile(
             drive_type=DriveType.BLISS,
             internal_seeking_pct=bliss_internal * 100,
@@ -615,6 +639,7 @@ class DrivesEngine:
 
     def calculate_satisfaction_components(self, ops: Dict[str, float]) -> Dict[str, float]:
         """Calculate Satisfaction drive sub-components."""
+        logger.debug(f"[calculate_satisfaction_components] inputs: D={ops.get('D_dharma')}, I={ops.get('I_intention')}")
         m = ops.get("M_maya")
         w = ops.get("W_witness")
         p = ops.get("P_presence")
@@ -625,10 +650,12 @@ class DrivesEngine:
         t_future = ops.get("T_temporal")
         se = ops.get("Se_service")
         if any(v is None for v in [m, w, p, at, e, d, i, t_future, se]):
+            logger.warning("[calculate_satisfaction_components] missing required: one or more operators are None")
             return None
 
         ego_sep = self._calculate_ego_separation(ops)
         if ego_sep is None:
+            logger.warning("[calculate_satisfaction_components] missing required: ego_separation returned None")
             return None
 
         # Completeness = (1 - Lack_Perception) × Fullness_Recognition
@@ -659,18 +686,22 @@ class DrivesEngine:
         meaning = d * w
         fulfillment = purpose_alignment * achievement * meaning
 
-        return {
+        result = {
             "completeness": completeness,
             "contentment": contentment,
             "present_fullness": present_fullness,
             "gratitude": gratitude,
             "fulfillment": fulfillment,
         }
+        logger.debug(f"[calculate_satisfaction_components] result: completeness={completeness:.3f}, contentment={contentment:.3f}")
+        return result
 
     def calculate_satisfaction_drive(self, ops: Dict[str, float], s_level: float) -> DriveProfile:
         """Calculate complete Satisfaction drive profile."""
+        logger.debug(f"[calculate_satisfaction_drive] inputs: At={ops.get('At_attachment')}")
         at = ops.get("At_attachment")
         if at is None:
+            logger.warning("[calculate_satisfaction_drive] missing required: At is None")
             return None
 
         components = self.calculate_satisfaction_components(ops)
@@ -698,6 +729,7 @@ class DrivesEngine:
         # Fulfillment
         fulfillment = (satisfaction_internal + components["gratitude"]) / 2
 
+        logger.debug(f"[calculate_satisfaction_drive] result: strength={drive_strength:.3f}, fulfillment={fulfillment:.3f}")
         return DriveProfile(
             drive_type=DriveType.SATISFACTION,
             internal_seeking_pct=satisfaction_internal * 100,
@@ -713,6 +745,7 @@ class DrivesEngine:
 
     def calculate_freedom_components(self, ops: Dict[str, float]) -> Dict[str, float]:
         """Calculate Freedom drive sub-components."""
+        logger.debug(f"[calculate_freedom_components] inputs: K={ops.get('K_karma')}, Hf={ops.get('Hf_habit')}")
         k = ops.get("K_karma")
         hf = ops.get("Hf_habit")
         w = ops.get("W_witness")
@@ -722,6 +755,7 @@ class DrivesEngine:
         kl = ops.get("KL_klesha")
         i = ops.get("I_intention")
         if any(v is None for v in [k, hf, w, at, p, g, kl, i]):
+            logger.warning("[calculate_freedom_components] missing required: one or more operators are None")
             return None
 
         # Liberation_from_Patterns = (1 - K) × (1 - Hf) × Breaking_Capacity
@@ -747,21 +781,25 @@ class DrivesEngine:
         external_control = at * (1 - w)
         autonomy = (1 - external_control) * i * (1 - hf)
 
-        return {
+        result = {
             "liberation_from_patterns": liberation_from_patterns,
             "choice_consciousness": choice_consciousness,
             "being_space": being_space,
             "moksha": moksha,
             "autonomy": autonomy,
         }
+        logger.debug(f"[calculate_freedom_components] result: liberation={liberation_from_patterns:.3f}, moksha={moksha:.3f}")
+        return result
 
     def calculate_freedom_drive(self, ops: Dict[str, float], s_level: float) -> DriveProfile:
         """Calculate complete Freedom drive profile."""
+        logger.debug(f"[calculate_freedom_drive] inputs: K={ops.get('K_karma')}, Hf={ops.get('Hf_habit')}")
         k = ops.get("K_karma")
         hf = ops.get("Hf_habit")
         at = ops.get("At_attachment")
         v = ops.get("V_void")
         if any(val is None for val in [k, hf, at, v]):
+            logger.warning("[calculate_freedom_drive] missing required: one of K/Hf/At/V is None")
             return None
 
         components = self.calculate_freedom_components(ops)
@@ -787,6 +825,7 @@ class DrivesEngine:
         # Fulfillment
         fulfillment = (freedom_internal + components["moksha"]) / 2
 
+        logger.debug(f"[calculate_freedom_drive] result: strength={drive_strength:.3f}, fulfillment={fulfillment:.3f}")
         return DriveProfile(
             drive_type=DriveType.FREEDOM,
             internal_seeking_pct=freedom_internal * 100,
@@ -807,7 +846,9 @@ class DrivesEngine:
         The Center of Good is where all drives meet in balanced unity.
         Perfect balance = 1.0, maximum imbalance = 0.0
         """
+        logger.debug(f"[calculate_center_of_good] inputs: drive_count={len(drives)}")
         if not drives:
+            logger.warning("[calculate_center_of_good] missing required: no drives provided")
             return 0.0
 
         # Get all internal percentages
@@ -824,7 +865,9 @@ class DrivesEngine:
         mean_fulfillment = sum(fulfillments) / len(fulfillments)
 
         # Center proximity = balance × fulfillment
-        return balance_score * mean_fulfillment
+        result = balance_score * mean_fulfillment
+        logger.debug(f"[calculate_center_of_good] result: proximity={result:.3f}")
+        return result
 
     def calculate_drive_integration(self, drives: List[DriveProfile]) -> float:
         """
@@ -832,7 +875,9 @@ class DrivesEngine:
 
         Integration measures coherence between drives.
         """
+        logger.debug(f"[calculate_drive_integration] inputs: drive_count={len(drives)}")
         if not drives:
+            logger.warning("[calculate_drive_integration] missing required: no drives provided")
             return 0.0
 
         # Calculate pairwise coherence
@@ -850,7 +895,9 @@ class DrivesEngine:
         if pairs == 0:
             return 0.0
 
-        return total_coherence / pairs
+        result = total_coherence / pairs
+        logger.debug(f"[calculate_drive_integration] result: integration={result:.3f}")
+        return result
 
     def calculate_all_drives(
         self,
@@ -867,6 +914,7 @@ class DrivesEngine:
         Returns:
             Complete DrivesProfile
         """
+        logger.debug(f"[calculate_all_drives] inputs: operator_count={len(operators)}, s_level={s_level:.1f}")
         # Add s_level to operators for component calculations
         ops = operators.copy()
         ops["s_level"] = s_level
@@ -879,6 +927,8 @@ class DrivesEngine:
         freedom = self.calculate_freedom_drive(ops, s_level)
 
         if any(d is None for d in [love, peace, bliss, satisfaction, freedom]):
+            none_drives = [n for n, d in [('love', love), ('peace', peace), ('bliss', bliss), ('satisfaction', satisfaction), ('freedom', freedom)] if d is None]
+            logger.warning(f"[calculate_all_drives] missing required: drives returned None: {none_drives}")
             return None
 
         all_drives = [love, peace, bliss, satisfaction, freedom]
@@ -890,6 +940,8 @@ class DrivesEngine:
         # Find dominant drive
         dominant = max(all_drives, key=lambda d: d.drive_strength)
 
+        logger.debug(f"[calculate_all_drives] result: primary_drive={dominant.drive_type.value}, overall_fulfillment={sum(d.fulfillment_level for d in all_drives)/len(all_drives):.3f}")
+        logger.info(f"[calculate_all_drives] dominant={dominant.drive_type.value}, center_proximity={center_proximity:.3f}, integration={integration_score:.3f}")
         return DrivesProfile(
             love=love,
             peace=peace,

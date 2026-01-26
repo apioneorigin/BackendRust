@@ -23,6 +23,9 @@ from dataclasses import dataclass, field
 import math
 import cmath
 
+from logging_config import get_logger
+logger = get_logger('formulas.advanced_math')
+
 # Import shared constants (single source of truth)
 from .constants import (
     GOLDEN_RATIO,
@@ -1099,6 +1102,7 @@ class AdvancedMathEngine:
         s_level: float
     ) -> AdvancedMathProfile:
         """Calculate complete advanced math profile from operators."""
+        logger.debug(f"[calculate_full_profile] s_level={s_level:.3f}, operators={len(operators)} keys")
         profile = AdvancedMathProfile()
 
         psi = operators.get('Psi_quality')
@@ -1109,9 +1113,11 @@ class AdvancedMathEngine:
         belief_network = operators.get('BN_belief')
 
         if any(v is None for v in [psi, maya, witness, grace, presence, belief_network]):
+            logger.warning(f"[calculate_full_profile] missing required operators, returning None")
             return None
 
         # 11.5 Sacred Geometry
+        logger.debug(f"[calculate_full_profile] computing sacred_geometry sub-profile")
         ratio, harmony = calculate_optimal_operator_ratio(witness, maya)
         profile.sacred_geometry = SacredGeometryState(
             golden_ratio_alignment=1.0 - abs(ratio - GOLDEN_RATIO) / GOLDEN_RATIO,
@@ -1121,6 +1127,7 @@ class AdvancedMathEngine:
         )
 
         # 11.7 Stochastic
+        logger.debug(f"[calculate_full_profile] computing stochastic sub-profile")
         mu, sigma, lambda_jump = calculate_consciousness_evolution_stochastic(
             psi, 0, grace, psi * witness, psi
         )
@@ -1132,6 +1139,7 @@ class AdvancedMathEngine:
         )
 
         # 11.8 Information Theory
+        logger.debug(f"[calculate_full_profile] computing information_theory sub-profile")
         state_probs = [0.1, 0.2, 0.3, 0.25, 0.15]  # Example distribution
         profile.information_state = InformationTheoryState(
             information_content=calculate_consciousness_information_content(state_probs),
@@ -1140,6 +1148,7 @@ class AdvancedMathEngine:
         )
 
         # 11.10 Lie Groups
+        logger.debug(f"[calculate_full_profile] computing lie_group sub-profile")
         symmetry = identify_consciousness_symmetry_group(operators)
         profile.lie_group_state = LieGroupState(
             symmetry_group=symmetry,
@@ -1147,6 +1156,7 @@ class AdvancedMathEngine:
         )
 
         # 11.13 Differential Geometry
+        logger.debug(f"[calculate_full_profile] computing differential_geometry sub-profile")
         metric = calculate_consciousness_manifold_metric(operators)
         profile.diff_geometry_state = DifferentialGeometryState(
             metric_tensor=metric,
@@ -1155,6 +1165,7 @@ class AdvancedMathEngine:
         )
 
         # 11.16 Vibrational
+        logger.debug(f"[calculate_full_profile] computing vibrational sub-profile")
         freq = calculate_consciousness_vibration_frequency(psi, belief_network, presence, s_level)
         harmonics = calculate_fourier_decomposition([psi, maya, witness, grace], freq)
         profile.vibrational_state = VibrationalState(
@@ -1167,6 +1178,7 @@ class AdvancedMathEngine:
         )
 
         # 11.18 Hyperbolic Geometry
+        logger.debug(f"[calculate_full_profile] computing hyperbolic_geometry sub-profile")
         z = map_s_level_to_poincare_disk(s_level)
         profile.hyperbolic_state = HyperbolicGeometryState(
             hyperbolic_distance=calculate_hyperbolic_distance(z, 0j),
@@ -1175,6 +1187,7 @@ class AdvancedMathEngine:
         )
 
         # 11.19 Algebraic Topology
+        logger.debug(f"[calculate_full_profile] computing algebraic_topology sub-profile")
         betti = calculate_betti_numbers(
             connected_components=int(s_level),
             one_d_loops=max(0, 8 - int(s_level)),
@@ -1192,6 +1205,7 @@ class AdvancedMathEngine:
         )
 
         # 11.20 Non-Commutative
+        logger.debug(f"[calculate_full_profile] computing noncommutative sub-profile")
         comm, commutes = calculate_operator_commutator([psi], [maya])
         profile.noncommutative_state = NonCommutativeState(
             commutator_value=comm,
@@ -1200,6 +1214,7 @@ class AdvancedMathEngine:
             connes_distance=calculate_connes_distance(psi, maya)
         )
 
+        logger.debug(f"[calculate_full_profile] result: all 9 sub-profiles computed successfully")
         return profile
 
 

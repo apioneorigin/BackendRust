@@ -17,6 +17,9 @@ from dataclasses import dataclass, field
 from .pathway_generator import TransformationPathway, PathwayStep
 import math
 
+from logging_config import get_logger
+logger = get_logger('reverse_causality.optimizer')
+
 
 @dataclass
 class WeightedDimensionScore:
@@ -112,6 +115,7 @@ class PathwayOptimizer:
         Returns:
             OptimizationResult with scored and ranked pathways
         """
+        logger.debug(f"[optimize_pathways] pathways={len(pathways)} user_prefs={user_preferences is not None}")
         # Merge user preferences with defaults
         weights = self.DEFAULT_WEIGHTS.copy()
         if user_preferences:
@@ -161,6 +165,7 @@ class PathwayOptimizer:
             'ease': easiest
         }
 
+        logger.debug(f"[optimize_pathways] result: best={scored[0].pathway_name} score={scored[0].total_score:.3f}")
         return OptimizationResult(
             scored_pathways=scored,
             best_pathway=scored[0],
@@ -179,6 +184,7 @@ class PathwayOptimizer:
         """
         Score a single pathway on all dimensions.
         """
+        logger.debug(f"[_score_pathway] scoring pathway={pathway.id}")
         # Speed score
         speed = self._score_speed(pathway)
 
@@ -263,6 +269,7 @@ class PathwayOptimizer:
 
         description = f"Timeline: {pathway.total_duration_estimate}"
 
+        logger.debug(f"[_score_speed] result: {score:.3f}")
         return WeightedDimensionScore(
             dimension='speed',
             score=score,
@@ -292,6 +299,7 @@ class PathwayOptimizer:
 
         description = f"Stability: {pathway.stability_score:.0%}, {len(pathway.risks)} identified risks"
 
+        logger.debug(f"[_score_stability] result: {score:.3f}")
         return WeightedDimensionScore(
             dimension='stability',
             score=score,
@@ -331,6 +339,7 @@ class PathwayOptimizer:
 
         description = f"Effort: {pathway.effort_required:.0%}, Avg step difficulty: {avg_difficulty:.0%}"
 
+        logger.debug(f"[_score_effort] result: {score:.3f}")
         return WeightedDimensionScore(
             dimension='effort',
             score=score,
@@ -366,6 +375,7 @@ class PathwayOptimizer:
 
         description = f"{len(pathway.benefits)} benefits, {negative_count} potential side effects"
 
+        logger.debug(f"[_score_side_effects] result: {score:.3f}")
         return WeightedDimensionScore(
             dimension='side_effects',
             score=score,
@@ -382,6 +392,7 @@ class PathwayOptimizer:
 
         description = f"Success probability: {pathway.success_probability:.0%}"
 
+        logger.debug(f"[_score_success] result: {score:.3f}")
         return WeightedDimensionScore(
             dimension='success',
             score=score,
@@ -446,6 +457,7 @@ class PathwayOptimizer:
             best_for.append("Those valuing stability")
             avoid_if.append("Impatient for results")
 
+        logger.debug(f"[_analyze_tradeoffs] strengths={len(strengths)} weaknesses={len(weaknesses)}")
         return TradeoffAnalysis(
             strengths=strengths[:4],
             weaknesses=weaknesses[:3],
@@ -461,6 +473,7 @@ class PathwayOptimizer:
         """
         Generate detailed comparison between two pathways.
         """
+        logger.debug(f"[compare_pathways] comparing {pathway_a.pathway_name} vs {pathway_b.pathway_name}")
         comparison = {
             'winner': pathway_a.pathway_name if pathway_a.total_score > pathway_b.total_score else pathway_b.pathway_name,
             'score_difference': abs(pathway_a.total_score - pathway_b.total_score),

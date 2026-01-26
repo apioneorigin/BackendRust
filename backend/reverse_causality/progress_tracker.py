@@ -16,6 +16,9 @@ Output:
 from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass, field
 
+from logging_config import get_logger
+logger = get_logger('reverse_causality.progress')
+
 
 @dataclass
 class Indicator:
@@ -167,6 +170,7 @@ class ProgressTracker:
         Returns:
             MonitoringPlan with all monitoring configurations
         """
+        logger.debug(f"[generate_monitoring_plan] pathway={pathway.id} steps={len(pathway.steps)}")
         stages = []
 
         # Generate monitoring for each pathway step
@@ -201,6 +205,7 @@ class ProgressTracker:
         # Generate contingency plans
         contingencies = self._generate_contingencies(pathway)
 
+        logger.debug(f"[generate_monitoring_plan] result: {len(stages)} stages, {len(global_indicators)} global indicators")
         return MonitoringPlan(
             pathway_id=pathway.id,
             pathway_name=pathway.name,
@@ -224,6 +229,7 @@ class ProgressTracker:
         """
         Generate monitoring for a single stage.
         """
+        logger.debug(f"[_generate_stage_monitoring] stage={stage_number} type={pathway_type}")
         leading_indicators = []
         lagging_indicators = []
 
@@ -303,6 +309,7 @@ class ProgressTracker:
         """
         Generate decision points for a stage.
         """
+        logger.debug(f"[_generate_stage_decisions] stage={stage_number} type={pathway_type}")
         decisions = []
 
         # Halfway check
@@ -356,6 +363,7 @@ class ProgressTracker:
         """
         Generate feedback integration points.
         """
+        logger.debug(f"[_generate_stage_feedback] stage={stage_number}")
         integrations = []
 
         integrations.append(FeedbackIntegration(
@@ -396,6 +404,7 @@ class ProgressTracker:
         """
         Generate indicators that span the entire transformation.
         """
+        logger.debug(f"[_generate_global_indicators] operators={len(current)} required={len(required)}")
         indicators = []
 
         # Overall coherence indicator
@@ -484,6 +493,7 @@ class ProgressTracker:
         """
         Generate check-in schedule.
         """
+        logger.debug("[_generate_check_in_schedule] generating schedule")
         schedule = {
             "daily": "Energy level, presence quality, practice completion",
             "weekly": "Leading indicators, progress toward stage goals, challenges faced",
@@ -501,6 +511,7 @@ class ProgressTracker:
         """
         Generate conditions that warrant pathway change.
         """
+        logger.debug(f"[_generate_pivot_conditions] strategy={pathway.strategy}")
         conditions = [
             "No progress on leading indicators for 3+ weeks",
             "Energy consistently below sustainable level",
@@ -527,6 +538,7 @@ class ProgressTracker:
         """
         Generate conditions indicating transformation is complete.
         """
+        logger.debug(f"[_generate_success_conditions] required_ops={len(required)}")
         conditions = [
             "Required operator values achieved and stable for 2+ weeks",
             "Goal state feels natural rather than effortful",
@@ -565,6 +577,7 @@ class ProgressTracker:
         """
         Generate a progress report based on current readings.
         """
+        logger.debug(f"[generate_progress_report] pathway={plan.pathway_name} stage={stage}/{plan.total_stages}")
         report = f"# Progress Report: {plan.pathway_name}\n"
         report += f"## Stage {stage} of {plan.total_stages}\n\n"
 

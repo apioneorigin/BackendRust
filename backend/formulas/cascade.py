@@ -31,6 +31,9 @@ from dataclasses import dataclass, field
 from enum import Enum
 import math
 
+from logging_config import get_logger
+logger = get_logger('formulas.cascade')
+
 
 class CleanlinessZone(Enum):
     """Cleanliness zones representing consciousness state."""
@@ -147,6 +150,7 @@ class CascadeCalculator:
 
         ZERO-FALLBACK: Tracks missing operators and propagates None for uncalculable levels.
         """
+        logger.debug(f"[calculate_cascade] inputs: operator_count={len(operators)}")
         levels = []
         all_missing_operators: Set[str] = set()
         calculable_count = 0
@@ -162,6 +166,8 @@ class CascadeCalculator:
 
             if cleanliness is not None:
                 calculable_count += 1
+
+            logger.debug(f"[calculate_cascade] level={level_num}, cleanliness={cleanliness:.3f if cleanliness is not None else 'None'}")
 
             # Calculate zone
             zone = get_cleanliness_zone(cleanliness)
@@ -223,6 +229,8 @@ class CascadeCalculator:
             "total_choices": len(demux_probs),
         }
 
+        logger.debug(f"[calculate_cascade] result: overall_cleanliness={overall:.3f if overall is not None else 'None'}, zone={overall_zone}, flow_efficiency={flow_efficiency:.3f if flow_efficiency is not None else 'None'}")
+        logger.info(f"[calculate_cascade] calculable_levels={calculable_count}/7, missing_operators={len(all_missing_operators)}")
         return CascadeState(
             levels=levels,
             overall_cleanliness=overall,
@@ -247,6 +255,7 @@ class CascadeCalculator:
         ZERO-FALLBACK: Returns (None, missing_operators) if required operators are missing.
         No default 0.5 values - missing data propagates as None.
         """
+        logger.debug(f"[_calculate_level_cleanliness] inputs: level={level}, operator_count={len(operators)}")
         # Define required operators for each level
         level_requirements = {
             1: ['W_witness', 'M_maya', 'A_aware'],  # Self
@@ -262,6 +271,7 @@ class CascadeCalculator:
         missing = [op for op in required if op not in operators or operators.get(op) is None]
 
         if missing:
+            logger.warning(f"[_calculate_level_cleanliness] missing required for level {level}: {missing}")
             return None, missing
 
         # Get operator values - ZERO-FALLBACK: only access if present
@@ -280,6 +290,7 @@ class CascadeCalculator:
             # Self cleanliness = witness consciousness - maya veiling
             # Formula: C1 = W × (1 - M) × A^0.5
             result = W * (1 - M * 0.7) * math.sqrt(A)
+            logger.debug(f"[_calculate_level_cleanliness] result: level=1, cleanliness={result:.3f}")
             return result, []
 
         elif level == 2:  # Ego (Ahamkara)
@@ -287,6 +298,7 @@ class CascadeCalculator:
             # Formula: C2 = (1 - At) × (1 - asmita) × W^0.7
             asmita = At * M * 0.8  # Ego-identification approximation
             result = (1 - At * 0.8) * (1 - asmita) * (W ** 0.7)
+            logger.debug(f"[_calculate_level_cleanliness] result: level=2, cleanliness={result:.3f}")
             return result, []
 
         elif level == 3:  # Memory (Chitta)
@@ -295,24 +307,28 @@ class CascadeCalculator:
             # Sa might be None even if passed missing check (optional operator)
             sa_val = Sa if Sa is not None else 0.5  # Only Sa has fallback as optional
             result = Ce * (1 - sa_val * 0.7) * (1 - K * 0.4)
+            logger.debug(f"[_calculate_level_cleanliness] result: level=3, cleanliness={result:.3f}")
             return result, []
 
         elif level == 4:  # Intellect (Buddhi)
             # Intellect cleanliness = high awareness, low maya
             # Formula: C4 = A × (1 - M) × W^0.5
             result = A * (1 - M * 0.8) * math.sqrt(W)
+            logger.debug(f"[_calculate_level_cleanliness] result: level=4, cleanliness={result:.3f}")
             return result, []
 
         elif level == 5:  # Mind (Manas)
             # Mind cleanliness = low habit force, low disturbance
             # Formula: C5 = (1 - Hf) × P × (1 - F × 0.5)
             result = (1 - Hf * 0.7) * P * (1 - F * 0.4)
+            logger.debug(f"[_calculate_level_cleanliness] result: level=5, cleanliness={result:.3f}")
             return result, []
 
         elif level == 6:  # Breath (Prana)
             # Prana cleanliness = presence, low fear
             # Formula: C6 = P × (1 - F × 0.7) × Ce^0.5
             result = P * (1 - F * 0.6) * math.sqrt(Ce)
+            logger.debug(f"[_calculate_level_cleanliness] result: level=6, cleanliness={result:.3f}")
             return result, []
 
         elif level == 7:  # Body (Annamaya)
@@ -320,8 +336,10 @@ class CascadeCalculator:
             # Formula: C7 = (Ce + P + (1 - At)) / 3 × stability
             stability = 1 - (At * 0.3 + F * 0.3 + Hf * 0.2)
             result = ((Ce + P + (1 - At * 0.5)) / 3) * stability
+            logger.debug(f"[_calculate_level_cleanliness] result: level=7, cleanliness={result:.3f}")
             return result, []
 
+        logger.warning(f"[_calculate_level_cleanliness] unknown level: {level}")
         return None, ['unknown_level']
 
     def _calculate_flow_rate(
@@ -336,13 +354,16 @@ class CascadeCalculator:
         ZERO-FALLBACK: Returns (None, missing_operators) if cleanliness is None
         or required operators (R_resistance, G_grace) are missing.
         """
+        logger.debug(f"[_calculate_flow] inputs: level={level}, cleanliness={cleanliness:.3f if cleanliness is not None else 'None'}")
         if cleanliness is None:
+            logger.warning(f"[_calculate_flow] missing required: cleanliness is None for level {level}")
             return None, ['cleanliness_required']
 
         required = ['R_resistance', 'G_grace']
         missing = [op for op in required if op not in operators or operators.get(op) is None]
 
         if missing:
+            logger.warning(f"[_calculate_flow] missing required: {missing}")
             return None, missing
 
         R = operators.get('R_resistance')
@@ -352,7 +373,9 @@ class CascadeCalculator:
         base_flow = cleanliness * (1 - R * 0.6)
         grace_bonus = G * 0.3
 
-        return min(1.0, base_flow * (1 + grace_bonus)), []
+        result = min(1.0, base_flow * (1 + grace_bonus))
+        logger.debug(f"[_calculate_flow] result: level={level}, flow_rate={result:.3f}")
+        return result, []
 
     def _calculate_overall_flow(self, levels: List[CascadeLevel]) -> Optional[float]:
         """
@@ -490,6 +513,7 @@ class CascadeCalculator:
         Returns:
             Predicted changes to cascade
         """
+        logger.debug(f"[calculate_cleaning_effect] inputs: intensity={cleaning_intensity:.3f}, duration={cleaning_duration_minutes}min")
         # Cleaning effect diminishes with time (logarithmic)
         time_factor = math.log(1 + cleaning_duration_minutes / 10) / 3
 
@@ -527,13 +551,15 @@ class CascadeCalculator:
                 'skipped': False
             }
 
-        return {
+        result = {
             'predicted_changes': predicted_changes,
             'recommended_focus': current_state.cleaning_priority,
             'effect_strength': effect_multiplier,
             'skipped_levels': skipped_levels,
             'calculable_levels': len(current_state.levels) - len(skipped_levels)
         }
+        logger.debug(f"[calculate_cleaning_effect] result: effect_strength={effect_multiplier:.3f}, calculable={result['calculable_levels']}, skipped={len(skipped_levels)}")
+        return result
 
     def get_klesha_mapping(self, operators: Dict[str, float]) -> Dict[str, Optional[float]]:
         """
@@ -548,6 +574,7 @@ class CascadeCalculator:
         - Dvesha (aversion)
         - Abhinivesha (fear of death/change)
         """
+        logger.debug(f"[get_klesha_mapping] inputs: operator_count={len(operators)}")
         At = operators.get('At_attachment')
         F = operators.get('F_fear')
         M = operators.get('M_maya')
@@ -585,6 +612,10 @@ class CascadeCalculator:
         else:
             result['abhinivesha'] = None
 
+        none_count = sum(1 for v in result.values() if v is None)
+        if none_count:
+            logger.warning(f"[get_klesha_mapping] {none_count}/5 kleshas returned None due to missing operators")
+        logger.debug(f"[get_klesha_mapping] result: keys={list(result.keys())}, none_count={none_count}")
         return result
 
     def _calculate_demux_choices(
@@ -601,13 +632,16 @@ class CascadeCalculator:
 
         Formula: Choice_Probability = cleanliness × consciousness × karma_modifier
         """
+        logger.debug(f"[_calculate_demux_choices] inputs: level={level}, cleanliness={cleanliness:.3f if cleanliness is not None else 'None'}")
         if cleanliness is None:
+            logger.warning(f"[_calculate_demux_choices] missing required: cleanliness is None for level {level}")
             return []
 
         k = operators.get('K_karma')
         g = operators.get('G_grace')
         w = operators.get('W_witness')
         if any(v is None for v in [k, g, w]):
+            logger.warning(f"[_calculate_demux_choices] missing required: K_karma/G_grace/W_witness for level {level}")
             return []
 
         # Base probability from cleanliness
@@ -649,6 +683,7 @@ class CascadeCalculator:
                 description=description,
             ))
 
+        logger.debug(f"[_calculate_demux_choices] result: level={level}, higher_prob={higher_prob:.3f}, choices={len(choices)}")
         return choices
 
     def _calculate_dynamics(
@@ -666,12 +701,14 @@ class CascadeCalculator:
         - Habits (internal)
         - Unconsciousness (maya)
         """
+        logger.debug(f"[_calculate_dynamics] inputs: levels_count={len(levels)}, operator_count={len(operators)}")
         ce = operators.get('Ce_cleaning')
         g = operators.get('G_grace')
         hf = operators.get('Hf_habit')
         m = operators.get('M_maya')
         w = operators.get('W_witness')
         if any(v is None for v in [ce, g, hf, m, w]):
+            logger.warning("[_calculate_dynamics] missing required: Ce/G/Hf/M/W operators")
             return None
 
         # Calculate cleaning effect
@@ -726,6 +763,7 @@ class CascadeCalculator:
         else:
             time_to_next = None
 
+        logger.debug(f"[_calculate_dynamics] result: net_change={net_change:.3f}, equilibrium={equilibrium:.3f}, time_to_next={time_to_next:.3f if time_to_next is not None else 'None'}")
         return CleanlinessDynamics(
             net_change_rate=net_change,
             cleaning_effort_effect=cleaning_effect,

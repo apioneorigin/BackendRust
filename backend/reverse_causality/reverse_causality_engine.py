@@ -17,6 +17,9 @@ from dataclasses import dataclass, field
 import math
 import random
 
+from logging_config import get_logger
+logger = get_logger('reverse_causality.engine')
+
 
 def _safe_weighted_sum(ops: dict, terms: list) -> Optional[float]:
     """Compute weighted sum of operator values, returning None if any operator is missing.
@@ -266,6 +269,7 @@ class ReverseCausalityEngine:
             ReverseMappingResult with required state and analysis, or None if
             required operator values are missing
         """
+        logger.debug(f"[solve_for_outcome] outcome={desired_outcome} target={desired_value:.3f} operators={len(current_operators)}")
         if desired_outcome not in self.OUTCOME_FORMULAS:
             # Try to handle custom outcomes
             return self._solve_custom_outcome(
@@ -321,7 +325,7 @@ class ReverseCausalityEngine:
 
         achievable = abs(final_value - desired_value) < tolerance * 2
 
-        return self._build_result(
+        result = self._build_result(
             goal_description=f"Achieve {desired_outcome} = {desired_value:.2f}",
             goal_achievable=achievable,
             achievement_probability=achievement_prob,
@@ -329,6 +333,8 @@ class ReverseCausalityEngine:
             current_operators=current_operators,
             gap=abs(final_value - current_value)
         )
+        logger.debug(f"[solve_for_outcome] result: achievable={achievable} prob={achievement_prob:.3f} changes={len(result.operator_changes)}")
+        return result
 
     def solve_multi_outcome(
         self,
@@ -350,6 +356,7 @@ class ReverseCausalityEngine:
             ReverseMappingResult with required state balancing all outcomes,
             or None if required operator values are missing
         """
+        logger.debug(f"[solve_multi_outcome] outcomes={len(desired_outcomes)} operators={len(current_operators)}")
         if weights is None:
             weights = {k: 1.0 for k in desired_outcomes}
 
@@ -415,7 +422,7 @@ class ReverseCausalityEngine:
             f"{k}={v:.2f}" for k, v in desired_outcomes.items()
         )
 
-        return self._build_result(
+        result = self._build_result(
             goal_description=goal_desc,
             goal_achievable=total_gap < 0.1,
             achievement_probability=achievement_prob,
@@ -423,6 +430,8 @@ class ReverseCausalityEngine:
             current_operators=current_operators,
             gap=total_gap
         )
+        logger.debug(f"[solve_multi_outcome] result: gap={total_gap:.3f} prob={achievement_prob:.3f}")
+        return result
 
     def _gradient_descent_solve(
         self,
@@ -439,16 +448,19 @@ class ReverseCausalityEngine:
         Use gradient descent to find operator values that achieve target.
         Returns None if any relevant operator value is missing.
         """
+        logger.debug(f"[_gradient_descent_solve] target={target_value:.3f} relevant_ops={len(relevant_operators)} max_iter={max_iterations}")
         # Start from current values
         operators = current_operators.copy()
 
         # Check all relevant operators are present
         for op in relevant_operators:
             if operators.get(op) is None:
+                logger.warning(f"[_gradient_descent_solve] missing operator: {op}")
                 return None
 
         # Learning rate (adaptive)
         lr = 0.1
+        converged = False
 
         for iteration in range(max_iterations):
             current_value = formula(operators)
@@ -458,6 +470,8 @@ class ReverseCausalityEngine:
             error = target_value - current_value
 
             if abs(error) < tolerance:
+                converged = True
+                logger.debug(f"[_gradient_descent_solve] converged at iteration {iteration} error={error:.3f}")
                 break
 
             # Calculate gradients numerically
@@ -506,6 +520,8 @@ class ReverseCausalityEngine:
             if iteration > 0 and iteration % 20 == 0:
                 lr *= 0.9
 
+        if not converged:
+            logger.debug(f"[_gradient_descent_solve] did not converge after {max_iterations} iterations")
         return operators
 
     def _optimize_combined(
@@ -520,11 +536,13 @@ class ReverseCausalityEngine:
         Optimize for combined multi-outcome loss function.
         Returns None if any relevant operator value is missing.
         """
+        logger.debug(f"[_optimize_combined] relevant_ops={len(relevant_operators)}")
         operators = current_operators.copy()
 
         # Check all relevant operators are present
         for op in relevant_operators:
             if operators.get(op) is None:
+                logger.warning(f"[_optimize_combined] missing operator: {op}")
                 return None
 
         lr = 0.1
@@ -535,6 +553,7 @@ class ReverseCausalityEngine:
                 return None
 
             if current_loss < 0.001:
+                logger.debug(f"[_optimize_combined] converged at iteration {iteration} loss={current_loss:.3f}")
                 break
 
             # Calculate gradients
@@ -579,6 +598,7 @@ class ReverseCausalityEngine:
         Calculate probability of achieving the required state from current.
         Based on total change magnitude and operator difficulties.
         """
+        logger.debug(f"[_calculate_achievement_probability] comparing {len(required)} operators")
         total_difficulty = 0.0
         total_change = 0.0
 
@@ -604,7 +624,9 @@ class ReverseCausalityEngine:
 
         probability = 0.95 * math.exp(-2 * weighted_difficulty * total_change)
 
-        return max(0.1, min(0.95, probability))
+        probability = max(0.1, min(0.95, probability))
+        logger.debug(f"[_calculate_achievement_probability] result: prob={probability:.3f} total_change={total_change:.3f}")
+        return probability
 
     def _solve_custom_outcome(
         self,
@@ -706,6 +728,7 @@ class ReverseCausalityEngine:
         """
         Build complete ReverseMappingResult from computed values.
         """
+        logger.debug(f"[_build_result] goal='{goal_description}' achievable={goal_achievable} prob={achievement_probability:.3f}")
         # Calculate operator changes
         changes = []
         for op, req_val in required_operators.items():
@@ -841,6 +864,7 @@ class ReverseCausalityEngine:
             if max_sens > 0:
                 sensitivity = {k: v / max_sens for k, v in sensitivity.items()}
 
+        logger.debug(f"[_calculate_sensitivity] result: {len(sensitivity)} operators analyzed")
         return sensitivity
 
     def _suggest_intermediate_goals(
@@ -852,6 +876,7 @@ class ReverseCausalityEngine:
         """
         Suggest intermediate goals if direct transformation is unlikely.
         """
+        logger.debug(f"[_suggest_intermediate_goals] evaluating {len(changes)} changes")
         goals = []
 
         # Find the hardest changes
@@ -865,6 +890,7 @@ class ReverseCausalityEngine:
             else:
                 goals.append(f"Build {change.operator} from {change.current_value:.2f} to {midpoint:.2f}")
 
+        logger.debug(f"[_suggest_intermediate_goals] result: {len(goals)} intermediate goals")
         return goals
 
     def get_available_outcomes(self) -> List[str]:

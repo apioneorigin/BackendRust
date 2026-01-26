@@ -93,12 +93,15 @@ class ValueOrganizer:
 
     def _organize_tier1(self, values: Dict[str, Any]) -> Tier1:
         """Organize Tier 1 values (from LLM Call 1)"""
+        logger.debug("[_organize_tier1] entry")
         # Extract core operators from observations
         observations = values.get('observations', [])
         obs_dict = {}
         for obs in observations:
             if isinstance(obs, dict) and 'var' in obs and 'value' in obs:
                 obs_dict[obs['var']] = obs['value']
+
+        logger.debug(f"[_organize_tier1] observations={len(observations)} extracted_operators={len(obs_dict)}")
 
         core_operators = CoreOperators(
             P_presence=self._get_value(obs_dict, 'P', 'Presence', 'Prana', default=None),
@@ -155,6 +158,22 @@ class ValueOrganizer:
             freedom_strength=self._get_value(values, 'drive_freedom', default=None)
         )
 
+        # Log operator population stats
+        op_vals = [
+            core_operators.P_presence, core_operators.A_aware, core_operators.E_equanimity,
+            core_operators.M_maya, core_operators.W_witness, core_operators.I_intention,
+            core_operators.At_attachment, core_operators.Se_service, core_operators.G_grace,
+            core_operators.S_surrender, core_operators.D_dharma, core_operators.K_karma,
+            core_operators.Hf_habit, core_operators.Co_coherence, core_operators.R_resistance,
+            core_operators.F_fear,
+        ]
+        populated = sum(1 for v in op_vals if v is not None)
+        none_count = len(op_vals) - populated
+        logger.debug(
+            f"[_organize_tier1] result: operators_populated={populated} "
+            f"operators_none={none_count} s_level={s_level.current}"
+        )
+
         return Tier1(
             core_operators=core_operators,
             s_level=s_level,
@@ -163,6 +182,7 @@ class ValueOrganizer:
 
     def _organize_tier2(self, values: Dict[str, Any]) -> Tier2:
         """Organize Tier 2 values (simple derivations)"""
+        logger.debug("[_organize_tier2] entry")
         v = values.get('values', values)
 
         distortions = Distortions(
@@ -280,6 +300,12 @@ class ValueOrganizer:
             freedom_external_pct=self._get_value(v, 'freedom_external_pct', default=50.0)
         )
 
+        logger.debug(
+            f"[_organize_tier2] result: gunas_dominant={gunas.dominant} "
+            f"emotions_dominant={emotions.dominant} circles_dominant={circles_quality.dominant} "
+            f"five_acts_dominant={five_acts.dominant}"
+        )
+
         return Tier2(
             distortions=distortions,
             chakras=chakras,
@@ -295,6 +321,7 @@ class ValueOrganizer:
 
     def _organize_tier3(self, values: Dict[str, Any]) -> Tier3:
         """Organize Tier 3 values (complex combinations)"""
+        logger.debug("[_organize_tier3] entry")
         v = values.get('values', values)
 
         coherence_metrics = CoherenceMetrics(
@@ -370,6 +397,15 @@ class ValueOrganizer:
             )
         )
 
+        matrix_scores = [truth_score, love_score, power_score, freedom_score, creation_score, time_score, death_score]
+        matrices_present = sum(1 for s in matrix_scores if s is not None)
+        logger.debug(
+            f"[_organize_tier3] result: matrices_present={matrices_present}/7 "
+            f"coherence_overall={coherence_metrics.overall} "
+            f"death_active={death_architecture.active_process} "
+            f"death_depth={death_architecture.depth}"
+        )
+
         return Tier3(
             coherence_metrics=coherence_metrics,
             transformation_matrices=transformation_matrices,
@@ -380,6 +416,7 @@ class ValueOrganizer:
 
     def _organize_tier4(self, values: Dict[str, Any]) -> Tier4:
         """Organize Tier 4 values (network & dynamics)"""
+        logger.debug("[_organize_tier4] entry")
         v = values.get('values', values)
 
         manifestation_days = self._get_value(v, 'manifestation_time_days', default=30.0)
@@ -438,6 +475,14 @@ class ValueOrganizer:
             information_transfer_rate=self._get_value(v, 'morph_info_transfer', default=None)
         )
 
+        logger.debug(
+            f"[_organize_tier4] result: breakthrough_prob={breakthrough_dynamics.probability} "
+            f"grace_avail={grace_mechanics.availability} "
+            f"grace_effect={grace_mechanics.effectiveness} "
+            f"pomdp_severity={pomdp_gaps.severity} "
+            f"pipeline_flow_rate={pipeline_flow.flow_rate}"
+        )
+
         return Tier4(
             pipeline_flow=pipeline_flow,
             breakthrough_dynamics=breakthrough_dynamics,
@@ -450,6 +495,7 @@ class ValueOrganizer:
 
     def _organize_tier5(self, values: Dict[str, Any]) -> Tier5:
         """Organize Tier 5 values (predictions & advanced)"""
+        logger.debug("[_organize_tier5] entry")
         v = values.get('values', values)
 
         timeline_predictions = TimelinePredictions(
@@ -484,6 +530,13 @@ class ValueOrganizer:
             decoherence_time=self._get_value(v, 'freq_decoherence', default=1.0)
         )
 
+        logger.debug(
+            f"[_organize_tier5] result: timeline_to_goal={timeline_predictions.to_goal} "
+            f"evolution_rate={timeline_predictions.evolution_rate} "
+            f"current_state={'present' if transformation_vectors.current_state_summary else 'empty'} "
+            f"target_state={'present' if transformation_vectors.target_state_summary else 'empty'}"
+        )
+
         return Tier5(
             timeline_predictions=timeline_predictions,
             transformation_vectors=transformation_vectors,
@@ -493,12 +546,22 @@ class ValueOrganizer:
 
     def _organize_tier6(self, values: Dict[str, Any]) -> Tier6:
         """Organize Tier 6 values (quantum fields)"""
+        logger.debug("[_organize_tier6] entry")
         v = values.get('values', values)
 
+        field_charge = self._get_value(v, 'field_charge', default=None)
+        field_current = self._get_value(v, 'field_current', default=None)
+        curvature = self._get_value(v, 'consciousness_curvature', default=None)
+
+        logger.debug(
+            f"[_organize_tier6] result: field_charge={field_charge} "
+            f"field_current={field_current} curvature={curvature}"
+        )
+
         return Tier6(
-            field_charge_density=self._get_value(v, 'field_charge', default=None),
-            field_current_density=self._get_value(v, 'field_current', default=None),
-            consciousness_curvature=self._get_value(v, 'consciousness_curvature', default=None)
+            field_charge_density=field_charge,
+            field_current_density=field_current,
+            consciousness_curvature=curvature
         )
 
     def _extract_unity_metrics(self, values: Dict[str, Any]) -> UnitySeparationMetrics:
@@ -511,6 +574,7 @@ class ValueOrganizer:
         - percolation_quality: How well grace/prana flows through
         - unity_vector: Net direction toward unity (-1 to +1)
         """
+        logger.debug("[_extract_unity_metrics] entry")
         v = values.get('values', values)
 
         metrics = UnitySeparationMetrics(
@@ -520,8 +584,20 @@ class ValueOrganizer:
             unity_vector=self._get_value(v, 'unity_vector', default=None),
             net_direction=v.get('unity_net_direction', 'neutral')
         )
+
+        none_fields = [
+            name for name, val in [
+                ('separation_distance', metrics.separation_distance),
+                ('distortion_field', metrics.distortion_field),
+                ('percolation_quality', metrics.percolation_quality),
+                ('unity_vector', metrics.unity_vector),
+            ] if val is None
+        ]
+        if none_fields:
+            logger.warning(f"[_extract_unity_metrics] missing: {none_fields}")
+
         logger.debug(
-            f"[VALUE_ORGANIZER] Unity metrics extracted: sep_dist={metrics.separation_distance} "
+            f"[_extract_unity_metrics] result: sep_dist={metrics.separation_distance} "
             f"distortion={metrics.distortion_field} percolation={metrics.percolation_quality} "
             f"vector={metrics.unity_vector} direction={metrics.net_direction}"
         )
@@ -537,6 +613,7 @@ class ValueOrganizer:
 
         The crossover point shows when unity pathway overtakes separation.
         """
+        logger.debug("[_extract_dual_pathways] entry")
         v = values.get('values', values)
 
         # Build separation pathway metrics
@@ -570,9 +647,17 @@ class ValueOrganizer:
             recommended_pathway=v.get('pathway_recommendation', 'unity'),
             optimal_blend_ratio=self._get_value(v, 'pathway_blend_ratio', default=None)
         )
+
+        sep_has_data = separation_pathway.initial_success_probability is not None
+        uni_has_data = unity_pathway.initial_success_probability is not None
+        if not sep_has_data and not uni_has_data:
+            logger.warning("[_extract_dual_pathways] missing: no pathway probability data found")
+
         logger.debug(
-            f"[VALUE_ORGANIZER] Dual pathways extracted: recommended={dp.recommended_pathway} "
-            f"crossover={dp.crossover_point_months} blend_ratio={dp.optimal_blend_ratio}"
+            f"[_extract_dual_pathways] result: recommended={dp.recommended_pathway} "
+            f"crossover={dp.crossover_point_months} blend_ratio={dp.optimal_blend_ratio} "
+            f"sep_data={'present' if sep_has_data else 'None'} "
+            f"uni_data={'present' if uni_has_data else 'None'}"
         )
         return dp
 
@@ -585,7 +670,10 @@ class ValueOrganizer:
         - explicit_goal: What the user stated
         - implicit_goal: What the consciousness state reveals
         """
+        logger.debug("[_extract_goal_context] entry")
         goal_data = tier1_values.get('goal_context', {})
+        if not goal_data:
+            logger.warning("[_extract_goal_context] missing: no goal_context in tier1_values")
 
         gc = GoalContext(
             category=goal_data.get('category', 'achievement'),

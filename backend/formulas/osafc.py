@@ -22,6 +22,9 @@ from typing import Dict, List, Optional, Any, Tuple
 from enum import Enum
 import math
 
+from logging_config import get_logger
+logger = get_logger('formulas.osafc')
+
 
 class OSAFCLayer(Enum):
     """The eight OSAFC layers."""
@@ -144,6 +147,7 @@ class OSAFCEngine:
         s_level: float
     ) -> OSAFCLayerScore:
         """Calculate a single OSAFC layer."""
+        logger.debug(f"[calculate_layer] inputs: layer={layer.value}, op_count={len(operators)}, s_level={s_level:.3f}")
         defn = OSAFC_DEFINITIONS[layer]
 
         # Extract relevant operators
@@ -156,6 +160,7 @@ class OSAFCEngine:
         d = operators.get("D_dharma")
         i = operators.get("I_intention")
         if any(v is None for v in [p, w, e, at, m, ce, d, i]):
+            logger.warning(f"[calculate_layer] missing: required operators for {layer.value}")
             return None
 
         # S-level factor for this layer
@@ -213,6 +218,7 @@ class OSAFCEngine:
             integration = s_access * w * (1 - at)
             dominance = s_access * 0.3
 
+        logger.debug(f"[calculate_layer] result: {layer.value} activation={activation:.3f}, integration={integration:.3f}")
         return OSAFCLayerScore(
             layer=layer,
             sanskrit=defn["sanskrit"],
@@ -231,10 +237,12 @@ class OSAFCEngine:
         s_level: float = 4.0
     ) -> OSAFCProfile:
         """Calculate complete eight layer profile."""
+        logger.debug(f"[calculate_osafc_profile] inputs: op_count={len(operators)}, s_level={s_level:.3f}")
         layers = {}
         for layer in OSAFCLayer:
             result = self.calculate_layer(layer, operators, s_level)
             if result is None:
+                logger.warning(f"[calculate_osafc_profile] missing: layer {layer.value} returned None")
                 return None
             layers[layer.value] = result
 
@@ -264,6 +272,7 @@ class OSAFCEngine:
         source = layers[OSAFCLayer.SOURCE.value]
         source_access = source.activation
 
+        logger.debug(f"[calculate_osafc_profile] result: center_of_gravity={center_of_gravity}, integration={integration_score:.3f}, witness_stability={witness_stability:.3f}")
         return OSAFCProfile(
             layers=layers,
             center_of_gravity=center_of_gravity,
@@ -280,6 +289,7 @@ class OSAFCEngine:
         profile: OSAFCProfile
     ) -> Dict[str, List[str]]:
         """Get recommendations for each layer."""
+        logger.debug(f"[get_layer_recommendations] inputs: center_of_gravity={profile.center_of_gravity}, witness_stability={profile.witness_stability:.3f}")
         recommendations = {
             "strengthen": [],
             "balance": [],
@@ -321,6 +331,7 @@ class OSAFCEngine:
                 "Emotional activation without refinement - practice emotional intelligence"
             )
 
+        logger.debug(f"[get_layer_recommendations] result: strengthen={len(recommendations['strengthen'])}, balance={len(recommendations['balance'])}, transcend={len(recommendations['transcend'])}")
         return recommendations
 
     def calculate_layer_flow(
@@ -328,6 +339,7 @@ class OSAFCEngine:
         profile: OSAFCProfile
     ) -> List[Tuple[str, str, float]]:
         """Calculate energy flow between adjacent layers."""
+        logger.debug(f"[calculate_layer_flow] inputs: layer_count={len(profile.layers)}")
         flows = []
         for i, layer in enumerate(OSAFC_ORDER[:-1]):
             next_layer = OSAFC_ORDER[i + 1]
@@ -341,6 +353,7 @@ class OSAFCEngine:
             net_flow = flow_up - flow_down
             flows.append((layer.value, next_layer.value, net_flow))
 
+        logger.debug(f"[calculate_layer_flow] result: flow_count={len(flows)}")
         return flows
 
 
