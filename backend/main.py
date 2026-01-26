@@ -451,6 +451,21 @@ async def continue_inference(
     )
 
 
+def _should_ask_response_validation(
+    missing_operators: set
+) -> bool:
+    """
+    Determine if response validation question should be asked.
+
+    Ask if:
+    - Significant operators still missing (5+) that prevent higher-tier calculations
+
+    Returns:
+        True if validation question should be asked
+    """
+    return len(missing_operators) >= 5
+
+
 async def inference_stream_continue(
     session_id: str,
     prompt: str,
@@ -561,7 +576,90 @@ async def inference_stream_continue(
         ):
             yield token_data
 
-        # Cleanup session
+        # Check if response validation question should be asked (only once per session)
+        session_data = session_store.get(session_id)
+        already_validated = session_data.get('_validation_asked', False) if session_data else False
+
+        extracted_operators = {}
+        for obs in evidence.get('observations', []):
+            if isinstance(obs, dict) and 'var' in obs and 'value' in obs:
+                extracted_operators[obs['var']] = obs['value']
+
+        CORE_OPERATORS_SET = {
+            'P_presence', 'A_aware', 'E_equanimity', 'Psi_quality', 'M_maya',
+            'W_witness', 'I_intention', 'At_attachment', 'Se_service', 'Sh_shakti',
+            'G_grace', 'S_surrender', 'D_dharma', 'K_karma', 'Hf_habit',
+            'V_void', 'Ce_celebration', 'Co_coherence', 'R_resistance',
+            'F_fear', 'J_joy', 'Tr_trust', 'O_openness', 'L_love'
+        }
+        remaining_missing = CORE_OPERATORS_SET - set(extracted_operators.keys())
+
+        should_ask_validation = (
+            not already_validated
+            and _should_ask_response_validation(missing_operators=remaining_missing)
+        )
+
+        if should_ask_validation:
+            # Keep session alive for response validation
+            question_gen = ConstellationQuestionGenerator()
+            # Extract response themes from consciousness state
+            response_themes = []
+            if consciousness_state.bottlenecks:
+                response_themes.extend([b.category for b in consciousness_state.bottlenecks[:3]])
+            if consciousness_state.leverage_points:
+                response_themes.extend([lp.description[:50] for lp in consciousness_state.leverage_points[:2]])
+
+            validation_question = question_gen.generate_response_validation_question(
+                response_themes=response_themes,
+                missing_operators=remaining_missing,
+                known_operators=extracted_operators,
+                articulated_insights={}
+            )
+
+            if validation_question:
+                session_data = session_store.get(session_id)
+                session_data['_validation_question'] = validation_question
+                session_data['_pending_question'] = validation_question
+                session_data['_validation_asked'] = True
+                session_data['evidence'] = evidence
+                session_store.update(session_id, session_data)
+
+                yield {
+                    "event": "validation_question",
+                    "data": json.dumps({
+                        "session_id": session_id,
+                        "question_id": validation_question.question_id,
+                        "question_text": validation_question.question_text,
+                        "options": [
+                            {
+                                "id": opt_id,
+                                "text": opt.description
+                            }
+                            for opt_id, opt in validation_question.answer_options.items()
+                        ],
+                        "diagnostic_power": validation_question.diagnostic_power,
+                        "purposes_served": validation_question.purposes_served,
+                        "continue_after_answer": f"/api/run/continue?session_id={session_id}"
+                    })
+                }
+
+                api_logger.info(f"[VALIDATION] Question asked: {validation_question.question_id}")
+                api_logger.info(f"[VALIDATION] Missing operators: {len(remaining_missing)}")
+
+                elapsed = time.time() - start_time
+                api_logger.info(f"[PIPELINE PARTIAL] Time before validation: {elapsed:.2f}s")
+
+                yield {
+                    "event": "awaiting_answer",
+                    "data": json.dumps({
+                        "message": "Waiting for response validation selection...",
+                        "session_id": session_id,
+                        "continue_after_answer": f"/api/run/continue?session_id={session_id}"
+                    })
+                }
+                return
+
+        # Normal cleanup - no validation needed
         session_store.delete(session_id)
 
         elapsed = time.time() - start_time
