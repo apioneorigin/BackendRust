@@ -362,6 +362,20 @@ if LLM_CALL2_PATH.exists():
 else:
     api_logger.warning(f"LLM Call 2 context not found at {LLM_CALL2_PATH}")
 
+# Build SHARED static prefix for Anthropic prompt caching across both LLM calls.
+# Anthropic caching matches on exact token prefix — by using the SAME combined block
+# as the first cache_control breakpoint in both Call 1 and Call 2, Call 2 is guaranteed
+# to get a cache HIT from Call 1's cache write (which runs seconds earlier).
+# This eliminates Call 2's cold-start cache write entirely.
+SHARED_LLM_CONTEXT = f"""=== OOF FRAMEWORK: OPERATOR EXTRACTION KNOWLEDGE (Call 1) ===
+{LLM_CALL1_CONTEXT}
+=== END OPERATOR EXTRACTION KNOWLEDGE ===
+
+=== OOF FRAMEWORK: ARTICULATION KNOWLEDGE (Call 2) ===
+{LLM_CALL2_CONTEXT}
+=== END ARTICULATION KNOWLEDGE ==="""
+api_logger.info(f"Built shared LLM context for cross-call caching: {len(SHARED_LLM_CONTEXT)} characters")
+
 api_logger.info("Articulation Bridge initialized: ValueOrganizer, BottleneckDetector, LeverageIdentifier, PromptBuilder")
 
 # Initialize Reverse Causality Mapping components
@@ -1389,12 +1403,12 @@ For each query, you must:
 === END QUERY ANALYSIS ===
 """
 
-    instructions = f"""You are the Reality Transformer consciousness analysis engine.
-You have complete knowledge of the One Origin Framework (OOF) - a consciousness physics system.
+    # OpenAI instructions - starts with SHARED_LLM_CONTEXT so that OpenAI's automatic
+    # prompt caching can match the prefix between Call 1 and Call 2.
+    instructions = f"""{SHARED_LLM_CONTEXT}
 
-=== OOF FRAMEWORK KNOWLEDGE ===
-{LLM_CALL1_CONTEXT}
-=== END OOF FRAMEWORK ===
+You are the Reality Transformer consciousness analysis engine.
+You have complete knowledge of the One Origin Framework (OOF) - a consciousness physics system.
 
 {query_pattern_instructions}
 
@@ -1527,19 +1541,18 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
                     if use_web_search:
                         user_content += "\n\nIMPORTANT: Use the web_search tool to gather real data before responding."
 
-                    # Build system prompt with cache_control for prompt caching
-                    # The large LLM_CALL1_CONTEXT is static and cacheable across requests
-                    # Structure: [cached OOF framework block] + [dynamic instructions block]
-                    static_system_content = f"""You are the Reality Transformer consciousness analysis engine.
+                    # Build system prompt with cache_control for prompt caching.
+                    # SHARED_LLM_CONTEXT contains BOTH Call 1 and Call 2 framework knowledge.
+                    # By using the EXACT same cached block in both calls, Call 2 gets a guaranteed
+                    # cache HIT from Call 1's cache write (which runs seconds earlier).
+                    # CRITICAL: static_system_content must be byte-identical between Call 1 and Call 2.
+                    static_system_content = SHARED_LLM_CONTEXT
+
+                    dynamic_system_content = f"""You are the Reality Transformer consciousness analysis engine.
 You have complete knowledge of the One Origin Framework (OOF) - a consciousness physics system.
 
-=== OOF FRAMEWORK KNOWLEDGE ===
-{LLM_CALL1_CONTEXT}
-=== END OOF FRAMEWORK ===
+{query_pattern_instructions}
 
-{query_pattern_instructions}"""
-
-                    dynamic_system_content = f"""
 YOUR TASK:
 1. IDENTITY ASSUMPTION (CRITICAL):
    - Assume the MOST FAMOUS/LIKELY interpretation of any name or entity
@@ -2294,8 +2307,12 @@ Check-in schedule: {reverse_mapping.get('check_in_schedule')}
     # Determine response mode
     response_mode = "HYBRID (Current Analysis + Future Pathways)" if reverse_mapping else "CURRENT ANALYSIS"
 
-    # System instructions for the articulation call with evidence enrichment
-    instructions = f"""You are Reality Transformer, a consciousness-based transformation engine.
+    # System instructions for the articulation call with evidence enrichment.
+    # Starts with SHARED_LLM_CONTEXT so OpenAI's automatic prompt caching matches
+    # the prefix between Call 1 and Call 2 (same approach as Anthropic).
+    instructions = f"""{SHARED_LLM_CONTEXT}
+
+You are Reality Transformer, a consciousness-based transformation engine.
 
 CRITICAL - READ FIRST:
 - Generate ONE single response only
@@ -2308,10 +2325,6 @@ You are receiving a STRUCTURED ANALYSIS from the One Origin Framework (OOF).
 Your task is to ARTICULATE these insights in NATURAL, DOMAIN-APPROPRIATE language.
 
 === RESPONSE MODE: {response_mode} ===
-
-=== OOF FRAMEWORK KNOWLEDGE ===
-{LLM_CALL2_CONTEXT}
-=== END OOF FRAMEWORK ===
 
 {'''=== OPERATOR INTERPRETATION FOR EVIDENCE SEARCH ===
 Use calculated operator values to guide your evidence gathering:
@@ -2448,26 +2461,12 @@ SECTION 5: FIRST STEPS
         try:
             async with httpx.AsyncClient(timeout=180.0) as client:
                 if provider == "anthropic":
-                    # Anthropic Claude streaming API with prompt caching
-                    # Build system prompt with cache_control for the static framework
-                    # LLM_CALL2_CONTEXT (OOF Mathematical Semantics) is static - perfect for caching
-                    # Static content MUST be truly static (no variables that change per request)
-                    # This enables Anthropic prompt caching to work properly
-                    static_system_content = f"""You are Reality Transformer, a consciousness-based transformation engine.
-
-CRITICAL - READ FIRST:
-- Generate ONE single response only
-- Do NOT repeat or duplicate any content
-- Do NOT regenerate previous sections
-- Each paragraph must contain NEW information
-- If you notice you're repeating, STOP and continue with new content
-
-You are receiving a STRUCTURED ANALYSIS from the One Origin Framework (OOF).
-Your task is to ARTICULATE these insights in NATURAL, DOMAIN-APPROPRIATE language.
-
-=== OOF FRAMEWORK KNOWLEDGE ===
-{LLM_CALL2_CONTEXT}
-=== END OOF FRAMEWORK ==="""
+                    # Anthropic Claude streaming API with prompt caching.
+                    # SHARED_LLM_CONTEXT is the EXACT same cached block used in Call 1.
+                    # Since Call 1 runs seconds before Call 2, this guarantees a cache HIT
+                    # on the entire shared prefix, eliminating Call 2's cache write cost.
+                    # CRITICAL: static_system_content must be byte-identical to Call 1's.
+                    static_system_content = SHARED_LLM_CONTEXT
 
                     # Dynamic portion varies based on web_search and reverse_mapping
                     # Build conditional sections separately to avoid f-string nesting issues
@@ -2545,7 +2544,18 @@ HIGH BREAKTHROUGH PROBABILITY (0.70+):
 
                     section4_title = "SECTION 4: TRANSFORMATION PATH" if reverse_mapping else "SECTION 4: DIRECTION"
 
-                    dynamic_system_content = f"""
+                    dynamic_system_content = f"""You are Reality Transformer, a consciousness-based transformation engine.
+
+CRITICAL - READ FIRST:
+- Generate ONE single response only
+- Do NOT repeat or duplicate any content
+- Do NOT regenerate previous sections
+- Each paragraph must contain NEW information
+- If you notice you're repeating, STOP and continue with new content
+
+You are receiving a STRUCTURED ANALYSIS from the One Origin Framework (OOF).
+Your task is to ARTICULATE these insights in NATURAL, DOMAIN-APPROPRIATE language.
+
 === RESPONSE MODE: {response_mode} ===
 
 {operator_interpretation_section}
@@ -3619,14 +3629,13 @@ This transformation is {f"{reverse_result['grace_dependency']:.0%}" if reverse_r
             await asyncio.sleep(0.02)
         return
 
-    instructions = f"""You are Reality Transformer's Reverse Causality Guide.
+    # Uses SHARED_LLM_CONTEXT for cross-call cache hits with Call 1 and Call 2.
+    instructions = f"""{SHARED_LLM_CONTEXT}
+
+You are Reality Transformer's Reverse Causality Guide.
 
 You are receiving a REVERSE CAUSALITY ANALYSIS - we've worked backward from the user's
 desired future state to calculate what consciousness changes are required.
-
-=== OOF FRAMEWORK KNOWLEDGE ===
-{LLM_CALL2_CONTEXT}
-=== END OOF FRAMEWORK ===
 
 === ARTICULATION RULES ===
 1. Focus on the PATH FORWARD, not technical analysis
