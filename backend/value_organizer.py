@@ -522,7 +522,7 @@ class ValueOrganizer:
             stage_6_annamaya=self._get_value(v, 'pipeline_stage6', default=None),
             stage_7_external=self._get_value(v, 'pipeline_stage7', default=None),
             flow_rate=self._get_value(v, 'pipeline_flow_rate', default=None),
-            manifestation_time=get_manifestation_time_label(manifestation_days)
+            manifestation_time=get_manifestation_time_label(manifestation_days) if manifestation_days is not None else None
         )
 
         breakthrough_dynamics = BreakthroughDynamics(

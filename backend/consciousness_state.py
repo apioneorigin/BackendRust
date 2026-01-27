@@ -517,7 +517,7 @@ class PipelineFlow:
     stage_6_annamaya: float = 0.5
     stage_7_external: float = 0.5
     flow_rate: float = 0.5
-    manifestation_time: str = "weeks"
+    manifestation_time: Optional[str] = None
 
 
 @dataclass

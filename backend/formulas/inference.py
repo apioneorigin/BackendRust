@@ -809,6 +809,15 @@ class OOFInferenceEngine:
                       'unity_percolation_quality', 'unity_vector', 'unity_net_direction']:
                 confidence[k] = 1.0
 
+        if profile.timeline_profile:
+            values['breakthrough_prob'] = profile.timeline_profile.breakthrough.quantum_leap_probability
+            values['breakthrough_tipping'] = profile.timeline_profile.breakthrough.tipping_point_proximity
+            values['quantum_jump_prob'] = profile.timeline_profile.breakthrough.quantum_leap_probability
+            values['manifestation_time_days'] = profile.timeline_profile.timeline.time_to_next_s_level * 365
+            for k in ['breakthrough_prob', 'breakthrough_tipping', 'quantum_jump_prob',
+                      'manifestation_time_days']:
+                confidence[k] = 1.0
+
         inference_logger.debug(
             f"[_flatten_profile] result: total_values={len(values)} "
             f"per_prefix={per_prefix_counts}"
