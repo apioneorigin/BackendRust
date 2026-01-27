@@ -74,10 +74,8 @@ from leverage_identifier import LeverageIdentifier
 from articulation_prompt_builder import ArticulationPromptBuilder, build_articulation_context
 from consciousness_state import ConsciousnessState, UserContext, WebResearch
 
-# Constellation Q&A imports for Unity Principle integration
-from constellation_question_generator import ConstellationQuestionGenerator, GoalContext, MultiDimensionalQuestion
-from question_archetypes import get_constellations_for_goal, OperatorConstellation
-from answer_mapper import AnswerMapper, MappingResult, MappedValue
+# Constellation Q&A imports — backend decides IF/WHICH, LLM generates content
+from constellation_question_generator import ConstellationQuestionGenerator, GoalContext
 
 # Import logging
 from logging_config import (
@@ -419,10 +417,12 @@ async def process_constellation_answer(
     selected_option: str = Query(..., description="Selected option (option_1, option_2, option_3, option_4)")
 ):
     """
-    Process user's constellation selection and continue inference pipeline.
+    Process user's question answer and continue inference pipeline.
 
     This endpoint is called after the client receives a 'question' event from /api/run.
-    It maps the constellation selection to operators and triggers the rest of the pipeline.
+    It stores the selected answer text. The continuation path (/api/run/continue)
+    will run LLM Call 1 on the combined context (original query + answer) to extract
+    actual operator values — no hardcoded mappings.
     """
     # Retrieve pending session data
     session_data = api_session_store.get(session_id)
@@ -436,52 +436,23 @@ async def process_constellation_answer(
     if selected_option not in ['option_1', 'option_2', 'option_3', 'option_4']:
         raise HTTPException(status_code=400, detail="Invalid option selected")
 
-    # Get the selected constellation
-    selected_constellation = pending_question.answer_options.get(selected_option)
-    if not selected_constellation:
+    # Get the selected option TEXT (LLM-generated, not hardcoded archetype)
+    selected_text = pending_question.answer_options.get(selected_option)
+    if not selected_text:
         raise HTTPException(status_code=400, detail="Selected option not found")
 
-    # Map constellation to operators
-    answer_mapper = AnswerMapper()
-    mapping_result = answer_mapper.map_constellation_to_operators(
-        selected_constellation=selected_constellation,
-        session_id=session_id
-    )
-
-    # Update evidence with constellation-derived operators
-    evidence = session_data.get('evidence')
-    for mapped_value in mapping_result.mapped_values:
-        # Add to observations list
-        evidence.setdefault('observations', []).append({
-            'var': mapped_value.operator,
-            'value': mapped_value.value,
-            'source': 'constellation_selection',
-            'confidence': mapped_value.confidence.value if hasattr(mapped_value.confidence, 'value') else mapped_value.confidence
-        })
-
-    # Store constellation metadata
-    evidence['constellation_metadata'] = {
-        'pattern_name': selected_constellation.pattern_name,
-        'unity_vector': selected_constellation.unity_vector,
-        's_level_range': selected_constellation.s_level_range,
-        'death_architecture': selected_constellation.death_architecture,
-        'why_category': selected_constellation.why_category,
-        'emotional_undertone': selected_constellation.emotional_undertone
-    }
-
-    # Clear pending question and update session
+    # Store the answer text and question text for LLM Call 1 re-extraction
+    session_data['_selected_answer_text'] = selected_text
+    session_data['_question_text'] = pending_question.question_text
     session_data['_pending_question'] = None
-    session_data['evidence'] = evidence
     api_session_store.update(session_id, session_data)
 
-    api_logger.info(f"[CONSTELLATION] Answer processed: {selected_option} -> {selected_constellation.pattern_name}")
-    api_logger.info(f"[CONSTELLATION] Added {len(mapping_result.mapped_values)} operator values")
+    api_logger.info(f"[ANSWER] Stored answer: {selected_option} -> '{selected_text[:80]}...'")
 
     # Return success and redirect client to continue pipeline
     return {
         "status": "success",
-        "operators_added": len(mapping_result.mapped_values),
-        "pattern_name": selected_constellation.pattern_name,
+        "selected_option": selected_option,
         "continue_url": f"/api/run/continue?session_id={session_id}"
     }
 
@@ -493,7 +464,8 @@ async def continue_inference(
     """
     Continue the inference pipeline after question has been answered.
 
-    This endpoint picks up where /api/run left off, with the new operator values.
+    Runs LLM Call 1 on the combined context (original query + user's answer)
+    to extract actual operator values, then re-runs full inference pipeline.
     """
     session_data = api_session_store.get(session_id)
     if not session_data:
@@ -503,6 +475,8 @@ async def continue_inference(
     model_config = session_data.get('model_config')
     prompt = session_data.get('prompt')
     web_search_insights = session_data.get('web_search_insights')
+    selected_answer_text = session_data.get('_selected_answer_text', '')
+    question_text = session_data.get('_question_text', '')
 
     return EventSourceResponse(
         inference_stream_continue(
@@ -510,7 +484,9 @@ async def continue_inference(
             prompt=prompt,
             evidence=evidence,
             model_config=model_config,
-            web_search_insights=web_search_insights
+            web_search_insights=web_search_insights,
+            answer_text=selected_answer_text,
+            question_text=question_text
         ),
         media_type="text/event-stream"
     )
@@ -536,16 +512,80 @@ async def inference_stream_continue(
     prompt: str,
     evidence: dict,
     model_config: dict,
-    web_search_insights: bool = True
+    web_search_insights: bool = True,
+    answer_text: str = '',
+    question_text: str = ''
 ) -> AsyncGenerator[dict, None]:
     """
-    Continue inference pipeline from Step 2 (after evidence is complete with constellation data).
+    Continue inference pipeline after question has been answered.
+
+    Runs LLM Call 1 on combined context (original query + user's answer)
+    to extract actual operator values, then re-runs full inference pipeline.
     """
     start_time = time.time()
 
     try:
-        # Step 2: Run inference with constellation-enhanced operators
-        api_logger.info("[STEP 2 CONTINUED] Running inference engine with constellation operators")
+        # Step 1B: Re-run LLM Call 1 with combined context (original + answer)
+        if answer_text:
+            api_logger.info("[STEP 1B] Re-running LLM Call 1 with answer context")
+            yield {
+                "event": "status",
+                "data": json.dumps({"message": "Re-analyzing with your response..."})
+            }
+
+            # Build combined prompt: original query + Q&A context
+            combined_prompt = f"""{prompt}
+
+FOLLOW-UP CONTEXT:
+Question asked: {question_text}
+User's response: {answer_text}
+
+Use BOTH the original query AND this follow-up response to extract all 25 operator values.
+The follow-up response provides additional insight into the user's inner experience.
+Re-evaluate ALL operators with this additional context — especially operators that were
+uncertain in the initial extraction."""
+
+            new_evidence = await parse_query_with_web_research(
+                combined_prompt, model_config, use_web_search=False
+            )
+
+            # Merge: new extraction overrides previous for operators with higher confidence
+            prev_observations = {
+                obs.get('var'): obs
+                for obs in evidence.get('observations', [])
+                if isinstance(obs, dict) and 'var' in obs
+            }
+            for new_obs in new_evidence.get('observations', []):
+                var = new_obs.get('var')
+                if not var:
+                    continue
+                prev = prev_observations.get(var)
+                if prev is None or new_obs.get('confidence', 0) >= prev.get('confidence', 0):
+                    prev_observations[var] = new_obs
+
+            evidence['observations'] = list(prev_observations.values())
+
+            # Update s_level if new extraction provides one
+            new_s_level = new_evidence.get('s_level')
+            if new_s_level:
+                evidence['s_level'] = new_s_level
+
+            # Update missing_operator_priority
+            new_priority = new_evidence.get('missing_operator_priority')
+            if new_priority:
+                evidence['missing_operator_priority'] = new_priority
+
+            new_obs_count = len(evidence['observations'])
+            api_logger.info(f"[STEP 1B] Re-extracted {new_obs_count} observations with answer context")
+
+            # Update session evidence
+            session_data = api_session_store.get(session_id)
+            if session_data:
+                session_data['evidence'] = evidence
+                api_session_store.update(session_id, session_data)
+
+        # Step 2: Run inference with enriched operators
+        api_logger.info("[STEP 2 CONTINUED] Running inference engine with enriched operators")
         yield {
             "event": "status",
             "data": json.dumps({"message": f"Running consciousness inference ({inference_engine.formula_count} formulas)..."})
@@ -673,64 +713,89 @@ async def inference_stream_continue(
         )
 
         if should_ask_validation:
-            # Keep session alive for response validation
+            # LLM-driven validation question
             question_gen = ConstellationQuestionGenerator()
-            # Extract response themes from consciousness state
-            response_themes = []
-            if consciousness_state.bottlenecks:
-                response_themes.extend([b.category for b in consciousness_state.bottlenecks[:3]])
-            if consciousness_state.leverage_points:
-                response_themes.extend([lp.description[:50] for lp in consciousness_state.leverage_points[:2]])
+            missing_operator_priority = evidence.get('missing_operator_priority', [])
 
-            validation_question = question_gen.generate_response_validation_question(
-                response_themes=response_themes,
-                missing_operators=remaining_missing,
-                known_operators=extracted_operators,
-                articulated_insights={}
+            # Build goal context from evidence
+            goal_ctx_data = evidence.get('goal_context', {})
+            from consciousness_state import GoalContext
+            val_goal_context = GoalContext(
+                goal_text=goal_ctx_data.get('goal_text', prompt[:200]),
+                goal_category=goal_ctx_data.get('goal_category', 'achievement'),
+                emotional_undertone=goal_ctx_data.get('emotional_undertone', 'neutral'),
+                domain=goal_ctx_data.get('domain', 'personal')
             )
 
-            if validation_question:
-                session_data = api_session_store.get(session_id)
-                session_data['_validation_question'] = validation_question
-                session_data['_pending_question'] = validation_question
-                session_data['_validation_asked'] = True
-                session_data['evidence'] = evidence
-                api_session_store.update(session_id, session_data)
+            question_context = question_gen.get_question_context(
+                goal_context=val_goal_context,
+                missing_operators=remaining_missing,
+                known_operators=extracted_operators,
+                missing_operator_priority=missing_operator_priority,
+                question_type='response_validation'
+            )
 
-                yield {
-                    "event": "validation_question",
-                    "data": json.dumps({
-                        "session_id": session_id,
-                        "question_id": validation_question.question_id,
-                        "question_text": validation_question.question_text,
-                        "options": [
-                            {
-                                "id": opt_id,
-                                "text": opt.description
-                            }
-                            for opt_id, opt in validation_question.answer_options.items()
-                        ],
-                        "diagnostic_power": validation_question.diagnostic_power,
-                        "purposes_served": validation_question.purposes_served,
-                        "continue_after_answer": f"/api/run/continue?session_id={session_id}"
-                    })
-                }
+            if question_context:
+                llm_question = await generate_question_via_llm(
+                    model_config=model_config,
+                    query=prompt,
+                    goal_context=goal_ctx_data,
+                    question_context=question_context
+                )
 
-                api_logger.info(f"[VALIDATION] Question asked: {validation_question.question_id}")
-                api_logger.info(f"[VALIDATION] Missing operators: {len(remaining_missing)}")
+                if llm_question:
+                    from constellation_question_generator import MultiDimensionalQuestion
+                    validation_question = MultiDimensionalQuestion(
+                        question_id=question_context['question_id'],
+                        question_text=llm_question['question_text'],
+                        answer_options=llm_question.get('options', {}),
+                        diagnostic_power=question_context['diagnostic_power'],
+                        target_operators=question_context['target_operators'],
+                        purposes_served=question_context['purposes_served'],
+                        goal_context=val_goal_context
+                    )
 
-                elapsed = time.time() - start_time
-                api_logger.info(f"[PIPELINE PARTIAL] Time before validation: {elapsed:.2f}s")
+                    session_data = api_session_store.get(session_id)
+                    session_data['_validation_question'] = validation_question
+                    session_data['_pending_question'] = validation_question
+                    session_data['_validation_asked'] = True
+                    session_data['evidence'] = evidence
+                    api_session_store.update(session_id, session_data)
 
-                yield {
-                    "event": "awaiting_answer",
-                    "data": json.dumps({
-                        "message": "Waiting for response validation selection...",
-                        "session_id": session_id,
-                        "continue_after_answer": f"/api/run/continue?session_id={session_id}"
-                    })
-                }
-                return
+                    yield {
+                        "event": "validation_question",
+                        "data": json.dumps({
+                            "session_id": session_id,
+                            "question_id": validation_question.question_id,
+                            "question_text": validation_question.question_text,
+                            "options": [
+                                {
+                                    "id": opt_id,
+                                    "text": opt_text
+                                }
+                                for opt_id, opt_text in validation_question.answer_options.items()
+                            ],
+                            "diagnostic_power": validation_question.diagnostic_power,
+                            "purposes_served": validation_question.purposes_served,
+                            "continue_after_answer": f"/api/run/continue?session_id={session_id}"
+                        })
+                    }
+
+                    api_logger.info(f"[VALIDATION] Question sent: {validation_question.question_id}")
+                    api_logger.info(f"[VALIDATION] Missing operators: {len(remaining_missing)}")
+
+                    elapsed = time.time() - start_time
+                    api_logger.info(f"[PIPELINE PARTIAL] Time before validation: {elapsed:.2f}s")
+
+                    yield {
+                        "event": "awaiting_answer",
+                        "data": json.dumps({
+                            "message": "Waiting for response validation selection...",
+                            "session_id": session_id,
+                            "continue_after_answer": f"/api/run/continue?session_id={session_id}"
+                        })
+                    }
+                    return
 
         # Normal cleanup - no validation needed
         api_session_store.delete(session_id)
@@ -1102,56 +1167,83 @@ Articulation Tokens: {token_count}
         }
 
         # =====================================================================
-        # CONSTELLATION QUESTION FLOW - After full response
+        # LLM-DRIVEN QUESTION FLOW - After full response
+        # Backend decides IF to ask and WHICH operators to target.
+        # LLM generates the actual question text and options.
         # =====================================================================
         should_ask_question = len(missing_operators) >= 5
 
         if should_ask_question:
-            question = question_gen.generate_single_question(
+            # Get missing_operator_priority from LLM Call 1
+            missing_operator_priority = evidence.get('missing_operator_priority', [])
+
+            question_context = question_gen.get_question_context(
                 goal_context=goal_context,
                 missing_operators=missing_operators,
-                known_operators=extracted_operators
+                known_operators=extracted_operators,
+                missing_operator_priority=missing_operator_priority,
+                question_type='gap_filling'
             )
 
-            if question:
-                session_data = api_session_store.get(session_id)
-                session_data['evidence'] = evidence
-                session_data['_pending_question'] = question
-                session_data['_question_asked'] = True
-                api_session_store.update(session_id, session_data)
+            if question_context:
+                # LLM generates the actual question content
+                llm_question = await generate_question_via_llm(
+                    model_config=model_config,
+                    query=prompt,
+                    goal_context=evidence.get('goal_context', {}),
+                    question_context=question_context
+                )
 
-                yield {
-                    "event": "question",
-                    "data": json.dumps({
-                        "session_id": session_id,
-                        "question_id": question.question_id,
-                        "question_text": question.question_text,
-                        "options": [
-                            {
-                                "id": opt_id,
-                                "text": opt.description
-                            }
-                            for opt_id, opt in question.answer_options.items()
-                        ],
-                        "diagnostic_power": question.diagnostic_power,
-                        "purposes_served": question.purposes_served
-                    })
-                }
+                if llm_question:
+                    from constellation_question_generator import MultiDimensionalQuestion
+                    question = MultiDimensionalQuestion(
+                        question_id=question_context['question_id'],
+                        question_text=llm_question['question_text'],
+                        answer_options=llm_question.get('options', {}),
+                        diagnostic_power=question_context['diagnostic_power'],
+                        target_operators=question_context['target_operators'],
+                        purposes_served=question_context['purposes_served'],
+                        goal_context=goal_context
+                    )
 
-                api_logger.info(f"[CONSTELLATION] Question asked after response: {question.question_id}")
-                api_logger.info(f"[CONSTELLATION] Missing operators: {len(missing_operators)}")
+                    session_data = api_session_store.get(session_id)
+                    session_data['evidence'] = evidence
+                    session_data['_pending_question'] = question
+                    session_data['_question_asked'] = True
+                    api_session_store.update(session_id, session_data)
 
-                yield {
-                    "event": "awaiting_answer",
-                    "data": json.dumps({
-                        "message": "Waiting for constellation selection...",
-                        "session_id": session_id,
-                        "continue_after_answer": f"/api/run/continue?session_id={session_id}"
-                    })
-                }
-                return
+                    yield {
+                        "event": "question",
+                        "data": json.dumps({
+                            "session_id": session_id,
+                            "question_id": question.question_id,
+                            "question_text": question.question_text,
+                            "options": [
+                                {
+                                    "id": opt_id,
+                                    "text": opt_text
+                                }
+                                for opt_id, opt_text in question.answer_options.items()
+                            ],
+                            "diagnostic_power": question.diagnostic_power,
+                            "purposes_served": question.purposes_served
+                        })
+                    }
+
+                    api_logger.info(f"[QUESTION_LLM] Question sent: {question.question_id}")
+                    api_logger.info(f"[QUESTION_LLM] Missing operators: {len(missing_operators)}")
+
+                    yield {
+                        "event": "awaiting_answer",
+                        "data": json.dumps({
+                            "message": "Waiting for selection...",
+                            "session_id": session_id,
+                            "continue_after_answer": f"/api/run/continue?session_id={session_id}"
+                        })
+                    }
+                    return
         # =====================================================================
-        # END CONSTELLATION QUESTION FLOW
+        # END LLM-DRIVEN QUESTION FLOW
         # =====================================================================
 
         # Done - no question needed
@@ -1808,6 +1900,152 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
 
     # All retries exhausted - raise the error
     raise RuntimeError(f"parse_query_with_web_research failed after {STREAMING_MAX_RETRIES + 1} attempts: {last_error}")
+
+
+async def generate_question_via_llm(
+    model_config: dict,
+    query: str,
+    goal_context: dict,
+    question_context: dict
+) -> Optional[dict]:
+    """
+    Generate a follow-up question via LLM call.
+
+    The backend has already decided IF to ask and WHICH operators to target.
+    This function asks the LLM to generate contextual question text and 4 options
+    that would help understand the user's inner experience for those operators.
+
+    Args:
+        model_config: LLM provider configuration
+        query: User's original query text
+        goal_context: Goal context dict (category, undertone, domain)
+        question_context: Context from get_question_context() with target_operators and descriptions
+
+    Returns:
+        Dict with 'question_text' and 'options' (option_1..option_4 -> text), or None on failure
+    """
+    provider = model_config.get("provider")
+    api_key = model_config.get("api_key")
+    model = model_config.get("model")
+
+    target_descriptions = question_context.get('target_descriptions', [])
+    question_type = question_context.get('question_type', 'gap_filling')
+
+    type_instruction = ""
+    if question_type == 'response_validation':
+        type_instruction = """This is a RESPONSE VALIDATION question. The user has already received an analysis.
+Ask how well the analysis resonated — each option should represent a genuinely different
+relationship to the insights they received (from full recognition to complete disagreement)."""
+    else:
+        type_instruction = """This is a GAP-FILLING question. We need to understand the user's inner experience
+to assess dimensions we couldn't extract from their query alone.
+Each option should represent a genuinely different way the user might experience their situation."""
+
+    prompt_text = f"""Generate ONE follow-up question with exactly 4 options for this user.
+
+USER'S QUERY: {query}
+USER'S GOAL CATEGORY: {goal_context.get('goal_category', 'unknown')}
+EMOTIONAL UNDERTONE: {goal_context.get('emotional_undertone', 'neutral')}
+
+{type_instruction}
+
+DIMENSIONS WE NEED TO UNDERSTAND (do NOT mention these terms — ask about the lived experience):
+{chr(10).join(f'- {desc}' for desc in target_descriptions)}
+
+REQUIREMENTS:
+- Question must feel natural and conversational — never clinical or framework-like
+- Each option must represent a genuinely different inner experience
+- Options should span a spectrum from separation-oriented to unity-oriented
+- Use the user's own language/domain — speak to their actual situation
+- Keep each option to 1-2 sentences
+
+Return ONLY valid JSON:
+{{
+  "question_text": "your contextual question here",
+  "options": {{
+    "option_1": "first option text",
+    "option_2": "second option text",
+    "option_3": "third option text",
+    "option_4": "fourth option text"
+  }}
+}}"""
+
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            if provider == "anthropic":
+                headers = {
+                    "x-api-key": api_key,
+                    "anthropic-version": "2023-06-01",
+                    "Content-Type": "application/json"
+                }
+                request_body = {
+                    "model": model,
+                    "max_tokens": 1024,
+                    "messages": [{"role": "user", "content": prompt_text}]
+                }
+                endpoint = model_config.get("endpoint")
+                response = await client.post(endpoint, headers=headers, json=request_body)
+
+                if response.status_code != 200:
+                    api_logger.error(f"[QUESTION_LLM] Anthropic error: {response.status_code}")
+                    return None
+
+                data = response.json()
+                response_text = ""
+                for block in data.get("content", []):
+                    if block.get("type") == "text":
+                        response_text += block.get("text", "")
+
+            else:
+                # OpenAI
+                headers = {
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json"
+                }
+                request_body = {
+                    "model": model,
+                    "input": [{"role": "user", "content": prompt_text}],
+                    "text": {"format": {"type": "text"}}
+                }
+                endpoint = model_config.get("endpoint")
+                response = await client.post(endpoint, headers=headers, json=request_body)
+
+                if response.status_code != 200:
+                    api_logger.error(f"[QUESTION_LLM] OpenAI error: {response.status_code}")
+                    return None
+
+                data = response.json()
+                response_text = ""
+                for item in data.get("output", []):
+                    if item.get("type") == "message":
+                        for content in item.get("content", []):
+                            if content.get("type") == "output_text":
+                                response_text += content.get("text", "")
+
+        if not response_text:
+            api_logger.error("[QUESTION_LLM] Empty response from LLM")
+            return None
+
+        # Parse JSON from response (handle markdown code blocks)
+        text = response_text.strip()
+        if text.startswith("```"):
+            text = text.split("\n", 1)[1] if "\n" in text else text[3:]
+            if text.endswith("```"):
+                text = text[:-3]
+            text = text.strip()
+
+        result = json.loads(text)
+
+        if "question_text" not in result or "options" not in result:
+            api_logger.error(f"[QUESTION_LLM] Missing required fields in response")
+            return None
+
+        api_logger.info(f"[QUESTION_LLM] Generated question: '{result['question_text'][:80]}...'")
+        return result
+
+    except Exception as e:
+        api_logger.error(f"[QUESTION_LLM] Failed: {type(e).__name__}: {e}")
+        return None
 
 
 async def format_results_streaming_bridge(

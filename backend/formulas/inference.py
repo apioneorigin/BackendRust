@@ -624,7 +624,19 @@ class OOFInferenceEngine:
 
         s_level = operators.get('S_level') or operators.get('s_level')
         if s_level is None:
-            inference_logger.warning("[run_inference] S_level not found in operators — missing from LLM extraction")
+            # Also check top-level evidence field (LLM Call 1 returns s_level as "S3", "S5", etc.)
+            s_level_str = evidence.get('s_level')
+            if isinstance(s_level_str, str):
+                import re
+                match = re.search(r'S(\d+\.?\d*)', s_level_str)
+                if match:
+                    s_level = float(match.group(1))
+                    inference_logger.info(f"[run_inference] S_level extracted from evidence top-level field: {s_level}")
+            elif isinstance(s_level_str, (int, float)):
+                s_level = float(s_level_str)
+                inference_logger.info(f"[run_inference] S_level from evidence top-level field: {s_level}")
+        if s_level is None:
+            inference_logger.warning("[run_inference] S_level not found in operators or evidence — missing from LLM extraction")
             missing_operators.add('S_level')
 
         # Run full calculation
