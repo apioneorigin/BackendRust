@@ -596,6 +596,7 @@ especially operators that were uncertain (low confidence) in the initial extract
             new_evidence = await parse_query_with_web_research(
                 combined_prompt, model_config, use_web_search=web_search_data
             )
+            call1_token_usage = new_evidence.pop('_call1_token_usage', None)
 
             # Merge: new extraction overrides previous for operators with higher confidence
             prev_observations = {
@@ -709,6 +710,7 @@ especially operators that were uncertain (low confidence) in the initial extract
 
         # Stream articulation response using the unified bridge
         token_count = 0
+        call2_token_usage = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
         async for token in format_results_streaming_bridge(
             prompt, evidence, posteriors, consciousness_state, None, model_config, web_search_insights
         ):
@@ -716,9 +718,12 @@ especially operators that were uncertain (low confidence) in the initial extract
                 input_tokens = token.get("input_tokens")
                 output_tokens = token.get("output_tokens")
                 total_tokens = token.get("total_tokens")
-                pricing = model_config.get("pricing")
-                cost = (input_tokens * pricing["input"] + output_tokens * pricing["output"]) / 1_000_000
-                api_logger.info(f"[TOKEN USAGE] Input: {input_tokens}, Output: {output_tokens}, Total: {total_tokens}, Cost: ${cost:.6f}")
+                call2_token_usage = {
+                    "input_tokens": input_tokens,
+                    "output_tokens": output_tokens,
+                    "total_tokens": total_tokens,
+                }
+                api_logger.info(f"[CALL 2 TOKENS] Input: {input_tokens}, Output: {output_tokens}, Total: {total_tokens}")
             else:
                 token_count += 1
                 yield {
@@ -727,6 +732,38 @@ especially operators that were uncertain (low confidence) in the initial extract
                 }
 
         api_logger.info(f"[ARTICULATION] Streamed {token_count} tokens")
+
+        # Build per-call and total token usage
+        pricing = model_config.get("pricing")
+        c1_in = call1_token_usage.get("input_tokens", 0) if call1_token_usage else 0
+        c1_out = call1_token_usage.get("output_tokens", 0) if call1_token_usage else 0
+        c2_in = call2_token_usage.get("input_tokens", 0)
+        c2_out = call2_token_usage.get("output_tokens", 0)
+        total_in = c1_in + c2_in
+        total_out = c1_out + c2_out
+        total_all = total_in + total_out
+        cost = (total_in * pricing["input"] + total_out * pricing["output"]) / 1_000_000
+        api_logger.info(f"[TOKEN USAGE] Call 1: {c1_in}+{c1_out}={c1_in+c1_out} | Call 2: {c2_in}+{c2_out}={c2_in+c2_out} | Total: {total_in}+{total_out}={total_all} | Cost: ${cost:.6f}")
+
+        yield {
+            "event": "usage",
+            "data": json.dumps({
+                "call1": {
+                    "input_tokens": c1_in,
+                    "output_tokens": c1_out,
+                    "total_tokens": c1_in + c1_out,
+                },
+                "call2": {
+                    "input_tokens": c2_in,
+                    "output_tokens": c2_out,
+                    "total_tokens": c2_in + c2_out,
+                },
+                "input_tokens": total_in,
+                "output_tokens": total_out,
+                "total_tokens": total_all,
+                "cost": round(cost, 6),
+            })
+        }
 
         # Check if response validation question should be asked (only once per session)
         session_data = api_session_store.get(session_id)
@@ -896,6 +933,7 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
         }
 
         evidence = await parse_query_with_web_research(prompt, model_config, web_search_data)
+        call1_token_usage = evidence.pop('_call1_token_usage', None)
         obs_count = len(evidence.get('observations'))
         api_logger.info(f"[EVIDENCE] Extracted {obs_count} observations")
         api_logger.debug(f"[EVIDENCE] Goal: {evidence.get('goal')}")
@@ -1144,7 +1182,7 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
         }
 
         token_count = 0
-        token_usage = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0, "cost": 0.0}
+        call2_token_usage = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
         async for token in format_results_streaming_bridge(
             prompt, evidence, posteriors, consciousness_state, reverse_mapping_data, model_config, web_search_insights
         ):
@@ -1153,18 +1191,12 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
                 input_tokens = token.get("input_tokens")
                 output_tokens = token.get("output_tokens")
                 total_tokens = token.get("total_tokens")
-
-                # Calculate cost based on model pricing
-                pricing = model_config.get("pricing")
-                cost = (input_tokens * pricing["input"] + output_tokens * pricing["output"]) / 1_000_000
-
-                token_usage = {
+                call2_token_usage = {
                     "input_tokens": input_tokens,
                     "output_tokens": output_tokens,
                     "total_tokens": total_tokens,
-                    "cost": round(cost, 6)
                 }
-                api_logger.info(f"[TOKEN USAGE] Input: {input_tokens}, Output: {output_tokens}, Total: {total_tokens}, Cost: ${cost:.6f}")
+                api_logger.info(f"[CALL 2 TOKENS] Input: {input_tokens}, Output: {output_tokens}, Total: {total_tokens}")
             else:
                 token_count += 1
                 yield {
@@ -1197,10 +1229,37 @@ Web Search Enabled Call 2: {web_search_insights}
 Articulation Tokens: {token_count}
 """)
 
-        # Send token usage event with cost
+        # Build per-call and total token usage
+        pricing = model_config.get("pricing")
+        c1_in = call1_token_usage.get("input_tokens", 0) if call1_token_usage else 0
+        c1_out = call1_token_usage.get("output_tokens", 0) if call1_token_usage else 0
+        c2_in = call2_token_usage.get("input_tokens", 0)
+        c2_out = call2_token_usage.get("output_tokens", 0)
+        total_in = c1_in + c2_in
+        total_out = c1_out + c2_out
+        total_all = total_in + total_out
+        cost = (total_in * pricing["input"] + total_out * pricing["output"]) / 1_000_000
+        api_logger.info(f"[TOKEN USAGE] Call 1: {c1_in}+{c1_out}={c1_in+c1_out} | Call 2: {c2_in}+{c2_out}={c2_in+c2_out} | Total: {total_in}+{total_out}={total_all} | Cost: ${cost:.6f}")
+
+        # Send token usage event with per-call breakdown
         yield {
             "event": "usage",
-            "data": json.dumps(token_usage)
+            "data": json.dumps({
+                "call1": {
+                    "input_tokens": c1_in,
+                    "output_tokens": c1_out,
+                    "total_tokens": c1_in + c1_out,
+                },
+                "call2": {
+                    "input_tokens": c2_in,
+                    "output_tokens": c2_out,
+                    "total_tokens": c2_in + c2_out,
+                },
+                "input_tokens": total_in,
+                "output_tokens": total_out,
+                "total_tokens": total_all,
+                "cost": round(cost, 6),
+            })
         }
 
         # =====================================================================
@@ -1674,11 +1733,18 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
 
                     data = response.json()
 
-                    # Log prompt cache usage for Anthropic
+                    # Extract and log token usage for Anthropic
                     usage = data.get("usage")
                     cache_creation = usage.get("cache_creation_input_tokens")
                     cache_read = usage.get("cache_read_input_tokens")
                     input_tokens = usage.get("input_tokens")
+                    output_tokens = usage.get("output_tokens")
+                    call1_token_usage = {
+                        "input_tokens": input_tokens,
+                        "output_tokens": output_tokens,
+                        "total_tokens": (input_tokens or 0) + (output_tokens or 0),
+                    }
+                    api_logger.info(f"[CALL 1 TOKENS] Input: {input_tokens}, Output: {output_tokens}, Total: {call1_token_usage['total_tokens']}")
                     if cache_read > 0:
                         api_logger.info(f"[PARSE CACHE] Cache HIT: {cache_read} tokens read from cache (saved ~90% on {cache_read} tokens)")
                     elif cache_creation > 0:
@@ -1842,6 +1908,21 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
                     data = response.json()
                     api_logger.debug(f"[PARSE] OpenAI response keys: {list(data.keys())}")
 
+                    # Extract and log token usage for OpenAI
+                    openai_usage = data.get("usage")
+                    if openai_usage:
+                        input_tokens = openai_usage.get("input_tokens")
+                        output_tokens = openai_usage.get("output_tokens")
+                        call1_token_usage = {
+                            "input_tokens": input_tokens,
+                            "output_tokens": output_tokens,
+                            "total_tokens": (input_tokens or 0) + (output_tokens or 0),
+                        }
+                        api_logger.info(f"[CALL 1 TOKENS] Input: {input_tokens}, Output: {output_tokens}, Total: {call1_token_usage['total_tokens']}")
+                    else:
+                        call1_token_usage = None
+                        api_logger.warning("[CALL 1 TOKENS] No usage data in OpenAI response")
+
                     # Log web search queries from OpenAI response
                     output = data.get("output")
                     output_types = [item.get("type") for item in output]
@@ -1982,6 +2063,7 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
                     result['domain'] = None
 
                 api_logger.info(f"[PARSE] Successfully parsed response with {len(result.get('observations'))} observations")
+                result['_call1_token_usage'] = call1_token_usage
                 return result
 
         except (json.JSONDecodeError, ValueError) as e:

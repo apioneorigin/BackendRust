@@ -221,6 +221,27 @@
       font-weight: 500;
     }
 
+    .metric-group {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 4px 8px;
+      border-left: 2px solid #333;
+    }
+
+    .metric-group-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #666;
+      font-weight: 600;
+    }
+
+    .metric-group-row {
+      display: flex;
+      gap: 12px;
+    }
+
     #output {
       white-space: pre-wrap;
       word-wrap: break-word;
@@ -379,17 +400,56 @@
             <div class="metric-label">Total Time</div>
             <div class="metric-value" id="totalTime">—</div>
           </div>
-          <div class="metric">
-            <div class="metric-label">Input</div>
-            <div class="metric-value" id="inputTokens">—</div>
+          <div class="metric-group">
+            <div class="metric-group-label">Call 1 (Parse)</div>
+            <div class="metric-group-row">
+              <div class="metric">
+                <div class="metric-label">Input</div>
+                <div class="metric-value" id="call1Input">—</div>
+              </div>
+              <div class="metric">
+                <div class="metric-label">Output</div>
+                <div class="metric-value" id="call1Output">—</div>
+              </div>
+              <div class="metric">
+                <div class="metric-label">Total</div>
+                <div class="metric-value" id="call1Total">—</div>
+              </div>
+            </div>
           </div>
-          <div class="metric">
-            <div class="metric-label">Output</div>
-            <div class="metric-value" id="outputTokens">—</div>
+          <div class="metric-group">
+            <div class="metric-group-label">Call 2 (Articulate)</div>
+            <div class="metric-group-row">
+              <div class="metric">
+                <div class="metric-label">Input</div>
+                <div class="metric-value" id="call2Input">—</div>
+              </div>
+              <div class="metric">
+                <div class="metric-label">Output</div>
+                <div class="metric-value" id="call2Output">—</div>
+              </div>
+              <div class="metric">
+                <div class="metric-label">Total</div>
+                <div class="metric-value" id="call2Total">—</div>
+              </div>
+            </div>
           </div>
-          <div class="metric">
-            <div class="metric-label">Total</div>
-            <div class="metric-value" id="totalTokens">—</div>
+          <div class="metric-group">
+            <div class="metric-group-label">Combined</div>
+            <div class="metric-group-row">
+              <div class="metric">
+                <div class="metric-label">Input</div>
+                <div class="metric-value" id="inputTokens">—</div>
+              </div>
+              <div class="metric">
+                <div class="metric-label">Output</div>
+                <div class="metric-value" id="outputTokens">—</div>
+              </div>
+              <div class="metric">
+                <div class="metric-label">Total</div>
+                <div class="metric-value" id="totalTokens">—</div>
+              </div>
+            </div>
           </div>
           <div class="metric">
             <div class="metric-label">Cost</div>
@@ -480,6 +540,18 @@
 
       eventSource.addEventListener('usage', (e) => {
         const data = JSON.parse(e.data);
+        // Per-call breakdown
+        if (data.call1) {
+          updateMetric('call1Input', data.call1.input_tokens.toLocaleString());
+          updateMetric('call1Output', data.call1.output_tokens.toLocaleString());
+          updateMetric('call1Total', data.call1.total_tokens.toLocaleString());
+        }
+        if (data.call2) {
+          updateMetric('call2Input', data.call2.input_tokens.toLocaleString());
+          updateMetric('call2Output', data.call2.output_tokens.toLocaleString());
+          updateMetric('call2Total', data.call2.total_tokens.toLocaleString());
+        }
+        // Combined totals
         updateMetric('inputTokens', data.input_tokens.toLocaleString());
         updateMetric('outputTokens', data.output_tokens.toLocaleString());
         updateMetric('totalTokens', data.total_tokens.toLocaleString());
@@ -613,6 +685,12 @@
       awaitingAnswer = false;
       updateMetric('ttft', '—');
       updateMetric('totalTime', '—');
+      updateMetric('call1Input', '—');
+      updateMetric('call1Output', '—');
+      updateMetric('call1Total', '—');
+      updateMetric('call2Input', '—');
+      updateMetric('call2Output', '—');
+      updateMetric('call2Total', '—');
       updateMetric('inputTokens', '—');
       updateMetric('outputTokens', '—');
       updateMetric('totalTokens', '—');
