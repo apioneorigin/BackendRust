@@ -501,14 +501,20 @@ class ReverseCausalityEngine:
             for op, grad in gradients.items():
                 if abs(grad) > 0.001:
                     # Consider difficulty (config metadata)
-                    difficulty = self.OPERATORS.get(op).get('difficulty')
+                    op_config = self.OPERATORS.get(op)
+                    if op_config is None:
+                        continue
+                    difficulty = op_config.get('difficulty')
                     if difficulty is None:
                         continue
                     effective_lr = lr * (1 - difficulty * 0.5)
 
                     delta = effective_lr * error * (grad / (abs(grad) + 0.1))
 
-                    new_value = operators.get(op) + delta
+                    current_val = operators.get(op)
+                    if current_val is None:
+                        continue
+                    new_value = current_val + delta
 
                     # Apply constraints
                     new_value = max(0.0, min(1.0, new_value))
@@ -575,7 +581,10 @@ class ReverseCausalityEngine:
 
                 # Update (gradient descent minimizes loss)
                 # difficulty is config metadata
-                difficulty = self.OPERATORS.get(op).get('difficulty')
+                op_config = self.OPERATORS.get(op)
+                if op_config is None:
+                    continue
+                difficulty = op_config.get('difficulty')
                 if difficulty is None:
                     continue
                 effective_lr = lr * (1 - difficulty * 0.3)

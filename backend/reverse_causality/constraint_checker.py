@@ -109,49 +109,49 @@ class ConstraintChecker:
         sacred_chain_result = self._check_sacred_chain(
             current_s_level, target_s_level
         )
-        if not sacred_chain_result['ok']:
+        if sacred_chain_result is not None and not sacred_chain_result['ok']:
             violations.append(sacred_chain_result['violation'])
 
         # 2. Karma constraint
         karma_result = self._check_karma(
             current_operators, required_operators
         )
-        if not karma_result['ok']:
+        if karma_result is not None and not karma_result['ok']:
             violations.append(karma_result['violation'])
 
         # 3. Belief compatibility
         belief_result = self._check_belief_compatibility(
             current_operators, required_operators, current_s_level, goal_description
         )
-        if not belief_result['ok']:
+        if belief_result is not None and not belief_result['ok']:
             violations.append(belief_result['violation'])
 
         # 4. Collective field alignment
         collective_result = self._check_collective_field(
             required_operators, current_s_level
         )
-        if not collective_result['ok']:
+        if collective_result is not None and not collective_result['ok']:
             violations.append(collective_result['violation'])
 
         # 5. Energy sustainability
         energy_result = self._check_energy_sustainability(
             current_operators, required_operators
         )
-        if not energy_result['ok']:
+        if energy_result is not None and not energy_result['ok']:
             violations.append(energy_result['violation'])
 
         # 6. Fractal coherence
         coherence_result = self._check_coherence(
             current_operators, required_operators
         )
-        if not coherence_result['ok']:
+        if coherence_result is not None and not coherence_result['ok']:
             violations.append(coherence_result['violation'])
 
         # 7. Death sequence
         death_result = self._check_death_sequence(
             current_operators, required_operators
         )
-        if not death_result['ok']:
+        if death_result is not None and not death_result['ok']:
             violations.append(death_result['violation'])
 
         # Calculate overall feasibility
@@ -179,13 +179,13 @@ class ConstraintChecker:
             violations=violations,
             blocking_count=blocking_count,
             warning_count=warning_count,
-            sacred_chain_ok=sacred_chain_result['ok'],
-            karma_ok=karma_result['ok'],
-            belief_ok=belief_result['ok'],
-            collective_field_ok=collective_result['ok'],
-            energy_ok=energy_result['ok'],
-            coherence_ok=coherence_result['ok'],
-            death_sequence_ok=death_result['ok'],
+            sacred_chain_ok=sacred_chain_result['ok'] if sacred_chain_result is not None else True,
+            karma_ok=karma_result['ok'] if karma_result is not None else True,
+            belief_ok=belief_result['ok'] if belief_result is not None else True,
+            collective_field_ok=collective_result['ok'] if collective_result is not None else True,
+            energy_ok=energy_result['ok'] if energy_result is not None else True,
+            coherence_ok=coherence_result['ok'] if coherence_result is not None else True,
+            death_sequence_ok=death_result['ok'] if death_result is not None else True,
             prerequisites=prerequisites,
             adjustments=adjustments,
             intermediate_goals=intermediate_goals
@@ -236,10 +236,12 @@ class ConstraintChecker:
                 req_val = required.get(k)
                 cur_val = current.get(k)
                 if req_val is None or cur_val is None:
-                    return None
+                    continue
                 changes.append(abs(req_val - cur_val))
+            if not changes:
+                return {'ok': True, 'violation': None}
             total_change = sum(changes)
-            avg_change = total_change / max(1, len(required))
+            avg_change = total_change / len(changes)
 
             if avg_change > 0.2:
                 return {
@@ -421,7 +423,7 @@ class ConstraintChecker:
             val1 = required.get(op1)
             val2 = required.get(op2)
             if val1 is None or val2 is None:
-                return None
+                continue
             pair_sum = val1 + val2
             # Should be close to 1
             deviation = abs(1 - pair_sum)
@@ -431,7 +433,7 @@ class ConstraintChecker:
             val1 = required.get(op1)
             val2 = required.get(op2)
             if val1 is None or val2 is None:
-                return None
+                continue
             gap = abs(val1 - val2)
             if gap > 0.3:
                 coherence_score -= (gap - 0.3) * 0.15

@@ -3363,7 +3363,10 @@ async def run_reverse_mapping_for_articulation(
     grace_req = grace_calculator.calculate_grace_requirements(
         current_operators, required_operators, goal
     )
-    reverse_logger.info(f"[REVERSE MAPPING] Grace: current={f'{grace_req.current_grace_availability:.2f}' if grace_req.current_grace_availability is not None else 'N/C'}, required={f'{grace_req.required_grace_availability:.2f}' if grace_req.required_grace_availability is not None else 'N/C'}")
+    if grace_req is not None:
+        reverse_logger.info(f"[REVERSE MAPPING] Grace: current={f'{grace_req.current_grace_availability:.2f}' if grace_req.current_grace_availability is not None else 'N/C'}, required={f'{grace_req.required_grace_availability:.2f}' if grace_req.required_grace_availability is not None else 'N/C'}")
+    else:
+        reverse_logger.warning("[REVERSE MAPPING] Grace requirements could not be computed (missing operators)")
 
     # Generate monitoring plan
     best_pathway = pathways[0] if pathways else None

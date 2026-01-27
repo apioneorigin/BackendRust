@@ -200,21 +200,21 @@ class PathwayOptimizer:
         # Success probability score
         success = self._score_success(pathway)
 
-        # Apply weights
+        # Apply weights (guard None scores — uncomputable dimensions contribute 0)
         speed.weight = weights['speed']
-        speed.weighted_score = speed.score * speed.weight
+        speed.weighted_score = speed.score * speed.weight if speed.score is not None else 0.0
 
         stability.weight = weights['stability']
-        stability.weighted_score = stability.score * stability.weight
+        stability.weighted_score = stability.score * stability.weight if stability.score is not None else 0.0
 
         effort.weight = weights['effort']
-        effort.weighted_score = effort.score * effort.weight
+        effort.weighted_score = effort.score * effort.weight if effort.score is not None else 0.0
 
         side_effects.weight = weights['side_effects']
-        side_effects.weighted_score = side_effects.score * side_effects.weight
+        side_effects.weighted_score = side_effects.score * side_effects.weight if side_effects.score is not None else 0.0
 
         success.weight = weights['success']
-        success.weighted_score = success.score * success.weight
+        success.weighted_score = success.score * success.weight if success.score is not None else 0.0
 
         # Calculate total score
         total = (

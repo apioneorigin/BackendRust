@@ -190,14 +190,21 @@ class GraceCalculator:
         grace_dependency = self._calculate_grace_dependency(
             required_operators, goal_description
         )
+        if grace_dependency is None:
+            logger.warning("[calculate_grace_requirements] missing: grace dependency could not be computed")
+            return None
 
         # Calculate current grace availability
         current_availability = self._calculate_grace_availability(current_operators)
+        if current_availability is None:
+            current_availability = 0.0
 
         # Calculate required grace availability
         required_availability = self._calculate_required_grace(
             required_operators, grace_dependency
         )
+        if required_availability is None:
+            required_availability = 0.0
 
         # Analyze channels
         channels = self._analyze_channels(current_operators, required_operators)
@@ -304,7 +311,7 @@ class GraceCalculator:
         for channel_name, config in self.GRACE_CHANNELS.items():
             op_value = operators.get(config['operator'])
             if op_value is None:
-                return None
+                continue
             availability += op_value * config['weight']
 
         # Reduce by blockers
@@ -312,7 +319,7 @@ class GraceCalculator:
         for blocker_name, config in self.GRACE_BLOCKERS.items():
             op_value = operators.get(config['operator'])
             if op_value is None:
-                return None
+                continue
             if op_value > config['threshold']:
                 excess = op_value - config['threshold']
                 blocker_reduction += excess * config['weight']
@@ -357,7 +364,7 @@ class GraceCalculator:
             current_val = current.get(op)
             required_val = required.get(op)
             if current_val is None or required_val is None:
-                return None
+                continue
             gap = required_val - current_val
 
             channels.append(GraceChannel(
@@ -389,7 +396,7 @@ class GraceCalculator:
             value = current.get(op)
 
             if value is None:
-                return None
+                continue
 
             if value > config['threshold'] * 0.8:  # Include near-threshold
                 intensity = (value - config['threshold'] * 0.8) / (1 - config['threshold'] * 0.8)
@@ -435,7 +442,7 @@ class GraceCalculator:
         for op, req_val in required.items():
             curr_val = current.get(op)
             if curr_val is None:
-                return None
+                continue
             if abs(req_val - curr_val) < 0.2:
                 alignment += 0.05
 
