@@ -612,6 +612,13 @@ class OOFInferenceEngine:
 
             # Map short names (K, M, W) to canonical names (K_karma, M_maya, W_witness)
             canonical_name = SHORT_TO_CANONICAL.get(var_name)
+            if canonical_name is None:
+                # var_name might already be canonical (LLM sometimes outputs full names)
+                if var_name in CANONICAL_OPERATOR_NAMES:
+                    canonical_name = var_name
+                else:
+                    inference_logger.warning(f"[run_inference] Unknown operator name '{var_name}' — skipping")
+                    continue
 
             operators[canonical_name] = float(value)
             confidence[canonical_name] = float(conf) if conf is not None else None
