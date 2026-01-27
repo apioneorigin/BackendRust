@@ -759,9 +759,9 @@ especially operators that were uncertain (low confidence) in the initial extract
             from consciousness_state import GoalContext
             val_goal_context = GoalContext(
                 goal_text=goal_ctx_data.get('goal_text', ''),
-                goal_category=goal_ctx_data.get('goal_category', 'achievement'),
-                emotional_undertone=goal_ctx_data.get('emotional_undertone', 'neutral'),
-                domain=goal_ctx_data.get('domain', 'personal')
+                goal_category=goal_ctx_data.get('goal_category', ''),
+                emotional_undertone=goal_ctx_data.get('emotional_undertone', ''),
+                domain=goal_ctx_data.get('domain', '')
             )
 
             question_context = question_gen.get_question_context(
