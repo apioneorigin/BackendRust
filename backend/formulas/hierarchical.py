@@ -495,8 +495,11 @@ class HierarchicalResolutionEngine:
 
         # Calculate confidence
         if primary_score > 0:
-            second_highest = sorted(all_scores.values(), reverse=True)[1] if len(all_scores) > 1 else None
-            confidence = (primary_score - second_highest) / primary_score
+            if len(all_scores) > 1:
+                second_highest = sorted(all_scores.values(), reverse=True)[1]
+                confidence = (primary_score - second_highest) / primary_score
+            else:
+                confidence = 1.0
         else:
             confidence = 0.0
 

@@ -403,7 +403,7 @@ def get_s_level_info(s_value: float) -> Dict[str, Any]:
 
     # Add computed fields
     range_min, range_max = info["range"]
-    progress_in_level = (s_value - range_min) / (range_max - range_min) if s_value >= range_min else None
+    progress_in_level = (s_value - range_min) / (range_max - range_min) if range_max > range_min else 0.0
     progress_in_level = max(0.0, min(1.0, progress_in_level))
 
     return {

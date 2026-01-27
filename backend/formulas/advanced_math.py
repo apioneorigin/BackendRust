@@ -308,7 +308,9 @@ def calculate_consciousness_complex_function(
       Ψ_magnitude = Ψ^Ψ (real consciousness level)
       θ = phase angle (temporal/cyclical aspect)
     """
-    psi_psi = psi_magnitude ** psi_magnitude if psi_magnitude > 0 else None
+    if psi_magnitude is None or psi_magnitude <= 0:
+        return None
+    psi_psi = psi_magnitude ** psi_magnitude
     return psi_psi * cmath.exp(1j * theta)
 
 

@@ -298,8 +298,12 @@ class MultiRealityEngine:
         )
         # Calculate correlation strength
         # C = ⟨Op₁ ⊗ Op₂⟩ - ⟨Op₁⟩⟨Op₂⟩
-        mean_op1 = sum(correlation_operator1) / len(correlation_operator1) if correlation_operator1 else None
-        mean_op2 = sum(correlation_operator2) / len(correlation_operator2) if correlation_operator2 else None
+        if not correlation_operator1 or not correlation_operator2:
+            logger.warning("[calculate_reality_entanglement] empty correlation operator list")
+            return None
+
+        mean_op1 = sum(correlation_operator1) / len(correlation_operator1)
+        mean_op2 = sum(correlation_operator2) / len(correlation_operator2)
 
         # Cross correlation
         cross_corr = sum(a * b for a, b in zip(correlation_operator1, correlation_operator2))
@@ -626,7 +630,7 @@ class MultiRealityEngine:
         weights = []
         for psi, c_exp in zip(consciousness_levels, creator_exponents):
             psi_psi = psi_power(psi)
-            weight = psi_psi ** c_exp if psi_psi > 0 else None
+            weight = psi_psi ** c_exp if psi_psi > 0 else 0.0
             weights.append(weight)
 
         total_weight = sum(weights)

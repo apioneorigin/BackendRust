@@ -126,7 +126,10 @@ class CirclesEngine:
             time_alloc = 0.2
 
         else:  # Universal
-            s_factor = (s_level - 4) / 4 if s_level > 4 else None
+            if s_level <= 4:
+                logger.warning(f"[calculate_circle] missing: s_level {s_level:.1f} too low for universal circle (requires >4)")
+                return None
+            s_factor = (s_level - 4) / 4
             radius = se * (1 - at) * s_factor
             quality = w * se * s_factor
             energy = se * (1 - at)

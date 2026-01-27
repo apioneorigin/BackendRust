@@ -265,8 +265,11 @@ class QuantumMechanics:
         if missing:
             return None, missing
 
-        enhance_avg = sum(enhance_values) / len(enhance_values) if enhance_values else None
-        inhibit_avg = sum(inhibit_values) / len(inhibit_values) if inhibit_values else None
+        if not enhance_values or not inhibit_values:
+            return None, missing
+
+        enhance_avg = sum(enhance_values) / len(enhance_values)
+        inhibit_avg = sum(inhibit_values) / len(inhibit_values)
 
         # Base probability
         return enhance_avg * (1 - inhibit_avg * 0.5), []
@@ -429,7 +432,7 @@ class QuantumMechanics:
                 intention_boost = -I * 0.1  # Slight reduction for non-desired
 
             # Grace can favor outcomes aligned with highest good
-            grace_factor = G * 0.1 if i == 0 else None  # Favor first (assumed best)
+            grace_factor = G * 0.1 if i == 0 else 0.0  # Favor first (assumed best)
 
             prob = max(0.01, base_prob + intention_boost + grace_factor)
             outcome_probs[outcome] = prob
