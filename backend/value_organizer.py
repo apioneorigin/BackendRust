@@ -238,7 +238,7 @@ class ValueOrganizer:
 
         s_level = SLevel(
             current=s_level_num,
-            label=get_s_level_label(s_level_num),
+            label=get_s_level_label(s_level_num) if s_level_num is not None else None,
             transition_rate=self._get_value(values, 'dS_dt', 'evolution_rate', default=None)
         )
 

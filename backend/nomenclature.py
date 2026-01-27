@@ -152,8 +152,10 @@ MANIFESTATION_TIME_LABELS = {
 }
 
 
-def get_s_level_label(level: float) -> str:
+def get_s_level_label(level: Optional[float]) -> Optional[str]:
     """Convert numeric S-level to descriptive label"""
+    if level is None:
+        return None
     if level < 1.5:
         return S_LEVEL_LABELS[1]
     elif level < 2.5:
@@ -191,8 +193,10 @@ def get_matrix_position(matrix_type: str, score: Optional[float]) -> str:
         return positions[3]
 
 
-def get_manifestation_time_label(days: float) -> str:
+def get_manifestation_time_label(days: Optional[float]) -> Optional[str]:
     """Convert days to human-readable manifestation time"""
+    if days is None:
+        return None
     if days < 1:
         return "immediate"
     elif days < 7:
