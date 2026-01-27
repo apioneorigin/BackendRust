@@ -179,7 +179,8 @@ class PathwayGenerator:
                 constraints=constraints,
                 pathway_index=i
             )
-            pathways.append(pathway)
+            if pathway is not None:
+                pathways.append(pathway)
 
         logger.debug(f"[generate_pathways] result: {len(pathways)} pathways generated")
         return pathways
@@ -217,6 +218,10 @@ class PathwayGenerator:
             required_operators=required_operators,
             num_steps=num_steps
         )
+
+        if not steps:
+            logger.warning(f"[_generate_pathway] no steps generated for {pathway_type} (all operators within threshold)")
+            return None
 
         # Calculate success probability
         success_prob = self._calculate_success_probability(

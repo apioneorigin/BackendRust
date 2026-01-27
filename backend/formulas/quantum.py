@@ -396,6 +396,10 @@ class QuantumMechanics:
             f"[analyze_collapse] outcomes={len(possible_outcomes)}, "
             f"desired_outcome={desired_outcome}, operators={len(operators)} keys"
         )
+        if not possible_outcomes:
+            logger.warning("[analyze_collapse] no possible outcomes provided")
+            return None
+
         # ZERO-FALLBACK: All operators required for collapse analysis
         required = {
             'I_intention': operators.get('I_intention'),

@@ -394,6 +394,9 @@ class CoherenceValidator:
                         val = 1 - val
                     foundation_vals.append(val)
 
+                if not foundation_vals:
+                    continue
+
                 avg_foundation = sum(foundation_vals) / len(foundation_vals)
 
                 if avg_foundation < min_foundation:

@@ -357,11 +357,18 @@ class ReverseCausalityEngine:
             or None if required operator values are missing
         """
         logger.debug(f"[solve_multi_outcome] outcomes={len(desired_outcomes)} operators={len(current_operators)}")
+        if not desired_outcomes:
+            logger.warning("[solve_multi_outcome] no desired outcomes provided")
+            return None
+
         if weights is None:
             weights = {k: 1.0 for k in desired_outcomes}
 
         # Normalize weights
         total_weight = sum(weights.values())
+        if total_weight == 0:
+            logger.warning("[solve_multi_outcome] all outcome weights are zero")
+            return None
         weights = {k: v / total_weight for k, v in weights.items()}
 
         # Collect all relevant operators
