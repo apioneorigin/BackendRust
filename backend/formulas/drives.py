@@ -19,7 +19,7 @@ Sub-components define the granular aspects of each drive.
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 from enum import Enum
 
 from logging_config import get_logger
@@ -58,11 +58,11 @@ class DriveProfile:
     components: Dict[str, float] = field(default_factory=dict)
 
     @property
-    def balance_ratio(self) -> float:
+    def balance_ratio(self) -> Optional[float]:
         """Internal/External balance (higher = more internal)."""
         total = self.internal_seeking_pct + self.external_seeking_pct
         if total == 0:
-            return 0.5
+            return None
         return self.internal_seeking_pct / total
 
     @property
@@ -71,8 +71,10 @@ class DriveProfile:
         return (self.internal_seeking_pct + self.external_seeking_pct) / 200
 
     @property
-    def health_score(self) -> float:
+    def health_score(self) -> Optional[float]:
         """Drive health = fulfillment × internal_ratio."""
+        if self.balance_ratio is None:
+            return None
         return self.fulfillment_level * self.balance_ratio
 
 
@@ -841,7 +843,7 @@ class DrivesEngine:
     # INTEGRATION CALCULATIONS
     # -------------------------------------------------------------------------
 
-    def calculate_center_of_good(self, drives: List[DriveProfile]) -> float:
+    def calculate_center_of_good(self, drives: List[DriveProfile]) -> Optional[float]:
         """
         Calculate proximity to Center of Good.
 
@@ -851,7 +853,7 @@ class DrivesEngine:
         logger.debug(f"[calculate_center_of_good] inputs: drive_count={len(drives)}")
         if not drives:
             logger.warning("[calculate_center_of_good] missing required: no drives provided")
-            return 0.0
+            return None
 
         # Get all internal percentages
         internals = [d.internal_seeking_pct for d in drives]
@@ -871,7 +873,7 @@ class DrivesEngine:
         logger.debug(f"[calculate_center_of_good] result: proximity={result:.3f}")
         return result
 
-    def calculate_drive_integration(self, drives: List[DriveProfile]) -> float:
+    def calculate_drive_integration(self, drives: List[DriveProfile]) -> Optional[float]:
         """
         Calculate how well the drives are integrated.
 
@@ -880,7 +882,7 @@ class DrivesEngine:
         logger.debug(f"[calculate_drive_integration] inputs: drive_count={len(drives)}")
         if not drives:
             logger.warning("[calculate_drive_integration] missing required: no drives provided")
-            return 0.0
+            return None
 
         # Calculate pairwise coherence
         total_coherence = 0.0
@@ -889,13 +891,15 @@ class DrivesEngine:
         for i, d1 in enumerate(drives):
             for d2 in drives[i + 1:]:
                 # Coherence = similarity in balance ratio
+                if d1.balance_ratio is None or d2.balance_ratio is None:
+                    continue
                 ratio_diff = abs(d1.balance_ratio - d2.balance_ratio)
                 coherence = 1 - ratio_diff
                 total_coherence += coherence
                 pairs += 1
 
         if pairs == 0:
-            return 0.0
+            return None
 
         result = total_coherence / pairs
         logger.debug(f"[calculate_drive_integration] result: integration={result:.3f}")

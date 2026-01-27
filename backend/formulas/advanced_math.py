@@ -659,7 +659,7 @@ def calculate_lie_algebra_commutator(
 class DifferentialGeometryState:
     """Differential geometry of consciousness"""
     metric_tensor: List[List[float]]
-    curvature: float  # Riemann curvature scalar
+    curvature: Optional[float]  # Riemann curvature scalar (None if metric determinant non-positive)
     geodesic_deviation: float
     christoffel_symbols: Optional[Dict] = None
 
@@ -688,19 +688,19 @@ def calculate_consciousness_manifold_metric(
     return g
 
 
-def calculate_riemann_curvature_scalar(metric: List[List[float]]) -> float:
+def calculate_riemann_curvature_scalar(metric: List[List[float]]) -> Optional[float]:
     """
     Riemann_Curvature_Tensor = R^i_jkl
     measures intrinsic curvature of consciousness evolution paths
 
-    Returns scalar curvature (simplified).
+    Returns scalar curvature (simplified), or None if determinant is non-positive.
     """
     # Simplified curvature from metric determinant
     det = (metric[0][0] * metric[1][1] * metric[2][2])
     if det > 0:
         curvature = 1.0 / det - 1.0
     else:
-        curvature = 0.0
+        curvature = None
     return curvature
 
 
@@ -794,7 +794,7 @@ class VibrationalState:
     base_frequency: float
     harmonics: List[Tuple[int, float, float]]  # (n, amplitude, phase)
     resonance_amplitude: float
-    harmony_score: float
+    harmony_score: Optional[float]
 
 
 # S-level base frequencies imported from constants.py
@@ -880,13 +880,13 @@ def calculate_resonance_amplitude(
 def calculate_consciousness_harmony_score(
     harmonic_alignments: List[float],
     amplitudes: List[float]
-) -> float:
+) -> Optional[float]:
     """
     Consciousness_Harmony_Score = Σ(harmonic_alignment_i × amplitude_i) / Σ(amplitude_i)
     Range: [0, 1]
     """
     if not amplitudes or sum(amplitudes) == 0:
-        return 0.0
+        return None
 
     weighted_sum = sum(a * h for a, h in zip(amplitudes, harmonic_alignments))
     return weighted_sum / sum(amplitudes)

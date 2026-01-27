@@ -385,7 +385,7 @@ class NetworkEmergenceCalculator:
         logger.debug(f"[calculate_resonance_pattern] nodes={len(nodes)}, target={target_node.id}")
         if not nodes:
             return {
-                'total_resonance': 0.0,
+                'total_resonance': None,
                 'influences': [],
                 'dominant_influence': None
             }

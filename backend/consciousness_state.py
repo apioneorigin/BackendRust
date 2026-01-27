@@ -413,31 +413,31 @@ class Tier2:
 @dataclass
 class CoherenceMetrics:
     """Coherence across multiple dimensions"""
-    fundamental: float = 0.5
-    specification: float = 0.5
-    hierarchical: float = 0.5
-    temporal: float = 0.5
-    collective: float = 0.5
-    overall: float = 0.5
+    fundamental: Optional[float] = None
+    specification: Optional[float] = None
+    hierarchical: Optional[float] = None
+    temporal: Optional[float] = None
+    collective: Optional[float] = None
+    overall: Optional[float] = None
 
 
 @dataclass
 class TransformationMatrices:
     """Seven transformation matrix positions"""
     truth_position: str = "confusion"
-    truth_score: float = 0.5
+    truth_score: Optional[float] = None
     love_position: str = "separation"
-    love_score: float = 0.5
+    love_score: Optional[float] = None
     power_position: str = "victim"
-    power_score: float = 0.5
+    power_score: Optional[float] = None
     freedom_position: str = "bondage"
-    freedom_score: float = 0.5
+    freedom_score: Optional[float] = None
     creation_position: str = "destruction"
-    creation_score: float = 0.5
+    creation_score: Optional[float] = None
     time_position: str = "past_future"
-    time_score: float = 0.5
+    time_score: Optional[float] = None
     death_position: str = "clinging"
-    death_score: float = 0.5
+    death_score: Optional[float] = None
 
 
 @dataclass
@@ -453,39 +453,39 @@ class PatternDetection:
 @dataclass
 class DeathArchitecture:
     """Seven death processes"""
-    d1_identity: float = 0.5
-    d2_belief: float = 0.5
-    d3_emotion: float = 0.5
-    d4_attachment: float = 0.5
-    d5_control: float = 0.5
-    d6_separation: float = 0.5
-    d7_ego: float = 0.5
+    d1_identity: Optional[float] = None
+    d2_belief: Optional[float] = None
+    d3_emotion: Optional[float] = None
+    d4_attachment: Optional[float] = None
+    d5_control: Optional[float] = None
+    d6_separation: Optional[float] = None
+    d7_ego: Optional[float] = None
     active_process: Optional[str] = None
-    depth: float = 0.0
+    depth: Optional[float] = None
 
 
 @dataclass
 class PathwayWitnessing:
     """Witnessing pathway"""
-    observation: float = 0.5
-    perception: float = 0.5
-    expression: float = 0.5
+    observation: Optional[float] = None
+    perception: Optional[float] = None
+    expression: Optional[float] = None
 
 
 @dataclass
 class PathwayCreating:
     """Creating pathway"""
-    intention: float = 0.5
-    attention: float = 0.5
-    manifestation: float = 0.5
+    intention: Optional[float] = None
+    attention: Optional[float] = None
+    manifestation: Optional[float] = None
 
 
 @dataclass
 class PathwayEmbodying:
     """Embodying pathway"""
-    thoughts: float = 0.5
-    words: float = 0.5
-    actions: float = 0.5
+    thoughts: Optional[float] = None
+    words: Optional[float] = None
+    actions: Optional[float] = None
 
 
 @dataclass
@@ -509,70 +509,70 @@ class Tier3:
 @dataclass
 class PipelineFlow:
     """Seven-stage manifestation pipeline"""
-    stage_1_turiya: float = 0.5
-    stage_2_anandamaya: float = 0.5
-    stage_3_vijnanamaya: float = 0.5
-    stage_4_manomaya: float = 0.5
-    stage_5_pranamaya: float = 0.5
-    stage_6_annamaya: float = 0.5
-    stage_7_external: float = 0.5
-    flow_rate: float = 0.5
+    stage_1_turiya: Optional[float] = None
+    stage_2_anandamaya: Optional[float] = None
+    stage_3_vijnanamaya: Optional[float] = None
+    stage_4_manomaya: Optional[float] = None
+    stage_5_pranamaya: Optional[float] = None
+    stage_6_annamaya: Optional[float] = None
+    stage_7_external: Optional[float] = None
+    flow_rate: Optional[float] = None
     manifestation_time: Optional[str] = None
 
 
 @dataclass
 class BreakthroughDynamics:
     """Breakthrough probability and dynamics"""
-    probability: float = 0.1
-    tipping_point_distance: float = 0.5
-    quantum_jump_prob: float = 0.05
+    probability: Optional[float] = None
+    tipping_point_distance: Optional[float] = None
+    quantum_jump_prob: Optional[float] = None
     operators_at_threshold: List[str] = field(default_factory=list)
 
 
 @dataclass
 class KarmaDynamics:
     """Karma accumulation and burn rate"""
-    sanchita_stored: float = 0.5
-    prarabdha_active: float = 0.5
-    kriyamana_creating: float = 0.5
-    burn_rate: float = 0.1
-    allowance_factor: float = 0.5
+    sanchita_stored: Optional[float] = None
+    prarabdha_active: Optional[float] = None
+    kriyamana_creating: Optional[float] = None
+    burn_rate: Optional[float] = None
+    allowance_factor: Optional[float] = None
 
 
 @dataclass
 class GraceMechanics:
     """Grace availability and effectiveness"""
-    availability: float = 0.5
-    effectiveness: float = 0.5
-    multiplication_factor: float = 1.0
-    timing_probability: float = 0.5
+    availability: Optional[float] = None
+    effectiveness: Optional[float] = None
+    multiplication_factor: Optional[float] = None
+    timing_probability: Optional[float] = None
 
 
 @dataclass
 class NetworkEffects:
     """Network/collective effects"""
-    coherence_multiplier: float = 1.0
-    acceleration_factor: float = 0.0
-    collective_breakthrough_prob: float = 0.1
-    resonance_amplification: float = 0.0
+    coherence_multiplier: Optional[float] = None
+    acceleration_factor: Optional[float] = None
+    collective_breakthrough_prob: Optional[float] = None
+    resonance_amplification: Optional[float] = None
     group_mind_iq: Optional[float] = None
 
 
 @dataclass
 class POMDPGaps:
     """Reality perception gaps"""
-    reality_gap: float = 0.3  # |Real - Believed|
-    observation_gap: float = 0.3  # |Real - Observed|
-    belief_gap: float = 0.3  # |Believed - Observed|
-    severity: float = 0.3
+    reality_gap: Optional[float] = None  # |Real - Believed|
+    observation_gap: Optional[float] = None  # |Real - Observed|
+    belief_gap: Optional[float] = None  # |Believed - Observed|
+    severity: Optional[float] = None
 
 
 @dataclass
 class MorphogeneticFields:
     """Morphogenetic field access"""
-    field_strength: float = 0.5
-    access_probability: float = 0.5
-    information_transfer_rate: float = 0.5
+    field_strength: Optional[float] = None
+    access_probability: Optional[float] = None
+    information_transfer_rate: Optional[float] = None
 
 
 @dataclass
@@ -592,8 +592,8 @@ class TimelinePredictions:
     """Timeline predictions"""
     to_goal: str = "unknown"
     to_next_s_level: str = "unknown"
-    evolution_rate: float = 0.0
-    acceleration_factor: float = 1.0
+    evolution_rate: Optional[float] = None
+    acceleration_factor: Optional[float] = None
 
 
 @dataclass
@@ -614,20 +614,20 @@ class QuantumMetricsSnapshot:
     Snapshot of quantum consciousness metrics for state storage.
     Note: For full calculations, use formulas.quantum.QuantumMechanics engine.
     """
-    wave_function_amplitude: float = 0.5
+    wave_function_amplitude: Optional[float] = None
     collapse_probability: Dict[str, float] = field(default_factory=dict)
-    tunneling_probability: float = 0.1
-    interference_strength: float = 0.5
+    tunneling_probability: Optional[float] = None
+    interference_strength: Optional[float] = None
 
 
 @dataclass
 class FrequencyAnalysis:
     """Frequency domain analysis"""
-    dominant_frequency: float = 7.83  # Hz (Schumann)
+    dominant_frequency: Optional[float] = None  # Hz (Schumann)
     harmonic_content: str = ""
-    power_spectral_density: float = 0.5
-    resonance_strength: float = 0.5
-    decoherence_time: float = 1.0  # seconds
+    power_spectral_density: Optional[float] = None
+    resonance_strength: Optional[float] = None
+    decoherence_time: Optional[float] = None  # seconds
 
 
 @dataclass
@@ -642,9 +642,9 @@ class Tier5:
 @dataclass
 class Tier6:
     """Tier 6: Quantum fields (mostly background)"""
-    field_charge_density: float = 0.5
-    field_current_density: float = 0.5
-    consciousness_curvature: float = 0.0
+    field_charge_density: Optional[float] = None
+    field_current_density: Optional[float] = None
+    consciousness_curvature: Optional[float] = None
 
 
 @dataclass

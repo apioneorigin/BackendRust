@@ -594,7 +594,7 @@ class PathwayGenerator:
 
         probability = base * gap_factor * s_level_factor * step_factor * type_factor
 
-        result = max(0.2, min(0.95, probability))
+        result = min(0.95, probability)
         logger.debug(f"[_calculate_success_probability] result: {result:.3f} type={pathway_type}")
         return result
 
@@ -651,9 +651,6 @@ class PathwayGenerator:
 
         if pathway_type == 'grace' and total_gap > 0.4:
             risks.append("Grace may not activate on expected timeline")
-
-        if not risks:
-            risks.append("Minimal identified risks with proper support")
 
         logger.debug(f"[_identify_risks] result: {len(risks[:3])} risks for type={pathway_type}")
         return risks[:3]

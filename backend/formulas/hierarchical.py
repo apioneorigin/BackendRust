@@ -221,8 +221,8 @@ class HierarchicalResolutionEngine:
             if keyword in text_lower:
                 matches.append(keyword)
 
-        # Two-person dynamic indicator
-        two_person = 1.0 if any(w in text_lower for w in ["partner", "couple", "us two"]) else 0.7
+        # Two-person dynamic indicator: no evidence means neutral multiplier (1.0)
+        two_person = 1.0 if any(w in text_lower for w in ["partner", "couple", "us two"]) else 1.0
 
         score = (len(matches) / max(1, len(text.split()) / 10)) * two_person
 
@@ -573,7 +573,7 @@ def calculate_intention_purity(
     external_validation_seeking: float,
     dharma: float,
     personal_agenda: float
-) -> float:
+) -> Optional[float]:
     """
     Intention_Purity = I × (1 - Mixed_Motives) × Alignment_with_Dharma
 
@@ -583,7 +583,7 @@ def calculate_intention_purity(
     """
     total_motivation = ego_motivation + external_validation_seeking + intention
     if total_motivation == 0:
-        mixed_motives = 0
+        return None
     else:
         mixed_motives = (ego_motivation + external_validation_seeking) / total_motivation
 

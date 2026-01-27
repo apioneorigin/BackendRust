@@ -145,7 +145,8 @@ class KoshaEngine:
             # Energy body - breath and vitality
             breath_quality = operators.get("breath_awareness")
             if breath_quality is None:
-                breath_quality = p * 0.7
+                logger.warning(f"[calculate_kosha] missing: breath_awareness for {kosha_type.value}")
+                return None
             purity = breath_quality * (1 - at * 0.3)
             permeability = 0.7 + p * 0.2
             integration = p * 0.6 + ce * 0.4
@@ -177,7 +178,7 @@ class KoshaEngine:
 
         else:  # Anandamaya
             # Bliss body - requires higher S-levels
-            s_factor = (s_level - 4) / 4 if s_level > 4 else 0.1
+            s_factor = (s_level - 4) / 4 if s_level > 4 else 0.0
             purity = s_factor * (1 - at) * (1 - m * 0.5)
             permeability = 0.2 + s_factor * 0.5
             integration = se * (1 - at) * s_factor

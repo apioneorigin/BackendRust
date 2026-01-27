@@ -20,7 +20,7 @@ Each matrix tracks progression through 4 states with:
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Tuple, Any
+from typing import Dict, List, Tuple, Any, Optional
 from enum import Enum
 
 from logging_config import get_logger
@@ -71,11 +71,11 @@ class MatrixProfile:
         """Get ordered state names."""
         return list(self.states.keys())
 
-    def get_state_score(self, state_name: str) -> float:
+    def get_state_score(self, state_name: str) -> Optional[float]:
         """Get score for a specific state."""
         if state_name in self.states:
             return self.states[state_name].score
-        return 0.0
+        return None
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
@@ -226,11 +226,11 @@ class MatricesEngine:
             return None
         return at * (1 - se) * as_ * (1 - w)
 
-    def _weighted_position(self, scores: List[float]) -> float:
+    def _weighted_position(self, scores: List[float]) -> Optional[float]:
         """Calculate weighted position from state scores."""
         total = sum(scores)
         if total == 0:
-            return 0.0
+            return None
         weighted = sum(i * s for i, s in enumerate(scores))
         return weighted / total
 

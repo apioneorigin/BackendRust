@@ -998,7 +998,7 @@ class RealismEngine:
         # Combined weight
         return s_fit * signature_match, missing_ops
 
-    def _calculate_realism_coherence(self, active_realisms: List[str]) -> float:
+    def _calculate_realism_coherence(self, active_realisms: List[str]) -> Optional[float]:
         """Calculate how well active realisms integrate"""
         if len(active_realisms) <= 1:
             return 1.0
@@ -1021,7 +1021,7 @@ class RealismEngine:
         # Calculate spread
         indices = [category_order.index(c) for c in categories if c in category_order]
         if not indices:
-            return 0.5
+            return None
 
         spread = max(indices) - min(indices)
 

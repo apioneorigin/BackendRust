@@ -207,7 +207,8 @@ class CollectiveEngine:
             return None
         coherence = operators.get("Co_coherence")
         if coherence is None:
-            coherence = psi * 0.8
+            logger.warning("[calculate_collective_profile] missing: Co_coherence is None")
+            return None
 
         # Calculate components
         network = self.calculate_network_effect(network_size, r, coherence, population)

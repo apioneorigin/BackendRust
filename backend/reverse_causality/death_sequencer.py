@@ -561,9 +561,6 @@ class DeathSequencer:
         if 'D7' in death_types:
             recs.append("Work with an experienced guide for ego death processes")
 
-        if not recs:
-            recs.append("Maintain regular practice and check in with progress indicators")
-
         return recs[:5]
 
     def get_death_sequence_summary(self, sequence: DeathSequence) -> str:

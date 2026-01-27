@@ -196,14 +196,16 @@ class GraceCalculator:
         # Calculate current grace availability
         current_availability = self._calculate_grace_availability(current_operators)
         if current_availability is None:
-            current_availability = 0.0
+            logger.warning("[calculate_grace_requirements] missing: current grace availability could not be computed")
+            return None
 
         # Calculate required grace availability
         required_availability = self._calculate_required_grace(
             required_operators, grace_dependency
         )
         if required_availability is None:
-            required_availability = 0.0
+            logger.warning("[calculate_grace_requirements] missing: required grace availability could not be computed")
+            return None
 
         # Analyze channels
         channels = self._analyze_channels(current_operators, required_operators)
@@ -477,9 +479,6 @@ class GraceCalculator:
         o_openness = operators.get('O_openness')
         if o_openness is not None and o_openness > 0.6:
             conditions.append("When feeling open and receptive")
-
-        if not conditions:
-            conditions.append("Build foundation practices first")
 
         return conditions[:4]
 

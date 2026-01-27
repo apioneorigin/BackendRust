@@ -434,8 +434,8 @@ class QuantumMechanics:
             else:
                 intention_boost = -I * 0.1  # Slight reduction for non-desired
 
-            # Grace can favor outcomes aligned with highest good
-            grace_factor = G * 0.1 if i == 0 else 0.0  # Favor first (assumed best)
+            # Grace factor cannot be determined by array position
+            grace_factor = 0.0
 
             prob = max(0.01, base_prob + intention_boost + grace_factor)
             outcome_probs[outcome] = prob

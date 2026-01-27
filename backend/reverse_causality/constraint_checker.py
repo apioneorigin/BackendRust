@@ -12,7 +12,7 @@ Constraints checked:
 7. Death Architecture - Certain deaths must precede others
 """
 
-from typing import Dict, List, Any, Tuple
+from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass
 
 from logging_config import get_logger
@@ -39,19 +39,19 @@ class ConstraintResult:
     blocking_count: int
     warning_count: int
 
-    # Specific constraint results
-    sacred_chain_ok: bool
-    karma_ok: bool
-    belief_ok: bool
-    collective_field_ok: bool
-    energy_ok: bool
-    coherence_ok: bool
-    death_sequence_ok: bool
-
     # Recommendations
     prerequisites: List[str]  # What must be done first
     adjustments: List[str]  # Suggested goal adjustments
     intermediate_goals: List[str]  # Stepping stone goals
+
+    # Specific constraint results (None = check could not be performed)
+    sacred_chain_ok: Optional[bool] = None
+    karma_ok: Optional[bool] = None
+    belief_ok: Optional[bool] = None
+    collective_field_ok: Optional[bool] = None
+    energy_ok: Optional[bool] = None
+    coherence_ok: Optional[bool] = None
+    death_sequence_ok: Optional[bool] = None
 
 
 class ConstraintChecker:
@@ -178,13 +178,13 @@ class ConstraintChecker:
             violations=violations,
             blocking_count=blocking_count,
             warning_count=warning_count,
-            sacred_chain_ok=sacred_chain_result['ok'] if sacred_chain_result is not None else True,
-            karma_ok=karma_result['ok'] if karma_result is not None else True,
-            belief_ok=belief_result['ok'] if belief_result is not None else True,
-            collective_field_ok=collective_result['ok'] if collective_result is not None else True,
-            energy_ok=energy_result['ok'] if energy_result is not None else True,
-            coherence_ok=coherence_result['ok'] if coherence_result is not None else True,
-            death_sequence_ok=death_result['ok'] if death_result is not None else True,
+            sacred_chain_ok=sacred_chain_result['ok'] if sacred_chain_result is not None else None,
+            karma_ok=karma_result['ok'] if karma_result is not None else None,
+            belief_ok=belief_result['ok'] if belief_result is not None else None,
+            collective_field_ok=collective_result['ok'] if collective_result is not None else None,
+            energy_ok=energy_result['ok'] if energy_result is not None else None,
+            coherence_ok=coherence_result['ok'] if coherence_result is not None else None,
+            death_sequence_ok=death_result['ok'] if death_result is not None else None,
             prerequisites=prerequisites,
             adjustments=adjustments,
             intermediate_goals=intermediate_goals
@@ -416,13 +416,15 @@ class ConstraintChecker:
             ('I_intention', 'D_dharma')
         ]
 
-        coherence_score = 1.0
+        coherence_score = None
 
         for op1, op2 in inverse_pairs:
             val1 = required.get(op1)
             val2 = required.get(op2)
             if val1 is None or val2 is None:
                 continue
+            if coherence_score is None:
+                coherence_score = 1.0
             pair_sum = val1 + val2
             # Should be close to 1
             deviation = abs(1 - pair_sum)
@@ -433,10 +435,14 @@ class ConstraintChecker:
             val2 = required.get(op2)
             if val1 is None or val2 is None:
                 continue
+            if coherence_score is None:
+                coherence_score = 1.0
             gap = abs(val1 - val2)
             if gap > 0.3:
                 coherence_score -= (gap - 0.3) * 0.15
 
+        if coherence_score is None:
+            return None
         coherence_score = max(0.0, coherence_score)
 
         if coherence_score < self.MIN_COHERENCE:

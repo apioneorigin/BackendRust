@@ -139,10 +139,10 @@ class PathwayOptimizer:
         for i, s in enumerate(scored):
             s.percentile_rank = int(100 * (len(scored) - i) / len(scored))
 
-        # Find best in each category (guard None scores)
-        fastest = max(scored, key=lambda x: x.speed_score.score if x.speed_score.score is not None else 0.0)
-        most_stable = max(scored, key=lambda x: x.stability_score.score if x.stability_score.score is not None else 0.0)
-        easiest = max(scored, key=lambda x: x.effort_score.score if x.effort_score.score is not None else 0.0)  # Higher = easier
+        # Find best in each category (guard None scores — rank them last)
+        fastest = max(scored, key=lambda x: x.speed_score.score if x.speed_score.score is not None else float('-inf'))
+        most_stable = max(scored, key=lambda x: x.stability_score.score if x.stability_score.score is not None else float('-inf'))
+        easiest = max(scored, key=lambda x: x.effort_score.score if x.effort_score.score is not None else float('-inf'))  # Higher = easier
 
         # Mark recommendations
         for s in scored:
@@ -199,30 +199,31 @@ class PathwayOptimizer:
         # Success probability score
         success = self._score_success(pathway)
 
-        # Apply weights (guard None scores — uncomputable dimensions contribute 0)
+        # Apply weights (guard None scores — uncomputable dimensions stay None)
         speed.weight = weights['speed']
-        speed.weighted_score = speed.score * speed.weight if speed.score is not None else 0.0
+        speed.weighted_score = speed.score * speed.weight if speed.score is not None else None
 
         stability.weight = weights['stability']
-        stability.weighted_score = stability.score * stability.weight if stability.score is not None else 0.0
+        stability.weighted_score = stability.score * stability.weight if stability.score is not None else None
 
         effort.weight = weights['effort']
-        effort.weighted_score = effort.score * effort.weight if effort.score is not None else 0.0
+        effort.weighted_score = effort.score * effort.weight if effort.score is not None else None
 
         side_effects.weight = weights['side_effects']
-        side_effects.weighted_score = side_effects.score * side_effects.weight if side_effects.score is not None else 0.0
+        side_effects.weighted_score = side_effects.score * side_effects.weight if side_effects.score is not None else None
 
         success.weight = weights['success']
-        success.weighted_score = success.score * success.weight if success.score is not None else 0.0
+        success.weighted_score = success.score * success.weight if success.score is not None else None
 
-        # Calculate total score
-        total = (
-            speed.weighted_score +
-            stability.weighted_score +
-            effort.weighted_score +
-            side_effects.weighted_score +
+        # Calculate total score (skip None weighted scores)
+        weighted_scores = [ws for ws in [
+            speed.weighted_score,
+            stability.weighted_score,
+            effort.weighted_score,
+            side_effects.weighted_score,
             success.weighted_score
-        )
+        ] if ws is not None]
+        total = sum(weighted_scores) if weighted_scores else 0.0
 
         # Generate trade-off analysis
         tradeoffs = self._analyze_tradeoffs(pathway, speed, stability, effort)
@@ -248,7 +249,7 @@ class PathwayOptimizer:
         """
         # Speed score based on step count (fewer steps = faster = higher score)
         step_adjustment = 1 - (len(pathway.steps) * 0.03)
-        score = max(0.2, min(1.0, step_adjustment))
+        score = min(1.0, step_adjustment)
 
         description = f"Timeline: {len(pathway.steps)} steps"
 
@@ -278,7 +279,7 @@ class PathwayOptimizer:
 
         # Risk count impact
         risk_penalty = len(pathway.risks) * 0.05
-        score = max(0.2, score - risk_penalty)
+        score = score - risk_penalty
 
         description = f"Stability: {pathway.stability_score:.0%}, {len(pathway.risks)} identified risks"
 
@@ -318,7 +319,7 @@ class PathwayOptimizer:
             if available_energy is not None and available_energy < 0.5 and pathway.effort_required > 0.7:
                 base_score *= 0.8  # Penalty for high effort with low energy
 
-        score = max(0.2, min(1.0, base_score))
+        score = min(1.0, base_score)
 
         description = f"Effort: {pathway.effort_required:.0%}, Avg step difficulty: {avg_difficulty:.0%}"
 

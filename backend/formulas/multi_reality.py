@@ -188,7 +188,7 @@ class MultiRealityEngine:
         reality_amplitudes: Dict[str, complex],
         temperature: float = 1.0,
         coupling_to_environment: float = 0.1
-    ) -> RealitySuperposition:
+    ) -> Optional[RealitySuperposition]:
         """
         Reality_superposition(x,t) = Σ_i c_i |R_i⟩
           where Σ_i |c_i|² = 1 (normalization)
@@ -210,7 +210,7 @@ class MultiRealityEngine:
         # Normalize amplitudes
         total_norm = math.sqrt(sum(abs(c) ** 2 for c in reality_amplitudes.values()))
         if total_norm == 0:
-            total_norm = 1.0
+            return None
 
         normalized = {k: v / total_norm for k, v in reality_amplitudes.items()}
 
@@ -548,7 +548,7 @@ class MultiRealityEngine:
         # Normalize weights
         z = sum(raw_weights.values())
         if z == 0:
-            z = 1.0
+            return None
         weights = {k: v / z for k, v in raw_weights.items()}
 
         # Calculate blended state
@@ -589,7 +589,7 @@ class MultiRealityEngine:
         shared_consciousness_level: float,
         interaction_frequency: float,
         num_participants: int
-    ) -> float:
+    ) -> Optional[float]:
         """
         Reality_Overlap_Coefficient =
           Σ(shared_beliefs × shared_consciousness_level × interaction_frequency) /
@@ -603,8 +603,8 @@ class MultiRealityEngine:
             f"participants={num_participants}"
         )
         if num_participants == 0:
-            logger.warning("[calculate_reality_overlap] zero participants, returning 0.0")
-            return 0.0
+            logger.warning("[calculate_reality_overlap] zero participants, returning None")
+            return None
 
         overlap = (shared_beliefs * shared_consciousness_level * interaction_frequency) / num_participants
         logger.debug(f"[calculate_reality_overlap] result: {min(1.0, overlap):.3f}")
@@ -615,7 +615,7 @@ class MultiRealityEngine:
         individual_realities: List[float],
         consciousness_levels: List[float],
         creator_exponents: List[float]
-    ) -> float:
+    ) -> Optional[float]:
         """
         Consensus_Reality = Weighted_Average(Individual_Realities, Consciousness_Levels)
 
@@ -634,7 +634,7 @@ class MultiRealityEngine:
 
         total_weight = sum(weights)
         if total_weight == 0:
-            return sum(individual_realities) / max(1, len(individual_realities))
+            return None
 
         consensus = sum(r * w for r, w in zip(individual_realities, weights)) / total_weight
         logger.debug(f"[calculate_consensus_reality] result: {consensus:.3f}")
@@ -687,10 +687,10 @@ class MultiRealityEngine:
         if consciousness_variance < 0.1:
             # Similar consciousness - blend
             total_coherence = sum(1 - a for a in attachments)
-            if total_coherence > 0:
-                blended = sum(r * (1 - a) for r, a in zip(realities, attachments)) / total_coherence
-            else:
-                blended = sum(realities) / len(realities)
+            if total_coherence <= 0:
+                return None
+
+            blended = sum(r * (1 - a) for r, a in zip(realities, attachments)) / total_coherence
 
             logger.debug(f"[calculate_reality_conflict_resolution] result: blend, value={blended:.3f}")
             return {

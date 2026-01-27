@@ -651,16 +651,13 @@ class ReverseCausalityEngine:
                 total_difficulty += change * difficulty
                 total_change += change
 
-        if total_change < 0.01:
-            return 0.95  # Minimal change needed
-
         # Probability decreases with difficulty-weighted change
-        # Max probability of ~0.9 for easy changes, min ~0.1 for very hard
-        weighted_difficulty = total_difficulty / max(0.1, total_change)
+        # Max probability of ~0.95 for easy/minimal changes
+        weighted_difficulty = total_difficulty / max(0.1, total_change) if total_change >= 0.01 else 0.0
 
         probability = 0.95 * math.exp(-2 * weighted_difficulty * total_change)
 
-        probability = max(0.1, min(0.95, probability))
+        probability = min(0.95, probability)
         logger.debug(f"[_calculate_achievement_probability] result: prob={probability:.3f} total_change={total_change:.3f}")
         return probability
 
@@ -698,8 +695,8 @@ class ReverseCausalityEngine:
                 relevant_ops.extend(ops)
 
         if not relevant_ops:
-            # Default to general transformation operators
-            relevant_ops = ['I_intention', 'Co_coherence', 'G_grace', 'At_attachment', 'R_resistance']
+            logger.warning(f"[_solve_custom_outcome] No operators map to outcome '{outcome}', cannot solve")
+            return None
 
         # Remove duplicates
         relevant_ops = list(set(relevant_ops))

@@ -59,11 +59,11 @@ class PathwayProfile:
     dominant_dimension: str
     weakest_dimension: str
 
-    def get_dimension_score(self, dim_name: str) -> float:
+    def get_dimension_score(self, dim_name: str) -> Optional[float]:
         """Get score for a specific dimension."""
         if dim_name in self.dimensions:
             return self.dimensions[dim_name].score
-        return 0.0
+        return None
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
@@ -176,10 +176,10 @@ class PathwaysEngine:
         self.pathway_dimensions = PATHWAY_DIMENSIONS
         self.descriptions = DIMENSION_DESCRIPTIONS
 
-    def _calculate_alignment(self, scores: List[float]) -> float:
+    def _calculate_alignment(self, scores: List[float]) -> Optional[float]:
         """Calculate alignment (inverse of variance) between scores."""
         if not scores:
-            return 0.0
+            return None
         mean = sum(scores) / len(scores)
         if mean == 0:
             return 0.0
@@ -505,23 +505,23 @@ class PathwaysEngine:
     # INTEGRATION
     # -------------------------------------------------------------------------
 
-    def calculate_pathway_balance(self, pathways: List[PathwayProfile]) -> float:
+    def calculate_pathway_balance(self, pathways: List[PathwayProfile]) -> Optional[float]:
         """Calculate how balanced the three pathways are."""
         logger.debug(f"[calculate_pathway_balance] inputs: pathway_count={len(pathways)}")
         if not pathways:
             logger.warning("[calculate_pathway_balance] missing: no pathways provided")
-            return 0.0
+            return None
         scores = [p.pathway_score for p in pathways]
         result = self._calculate_alignment(scores)
         logger.debug(f"[calculate_pathway_balance] result: balance={result:.3f}")
         return result
 
-    def calculate_integration(self, pathways: List[PathwayProfile]) -> float:
+    def calculate_integration(self, pathways: List[PathwayProfile]) -> Optional[float]:
         """Calculate cross-pathway integration/coherence."""
         logger.debug(f"[calculate_integration] inputs: pathway_count={len(pathways)}")
         if not pathways:
             logger.warning("[calculate_integration] missing: no pathways provided")
-            return 0.0
+            return None
 
         # Integration = average of alignments × average score
         alignments = [p.alignment_score for p in pathways]

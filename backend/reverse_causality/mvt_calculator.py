@@ -415,9 +415,6 @@ class MVTCalculator:
                 if 'Low energy' not in blockers:
                     blockers.append("Low energy may limit transformation capacity")
 
-        if not blockers:
-            blockers.append("No significant blockers identified")
-
         logger.debug(f"[_identify_blockers] result: {len(blockers[:3])} blockers")
         return blockers[:3]
 

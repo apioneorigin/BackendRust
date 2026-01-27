@@ -328,8 +328,7 @@ OPENAI_RESPONSES_URL = MODEL_CONFIGS[DEFAULT_MODEL]["streaming_endpoint"]
 def get_model_config(model: str) -> dict:
     """Get configuration for a specific model"""
     if model not in MODEL_CONFIGS:
-        api_logger.warning(f"Unknown model {model}, falling back to {DEFAULT_MODEL}")
-        model = DEFAULT_MODEL
+        raise ValueError(f"Unknown model: {model}. Available models: {list(MODEL_CONFIGS.keys())}")
     return {"model": model, **MODEL_CONFIGS[model]}
 
 # Initialize inference engine (single unified engine)
@@ -343,23 +342,21 @@ prompt_builder = ArticulationPromptBuilder()
 
 # Load LLM Call 1 context (for operator extraction)
 LLM_CALL1_PATH = Path(__file__).parent.parent / "LLM_Call_1.txt"
-LLM_CALL1_CONTEXT = ""
 if LLM_CALL1_PATH.exists():
     with open(LLM_CALL1_PATH, 'r', encoding='utf-8') as f:
         LLM_CALL1_CONTEXT = f.read()
     api_logger.info(f"Loaded LLM Call 1 context: {len(LLM_CALL1_CONTEXT)} characters")
 else:
-    api_logger.warning(f"LLM Call 1 context not found at {LLM_CALL1_PATH}")
+    raise FileNotFoundError(f"Required OOF framework file not found: {LLM_CALL1_PATH}")
 
 # Load LLM Call 2 context (for articulation) - OOF Mathematical Semantics
 LLM_CALL2_PATH = Path(__file__).parent.parent / "LLM_Call_2.txt"
-LLM_CALL2_CONTEXT = ""
 if LLM_CALL2_PATH.exists():
     with open(LLM_CALL2_PATH, 'r', encoding='utf-8') as f:
         LLM_CALL2_CONTEXT = f.read()
     api_logger.info(f"Loaded LLM Call 2 context: {len(LLM_CALL2_CONTEXT)} characters")
 else:
-    api_logger.warning(f"LLM Call 2 context not found at {LLM_CALL2_PATH}")
+    raise FileNotFoundError(f"Required OOF framework file not found: {LLM_CALL2_PATH}")
 
 api_logger.info("Articulation Bridge initialized: ValueOrganizer, BottleneckDetector, LeverageIdentifier, PromptBuilder")
 
@@ -947,7 +944,7 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
         question_gen = ConstellationQuestionGenerator()
         from consciousness_state import GoalContext
         goal_context = GoalContext(
-            goal_text=evidence.get('goal') or prompt[:200],
+            goal_text=evidence.get('goal'),
             goal_category=evidence['goal_category'],
             emotional_undertone=evidence['emotional_undertone'],
             domain=evidence['domain']
@@ -1960,15 +1957,15 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
                     elif pattern in ('blockage',):
                         result['goal_category'] = 'peace'
                     else:
-                        result['goal_category'] = 'achievement'
+                        result['goal_category'] = None
 
                 if result.get('emotional_undertone') not in valid_undertones:
                     api_logger.warning(f"[PARSE] LLM returned invalid/missing emotional_undertone: {result.get('emotional_undertone')!r}")
-                    result['emotional_undertone'] = 'neutral'
+                    result['emotional_undertone'] = None
 
                 if result.get('domain') not in valid_domains:
                     api_logger.warning(f"[PARSE] LLM returned invalid/missing domain: {result.get('domain')!r}")
-                    result['domain'] = 'personal'
+                    result['domain'] = None
 
                 api_logger.info(f"[PARSE] Successfully parsed response with {len(result.get('observations'))} observations")
                 return result
@@ -2863,10 +2860,10 @@ def format_results_fallback(prompt: str, evidence: dict, posteriors: dict) -> st
         lines.append(f"- {var}: {f'{value:.3f}' if value is not None else 'N/C'}")
 
     lines.append("")
-    lines.append("### Recommended Actions")
-    lines.append("1. Increase awareness through meditation")
-    lines.append("2. Reduce resistance by embracing change")
-    lines.append("3. Cultivate grace through service")
+    lines.append("### Computed State")
+    for key, val in sorted(posteriors.get("values", {}).items(), key=lambda x: x[1] if x[1] is not None else 0, reverse=True)[:5]:
+        if val is not None:
+            lines.append(f"- {key}: {val:.2f}")
 
     return "\n".join(lines)
 
@@ -2915,12 +2912,17 @@ def format_results_fallback_bridge(
     lines.append(f"- Power stance: {matrices.power_position} ({f'{matrices.power_score * 100:.0f}%' if matrices.power_score is not None else 'N/C'})")
     lines.append(f"- Freedom orientation: {matrices.freedom_position} ({f'{matrices.freedom_score * 100:.0f}%' if matrices.freedom_score is not None else 'N/C'})")
 
-    # Add recommendations
-    lines.append("")
-    lines.append("### Next Steps")
-    lines.append("1. Focus on the primary bottleneck identified above")
-    lines.append("2. Activate the highest leverage point available to you")
-    lines.append("3. Maintain awareness of your transformation pathway")
+    # Add computed bottleneck/leverage summary
+    if consciousness_state.bottlenecks:
+        lines.append("")
+        lines.append("### Primary Bottleneck")
+        primary = consciousness_state.bottlenecks[0]
+        lines.append(f"- {primary.description}")
+    if consciousness_state.leverage_points:
+        lines.append("")
+        lines.append("### Highest Leverage Point")
+        top_lp = consciousness_state.leverage_points[0]
+        lines.append(f"- {top_lp.description} ({top_lp.multiplier}x potential)")
 
     return "\n".join(lines)
 
@@ -2932,7 +2934,7 @@ def format_results_fallback_bridge(
 @app.get("/api/reverse-map")
 async def reverse_map(
     goal: str = Query(..., description="Desired future state or goal"),
-    current_s_level: float = Query(3.0, description="Current S-level (1-8)"),
+    current_s_level: float = Query(..., description="Current S-level (1-8)"),
     target_s_level: float = Query(None, description="Target S-level (optional)")
 ):
     """
@@ -2987,7 +2989,7 @@ async def reverse_map_stream(
             # Set maximums as targets for blockers
             for op, max_val in primary_signature.operator_maximums.items():
                 if op not in required_operators or required_operators[op] > max_val:
-                    required_operators[op] = max_val * 0.8  # Target below max
+                    required_operators[op] = max_val  # Use actual maximum as target
 
             sig_target_s = primary_signature.optimal_s_level
         else:
@@ -2996,7 +2998,7 @@ async def reverse_map_stream(
                 'breakthrough_probability', 0.7, current_operators
             )
             required_operators = result.required_state.operator_values
-            sig_target_s = target_s_level or (current_s_level + 1 if current_s_level is not None else None)
+            sig_target_s = target_s_level
 
         final_target_s = target_s_level or sig_target_s
 
@@ -3269,7 +3271,7 @@ async def run_reverse_mapping_for_articulation(
         required_operators = primary_signature.operator_minimums.copy()
         for op, max_val in primary_signature.operator_maximums.items():
             if op not in required_operators or required_operators[op] > max_val:
-                required_operators[op] = max_val * 0.8
+                required_operators[op] = max_val  # Use actual maximum as target
         target_s_level = primary_signature.optimal_s_level
     else:
         # Use reverse engine for custom goal
@@ -3278,7 +3280,7 @@ async def run_reverse_mapping_for_articulation(
             'breakthrough_probability', 0.7, current_operators
         )
         required_operators = result.required_state.operator_values
-        target_s_level = current_s_level + 1 if current_s_level is not None else None
+        target_s_level = None
 
     if target_s_level is not None and current_s_level is not None:
         reverse_logger.info(f"[REVERSE MAPPING] Target S-Level: {target_s_level:.1f} (delta: {target_s_level - current_s_level:+.1f})")
@@ -3556,7 +3558,7 @@ def _extract_operators_from_evidence(evidence: dict) -> Tuple[Dict[str, float], 
             # Validate value is numeric and in range
             if value is None or not isinstance(value, (int, float)):
                 continue
-            value = max(0.0, min(1.0, float(value)))
+            value = float(value)
 
             op_name = var_to_op.get(var)
             operators[op_name] = value

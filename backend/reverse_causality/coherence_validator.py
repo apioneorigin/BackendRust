@@ -12,7 +12,7 @@ Coherence Requirements:
 Minimum coherence threshold: 85% for pathway viability
 """
 
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
 
 from logging_config import get_logger
@@ -33,15 +33,15 @@ class CoherenceViolation:
 @dataclass
 class CoherenceResult:
     """Complete coherence validation result"""
-    is_coherent: bool  # Meets 85% threshold
-    coherence_score: float  # 0-1
+    is_coherent: Optional[bool]  # Meets 85% threshold; None = could not determine
+    coherence_score: Optional[float]  # 0-1; None = could not compute
 
-    # Breakdown by type
-    inverse_pair_coherence: float
-    complementary_pair_coherence: float
-    tier_coherence: float
-    s_level_coherence: float
-    internal_coherence: float
+    # Breakdown by type (None = check could not be performed)
+    inverse_pair_coherence: Optional[float]
+    complementary_pair_coherence: Optional[float]
+    tier_coherence: Optional[float]
+    s_level_coherence: Optional[float]
+    internal_coherence: Optional[float]
 
     violations: List[CoherenceViolation]
     critical_violations: int
@@ -226,22 +226,21 @@ class CoherenceValidator:
         internal_score, internal_violations = self._check_internal_consistency(operators)
         violations.extend(internal_violations)
 
-        # Calculate overall coherence score
-        weights = {
-            'inverse': 0.2,
-            'complementary': 0.25,
-            'tier': 0.15,
-            's_level': 0.2,
-            'internal': 0.2
+        # Calculate overall coherence score, skipping None sub-scores
+        weight_map = {
+            'inverse': (inverse_score, 0.2),
+            'complementary': (complementary_score, 0.25),
+            'tier': (tier_score, 0.15),
+            's_level': (s_level_score, 0.2),
+            'internal': (internal_score, 0.2),
         }
 
-        overall_score = (
-            inverse_score * weights['inverse'] +
-            complementary_score * weights['complementary'] +
-            tier_score * weights['tier'] +
-            s_level_score * weights['s_level'] +
-            internal_score * weights['internal']
-        )
+        valid_components = [(score, weight) for score, weight in weight_map.values() if score is not None]
+        if valid_components:
+            total_weight = sum(w for _, w in valid_components)
+            overall_score = sum(s * w for s, w in valid_components) / total_weight
+        else:
+            overall_score = None
 
         # Count violations by severity
         critical_count = sum(1 for v in violations if v.severity > 0.7)
@@ -251,8 +250,9 @@ class CoherenceValidator:
         adjustments, rationale = self._generate_corrections(violations, operators)
 
         # Determine if can proceed
-        is_coherent = overall_score >= self.MIN_COHERENCE
-        can_proceed = is_coherent or critical_count == 0
+        is_coherent = overall_score >= self.MIN_COHERENCE if overall_score is not None else None
+        # If coherence is unknown (None), allow proceeding only when no critical violations
+        can_proceed = (is_coherent or critical_count == 0) if is_coherent is not None else (critical_count == 0)
 
         blocking_issues = []
         if not can_proceed:
@@ -261,7 +261,7 @@ class CoherenceValidator:
                 for v in violations if v.severity > 0.7
             ][:3]
 
-        logger.debug(f"[validate_coherence] result: coherent={is_coherent} score={overall_score:.3f} violations={len(violations)} (critical={critical_count})")
+        logger.debug(f"[validate_coherence] result: coherent={is_coherent} score={f'{overall_score:.3f}' if overall_score is not None else 'N/A'} violations={len(violations)} (critical={critical_count})")
         return CoherenceResult(
             is_coherent=is_coherent,
             coherence_score=overall_score,
@@ -315,8 +315,8 @@ class CoherenceValidator:
             pair_score = max(0.0, 1.0 - deviation / 0.5)
             scores.append(pair_score)
 
-        avg_score = sum(scores) / len(scores) if scores else 1.0
-        logger.debug(f"[_check_inverse_pairs] result: score={avg_score:.3f} violations={len(violations)}")
+        avg_score = sum(scores) / len(scores) if scores else None
+        logger.debug(f"[_check_inverse_pairs] result: score={avg_score if avg_score is not None else 'N/A'} violations={len(violations)}")
         return avg_score, violations
 
     def _check_complementary_pairs(
@@ -353,8 +353,8 @@ class CoherenceValidator:
             pair_score = max(0.0, 1.0 - (gap - 0.1) / 0.4) if gap > 0.1 else 1.0
             scores.append(pair_score)
 
-        avg_score = sum(scores) / len(scores) if scores else 1.0
-        logger.debug(f"[_check_complementary_pairs] result: score={avg_score:.3f} violations={len(violations)}")
+        avg_score = sum(scores) / len(scores) if scores else None
+        logger.debug(f"[_check_complementary_pairs] result: score={avg_score if avg_score is not None else 'N/A'} violations={len(violations)}")
         return avg_score, violations
 
     def _check_tier_coherence(
@@ -457,9 +457,9 @@ class CoherenceValidator:
         if checks_count > 0:
             score = 1.0 - (violations_count / checks_count)
         else:
-            score = 1.0
+            score = None
 
-        logger.debug(f"[_check_s_level_coherence] result: score={score:.3f} violations={len(violations)}")
+        logger.debug(f"[_check_s_level_coherence] result: score={f'{score:.3f}' if score is not None else 'N/A'} violations={len(violations)}")
         return score, violations
 
     def _check_internal_consistency(
@@ -498,7 +498,7 @@ class CoherenceValidator:
         if rules_checked > 0:
             score = rules_passed / rules_checked
         else:
-            score = 1.0
+            score = None
 
         return score, violations
 
@@ -554,15 +554,24 @@ class CoherenceValidator:
         """
         Generate human-readable coherence summary.
         """
-        status = "✓ COHERENT" if result.is_coherent else "⚠️ INCOHERENT"
-        summary = f"**Coherence Status:** {status} ({result.coherence_score:.0%})\n\n"
+        if result.is_coherent is None:
+            status = "? UNKNOWN"
+        elif result.is_coherent:
+            status = "✓ COHERENT"
+        else:
+            status = "⚠️ INCOHERENT"
+        score_str = f"{result.coherence_score:.0%}" if result.coherence_score is not None else "N/A"
+        summary = f"**Coherence Status:** {status} ({score_str})\n\n"
+
+        def _fmt_score(val):
+            return f"{val:.0%}" if val is not None else "N/A"
 
         summary += "**Breakdown:**\n"
-        summary += f"- Inverse Pairs: {result.inverse_pair_coherence:.0%}\n"
-        summary += f"- Complementary Pairs: {result.complementary_pair_coherence:.0%}\n"
-        summary += f"- Tier Coherence: {result.tier_coherence:.0%}\n"
-        summary += f"- S-Level Coherence: {result.s_level_coherence:.0%}\n"
-        summary += f"- Internal Consistency: {result.internal_coherence:.0%}\n"
+        summary += f"- Inverse Pairs: {_fmt_score(result.inverse_pair_coherence)}\n"
+        summary += f"- Complementary Pairs: {_fmt_score(result.complementary_pair_coherence)}\n"
+        summary += f"- Tier Coherence: {_fmt_score(result.tier_coherence)}\n"
+        summary += f"- S-Level Coherence: {_fmt_score(result.s_level_coherence)}\n"
+        summary += f"- Internal Consistency: {_fmt_score(result.internal_coherence)}\n"
 
         if result.violations:
             summary += f"\n**Violations:** {result.critical_violations} critical, {result.warning_violations} warnings\n"

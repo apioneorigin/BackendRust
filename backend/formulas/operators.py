@@ -863,7 +863,8 @@ class OperatorEngine:
             return None
         kl = self.calculate_klesha_total(values)
         if kl is None:
-            kl = 0.0  # Klesha sub-components are rarely provided; treat as zero contribution
+            logger.warning("[calculate_maya_effective] missing required: klesha total is None")
+            return None
 
         result = m * (1 - w) * (1 + kl) / 2
         logger.debug(f"[calculate_maya_effective] result: m_eff={result:.3f}")
