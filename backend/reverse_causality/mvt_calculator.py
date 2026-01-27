@@ -226,7 +226,11 @@ class MVTCalculator:
 
             # Leverage from cascade effects
             cascade_effects = self.CASCADE_MAP.get(op)
-            cascade_bonus = len(cascade_effects) * 0.1
+            if cascade_effects is not None:
+                cascade_bonus = len(cascade_effects) * 0.1
+            else:
+                cascade_effects = []
+                cascade_bonus = 0.0
 
             leverage = 1 + cascade_bonus
 
