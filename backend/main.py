@@ -1208,80 +1208,77 @@ Articulation Tokens: {token_count}
 
         # =====================================================================
         # LLM-DRIVEN QUESTION FLOW - After full response
-        # Backend decides IF to ask and WHICH operators to target.
+        # ONE mandatory question per response. Backend decides WHICH operators to target.
         # LLM generates the actual question text and options.
         # =====================================================================
-        should_ask_question = len(missing_operators) >= 5
+        # Get missing_operator_priority from LLM Call 1
+        missing_operator_priority = evidence.get('missing_operator_priority', [])
 
-        if should_ask_question:
-            # Get missing_operator_priority from LLM Call 1
-            missing_operator_priority = evidence.get('missing_operator_priority', [])
+        question_context = question_gen.get_question_context(
+            goal_context=goal_context,
+            missing_operators=missing_operators,
+            known_operators=extracted_operators,
+            missing_operator_priority=missing_operator_priority,
+            question_type='gap_filling'
+        )
 
-            question_context = question_gen.get_question_context(
-                goal_context=goal_context,
-                missing_operators=missing_operators,
-                known_operators=extracted_operators,
-                missing_operator_priority=missing_operator_priority,
-                question_type='gap_filling'
+        if question_context:
+            # LLM generates the actual question content
+            llm_question = await generate_question_via_llm(
+                model_config=model_config,
+                query=prompt,
+                goal_context=evidence.get('goal_context', {}),
+                question_context=question_context
             )
 
-            if question_context:
-                # LLM generates the actual question content
-                llm_question = await generate_question_via_llm(
-                    model_config=model_config,
-                    query=prompt,
-                    goal_context=evidence.get('goal_context', {}),
-                    question_context=question_context
+            if llm_question:
+                from constellation_question_generator import MultiDimensionalQuestion
+                question = MultiDimensionalQuestion(
+                    question_id=question_context['question_id'],
+                    question_text=llm_question['question_text'],
+                    answer_options=llm_question.get('options', {}),
+                    diagnostic_power=question_context['diagnostic_power'],
+                    target_operators=question_context['target_operators'],
+                    purposes_served=question_context['purposes_served'],
+                    goal_context=goal_context
                 )
 
-                if llm_question:
-                    from constellation_question_generator import MultiDimensionalQuestion
-                    question = MultiDimensionalQuestion(
-                        question_id=question_context['question_id'],
-                        question_text=llm_question['question_text'],
-                        answer_options=llm_question.get('options', {}),
-                        diagnostic_power=question_context['diagnostic_power'],
-                        target_operators=question_context['target_operators'],
-                        purposes_served=question_context['purposes_served'],
-                        goal_context=goal_context
-                    )
+                session_data = api_session_store.get(session_id)
+                session_data['evidence'] = evidence
+                session_data['_pending_question'] = question
+                session_data['_question_asked'] = True
+                api_session_store.update(session_id, session_data)
 
-                    session_data = api_session_store.get(session_id)
-                    session_data['evidence'] = evidence
-                    session_data['_pending_question'] = question
-                    session_data['_question_asked'] = True
-                    api_session_store.update(session_id, session_data)
+                yield {
+                    "event": "question",
+                    "data": json.dumps({
+                        "session_id": session_id,
+                        "question_id": question.question_id,
+                        "question_text": question.question_text,
+                        "options": [
+                            {
+                                "id": opt_id,
+                                "text": opt_text
+                            }
+                            for opt_id, opt_text in question.answer_options.items()
+                        ],
+                        "diagnostic_power": question.diagnostic_power,
+                        "purposes_served": question.purposes_served
+                    })
+                }
 
-                    yield {
-                        "event": "question",
-                        "data": json.dumps({
-                            "session_id": session_id,
-                            "question_id": question.question_id,
-                            "question_text": question.question_text,
-                            "options": [
-                                {
-                                    "id": opt_id,
-                                    "text": opt_text
-                                }
-                                for opt_id, opt_text in question.answer_options.items()
-                            ],
-                            "diagnostic_power": question.diagnostic_power,
-                            "purposes_served": question.purposes_served
-                        })
-                    }
+                api_logger.info(f"[QUESTION_LLM] Question sent: {question.question_id}")
+                api_logger.info(f"[QUESTION_LLM] Missing operators: {len(missing_operators)}")
 
-                    api_logger.info(f"[QUESTION_LLM] Question sent: {question.question_id}")
-                    api_logger.info(f"[QUESTION_LLM] Missing operators: {len(missing_operators)}")
-
-                    yield {
-                        "event": "awaiting_answer",
-                        "data": json.dumps({
-                            "message": "Waiting for selection...",
-                            "session_id": session_id,
-                            "continue_after_answer": f"/api/run/continue?session_id={session_id}"
-                        })
-                    }
-                    return
+                yield {
+                    "event": "awaiting_answer",
+                    "data": json.dumps({
+                        "message": "Waiting for selection...",
+                        "session_id": session_id,
+                        "continue_after_answer": f"/api/run/continue?session_id={session_id}"
+                    })
+                }
+                return
         # =====================================================================
         # END LLM-DRIVEN QUESTION FLOW
         # =====================================================================
