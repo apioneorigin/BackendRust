@@ -364,6 +364,8 @@ class BottleneckDetector:
         }
 
         for var, value, name in distortion_checks:
+            if value is None:
+                continue
             if value > 0.7:
                 impact = 'high' if value > 0.85 else 'medium'
 
