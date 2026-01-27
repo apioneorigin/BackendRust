@@ -97,6 +97,8 @@ class LeverageIdentifier:
         ops: Any
     ) -> List[LeveragePoint]:
         """Check for grace + coherence multiplier effect (unity-aligned leverage)"""
+        if ops.Co_coherence is None or ops.G_grace is None:
+            return []
         logger.debug(f"[_check_grace_coherence_leverage] coherence={ops.Co_coherence:.3f} grace={ops.G_grace:.3f}")
         leverage_points = []
 
@@ -150,6 +152,8 @@ class LeverageIdentifier:
         ops: Any
     ) -> List[LeveragePoint]:
         """Check for grace + surrender exponential leverage (highest unity leverage)"""
+        if ops.G_grace is None or ops.S_surrender is None:
+            return []
         logger.debug(f"[_check_grace_surrender_leverage] grace={ops.G_grace:.3f} surrender={ops.S_surrender:.3f}")
         leverage_points = []
 
@@ -278,6 +282,8 @@ class LeverageIdentifier:
         ops: Any
     ) -> List[LeveragePoint]:
         """Check for witness-awareness consciousness leverage (pure unity pathway)"""
+        if ops.W_witness is None or ops.A_aware is None or ops.P_presence is None:
+            return []
         logger.debug(f"[_check_witness_awareness_leverage] witness={ops.W_witness:.3f} aware={ops.A_aware:.3f}")
         leverage_points = []
 
@@ -430,6 +436,8 @@ class LeverageIdentifier:
         ops: Any
     ) -> List[LeveragePoint]:
         """Check for S-level transition leverage (Jeevatma-Paramatma distance reduction)"""
+        if state.tier1.s_level.current is None:
+            return []
         logger.debug(f"[_check_s_level_leverage] s_level={state.tier1.s_level.current:.3f}")
         leverage_points = []
 

@@ -105,6 +105,11 @@ class IntegratedProfile:
     integration_score: float = 0.0
     transformation_potential: float = 0.0
 
+    # Computation tracking
+    _summary_computed: bool = False
+    _computed_modules: List[str] = field(default_factory=list)
+    _skipped_modules: List[str] = field(default_factory=list)
+
 
 class OOFInferenceEngine:
     """Master inference engine integrating all OOF modules."""
@@ -381,11 +386,16 @@ class OOFInferenceEngine:
 
         inference_logger.debug(f"[calculate_full_profile] computed modules: {computed_modules}")
 
+        # Store module tracking on profile
+        profile._computed_modules = computed_modules
+        profile._skipped_modules = skipped_modules
+
         # Calculate summary metrics
         profile = self._calculate_summary_metrics(profile)
 
         inference_logger.info(
             f"[calculate_full_profile] result: modules_computed={len(computed_modules)} "
+            f"summary_computed={profile._summary_computed} "
             f"overall_health={profile.overall_health:.3f} "
             f"liberation_index={profile.liberation_index:.3f} "
             f"integration_score={profile.integration_score:.3f} "
@@ -444,6 +454,7 @@ class OOFInferenceEngine:
         if metrics:
             values = [m[1] for m in metrics if m[1] is not None]
             if values:
+                profile._summary_computed = True
                 profile.overall_health = sum(values) / len(values)
 
                 # Liberation index (weighted toward distortion and kosha)
@@ -640,9 +651,8 @@ class OOFInferenceEngine:
                 values['pathway_unity_success'] = dual.unity_pathway.initial_success_probability
                 values['pathway_crossover_months'] = dual.crossover_point_months
                 values['pathway_recommendation'] = dual.recommended_pathway
-                confidence['pathway_separation_success'] = 0.8
-                confidence['pathway_unity_success'] = 0.8
-                confidence['pathway_crossover_months'] = 0.8
+                for k in ['pathway_separation_success', 'pathway_unity_success', 'pathway_crossover_months']:
+                    confidence[k] = 1.0
 
         result = {
             "values": values,
@@ -652,7 +662,8 @@ class OOFInferenceEngine:
             "metadata": {
                 "populated_operators": list(populated_operators),
                 "missing_operators": list(missing_operators),
-                "modules_executed": ["oof_engine", "dynamics", "network", "quantum", "realism", "unity"],
+                "computed_modules": profile._computed_modules,
+                "skipped_modules": profile._skipped_modules,
             }
         }
 
@@ -710,22 +721,26 @@ class OOFInferenceEngine:
                 if isinstance(val, (int, float)):
                     full_key = f"{prefix}_{key}"
                     values[full_key] = val
-                    confidence[full_key] = 0.8
+                    confidence[full_key] = 1.0  # Deterministic calculation — exact given inputs
                     count += 1
                 elif isinstance(val, str) and len(val) < 100:
                     values[f"{prefix}_{key}"] = val
                     count += 1
             per_prefix_counts[prefix] = count
 
-        # Summary metrics
-        values['overall_health'] = profile.overall_health
-        values['liberation_index'] = profile.liberation_index
-        values['integration_score'] = profile.integration_score
-        values['transformation_potential'] = profile.transformation_potential
-        confidence['overall_health'] = 0.85
-        confidence['liberation_index'] = 0.85
-        confidence['integration_score'] = 0.85
-        confidence['transformation_potential'] = 0.85
+        # Summary metrics — only include if actually computed, otherwise None → non_calculated
+        if profile._summary_computed:
+            values['overall_health'] = profile.overall_health
+            values['liberation_index'] = profile.liberation_index
+            values['integration_score'] = profile.integration_score
+            values['transformation_potential'] = profile.transformation_potential
+            for k in ['overall_health', 'liberation_index', 'integration_score', 'transformation_potential']:
+                confidence[k] = 1.0
+        else:
+            values['overall_health'] = None
+            values['liberation_index'] = None
+            values['integration_score'] = None
+            values['transformation_potential'] = None
 
         # Additional module values
         if profile.dynamics_profile and profile.dynamics_profile.grace and profile.dynamics_profile.karma:
@@ -737,7 +752,7 @@ class OOFInferenceEngine:
             values['transformation_momentum'] = profile.dynamics_profile.transformation_momentum
             for k in ['grace_availability', 'grace_effectiveness', 'karma_burn_rate',
                       'karma_net_change', 'grace_karma_ratio', 'transformation_momentum']:
-                confidence[k] = 0.8
+                confidence[k] = 1.0
 
         if profile.network_profile:
             values['network_emergence'] = profile.network_profile.collective_breakthrough_prob
@@ -746,7 +761,7 @@ class OOFInferenceEngine:
             values['network_critical_mass'] = profile.network_profile.critical_mass_proximity
             for k in ['network_emergence', 'network_field_strength',
                       'network_coherence_multiplier', 'network_critical_mass']:
-                confidence[k] = 0.7
+                confidence[k] = 1.0
 
         if profile.quantum_profile:
             values['quantum_coherence_time'] = profile.quantum_profile.coherence_time
@@ -755,16 +770,15 @@ class OOFInferenceEngine:
             values['quantum_collapse_readiness'] = profile.quantum_profile.collapse_readiness
             for k in ['quantum_coherence_time', 'quantum_tunneling',
                       'quantum_entanglement', 'quantum_collapse_readiness']:
-                confidence[k] = 0.7
+                confidence[k] = 1.0
 
         if profile.realism_profile:
             values['realism_dominant'] = profile.realism_profile.dominant_realism
             values['realism_dominant_weight'] = profile.realism_profile.dominant_weight
             values['realism_coherence'] = profile.realism_profile.coherence
             values['realism_evolution_direction'] = profile.realism_profile.evolution_direction
-            confidence['realism_dominant'] = 0.8
-            confidence['realism_dominant_weight'] = 0.8
-            confidence['realism_coherence'] = 0.75
+            for k in ['realism_dominant', 'realism_dominant_weight', 'realism_coherence']:
+                confidence[k] = 1.0
 
         if profile.unity_profile:
             values['unity_separation_distance'] = profile.unity_profile.separation_distance
@@ -774,7 +788,7 @@ class OOFInferenceEngine:
             values['unity_net_direction'] = profile.unity_profile.net_direction
             for k in ['unity_separation_distance', 'unity_distortion_field',
                       'unity_percolation_quality', 'unity_vector', 'unity_net_direction']:
-                confidence[k] = 0.85
+                confidence[k] = 1.0
 
         inference_logger.debug(
             f"[_flatten_profile] result: total_values={len(values)} "

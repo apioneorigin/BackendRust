@@ -188,7 +188,7 @@ class MVTCalculator:
         # Identify potential blockers
         blockers = self._identify_blockers(mvt_changes, current_operators)
 
-        logger.debug(f"[calculate_mvt] result: {len(mvt_changes)} changes, efficiency={efficiency:.3f} success_prob={success_prob:.3f}")
+        logger.debug(f"[calculate_mvt] result: {len(mvt_changes)} changes, efficiency={efficiency:.3f} success_prob={f'{success_prob:.3f}' if success_prob is not None else 'N/C'}")
         return MinimumViableTransformation(
             changes=mvt_changes,
             total_operators_changed=len(mvt_changes),

@@ -193,9 +193,17 @@ ones into breakthrough insights.
 
 - Values showing actual numbers = successfully calculated from user's data
 - Values showing "N/A" or "Not calculated" = blocked due to missing input operators
-- Base your insights on calculated values
-- Non-calculated values can be referenced when it enhances response (e.g., "to assess X, I'd need more context about Y")
-- Never fabricate or estimate blocked values"""
+- Base your insights ONLY on calculated values
+- Never fabricate or estimate blocked values
+
+**Two types of non-calculated values:**
+1. **Question-addressable gaps** (listed in DATA QUALITY section): These are blocked because
+   specific input operators weren't extracted from the user's query. A follow-up question can
+   fill these. Reference them as: "to assess X, I'd need to understand more about Y in your experience"
+2. **Context-addressable gaps** (listed in DATA QUALITY section): These are blocked because
+   upstream calculations they depend on couldn't complete. These cannot be filled by asking
+   questions. Reference them naturally: "based on what's available..." without drawing attention
+   to the gap."""
 
     def _build_context_section(
         self,
@@ -594,60 +602,57 @@ to articulate. Don't list all values - synthesize the relevant ones.
 - {recommendation}"""
 
     def _build_data_quality_section(self, state: ConsciousnessState) -> str:
-        """Build data quality/metadata section showing calculated vs non-calculated values."""
+        """Build data quality/metadata section showing calculated vs non-calculated buckets."""
         sections = ["\n### DATA QUALITY NOTICE\n"]
         has_content = False
 
-        # ZERO-DEFAULT: Show calculated vs non-calculated split
-        if hasattr(state, 'calculated_values') and hasattr(state, 'non_calculated_values'):
-            calc_count = len(state.calculated_values)
-            non_calc_count = len(state.non_calculated_values)
-            total = calc_count + non_calc_count
-            if total > 0:
-                has_content = True
-                coverage = (calc_count / total * 100) if total > 0 else None
-                sections.append(f"**Calculation Coverage:** {calc_count}/{total} metrics computed ({coverage:.0f}%)")
-                if non_calc_count > 0:
-                    non_calc_list = ', '.join(state.non_calculated_values[:15])
-                    if non_calc_count > 15:
-                        non_calc_list += f" (and {non_calc_count - 15} more)"
-                    sections.append(f"**Non-Calculated (missing data):** {non_calc_list}")
-                    sections.append("(Values marked N/A could not be computed due to missing input operators)")
+        calc_count = len(state.calculated_values)
+        q_count = len(state.non_calculated_question_addressable)
+        c_count = len(state.non_calculated_context_addressable)
+        total = calc_count + q_count + c_count
+
+        if total > 0:
+            has_content = True
+            coverage = calc_count / total * 100
+            sections.append(f"**Calculation Coverage:** {calc_count}/{total} metrics computed ({coverage:.0f}%)")
+
+            if q_count > 0:
+                q_list = ', '.join(state.non_calculated_question_addressable[:15])
+                if q_count > 15:
+                    q_list += f" (and {q_count - 15} more)"
+                sections.append(f"\n**Question-Addressable Gaps ({q_count} metrics):** {q_list}")
+                sections.append(
+                    "These metrics are blocked because specific input operators weren't extracted "
+                    "from the user's query. A follow-up constellation question can fill these gaps. "
+                    "Reference as: \"to assess X, I'd need to understand more about Y in your experience.\""
+                )
+
+            if c_count > 0:
+                c_list = ', '.join(state.non_calculated_context_addressable[:15])
+                if c_count > 15:
+                    c_list += f" (and {c_count - 15} more)"
+                sections.append(f"\n**Context-Addressable Gaps ({c_count} metrics):** {c_list}")
+                sections.append(
+                    "These metrics are blocked because upstream calculations they depend on "
+                    "couldn't complete. Not fixable by asking questions. Reference naturally: "
+                    "\"based on what's available...\" without drawing attention to the gap."
+                )
 
         # Missing operator priority from LLM Call 1
-        if hasattr(state, 'missing_operator_priority') and state.missing_operator_priority:
+        if state.missing_operator_priority:
             has_content = True
             priority_list = ', '.join(state.missing_operator_priority[:10])
-            sections.append(f"**Priority Missing Operators:** {priority_list}")
+            sections.append(f"\n**Priority Missing Operators:** {priority_list}")
             sections.append("(These operators were identified as most important but could not be extracted from user input)")
-
-        # Legacy inference metadata (if available)
-        if hasattr(state, 'inference_metadata') and state.inference_metadata is not None:
-            meta = state.inference_metadata
-            if hasattr(meta, 'populated_operators') and hasattr(meta, 'missing_operators'):
-                populated = len(meta.populated_operators) if meta.populated_operators else None
-                missing = len(meta.missing_operators) if meta.missing_operators else None
-                total = populated + missing
-                if total > 0:
-                    has_content = True
-                    coverage = (populated / total * 100) if total > 0 else None
-                    sections.append(f"**Operator Coverage:** {populated}/{total} ({coverage:.0f}%)")
-                    if meta.missing_operators:
-                        missing_list = ', '.join(list(meta.missing_operators)[:10])
-                        if len(meta.missing_operators) > 10:
-                            missing_list += f" (and {len(meta.missing_operators) - 10} more)"
-                        sections.append(f"**Missing Operators:** {missing_list}")
 
         if not has_content:
             logger.debug("[_build_data_quality_section] skipped: no quality data available")
             return ""
 
-        calc_count = len(state.calculated_values) if hasattr(state, 'calculated_values') else None
-        non_calc_count = len(state.non_calculated_values) if hasattr(state, 'non_calculated_values') else None
-        priority_count = len(state.missing_operator_priority) if hasattr(state, 'missing_operator_priority') else None
         logger.debug(
             f"[_build_data_quality_section] calculated={calc_count} "
-            f"non_calculated={non_calc_count} priority_missing={priority_count}"
+            f"question_addressable={q_count} context_addressable={c_count} "
+            f"priority_missing={len(state.missing_operator_priority)}"
         )
         return '\n'.join(sections) + "\n"
 

@@ -752,8 +752,12 @@ class ConsciousnessState:
     # ZERO-DEFAULT ARCHITECTURE: Split calculated vs non-calculated values
     # calculated_values: metrics that were successfully computed from available operators
     calculated_values: Dict[str, Any] = field(default_factory=dict)
-    # non_calculated_values: metrics that returned None due to missing operator data
-    non_calculated_values: List[str] = field(default_factory=list)
+    # non_calculated_question_addressable: metrics blocked by missing Tier 0 operators
+    # that a constellation question can fill — drives question text articulation
+    non_calculated_question_addressable: List[str] = field(default_factory=list)
+    # non_calculated_context_addressable: metrics blocked by upstream calculation failures
+    # (not fixable by asking a question) — drives non-question response articulation
+    non_calculated_context_addressable: List[str] = field(default_factory=list)
     # LLM Call 1 priority ordering for which missing operators to ask about first
     missing_operator_priority: List[str] = field(default_factory=list)
 

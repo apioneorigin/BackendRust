@@ -51,8 +51,8 @@ class ValueOrganizer:
         logger.info(f"[VALUE_ORGANIZER] Organizing {values_count} computed values into consciousness state")
         logger.debug(f"[VALUE_ORGANIZER] Tier1 keys: {len(tier1_values)} | Targets: {len(tier1_values.get('targets'))}")
 
-        # Split raw values into calculated vs non-calculated
-        calculated_values, non_calculated_values = self._split_calculated_values(raw_values)
+        # Split raw values into calculated vs non-calculated (two buckets)
+        calculated_values, non_calc_question, non_calc_context = self._split_calculated_values(raw_values)
 
         # Extract LLM Call 1's missing operator priority (if provided)
         missing_operator_priority = tier1_values.get('missing_operator_priority')
@@ -76,16 +76,19 @@ class ValueOrganizer:
             unity_metrics=self._extract_unity_metrics(raw_values),
             dual_pathways=self._extract_dual_pathways(raw_values),
             goal_context=self._extract_goal_context(tier1_values),
-            # ZERO-DEFAULT ARCHITECTURE: Split calculated vs non-calculated
+            # ZERO-DEFAULT ARCHITECTURE: Split calculated vs non-calculated (two buckets)
             calculated_values=calculated_values,
-            non_calculated_values=non_calculated_values,
+            non_calculated_question_addressable=non_calc_question,
+            non_calculated_context_addressable=non_calc_context,
             missing_operator_priority=missing_operator_priority
         )
 
         logger.info(
             f"[VALUE_ORGANIZER] Organization complete: "
             f"S-level={state.tier1.s_level.current} "
-            f"calculated={len(calculated_values)} non_calculated={len(non_calculated_values)} "
+            f"calculated={len(calculated_values)} "
+            f"question_addressable={len(non_calc_question)} "
+            f"context_addressable={len(non_calc_context)} "
             f"missing_operator_priority={len(missing_operator_priority)} "
             f"unity_metrics={'present' if state.unity_metrics else 'None'} "
             f"dual_pathways={'present' if state.dual_pathways else 'None'} "
@@ -99,33 +102,76 @@ class ValueOrganizer:
         raw_values: Dict[str, Any]
     ) -> tuple:
         """
-        Split raw inference values into calculated vs non-calculated.
+        Split raw inference values into calculated vs non-calculated buckets.
 
         ZERO-DEFAULT ARCHITECTURE:
-        - calculated_values: {key: value} for all metrics that were successfully computed
-        - non_calculated_values: [key] for all metrics that returned None (missing operators)
+        - calculated: {key: value} — metrics successfully computed
+        - question_addressable: [key] — blocked by missing Tier 0 operators;
+          a constellation question can fill these, enabling calculation next cycle
+        - context_addressable: [key] — blocked by upstream calculation failure;
+          not fixable by asking a question, explain in response context
+
+        Bucketing logic:
+        - If skipped_modules exists in metadata, any value belonging to a skipped
+          module is question_addressable (the module was skipped because required
+          operators were missing — those operators are what questions target).
+        - Other None values are context_addressable (the module ran but a
+          sub-calculation produced None, or summary metrics couldn't be derived).
 
         Returns:
-            Tuple of (calculated_values dict, non_calculated_values list)
+            Tuple of (calculated_values dict, question_addressable list, context_addressable list)
         """
         values = raw_values.get('values') if isinstance(raw_values, dict) else raw_values
         if not isinstance(values, dict):
-            return {}, []
+            return {}, [], []
+
+        metadata = raw_values.get('metadata', {}) if isinstance(raw_values, dict) else {}
+        skipped_modules = set(metadata.get('skipped_modules', []))
+
+        # Build prefix→skipped lookup from skipped module names
+        # Module names in inference map to value prefixes in _flatten_profile
+        module_to_prefix = {
+            "operators": "op", "drives": "drives", "matrices": "matrices",
+            "pathways": "pathways", "cascade": "cascade", "emotions": "emotion",
+            "death": "death", "collective": "collective", "circles": "circles",
+            "kosha": "kosha", "osafc": "osafc", "distortions": "distortion",
+            "panchakritya": "panchakritya", "advanced_math": "advmath",
+            "hierarchical": "hierarchical", "platform": "platform",
+            "multi_reality": "multi_reality", "timeline": "timeline",
+            # s_level-dependent modules that also produce summary/additional values
+            "dynamics": "grace,karma,transformation", "network": "network",
+            "quantum": "quantum", "realism": "realism", "unity": "unity",
+        }
+        skipped_prefixes = set()
+        for mod in skipped_modules:
+            prefixes = module_to_prefix.get(mod, mod)
+            for p in prefixes.split(","):
+                skipped_prefixes.add(p.strip())
 
         calculated = {}
-        non_calculated = []
+        question_addressable = []
+        context_addressable = []
 
         for key, value in values.items():
-            if value is None:
-                non_calculated.append(key)
-            else:
+            if value is not None:
                 calculated[key] = value
+                continue
+
+            # Determine which bucket: does this key belong to a skipped module?
+            key_prefix = key.split('_')[0] if '_' in key else key
+            if key_prefix in skipped_prefixes:
+                question_addressable.append(key)
+            else:
+                context_addressable.append(key)
 
         logger.debug(
             f"[_split_calculated_values] total={len(values)} "
-            f"calculated={len(calculated)} non_calculated={len(non_calculated)}"
+            f"calculated={len(calculated)} "
+            f"question_addressable={len(question_addressable)} "
+            f"context_addressable={len(context_addressable)} "
+            f"skipped_prefixes={skipped_prefixes}"
         )
-        return calculated, non_calculated
+        return calculated, question_addressable, context_addressable
 
     def _get_value(self, values: Dict[str, Any], *keys, default: Optional[float] = None) -> Optional[float]:
         """Get value from dict, trying multiple key names. Returns None if not found (ZERO-FALLBACK)."""

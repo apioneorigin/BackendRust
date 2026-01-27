@@ -961,7 +961,8 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
         api_logger.info(f"[PURE ARCHITECTURE] Sending ALL {total_values} non-null values to LLM Call 2")
         api_logger.info(f"[PURE ARCHITECTURE] Context provided: targets={len(evidence.get('targets'))}, query_pattern={evidence.get('query_pattern')}")
 
-        articulation_logger.info(f"[VALUE ORGANIZER] S-Level: {consciousness_state.tier1.s_level.current:.1f} ({consciousness_state.tier1.s_level.label})")
+        s_current = consciousness_state.tier1.s_level.current
+        articulation_logger.info(f"[VALUE ORGANIZER] S-Level: {f'{s_current:.1f}' if s_current is not None else 'N/C'} ({consciousness_state.tier1.s_level.label})")
         articulation_logger.debug(f"[VALUE ORGANIZER] Tier1 operators: {len(vars(consciousness_state.tier1))} fields")
 
         # Detect bottlenecks
@@ -971,7 +972,7 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
         bottleneck_summary = bottleneck_detector.get_summary(bottlenecks)
         articulation_logger.info(f"[BOTTLENECK DETECTOR] Found {bottleneck_summary['total_count']} bottlenecks")
         for bn in bottlenecks[:3]:
-            articulation_logger.debug(f"  - {bn.category}: {bn.variable} = {bn.value:.2f} ({bn.impact})")
+            articulation_logger.debug(f"  - {bn.category}: {bn.variable} = {f'{bn.value:.2f}' if bn.value is not None else 'N/C'} ({bn.impact})")
         pipeline_logger.log_step("Bottleneck Detection", {"count": bottleneck_summary['total_count']})
 
         # Identify leverage points
@@ -1844,7 +1845,8 @@ async def format_results_streaming_bridge(
     articulation_logger.info(f"  - Bottlenecks: {bottleneck_count}")
     articulation_logger.info(f"  - Leverage points: {leverage_count}")
     articulation_logger.info(f"  - Reverse mapping: {has_reverse_mapping}")
-    articulation_logger.debug(f"  - S-Level: {consciousness_state.tier1.s_level.current:.1f}")
+    s_current = consciousness_state.tier1.s_level.current
+    articulation_logger.debug(f"  - S-Level: {f'{s_current:.1f}' if s_current is not None else 'N/C'}")
     articulation_logger.debug(f"  - Domain: {evidence.get('domain')}")
 
     if not api_key:
@@ -1919,7 +1921,7 @@ Focus changes on these key operators (in order):
 Timeline estimate: {reverse_mapping.get('timeline')}
 
 **Grace Dependency:**
-{reverse_mapping.get('grace_dependency'):.0%} of this transformation depends on grace activation
+{f"{reverse_mapping.get('grace_dependency'):.0%}" if reverse_mapping.get('grace_dependency') is not None else "N/C"} of this transformation depends on grace activation
 
 **Death Processes Required:**
 {reverse_mapping.get('deaths_required')} identity deaths in sequence: {', '.join(reverse_mapping.get('death_sequence'))}
@@ -2550,7 +2552,7 @@ def format_results_fallback_bridge(
         "",
         "### Current State",
         f"You are operating at a consciousness level characterized by {s_level.label}.",
-        f"Your present-moment awareness is at {ops.P_presence * 100:.0f}%, with overall consciousness quality at {ops.Psi_quality * 100:.0f}%.",
+        f"Your present-moment awareness is at {f'{ops.P_presence * 100:.0f}' if ops.P_presence is not None else 'N/C'}%, with overall consciousness quality at {f'{ops.Psi_quality * 100:.0f}' if ops.Psi_quality is not None else 'N/C'}%.",
         "",
         "### Key Patterns Identified",
     ]
@@ -2909,11 +2911,14 @@ async def run_reverse_mapping_for_articulation(
     # This uses properly computed tier-1 values after formula execution
     current_operators = _extract_operators_from_consciousness_state(consciousness_state)
     reverse_logger.debug(f"[REVERSE MAPPING] Extracted {len(current_operators)} operators from consciousness state")
-    reverse_logger.debug(f"[REVERSE MAPPING] Sample operators: Psi={current_operators.get('Psi_quality'):.2f}, G={current_operators.get('G_grace'):.2f}, K={current_operators.get('K_karma'):.2f}")
+    psi_val = current_operators.get('Psi_quality')
+    g_val = current_operators.get('G_grace')
+    k_val = current_operators.get('K_karma')
+    reverse_logger.debug(f"[REVERSE MAPPING] Sample operators: Psi={f'{psi_val:.2f}' if psi_val is not None else 'N/C'}, G={f'{g_val:.2f}' if g_val is not None else 'N/C'}, K={f'{k_val:.2f}' if k_val is not None else 'N/C'}")
 
     # Get current S-level from consciousness state
     current_s_level = consciousness_state.tier1.s_level.current
-    reverse_logger.info(f"[REVERSE MAPPING] Current S-Level: {current_s_level:.1f}")
+    reverse_logger.info(f"[REVERSE MAPPING] Current S-Level: {f'{current_s_level:.1f}' if current_s_level is not None else 'N/C'}")
 
     # Find matching signatures
     reverse_logger.debug("[REVERSE MAPPING] Searching signature library...")
@@ -3242,7 +3247,7 @@ Focus on these {len(reverse_result['mvt']['operators'])} key changes:
 Estimated: {reverse_result['timeline']}
 
 ### Grace Dependency
-This transformation is {reverse_result['grace_dependency']:.0%} grace-dependent.
+This transformation is {f"{reverse_result['grace_dependency']:.0%}" if reverse_result.get('grace_dependency') is not None else "N/C"} grace-dependent.
 """
         for word in text.split():
             yield word + " "
@@ -3285,7 +3290,7 @@ Implementation order: {' → '.join(reverse_result['mvt']['implementation_order'
 Timeline: {reverse_result['timeline']}
 
 === GRACE DEPENDENCY ===
-{reverse_result['grace_dependency']:.0%} grace-dependent
+{f"{reverse_result['grace_dependency']:.0%}" if reverse_result.get('grace_dependency') is not None else "N/C"} grace-dependent
 
 === TASK ===
 Provide transformation guidance that:

@@ -194,7 +194,7 @@ class PipelineLogger:
         if details:
             detail_str = " | " + ", ".join(f"{k}={v}" for k, v in details.items())
 
-        self.logger.info(f"[STEP] {step_name} @ {elapsed:.2f}s{detail_str}")
+        self.logger.info(f"[STEP] {step_name} @ {f'{elapsed:.2f}' if elapsed is not None else 'N/A'}s{detail_str}")
 
     def end_pipeline(self, success: bool = True):
         """Log pipeline completion"""
@@ -202,7 +202,7 @@ class PipelineLogger:
         status = "SUCCESS" if success else "FAILED"
 
         self.logger.info(f"{'='*60}")
-        self.logger.info(f"[PIPELINE {status}] Total time: {elapsed:.2f}s | Steps: {len(self.steps)}")
+        self.logger.info(f"[PIPELINE {status}] Total time: {f'{elapsed:.2f}' if elapsed is not None else 'N/A'}s | Steps: {len(self.steps)}")
         self.logger.info(f"{'='*60}")
 
 
