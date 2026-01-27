@@ -474,6 +474,7 @@ async def continue_inference(
     evidence = session_data.get('evidence')
     model_config = session_data.get('model_config')
     prompt = session_data.get('prompt')
+    web_search_data = session_data.get('web_search_data', True)
     web_search_insights = session_data.get('web_search_insights')
     selected_answer_text = session_data.get('_selected_answer_text', '')
     question_text = session_data.get('_question_text', '')
@@ -484,6 +485,7 @@ async def continue_inference(
             prompt=prompt,
             evidence=evidence,
             model_config=model_config,
+            web_search_data=web_search_data,
             web_search_insights=web_search_insights,
             answer_text=selected_answer_text,
             question_text=question_text
@@ -512,6 +514,7 @@ async def inference_stream_continue(
     prompt: str,
     evidence: dict,
     model_config: dict,
+    web_search_data: bool = True,
     web_search_insights: bool = True,
     answer_text: str = '',
     question_text: str = ''
@@ -519,34 +522,68 @@ async def inference_stream_continue(
     """
     Continue inference pipeline after question has been answered.
 
-    Runs LLM Call 1 on combined context (original query + user's answer)
-    to extract actual operator values, then re-runs full inference pipeline.
+    Runs LLM Call 1 on combined context (original query + all accumulated context
+    + user's answer) to extract actual operator values, then re-runs full pipeline.
     """
     start_time = time.time()
 
     try:
-        # Step 1B: Re-run LLM Call 1 with combined context (original + answer)
+        # Step 1B: Re-run LLM Call 1 with full accumulated context + answer
         if answer_text:
-            api_logger.info("[STEP 1B] Re-running LLM Call 1 with answer context")
+            api_logger.info("[STEP 1B] Re-running LLM Call 1 with full context + answer")
             yield {
                 "event": "status",
                 "data": json.dumps({"message": "Re-analyzing with your response..."})
             }
 
-            # Build combined prompt: original query + Q&A context
+            # Build combined prompt with ALL accumulated context
+            # 1. Original query
+            # 2. Previous LLM Call 1 context (identity, goal, web research)
+            # 3. Previous operator values (so LLM knows what was already extracted)
+            # 4. Question + Answer (new context from user)
+            prev_identity = evidence.get('user_identity', '')
+            prev_goal = evidence.get('goal', '')
+            prev_web_summary = evidence.get('web_research_summary', '')
+            prev_key_facts = evidence.get('key_facts', [])
+
+            # Format previous operator values with confidence
+            prev_ops_lines = []
+            for obs in evidence.get('observations', []):
+                if isinstance(obs, dict) and 'var' in obs:
+                    var = obs.get('var', '')
+                    val = obs.get('value', '')
+                    conf = obs.get('confidence', '')
+                    prev_ops_lines.append(f"  {var}: value={val}, confidence={conf}")
+            prev_ops_text = '\n'.join(prev_ops_lines) if prev_ops_lines else 'None'
+
+            # Format key facts
+            facts_text = ''
+            if prev_key_facts:
+                facts_lines = [f"  - {f.get('fact', '')}" for f in prev_key_facts[:5] if isinstance(f, dict)]
+                facts_text = '\n'.join(facts_lines)
+
             combined_prompt = f"""{prompt}
+
+PREVIOUS ANALYSIS CONTEXT:
+Identity assumed: {prev_identity}
+Goal identified: {prev_goal}
+Web research summary: {prev_web_summary}
+{f'Key facts:{chr(10)}{facts_text}' if facts_text else ''}
+
+PREVIOUS OPERATOR EXTRACTION (re-evaluate with new context):
+{prev_ops_text}
 
 FOLLOW-UP CONTEXT:
 Question asked: {question_text}
 User's response: {answer_text}
 
-Use BOTH the original query AND this follow-up response to extract all 25 operator values.
-The follow-up response provides additional insight into the user's inner experience.
-Re-evaluate ALL operators with this additional context — especially operators that were
-uncertain in the initial extraction."""
+Use ALL of the above — original query, previous research, AND the follow-up response —
+to extract all 25 operator values. The follow-up response provides additional insight into
+the user's inner experience. Re-evaluate ALL operators with this combined context —
+especially operators that were uncertain (low confidence) in the initial extraction."""
 
             new_evidence = await parse_query_with_web_research(
-                combined_prompt, model_config, use_web_search=False
+                combined_prompt, model_config, use_web_search=web_search_data
             )
 
             # Merge: new extraction overrides previous for operators with higher confidence
