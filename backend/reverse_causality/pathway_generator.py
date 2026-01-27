@@ -16,8 +16,7 @@ Pathways respect:
 """
 
 from typing import Dict, List, Any, Optional, Tuple
-from dataclasses import dataclass, field
-import math
+from dataclasses import dataclass
 
 from logging_config import get_logger
 logger = get_logger('reverse_causality.pathways')

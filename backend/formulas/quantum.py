@@ -12,10 +12,9 @@ Key Concepts:
 Based on quantum consciousness theories and OOF framework physics.
 """
 
-from typing import Dict, Any, List, Optional, Tuple, Set
+from typing import Dict, Any, List, Optional, Tuple
 from dataclasses import dataclass, field
 import math
-import random
 
 from logging_config import get_logger
 logger = get_logger('formulas.quantum')
@@ -620,7 +619,7 @@ class QuantumMechanics:
 
         else:
             # Weak measurement - minimal effect
-            logger.debug(f"[simulate_measurement] result: weak measurement, no collapse")
+            logger.debug("[simulate_measurement] result: weak measurement, no collapse")
             return {
                 'collapsed': False,
                 'result_state': None,

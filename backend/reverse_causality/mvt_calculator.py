@@ -12,9 +12,8 @@ Uses sensitivity analysis to identify:
 Goal: "Change these 3 operators by this much" instead of "change everything"
 """
 
-from typing import Dict, List, Any, Optional, Tuple
-from dataclasses import dataclass, field
-import math
+from typing import Dict, List
+from dataclasses import dataclass
 
 from logging_config import get_logger
 logger = get_logger('reverse_causality.mvt')
@@ -177,9 +176,6 @@ class MVTCalculator:
         total_magnitude = sum(c.change_magnitude for c in mvt_changes)
         efficiency = len(mvt_changes) / max(1, full_change_count)
 
-        # Estimate effort and time
-        effort = None
-        time_est = None
         success_prob = None
 
         # Generate implementation order

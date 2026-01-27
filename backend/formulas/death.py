@@ -21,9 +21,8 @@ Formula: Death_Depth = E × V × transformation_magnitude
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Dict, Optional, Any
 from enum import Enum
-import math
 
 from logging_config import get_logger
 logger = get_logger('formulas.death')
@@ -726,7 +725,7 @@ if __name__ == "__main__":
             print(f"  Phase: {death.phase.value}")
             print(f"  S-Level Readiness: {death.s_level_readiness:.3f}")
 
-    print(f"\n--- Integration Metrics ---")
+    print("\n--- Integration Metrics ---")
     print(f"Active Death Type: {profile.active_death_type.value if profile.active_death_type else 'None'}")
     print(f"Overall Transformation: {profile.overall_transformation_intensity:.3f}")
     print(f"Death Readiness: {profile.death_readiness:.3f}")

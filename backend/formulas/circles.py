@@ -17,8 +17,8 @@ Each circle has:
 Formula: Circle_Radius = Influence × Energy_Investment × Time_Allocation
 """
 
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any
+from dataclasses import dataclass
+from typing import Dict
 from enum import Enum
 import math
 

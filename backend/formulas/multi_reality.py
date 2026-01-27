@@ -14,9 +14,8 @@ Includes:
 """
 
 from typing import Dict, Any, List, Optional, Tuple
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import math
-import cmath
 
 from logging_config import get_logger
 logger = get_logger('formulas.multi_reality')
@@ -604,7 +603,7 @@ class MultiRealityEngine:
             f"participants={num_participants}"
         )
         if num_participants == 0:
-            logger.warning(f"[calculate_reality_overlap] zero participants, returning 0.0")
+            logger.warning("[calculate_reality_overlap] zero participants, returning 0.0")
             return 0.0
 
         overlap = (shared_beliefs * shared_consciousness_level * interaction_frequency) / num_participants

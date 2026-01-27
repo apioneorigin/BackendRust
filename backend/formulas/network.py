@@ -14,8 +14,8 @@ Based on:
 - Collective consciousness research
 """
 
-from typing import Dict, Any, List, Optional, Tuple, Set
-from dataclasses import dataclass, field
+from typing import Dict, Any, List, Optional
+from dataclasses import dataclass
 import math
 
 from logging_config import get_logger

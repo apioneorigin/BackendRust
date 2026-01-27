@@ -60,7 +60,6 @@ import httpx
 import time
 from pathlib import Path
 from typing import Optional, AsyncGenerator, Dict, Any, Tuple, List
-from dataclasses import asdict
 
 from fastapi import FastAPI, Query, HTTPException
 from fastapi.responses import HTMLResponse, FileResponse
@@ -72,10 +71,10 @@ from value_organizer import ValueOrganizer
 from bottleneck_detector import BottleneckDetector
 from leverage_identifier import LeverageIdentifier
 from articulation_prompt_builder import ArticulationPromptBuilder, build_articulation_context
-from consciousness_state import ConsciousnessState, UserContext, WebResearch
+from consciousness_state import ConsciousnessState
 
 # Constellation Q&A imports — backend decides IF/WHICH, LLM generates content
-from constellation_question_generator import ConstellationQuestionGenerator, GoalContext
+from constellation_question_generator import ConstellationQuestionGenerator
 
 # Import logging
 from logging_config import (
@@ -83,9 +82,7 @@ from logging_config import (
     articulation_logger,
     reverse_logger,
     pipeline_logger,
-    consciousness_logger,
     evidence_grounding_logger,
-    get_logger
 )
 
 # Reverse Causality Mapping imports
@@ -325,6 +322,8 @@ MODEL_CONFIGS = {
 }
 
 DEFAULT_MODEL = "gpt-5.2"
+OPENAI_MODEL = DEFAULT_MODEL
+OPENAI_RESPONSES_URL = MODEL_CONFIGS[DEFAULT_MODEL]["streaming_endpoint"]
 
 def get_model_config(model: str) -> dict:
     """Get configuration for a specific model"""
@@ -688,20 +687,6 @@ especially operators that were uncertain (low confidence) in the initial extract
                 "message": f"Analysis complete: {len(bottlenecks)} bottlenecks, {len(leverage_points)} leverage points"
             })
         }
-
-        # Build articulation context
-        articulation_context = build_articulation_context(
-            user_identity=evidence.get('user_identity'),
-            domain=evidence.get('goal_context', {}).get('domain'),
-            goal=prompt,
-            current_situation=prompt,
-            consciousness_state=consciousness_state,
-            web_research_summary=evidence.get('web_research_summary'),
-            key_facts=evidence.get('key_facts'),
-            framework_concealment=True,
-            domain_language=True,
-            search_guidance_data=evidence.get('search_guidance')
-        )
 
         # Step 4: LLM Call 2 - Articulation via streaming bridge
         api_logger.info("[STEP 4] LLM Call 2 - Articulation (streaming bridge)")
@@ -1298,7 +1283,6 @@ Articulation Tokens: {token_count}
         }
 
     except Exception as e:
-        import traceback
         api_logger.error(f"[PIPELINE ERROR] {type(e).__name__}: {e}", exc_info=True)
         pipeline_logger.end_pipeline(success=False)
         yield {
@@ -1695,7 +1679,7 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
                     content = data.get("content")
                     for block in content:
                         if block.get("type") == "tool_use" and block.get("name") == "web_search":
-                            query = block.get("input").get("query")
+                            query = block["input"]["query"]
                             if query:
                                 search_queries_logged.append(query)
                                 api_logger.info(f"[PARSE SEARCH] Anthropic query: {query}")
@@ -1872,7 +1856,7 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
                                 import json as json_mod
                                 try:
                                     args = json_mod.loads(args)
-                                except:
+                                except (json_mod.JSONDecodeError, ValueError, TypeError):
                                     pass
                             query = args.get("query") if isinstance(args, dict) else ""
                             if query:
@@ -1950,7 +1934,7 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
                     api_logger.warning(f"[PARSE] JSON decode failed at pos {json_err.pos}, attempting repair...")
                     repaired_text = repair_truncated_json(json_text)
                     result = json.loads(repaired_text)
-                    api_logger.info(f"[PARSE] JSON repair successful")
+                    api_logger.info("[PARSE] JSON repair successful")
 
                 # Inject logged search queries if not present in result
                 if search_queries_logged and not result.get("search_queries_used"):
@@ -2155,7 +2139,7 @@ Return ONLY valid JSON:
         result = json.loads(text)
 
         if "question_text" not in result or "options" not in result:
-            api_logger.error(f"[QUESTION_LLM] Missing required fields in response")
+            api_logger.error("[QUESTION_LLM] Missing required fields in response")
             return None
 
         api_logger.info(f"[QUESTION_LLM] Generated question: '{result['question_text'][:80]}...'")
@@ -2243,7 +2227,7 @@ async def format_results_streaming_bridge(
 
     # Log evidence grounding configuration for Call 2
     if search_guidance_data:
-        articulation_logger.info(f"[ARTICULATION BRIDGE] Evidence grounding enabled:")
+        articulation_logger.info("[ARTICULATION BRIDGE] Evidence grounding enabled:")
         articulation_logger.info(f"  - Query pattern: {query_pattern}")
         articulation_logger.info(f"  - High-priority values: {len(search_guidance_data.get('high_priority_values'))}")
         articulation_logger.info(f"  - Evidence search queries: {len(search_guidance_data.get('evidence_search_queries'))}")
@@ -2270,7 +2254,7 @@ calculated by working backward from their desired outcome:
 
 **Minimum Viable Transformation (MVT):**
 Focus changes on these key operators (in order):
-{' → '.join(reverse_mapping.get('mvt').get('implementation_order'))}
+{' → '.join(reverse_mapping['mvt']['implementation_order'])}
 
 **Recommended Pathway:**
 {reverse_mapping.get('best_pathway')}
@@ -2280,7 +2264,7 @@ Timeline estimate: {reverse_mapping.get('timeline')}
 {f"{reverse_mapping.get('grace_dependency'):.0%}" if reverse_mapping.get('grace_dependency') is not None else "N/C"} of this transformation depends on grace activation
 
 **Death Processes Required:**
-{reverse_mapping.get('deaths_required')} identity deaths in sequence: {', '.join(reverse_mapping.get('death_sequence'))}
+{reverse_mapping['deaths_required']} identity deaths in sequence: {', '.join(reverse_mapping['death_sequence'])}
 
 **Monitoring Indicators:**
 Check-in schedule: {reverse_mapping.get('check_in_schedule')}
@@ -2439,9 +2423,7 @@ SECTION 5: FIRST STEPS
 === END RESPONSE STRUCTURE ==="""
 
     # Retry state tracking
-    last_error = None
     content_yielded = False
-    tokens_yielded = False
     tokens_streamed = 0
 
     for attempt in range(STREAMING_MAX_RETRIES + 1):
@@ -2671,7 +2653,7 @@ SECTION 5: FIRST STEPS
                                         # Handle Anthropic streaming events
                                         if event_type == "message_start":
                                             # Input tokens and cache metrics come in message_start
-                                            usage = data.get("message").get("usage")
+                                            usage = data["message"]["usage"]
                                             input_tokens = usage.get("input_tokens")
                                             cache_creation_tokens = usage.get("cache_creation_input_tokens")
                                             cache_read_tokens = usage.get("cache_read_input_tokens")
@@ -2697,7 +2679,6 @@ SECTION 5: FIRST STEPS
 
                         # Stream completed successfully
                         api_logger.info(f"[ARTICULATION] Streamed {tokens_streamed} tokens (cache_read={cache_read_tokens}, cache_write={cache_creation_tokens})")
-                        tokens_yielded = True
                         yield {
                             "__token_usage__": True,
                             "input_tokens": input_tokens,
@@ -2772,7 +2753,7 @@ SECTION 5: FIRST STEPS
                                         # Log web search results for grounding
                                         event_type = data.get("type")
                                         if event_type == "web_search_call" or "web_search" in str(data.get("tool")):
-                                            articulation_logger.debug(f"[ARTICULATION SEARCH] Initiated web search")
+                                            articulation_logger.debug("[ARTICULATION SEARCH] Initiated web search")
                                         if "search_results" in data or "results" in data:
                                             results = data.get("search_results")
                                             if isinstance(results, list) and results:
@@ -2802,7 +2783,7 @@ SECTION 5: FIRST STEPS
                                                 yield data["delta"]["text"]
                                         # Capture token usage from response.completed event
                                         elif event_type == "response.completed":
-                                            usage = data.get("response").get("usage")
+                                            usage = data["response"]["usage"]
                                             input_tokens = usage.get("input_tokens")
                                             output_tokens = usage.get("output_tokens")
                                         # Skip all other events - they contain duplicates or metadata
@@ -2813,12 +2794,10 @@ SECTION 5: FIRST STEPS
 
                         # Stream completed successfully
                         api_logger.info(f"[ARTICULATION] Streamed {tokens_streamed} tokens")
-                        tokens_yielded = True
                         yield {"__token_usage__": True, "input_tokens": input_tokens, "output_tokens": output_tokens, "total_tokens": input_tokens + output_tokens}
                         return  # Success - exit the retry loop
 
         except Exception as e:
-            last_error = e
             error_type = type(e).__name__
 
             # If we already yielded content, we can't retry (user has seen partial response)
@@ -2844,7 +2823,7 @@ SECTION 5: FIRST STEPS
             break
 
     # All retries exhausted or non-retryable error - use fallback
-    api_logger.warning(f"[ARTICULATION] Using fallback response after streaming failure")
+    api_logger.warning("[ARTICULATION] Using fallback response after streaming failure")
     fallback_text = format_results_fallback_bridge(prompt, evidence, consciousness_state)
     for word in fallback_text.split():
         yield word + " "
@@ -2855,11 +2834,11 @@ def format_results_fallback(prompt: str, evidence: dict, posteriors: dict) -> st
     """Format results without OpenAI (legacy fallback)"""
 
     lines = [
-        f"## Transformation Analysis",
-        f"",
+        "## Transformation Analysis",
+        "",
         f"**Query:** {prompt}",
-        f"",
-        f"### Evidence Detected",
+        "",
+        "### Evidence Detected",
     ]
 
     for obs in evidence.get("observations", []):
@@ -3217,7 +3196,8 @@ async def reverse_map_stream(
                 "implementation_order": mvt.implementation_order
             },
             "best_pathway": optimization_result.best_pathway.pathway_name,
-            "grace_dependency": grace_req.grace_dependency
+            "grace_dependency": grace_req.grace_dependency,
+            "timeline": primary_signature.typical_timeline if matching_signatures else None
         }
 
         # Stream articulation
@@ -3402,7 +3382,8 @@ async def run_reverse_mapping_for_articulation(
         "deaths_required": len(death_sequence.deaths_required),
         "death_sequence": death_sequence.sequence_order,
         "void_tolerance_required": death_sequence.void_tolerance_required,
-        "check_in_schedule": monitoring_plan.check_in_schedule if monitoring_plan else "Weekly",
+        "check_in_schedule": monitoring_plan.check_in_schedule if monitoring_plan else None,
+        "timeline": primary_signature.typical_timeline if matching_signatures else None,
         "mvt_operators": mvt.total_operators_changed,
         "blocking_constraints": constraint_result.blocking_count,
         "prerequisites": constraint_result.prerequisites[:3] if constraint_result.prerequisites else []

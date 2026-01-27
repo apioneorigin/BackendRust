@@ -12,10 +12,9 @@ Mathematical Approach:
 Uses gradient descent with constraint satisfaction for non-linear optimization.
 """
 
-from typing import Dict, List, Any, Optional, Tuple
-from dataclasses import dataclass, field
+from typing import Dict, List, Any, Optional
+from dataclasses import dataclass
 import math
-import random
 
 from logging_config import get_logger
 logger = get_logger('reverse_causality.engine')
@@ -643,7 +642,10 @@ class ReverseCausalityEngine:
 
             if change > 0.01:
                 # difficulty is config metadata
-                difficulty = self.OPERATORS.get(op).get('difficulty')
+                op_config = self.OPERATORS.get(op)
+                if op_config is None:
+                    continue
+                difficulty = op_config.get('difficulty')
                 if difficulty is None:
                     continue
                 total_difficulty += change * difficulty
@@ -774,7 +776,10 @@ class ReverseCausalityEngine:
 
             if abs(delta) > 0.02:
                 # difficulty is config metadata
-                difficulty = self.OPERATORS.get(op).get('difficulty')
+                op_config = self.OPERATORS.get(op)
+                if op_config is None:
+                    continue
+                difficulty = op_config.get('difficulty')
                 if difficulty is None:
                     continue
 

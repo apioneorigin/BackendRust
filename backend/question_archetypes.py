@@ -21,7 +21,7 @@ parent, or startup founder. The consciousness patterns are universal.
 NOTE: All operator names match codebase exactly (P_presence NOT P_prana)
 """
 
-from typing import Dict, List, Tuple
+from typing import Dict, Tuple
 from dataclasses import dataclass, field
 
 

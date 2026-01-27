@@ -26,9 +26,8 @@ Variable Suffixes (standardized):
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Set, Tuple, Any
+from typing import Dict, List, Optional, Tuple, Any
 from enum import Enum
-import math
 
 
 class NamespaceCategory(Enum):

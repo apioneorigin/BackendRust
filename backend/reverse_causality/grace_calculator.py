@@ -17,9 +17,8 @@ Grace Activation Factors:
 6. Coherence with divine will
 """
 
-from typing import Dict, List, Any, Optional, Tuple
-from dataclasses import dataclass, field
-import math
+from typing import Dict, List, Optional
+from dataclasses import dataclass
 
 from logging_config import get_logger
 logger = get_logger('reverse_causality.grace')
@@ -580,7 +579,7 @@ class GraceCalculator:
         summary += f"\n**Grace Timing Probability:** {requirement.grace_timing_probability:.0%}\n"
         summary += f"**Potential Multiplication:** {requirement.potential_multiplication_factor:.1f}x\n"
 
-        summary += f"\n**Activation Steps:**\n"
+        summary += "\n**Activation Steps:**\n"
         for i, step in enumerate(requirement.activation_steps[:4], 1):
             summary += f"  {i}. {step}\n"
 

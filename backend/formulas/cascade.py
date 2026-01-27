@@ -26,7 +26,7 @@ Demultiplexer Mechanics:
 ZERO-FALLBACK MODE: No default 0.5 values. Missing operators result in None calculations.
 """
 
-from typing import Dict, Any, List, Tuple, Optional, Set, Union
+from typing import Dict, Any, List, Tuple, Optional, Set
 from dataclasses import dataclass, field
 from enum import Enum
 import logging

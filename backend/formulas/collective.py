@@ -16,8 +16,8 @@ Formulas:
 - We_Space_Quality = Coherence × Shared_S_level × Alignment
 """
 
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any
+from dataclasses import dataclass
+from typing import Dict
 from enum import Enum
 import math
 

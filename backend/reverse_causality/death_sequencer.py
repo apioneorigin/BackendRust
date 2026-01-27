@@ -18,9 +18,8 @@ Phases within each death:
 4. Rebirth - New structure emerging
 """
 
-from typing import Dict, List, Any, Optional, Tuple
-from dataclasses import dataclass, field
-import math
+from typing import Dict, List, Any, Optional
+from dataclasses import dataclass
 
 from formulas.death import DeathPhase
 
@@ -551,7 +550,7 @@ class DeathSequencer:
         void_needed = self._calculate_void_tolerance_needed(deaths)
         current_void = operators.get('V_void')
         if current_void is not None and current_void < void_needed:
-            recs.append(f"Build void tolerance through meditation and silence practices")
+            recs.append("Build void tolerance through meditation and silence practices")
 
         # General recommendations based on deaths required
         death_types = [d.death_type for d in deaths]

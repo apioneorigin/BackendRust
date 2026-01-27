@@ -17,8 +17,8 @@ Each kosha has:
 Formula: Kosha_Health = Purity x Permeability x Integration_Factor
 """
 
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any
+from dataclasses import dataclass
+from typing import Dict, List
 from enum import Enum
 import math
 

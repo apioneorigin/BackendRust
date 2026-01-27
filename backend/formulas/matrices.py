@@ -20,9 +20,8 @@ Each matrix tracks progression through 4 states with:
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Dict, List, Tuple, Any
 from enum import Enum
-import math
 
 from logging_config import get_logger
 logger = get_logger('formulas.matrices')
@@ -951,15 +950,15 @@ if __name__ == "__main__":
         print(f"  Progress: {matrix.progress_pct:.1f}%")
         print(f"  Dominant: {matrix.dominant_state}")
         print(f"  Transition: {matrix.transition_active} ({matrix.transition_direction})")
-        print(f"  States:")
+        print("  States:")
         for name, state in matrix.states.items():
             print(f"    {name}: {state.score:.3f}")
 
-    print(f"\n--- Integration Metrics ---")
+    print("\n--- Integration Metrics ---")
     print(f"Overall Evolution: {profile.overall_evolution:.3f}")
     print(f"Dominant Matrix: {profile.dominant_matrix.value}")
 
-    print(f"\n--- Variable Count ---")
+    print("\n--- Variable Count ---")
     print(f"Total state names: {len(get_all_state_names())}")
     print(f"Estimated variables: {count_total_variables()}")
 

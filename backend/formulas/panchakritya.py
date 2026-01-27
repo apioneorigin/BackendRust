@@ -14,10 +14,9 @@ Each act operates at all scales: cosmic, collective, individual, momentary.
 Formula: Act_Intensity = Base_Force x Alignment x S_Factor
 """
 
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, Tuple
+from dataclasses import dataclass
+from typing import Dict, List, Tuple
 from enum import Enum
-import math
 
 from logging_config import get_logger
 logger = get_logger('formulas.panchakritya')
@@ -380,19 +379,19 @@ if __name__ == "__main__":
         if act.manifestations:
             print(f"  Manifestations: {', '.join(act.manifestations)}")
 
-    print(f"\nOVERALL:")
+    print("\nOVERALL:")
     print(f"  Dominant Act: {profile.dominant_act.value}")
     print(f"  Suppressed Act: {profile.suppressed_act.value}")
     print(f"  Cycle Phase: {profile.cycle_phase}")
     print(f"  Grace Receptivity: {profile.grace_receptivity:.3f}")
     print(f"  Creative Flow: {profile.creative_flow:.3f}")
 
-    print(f"\nACT CYCLES:")
+    print("\nACT CYCLES:")
     cycles = engine.calculate_act_cycles(profile)
     for name, (source, target, flow) in cycles.items():
         print(f"  {source} -> {target}: {flow:.3f}")
 
-    print(f"\nRECOMMENDATIONS:")
+    print("\nRECOMMENDATIONS:")
     recs = engine.get_act_recommendations(profile)
     for category, items in recs.items():
         if items:

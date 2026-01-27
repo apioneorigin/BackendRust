@@ -17,10 +17,9 @@ Eight layers from gross to subtle:
 Formula: Layer_Activation = Base_Energy x Refinement x S_Factor
 """
 
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, Tuple
+from dataclasses import dataclass
+from typing import Dict, List, Tuple
 from enum import Enum
-import math
 
 from logging_config import get_logger
 logger = get_logger('formulas.osafc')

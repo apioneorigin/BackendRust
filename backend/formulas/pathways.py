@@ -24,9 +24,8 @@ Total: 9 dimensions across 3 pathways.
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Dict, List, Optional, Any
 from enum import Enum
-import math
 
 from logging_config import get_logger
 logger = get_logger('formulas.pathways')
@@ -652,17 +651,17 @@ if __name__ == "__main__":
         print(f"  Alignment: {pathway.alignment_score:.3f}")
         print(f"  Dominant: {pathway.dominant_dimension}")
         print(f"  Weakest: {pathway.weakest_dimension}")
-        print(f"  Dimensions:")
+        print("  Dimensions:")
         for dim_name, dim in pathway.dimensions.items():
             print(f"    {dim_name}: {dim.score:.3f} ({dim.perfection_pct:.1f}%)")
 
-    print(f"\n--- Integration Metrics ---")
+    print("\n--- Integration Metrics ---")
     print(f"Overall Perfection: {profile.overall_perfection:.3f}")
     print(f"Pathway Balance: {profile.pathway_balance:.3f}")
     print(f"Integration Score: {profile.integration_score:.3f}")
     print(f"Dominant Pathway: {profile.dominant_pathway.value}")
 
-    print(f"\n--- All 9 Dimensions ---")
+    print("\n--- All 9 Dimensions ---")
     all_dims = profile.get_all_dimensions()
     for name, score in all_dims.items():
         print(f"  {name}: {score:.3f}")

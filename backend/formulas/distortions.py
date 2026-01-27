@@ -19,10 +19,9 @@ Two primary distortion systems:
 Formula: Distortion_Index = Maya_Factor x Klesha_Sum / (1 + Witness_Clarity)
 """
 
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, Tuple
+from dataclasses import dataclass
+from typing import Dict, List, Tuple
 from enum import Enum
-import math
 
 from logging_config import get_logger
 logger = get_logger('formulas.distortions')
@@ -429,25 +428,25 @@ if __name__ == "__main__":
     print(f"  Vikshepa (projecting): {profile.maya.vikshepa:.3f}")
     print(f"  Clarity Index: {profile.maya.clarity_index:.3f}")
 
-    print(f"\nGUNAS:")
+    print("\nGUNAS:")
     print(f"  Sattva: {profile.maya.sattva:.3f}")
     print(f"  Rajas: {profile.maya.rajas:.3f}")
     print(f"  Tamas: {profile.maya.tamas:.3f}")
     print(f"  Dominant: {profile.maya.dominant_guna.value}")
 
-    print(f"\nKLESHAS:")
+    print("\nKLESHAS:")
     for klesha in Klesha:
         k = profile.kleshas[klesha.value]
         status = "ACTIVE" if k.active else "dormant"
         print(f"  {k.sanskrit}: {k.intensity:.3f} ({status})")
         print(f"    Root depth: {k.root_depth:.2f}, Dissolution: {k.dissolution_progress:.3f}")
 
-    print(f"\nOVERALL:")
+    print("\nOVERALL:")
     print(f"  Total Distortion: {profile.total_distortion:.3f}")
     print(f"  Primary Klesha: {profile.primary_klesha.value}")
     print(f"  Liberation Index: {profile.liberation_index:.3f}")
 
-    print(f"\nPURIFICATION NEEDS:")
+    print("\nPURIFICATION NEEDS:")
     for need in profile.purification_needs:
         print(f"  - {need}")
 

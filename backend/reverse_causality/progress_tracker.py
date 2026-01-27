@@ -13,8 +13,8 @@ Output:
 - Integration points for reality feedback
 """
 
-from typing import Dict, List, Any, Optional, Tuple
-from dataclasses import dataclass, field
+from typing import Dict, List, Optional
+from dataclasses import dataclass
 
 from logging_config import get_logger
 logger = get_logger('reverse_causality.progress')

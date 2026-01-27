@@ -3,7 +3,7 @@ Value Organizer Service for Articulation Bridge
 Transforms flat backend calculations into semantic structure
 """
 
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
 from datetime import datetime
 
 from logging_config import articulation_logger as logger
@@ -18,8 +18,6 @@ from consciousness_state import (
     PipelineFlow, BreakthroughDynamics, KarmaDynamics, GraceMechanics,
     NetworkEffects, POMDPGaps, MorphogeneticFields,
     TimelinePredictions, TransformationVectors, QuantumMetricsSnapshot, FrequencyAnalysis,
-    Bottleneck, LeveragePoint,
-    # Unity Principle dataclasses
     UnitySeparationMetrics, DualPathway, PathwayMetrics, GoalContext
 )
 from nomenclature import (

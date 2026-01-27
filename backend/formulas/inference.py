@@ -22,26 +22,24 @@ Formula: Integrated_Profile = f(operators, s_level, context)
 """
 
 from dataclasses import dataclass, field, asdict
-from typing import Dict, List, Optional, Any, Tuple
-import json
+from typing import Dict, List, Optional, Any
 
 from logging_config import inference_logger
 
 # Import all OOF modules
-from .nomenclature import resolve_ambiguous, CORE_VARIABLES
-from .operators import OperatorEngine, CORE_OPERATORS, CANONICAL_OPERATOR_NAMES, SHORT_TO_CANONICAL
-from .drives import DrivesEngine, DriveType
-from .matrices import MatricesEngine, MatrixType
-from .pathways import PathwaysEngine, PathwayType
-from .cascade import CascadeCalculator, CascadeLevel, CleanlinessZone
+from .operators import OperatorEngine, CANONICAL_OPERATOR_NAMES, SHORT_TO_CANONICAL
+from .drives import DrivesEngine
+from .matrices import MatricesEngine
+from .pathways import PathwaysEngine
+from .cascade import CascadeCalculator
 from .emotions import EmotionAnalyzer
-from .death import DeathEngine, DeathType
+from .death import DeathEngine
 from .collective import CollectiveEngine
-from .circles import CirclesEngine, CircleType
-from .kosha import KoshaEngine, KoshaType
-from .osafc import OSAFCEngine, OSAFCLayer
-from .distortions import DistortionEngine, Klesha, Guna
-from .panchakritya import PanchakrityaEngine, KrityaType
+from .circles import CirclesEngine
+from .kosha import KoshaEngine
+from .osafc import OSAFCEngine
+from .distortions import DistortionEngine
+from .panchakritya import PanchakrityaEngine
 
 # Additional calculation modules (previously separate)
 from .dynamics import GraceKarmaDynamics
@@ -312,7 +310,6 @@ class OOFInferenceEngine:
 
         if "platform" in include_modules:
             # Platform profiles for common platforms
-            from .platform_specific import Platform
             profile.platform_profile = {
                 "intelligence_level": self.intelligence_adaptation_engine.detect_intelligence_level(
                     complexity_handled=operators.get("W_witness"),
@@ -955,13 +952,13 @@ if __name__ == "__main__":
     # Run full inference
     profile = engine.calculate_full_profile(test_ops, s_level=5.5)
 
-    print(f"\nSUMMARY METRICS:")
+    print("\nSUMMARY METRICS:")
     print(f"  Overall Health: {profile.overall_health:.3f}")
     print(f"  Liberation Index: {profile.liberation_index:.3f}")
     print(f"  Integration Score: {profile.integration_score:.3f}")
     print(f"  Transformation Potential: {profile.transformation_potential:.3f}")
 
-    print(f"\nMODULE HIGHLIGHTS:")
+    print("\nMODULE HIGHLIGHTS:")
     if profile.drives_profile and hasattr(profile.drives_profile, 'primary_drive'):
         print(f"  Drives: {profile.drives_profile.primary_drive.value} dominant")
     if profile.matrices_profile and hasattr(profile.matrices_profile, 'leading_matrix'):
@@ -973,7 +970,7 @@ if __name__ == "__main__":
     if profile.panchakritya_profile:
         print(f"  Panchakritya: {profile.panchakritya_profile.cycle_phase}")
 
-    print(f"\nRECOMMENDATIONS:")
+    print("\nRECOMMENDATIONS:")
     recs = engine.get_recommendations(profile)
     for category, items in recs.items():
         if items:

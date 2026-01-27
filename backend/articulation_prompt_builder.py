@@ -6,13 +6,11 @@ ZERO-FALLBACK MODE: Properly handles null/missing operator values.
 Shows "Not available" for blocked calculations instead of assuming defaults.
 """
 
-from typing import List, Optional, Any
+from typing import List, Optional
 from consciousness_state import (
     ArticulationContext, ConsciousnessState, Bottleneck, LeveragePoint,
-    UserContext, WebResearch, ArticulationInstructions, InferenceMetadataState,
+    UserContext, WebResearch, ArticulationInstructions,
     SearchGuidance, EvidenceSearchQuery, ConsciousnessRealityMapping,
-    # Unity Principle dataclasses
-    UnitySeparationMetrics, DualPathway, PathwayMetrics, GoalContext
 )
 from logging_config import articulation_logger as logger
 
@@ -485,7 +483,7 @@ to articulate. Don't list all values - synthesize the relevant ones.
                 f"direction={um.net_direction}"
             )
         else:
-            logger.debug(f"[_build_unity_metrics_section] unity data partial: some metrics are None")
+            logger.debug("[_build_unity_metrics_section] unity data partial: some metrics are None")
 
         # Skip if any key metrics are None (not calculated)
         if any(v is None for v in [um.unity_vector, um.separation_distance, um.percolation_quality]):

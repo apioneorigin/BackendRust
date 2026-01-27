@@ -8,13 +8,12 @@ UNITY PRINCIPLE ENHANCEMENT:
 - Generates dual interventions (unity-aligned and separation-based)
 """
 
-from typing import List, Dict, Any, Tuple, Optional
+from typing import List, Dict, Any
 from consciousness_state import ConsciousnessState, Bottleneck
 from logging_config import consciousness_logger as logger
 
 # Import unity principle constants and functions
 from formulas.unity_principle import (
-    SEPARATION_AMPLIFYING_OPERATORS,
     UNITY_AMPLIFYING_OPERATORS,
     calculate_separation_amplification,
     generate_unity_intervention,

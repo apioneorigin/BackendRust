@@ -12,9 +12,8 @@ Constraints checked:
 7. Death Architecture - Certain deaths must precede others
 """
 
-from typing import Dict, List, Any, Optional, Tuple
-from dataclasses import dataclass, field
-import math
+from typing import Dict, List, Any, Tuple
+from dataclasses import dataclass
 
 from logging_config import get_logger
 logger = get_logger('reverse_causality.constraints')
@@ -225,7 +224,7 @@ class ConstraintChecker:
         """
         Check karma constraint - high karma limits manifestation.
         """
-        logger.debug(f"[_check_karma] checking karma constraint")
+        logger.debug("[_check_karma] checking karma constraint")
         current_karma = current.get('K_karma')
 
         # High karma (>0.7) limits ability to make major changes

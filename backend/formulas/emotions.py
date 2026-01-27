@@ -35,9 +35,8 @@ Compassion = Love × Softened_Boundaries × Unity_Exp × Heart_Open
 Each emotion is derived from operator combinations and cascade configurations.
 """
 
-from typing import Dict, Any, List, Tuple, Optional, Set
+from typing import Dict, Any, List, Optional, Set
 from dataclasses import dataclass, field
-import math
 
 from logging_config import get_logger
 logger = get_logger('formulas.emotions')

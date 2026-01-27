@@ -14,16 +14,14 @@ H-levels represent scope of consciousness/query:
 """
 
 from typing import Dict, Any, List, Optional, Tuple
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
-import re
-import math
 
 from logging_config import get_logger
 logger = get_logger('formulas.hierarchical')
 
 # Import shared constants (single source of truth)
-from .constants import S_LEVEL_BASE_FREQUENCIES, interpolate_s_level_frequency, psi_power
+from .constants import interpolate_s_level_frequency, psi_power
 
 
 class HLevel(Enum):

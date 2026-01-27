@@ -15,9 +15,8 @@ Karma Mechanics:
 - Burning: How fast karma is being released
 """
 
-from typing import Dict, Any, List, Tuple, Optional, Set
+from typing import Dict, Any, List, Optional, Set
 from dataclasses import dataclass, field
-import math
 
 from logging_config import get_logger
 logger = get_logger('formulas.dynamics')
@@ -562,7 +561,7 @@ class GraceKarmaDynamics:
         I = operators.get('I_intention')
         At = operators.get('At_attachment')
         if any(v is None for v in [D, Se, A, I, At]):
-            logger.warning(f"[calculate_dharmic_alignment] missing required operators")
+            logger.warning("[calculate_dharmic_alignment] missing required operators")
             return None
 
         # Dharmic alignment formula

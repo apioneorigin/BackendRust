@@ -10,10 +10,9 @@ Each signature specifies:
 - Grace dependency level
 """
 
-from typing import Dict, List, Any, Optional
-from dataclasses import dataclass, field
+from typing import Dict, List, Optional
+from dataclasses import dataclass
 import json
-from pathlib import Path
 
 from logging_config import get_logger
 logger = get_logger('reverse_causality.signatures')

@@ -12,10 +12,9 @@ Scoring Dimensions:
 Outputs trade-off analysis for decision making.
 """
 
-from typing import Dict, List, Any, Optional, Tuple
-from dataclasses import dataclass, field
-from .pathway_generator import TransformationPathway, PathwayStep
-import math
+from typing import Dict, List, Any, Optional
+from dataclasses import dataclass
+from .pathway_generator import TransformationPathway
 
 from logging_config import get_logger
 logger = get_logger('reverse_causality.optimizer')

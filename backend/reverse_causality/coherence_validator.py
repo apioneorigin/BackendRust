@@ -12,9 +12,8 @@ Coherence Requirements:
 Minimum coherence threshold: 85% for pathway viability
 """
 
-from typing import Dict, List, Any, Optional, Tuple
-from dataclasses import dataclass, field
-import math
+from typing import Dict, List, Tuple
+from dataclasses import dataclass
 
 from logging_config import get_logger
 logger = get_logger('reverse_causality.coherence')

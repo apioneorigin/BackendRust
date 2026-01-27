@@ -11,7 +11,7 @@ Includes:
 """
 
 from typing import Dict, Any, List, Optional, Tuple
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import math
 
 from logging_config import get_logger
@@ -162,11 +162,6 @@ class BreakthroughDynamicsEngine:
             total_resistance < 0.4
         )
 
-        # Window duration estimate
-        window_duration = None
-        if window_active:
-            window_duration = 1.0 / max(0.1, total_resistance)  # Longer with less resistance
-
         logger.debug(
             f"[calculate_quantum_leap_probability] result: prob={probability:.3f}, "
             f"readiness={readiness:.3f}, catalyst={catalyst_strength:.3f}, "
@@ -207,7 +202,7 @@ class BreakthroughDynamicsEngine:
             f"required={required_transformation:.3f}"
         )
         if required_transformation == 0:
-            logger.warning(f"[calculate_tipping_point_proximity] required_transformation=0, returning inf")
+            logger.warning("[calculate_tipping_point_proximity] required_transformation=0, returning inf")
             return float('inf')
 
         result = accumulated_transformation / required_transformation
@@ -508,7 +503,7 @@ class EvolutionDynamicsEngine:
 
         if any(v is None for v in [psi, maya, witness, grace, surrender, karma,
                                     attachment, resistance, fear, presence, coherence]):
-            logger.warning(f"[calculate_full_evolution_dynamics] missing required operators")
+            logger.warning("[calculate_full_evolution_dynamics] missing required operators")
             return None
 
         # Context
@@ -523,7 +518,7 @@ class EvolutionDynamicsEngine:
 
         if any(v is None for v in [crisis_intensity, teaching_transmission,
                                     network_breakthrough, practice_intensity, aspiration]):
-            logger.warning(f"[calculate_full_evolution_dynamics] missing required context fields")
+            logger.warning("[calculate_full_evolution_dynamics] missing required context fields")
             return None
 
         # Calculate breakthrough analysis

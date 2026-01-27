@@ -19,9 +19,8 @@ Sub-components define the granular aspects of each drive.
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Dict, List, Any
 from enum import Enum
-import math
 
 from logging_config import get_logger
 logger = get_logger('formulas.drives')
@@ -1029,12 +1028,12 @@ if __name__ == "__main__":
         print(f"  Health Score: {drive.health_score:.3f}")
         print(f"  Components: {list(drive.components.keys())}")
 
-    print(f"\n--- Integration Metrics ---")
+    print("\n--- Integration Metrics ---")
     print(f"Center of Good Proximity: {profile.center_of_good_proximity:.3f}")
     print(f"Drive Integration Score: {profile.drive_integration_score:.3f}")
     print(f"Dominant Drive: {profile.dominant_drive.value}")
 
-    print(f"\n--- Component Count ---")
+    print("\n--- Component Count ---")
     total_components = sum(len(c) for c in ALL_DRIVE_COMPONENTS.values())
     print(f"Total components across all drives: {total_components}")
 

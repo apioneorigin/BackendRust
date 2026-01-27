@@ -15,12 +15,10 @@ from logging_config import consciousness_logger as logger
 
 # Import unity principle constants and functions
 from formulas.unity_principle import (
-    UNITY_AMPLIFYING_OPERATORS,
     SEPARATION_AMPLIFYING_OPERATORS,
     UNITY_DIRECTION,
     calculate_unity_vector,
     calculate_unity_amplification,
-    calculate_separation_amplification,
 )
 
 

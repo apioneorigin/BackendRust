@@ -18,9 +18,8 @@ Primary 25 Non-Derivable Operators (from OOF_Math.txt):
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple, Any, Callable
+from typing import Dict, List, Optional, Tuple
 from enum import Enum
-import math
 
 from logging_config import get_logger
 logger = get_logger('formulas.operators')
@@ -1181,7 +1180,7 @@ if __name__ == "__main__":
     print("=" * 60)
 
     # Test operator counts
-    print(f"\n--- Operator Counts ---")
+    print("\n--- Operator Counts ---")
     print(f"Core operators (25): {len(CORE_OPERATORS)}")
     print(f"Klesha operators: {len(KLESHA_OPERATORS)}")
     print(f"UCB operators: {len(UCB_OPERATORS)}")
@@ -1190,7 +1189,7 @@ if __name__ == "__main__":
     print(f"Total operators: {len(ALL_OPERATORS)}")
 
     # Test operator engine
-    print(f"\n--- Operator Engine Test ---")
+    print("\n--- Operator Engine Test ---")
     engine = OperatorEngine()
 
     # Sample values
@@ -1222,13 +1221,13 @@ if __name__ == "__main__":
     print(f"Grace availability: {derived['G_grace_computed']:.3f}")
     print(f"Evolution rate: {derived['Evolution_rate']:.3f}")
     # Test categories
-    print(f"\n--- Categories ---")
+    print("\n--- Categories ---")
     categories = get_operator_categories()
     for cat, ops in categories.items():
         print(f"  {cat}: {len(ops)} operators")
 
     # Test validation
-    print(f"\n--- Validation Test ---")
+    print("\n--- Validation Test ---")
     is_valid, errors = validate_operator_values(test_values)
     print(f"Valid: {is_valid}")
     if errors:

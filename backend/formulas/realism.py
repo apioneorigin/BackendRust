@@ -17,7 +17,6 @@ Each realism type has:
 
 from typing import Dict, Any, List, Optional, Tuple, Set
 from dataclasses import dataclass, field
-import math
 
 from logging_config import get_logger
 logger = get_logger('formulas.realism')
