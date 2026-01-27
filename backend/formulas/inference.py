@@ -660,8 +660,8 @@ class OOFInferenceEngine:
                 'At_attachment', 'F_fear', 'M_maya', 'R_resistance', 'Co_coherence'
             ]}
             dual = calculate_dual_pathways(
-                goal=goal_context.get('goal'),
-                goal_category=goal_context.get('category'),
+                goal=goal_context.get('goal_text'),
+                goal_category=goal_context.get('goal_category'),
                 operators=unity_ops,
                 unity_metrics=profile.unity_profile
             )
