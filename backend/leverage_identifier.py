@@ -164,7 +164,10 @@ class LeverageIdentifier:
         if grace > 0.6 and surrender > 0.6:
             # This is the highest leverage - grace + surrender
             multiplier = 2.0 + (grace * surrender * 3)  # 2.0 to 5.0
-            multiplier = min(5.0, multiplier * grace_mult)
+            if grace_mult is not None:
+                multiplier = min(5.0, multiplier * grace_mult)
+            else:
+                multiplier = min(5.0, multiplier)
 
             # Grace-Surrender is the ultimate unity pathway
             unity_alignment = (grace + surrender) / 2.0  # Both highly unity-aligned
@@ -219,10 +222,12 @@ class LeverageIdentifier:
         ops: Any
     ) -> List[LeveragePoint]:
         """Check for breakthrough/tipping point leverage (can be either pathway)"""
-        logger.debug(f"[_check_breakthrough_leverage] prob={state.tier4.breakthrough_dynamics.probability:.3f}")
+        breakthrough = state.tier4.breakthrough_dynamics
+        if breakthrough.probability is None:
+            return []
+        logger.debug(f"[_check_breakthrough_leverage] prob={breakthrough.probability:.3f}")
         leverage_points = []
 
-        breakthrough = state.tier4.breakthrough_dynamics
         tipping_distance = breakthrough.tipping_point_distance
 
         # Calculate overall unity alignment from operators at threshold
@@ -248,11 +253,12 @@ class LeverageIdentifier:
                 'separation': "Breakthrough can be forced but may not sustain. Consider shifting approach to unity pathway."
             }
 
+            ops_at_threshold = breakthrough.operators_at_threshold or []
             leverage_points.append(LeveragePoint(
                 description="Breakthrough Window Open",
                 multiplier=round(multiplier, 2),
                 activation_requirement=f"Breakthrough probability at {breakthrough.probability:.0%}. Small consistent actions now have disproportionate impact.",
-                operators_involved=['breakthrough_dynamics'] + breakthrough.operators_at_threshold[:3],
+                operators_involved=['breakthrough_dynamics'] + ops_at_threshold[:3],
                 unity_alignment=round(unity_alignment, 3),
                 amplification_multiplier=round(breakthrough.probability, 3),
                 effective_impact=round(effective_impact, 3),
@@ -260,7 +266,7 @@ class LeverageIdentifier:
                 approach_description=approach_desc[pathway]
             ))
 
-        if tipping_distance < 0.2:
+        if tipping_distance is not None and tipping_distance < 0.2:
             # Very close to tipping point
             leverage_points.append(LeveragePoint(
                 description="Tipping Point Imminent",
@@ -336,14 +342,16 @@ class LeverageIdentifier:
         ops: Any
     ) -> List[LeveragePoint]:
         """Check for network/collective leverage (unity amplification through resonance)"""
-        logger.debug(f"[_check_network_leverage] coherence_mult={state.tier4.network_effects.coherence_multiplier:.3f}")
-        leverage_points = []
-
         network = state.tier4.network_effects
         coherence = ops.Co_coherence
+        if coherence is None or network.coherence_multiplier is None:
+            return []
+        logger.debug(f"[_check_network_leverage] coherence_mult={network.coherence_multiplier:.3f}")
+        leverage_points = []
 
-        if network.coherence_multiplier > 1.2 or network.acceleration_factor > 0.2:
-            multiplier = network.coherence_multiplier * (1 + network.acceleration_factor)
+        if network.coherence_multiplier > 1.2 or (network.acceleration_factor is not None and network.acceleration_factor > 0.2):
+            accel = network.acceleration_factor if network.acceleration_factor is not None else 0.0
+            multiplier = network.coherence_multiplier * (1 + accel)
 
             # Network effects amplify unity when coherence is high
             ud_coherence = UNITY_DIRECTION.get('Co_coherence')
@@ -364,7 +372,7 @@ class LeverageIdentifier:
                 approach_description="Network leverage works through resonance, not force. Align your state with the collective field."
             ))
 
-        if network.collective_breakthrough_prob > 0.3:
+        if network.collective_breakthrough_prob is not None and network.collective_breakthrough_prob > 0.3:
             multiplier = 1.5 + network.collective_breakthrough_prob
 
             leverage_points.append(LeveragePoint(
@@ -408,6 +416,8 @@ class LeverageIdentifier:
         }
 
         for name, score, display_name, transition in matrix_checks:
+            if score is None:
+                continue
             # Check if near transition point (0.45-0.55)
             if 0.4 < score < 0.6:
                 # Matrix transitions represent death architecture moments
@@ -460,7 +470,7 @@ class LeverageIdentifier:
             leverage_points.append(LeveragePoint(
                 description=f"S{next_level} Transition Available",
                 multiplier=2.0,
-                activation_requirement=f"Near S{next_level} consciousness. Evolution rate is {evolution_rate:.1%}/month. Focused practice accelerates transition.",
+                activation_requirement=f"Near S{next_level} consciousness.{f' Evolution rate is {evolution_rate:.1%}/month.' if evolution_rate is not None else ''} Focused practice accelerates transition.",
                 operators_involved=['s_level', 'evolution_rate'],
                 unity_alignment=round(unity_alignment, 3),
                 amplification_multiplier=round(amplification_mult, 3),

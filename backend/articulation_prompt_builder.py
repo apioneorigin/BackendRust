@@ -575,7 +575,10 @@ to articulate. Don't list all values - synthesize the relevant ones.
         elif dp.recommended_pathway == 'separation':
             recommendation = "The effort-based approach may be needed initially to build momentum"
         else:
-            recommendation = f"A blend is recommended - {_fmt(dp.optimal_blend_ratio)} effort with {_fmt(1 - dp.optimal_blend_ratio)} flow"
+            if dp.optimal_blend_ratio is not None:
+                recommendation = f"A blend is recommended - {_fmt(dp.optimal_blend_ratio)} effort with {_fmt(1 - dp.optimal_blend_ratio)} flow"
+            else:
+                recommendation = "A blend of effort and flow is recommended"
 
         # Crossover description
         if dp.crossover_point_months and dp.crossover_point_months > 0:

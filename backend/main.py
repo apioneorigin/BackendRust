@@ -2864,9 +2864,11 @@ def format_results_fallback(prompt: str, evidence: dict, posteriors: dict) -> st
 
     for obs in evidence.get("observations", []):
         if isinstance(obs, dict) and 'var' in obs and 'value' in obs:
+            obs_val = obs['value']
             conf_val = obs.get('confidence')
+            obs_str = f"{obs_val:.2f}" if obs_val is not None else "N/C"
             conf_str = f"{conf_val:.2f}" if conf_val is not None else "N/A"
-            lines.append(f"- {obs['var']}: {obs['value']:.2f} (confidence: {conf_str})")
+            lines.append(f"- {obs['var']}: {obs_str} (confidence: {conf_str})")
 
     lines.append("")
     lines.append("### Consciousness State Analysis")
@@ -2879,7 +2881,7 @@ def format_results_fallback(prompt: str, evidence: dict, posteriors: dict) -> st
     )[:10]
 
     for var, value in sorted_posteriors:
-        lines.append(f"- {var}: {value:.3f}")
+        lines.append(f"- {var}: {f'{value:.3f}' if value is not None else 'N/C'}")
 
     lines.append("")
     lines.append("### Recommended Actions")
@@ -2930,9 +2932,9 @@ def format_results_fallback_bridge(
     # Add matrix positions
     lines.append("")
     lines.append("### Transformation Readiness")
-    lines.append(f"- Truth clarity: {matrices.truth_position} ({matrices.truth_score * 100:.0f}%)")
-    lines.append(f"- Power stance: {matrices.power_position} ({matrices.power_score * 100:.0f}%)")
-    lines.append(f"- Freedom orientation: {matrices.freedom_position} ({matrices.freedom_score * 100:.0f}%)")
+    lines.append(f"- Truth clarity: {matrices.truth_position} ({f'{matrices.truth_score * 100:.0f}%' if matrices.truth_score is not None else 'N/C'})")
+    lines.append(f"- Power stance: {matrices.power_position} ({f'{matrices.power_score * 100:.0f}%' if matrices.power_score is not None else 'N/C'})")
+    lines.append(f"- Freedom orientation: {matrices.freedom_position} ({f'{matrices.freedom_score * 100:.0f}%' if matrices.freedom_score is not None else 'N/C'})")
 
     # Add recommendations
     lines.append("")
@@ -3015,14 +3017,14 @@ async def reverse_map_stream(
                 'breakthrough_probability', 0.7, current_operators
             )
             required_operators = result.required_state.operator_values
-            sig_target_s = target_s_level or current_s_level + 1
+            sig_target_s = target_s_level or (current_s_level + 1 if current_s_level is not None else None)
 
         final_target_s = target_s_level or sig_target_s
 
         yield {
             "event": "status",
             "data": json.dumps({
-                "message": f"Found {len(matching_signatures)} matching signatures, target S-level: {final_target_s:.1f}"
+                "message": f"Found {len(matching_signatures)} matching signatures, target S-level: {f'{final_target_s:.1f}' if final_target_s is not None else 'N/C'}"
             })
         }
 
@@ -3296,9 +3298,12 @@ async def run_reverse_mapping_for_articulation(
             'breakthrough_probability', 0.7, current_operators
         )
         required_operators = result.required_state.operator_values
-        target_s_level = current_s_level + 1
+        target_s_level = current_s_level + 1 if current_s_level is not None else None
 
-    reverse_logger.info(f"[REVERSE MAPPING] Target S-Level: {target_s_level:.1f} (delta: {target_s_level - current_s_level:+.1f})")
+    if target_s_level is not None and current_s_level is not None:
+        reverse_logger.info(f"[REVERSE MAPPING] Target S-Level: {target_s_level:.1f} (delta: {target_s_level - current_s_level:+.1f})")
+    else:
+        reverse_logger.info(f"[REVERSE MAPPING] Target S-Level: {f'{target_s_level:.1f}' if target_s_level is not None else 'N/C'}")
     reverse_logger.debug(f"[REVERSE MAPPING] Required operators: {len(required_operators)}")
 
     # Check constraints
@@ -3306,14 +3311,14 @@ async def run_reverse_mapping_for_articulation(
     constraint_result = constraint_checker.check_all_constraints(
         current_operators, required_operators, current_s_level, target_s_level, goal
     )
-    reverse_logger.info(f"[REVERSE MAPPING] Constraints: feasible={constraint_result.feasible}, score={constraint_result.overall_feasibility_score:.2f}")
+    reverse_logger.info(f"[REVERSE MAPPING] Constraints: feasible={constraint_result.feasible}, score={f'{constraint_result.overall_feasibility_score:.2f}' if constraint_result.overall_feasibility_score is not None else 'N/C'}")
 
     # Validate coherence
     reverse_logger.debug("[REVERSE MAPPING] Validating coherence...")
     coherence_result = coherence_validator.validate_coherence(
         required_operators, target_s_level
     )
-    reverse_logger.info(f"[REVERSE MAPPING] Coherence: valid={coherence_result.is_coherent}, score={coherence_result.coherence_score:.2f}")
+    reverse_logger.info(f"[REVERSE MAPPING] Coherence: valid={coherence_result.is_coherent}, score={f'{coherence_result.coherence_score:.2f}' if coherence_result.coherence_score is not None else 'N/C'}")
 
     # Apply coherence corrections if needed
     if coherence_result.suggested_adjustments:
@@ -3341,9 +3346,9 @@ async def run_reverse_mapping_for_articulation(
     mvt = mvt_calculator.calculate_mvt(
         current_operators, required_operators, max_operators=5
     )
-    reverse_logger.info(f"[REVERSE MAPPING] MVT: {mvt.total_operators_changed} operators, efficiency={mvt.mvt_efficiency:.2f}")
+    reverse_logger.info(f"[REVERSE MAPPING] MVT: {mvt.total_operators_changed} operators, efficiency={f'{mvt.mvt_efficiency:.2f}' if mvt.mvt_efficiency is not None else 'N/C'}")
     for change in mvt.changes[:3]:
-        reverse_logger.debug(f"  - {change.operator}: {change.current_value:.2f} → {change.target_value:.2f}")
+        reverse_logger.debug(f"  - {change.operator}: {f'{change.current_value:.2f}' if change.current_value is not None else 'N/C'} → {f'{change.target_value:.2f}' if change.target_value is not None else 'N/C'}")
 
     # Analyze death requirements
     reverse_logger.debug("[REVERSE MAPPING] Analyzing death requirements...")
@@ -3358,7 +3363,7 @@ async def run_reverse_mapping_for_articulation(
     grace_req = grace_calculator.calculate_grace_requirements(
         current_operators, required_operators, goal
     )
-    reverse_logger.info(f"[REVERSE MAPPING] Grace: current={grace_req.current_grace_availability:.2f}, required={grace_req.required_grace_availability:.2f}")
+    reverse_logger.info(f"[REVERSE MAPPING] Grace: current={f'{grace_req.current_grace_availability:.2f}' if grace_req.current_grace_availability is not None else 'N/C'}, required={f'{grace_req.required_grace_availability:.2f}' if grace_req.required_grace_availability is not None else 'N/C'}")
 
     # Generate monitoring plan
     best_pathway = pathways[0] if pathways else None
