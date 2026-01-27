@@ -3499,14 +3499,15 @@ def _extract_operators_from_consciousness_state(consciousness_state: Consciousne
         'J_joy': core.J_joy,
         'Tr_trust': core.Tr_trust,
         # Derived operators (computed from canonical operators)
-        'De_desire': 1.0 - core.V_void,  # Desire inversely related to void
-        'Sa_samskara': core.Hf_habit * core.M_manifest,  # Impressions from habits and manifestation
-        'Bu_buddhi': core.A_aware * core.W_witness,  # Discrimination from awareness and witness
+        'De_desire': (1.0 - core.V_void) if core.V_void is not None else None,
+        'Sa_samskara': (core.Hf_habit * core.M_manifest) if core.Hf_habit is not None and core.M_manifest is not None else None,
+        'Bu_buddhi': (core.A_aware * core.W_witness) if core.A_aware is not None and core.W_witness is not None else None,
         'Ma_manas': core.P_presence,  # Mind-presence
-        'Ch_chitta': 1.0 - core.M_maya,  # Chitta clarity inversely related to maya
+        'Ch_chitta': (1.0 - core.M_maya) if core.M_maya is not None else None,
     }
 
-    return operators
+    # Filter out None values — reverse engine only operates on computed operators
+    return {k: v for k, v in operators.items() if v is not None}
 
 
 def _extract_operators_from_evidence(evidence: dict) -> Tuple[Dict[str, float], Dict[str, float]]:
