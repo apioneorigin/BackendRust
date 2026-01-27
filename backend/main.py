@@ -358,6 +358,20 @@ if LLM_CALL2_PATH.exists():
 else:
     raise FileNotFoundError(f"Required OOF framework file not found: {LLM_CALL2_PATH}")
 
+# Build SHARED static prefix for Anthropic prompt caching across both LLM calls.
+# Anthropic caching matches on exact token prefix — by using the SAME combined block
+# as the first cache_control breakpoint in both Call 1 and Call 2, Call 2 is guaranteed
+# to get a cache HIT from Call 1's cache write (which runs seconds earlier).
+# This eliminates Call 2's cold-start cache write entirely.
+SHARED_LLM_CONTEXT = f"""=== OOF FRAMEWORK: OPERATOR EXTRACTION KNOWLEDGE (Call 1) ===
+{LLM_CALL1_CONTEXT}
+=== END OPERATOR EXTRACTION KNOWLEDGE ===
+
+=== OOF FRAMEWORK: ARTICULATION KNOWLEDGE (Call 2) ===
+{LLM_CALL2_CONTEXT}
+=== END ARTICULATION KNOWLEDGE ==="""
+api_logger.info(f"Built shared LLM context for cross-call caching: {len(SHARED_LLM_CONTEXT)} characters")
+
 api_logger.info("Articulation Bridge initialized: ValueOrganizer, BottleneckDetector, LeverageIdentifier, PromptBuilder")
 
 # Initialize Reverse Causality Mapping components
@@ -1370,12 +1384,12 @@ For each query, you must:
 === END QUERY ANALYSIS ===
 """
 
-    instructions = f"""You are the Reality Transformer consciousness analysis engine.
-You have complete knowledge of the One Origin Framework (OOF) - a consciousness physics system.
+    # OpenAI instructions - starts with SHARED_LLM_CONTEXT so that OpenAI's automatic
+    # prompt caching can match the prefix between Call 1 and Call 2.
+    instructions = f"""{SHARED_LLM_CONTEXT}
 
-=== OOF FRAMEWORK KNOWLEDGE ===
-{LLM_CALL1_CONTEXT}
-=== END OOF FRAMEWORK ===
+You are the Reality Transformer consciousness analysis engine.
+You have complete knowledge of the One Origin Framework (OOF) - a consciousness physics system.
 
 {query_pattern_instructions}
 
@@ -1508,19 +1522,18 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
                     if use_web_search:
                         user_content += "\n\nIMPORTANT: Use the web_search tool to gather real data before responding."
 
-                    # Build system prompt with cache_control for prompt caching
-                    # The large LLM_CALL1_CONTEXT is static and cacheable across requests
-                    # Structure: [cached OOF framework block] + [dynamic instructions block]
-                    static_system_content = f"""You are the Reality Transformer consciousness analysis engine.
+                    # Build system prompt with cache_control for prompt caching.
+                    # SHARED_LLM_CONTEXT contains BOTH Call 1 and Call 2 framework knowledge.
+                    # By using the EXACT same cached block in both calls, Call 2 gets a guaranteed
+                    # cache HIT from Call 1's cache write (which runs seconds earlier).
+                    # CRITICAL: static_system_content must be byte-identical between Call 1 and Call 2.
+                    static_system_content = SHARED_LLM_CONTEXT
+
+                    dynamic_system_content = f"""You are the Reality Transformer consciousness analysis engine.
 You have complete knowledge of the One Origin Framework (OOF) - a consciousness physics system.
 
-=== OOF FRAMEWORK KNOWLEDGE ===
-{LLM_CALL1_CONTEXT}
-=== END OOF FRAMEWORK ===
+{query_pattern_instructions}
 
-{query_pattern_instructions}"""
-
-                    dynamic_system_content = f"""
 YOUR TASK:
 1. IDENTITY ASSUMPTION (CRITICAL):
    - Assume the MOST FAMOUS/LIKELY interpretation of any name or entity
@@ -2275,8 +2288,12 @@ Check-in schedule: {reverse_mapping.get('check_in_schedule')}
     # Determine response mode
     response_mode = "HYBRID (Current Analysis + Future Pathways)" if reverse_mapping else "CURRENT ANALYSIS"
 
-    # System instructions for the articulation call with evidence enrichment
-    instructions = f"""You are Reality Transformer, a consciousness-based transformation engine.
+    # System instructions for the articulation call with evidence enrichment.
+    # Starts with SHARED_LLM_CONTEXT so OpenAI's automatic prompt caching matches
+    # the prefix between Call 1 and Call 2 (same approach as Anthropic).
+    instructions = f"""{SHARED_LLM_CONTEXT}
+
+You are Reality Transformer, a consciousness-based transformation engine.
 
 CRITICAL - READ FIRST:
 - Generate ONE single response only
@@ -2289,10 +2306,6 @@ You are receiving a STRUCTURED ANALYSIS from the One Origin Framework (OOF).
 Your task is to ARTICULATE these insights in NATURAL, DOMAIN-APPROPRIATE language.
 
 === RESPONSE MODE: {response_mode} ===
-
-=== OOF FRAMEWORK KNOWLEDGE ===
-{LLM_CALL2_CONTEXT}
-=== END OOF FRAMEWORK ===
 
 {'''=== OPERATOR INTERPRETATION FOR EVIDENCE SEARCH ===
 Use calculated operator values to guide your evidence gathering:
@@ -2427,26 +2440,12 @@ SECTION 5: FIRST STEPS
         try:
             async with httpx.AsyncClient(timeout=180.0) as client:
                 if provider == "anthropic":
-                    # Anthropic Claude streaming API with prompt caching
-                    # Build system prompt with cache_control for the static framework
-                    # LLM_CALL2_CONTEXT (OOF Mathematical Semantics) is static - perfect for caching
-                    # Static content MUST be truly static (no variables that change per request)
-                    # This enables Anthropic prompt caching to work properly
-                    static_system_content = f"""You are Reality Transformer, a consciousness-based transformation engine.
-
-CRITICAL - READ FIRST:
-- Generate ONE single response only
-- Do NOT repeat or duplicate any content
-- Do NOT regenerate previous sections
-- Each paragraph must contain NEW information
-- If you notice you're repeating, STOP and continue with new content
-
-You are receiving a STRUCTURED ANALYSIS from the One Origin Framework (OOF).
-Your task is to ARTICULATE these insights in NATURAL, DOMAIN-APPROPRIATE language.
-
-=== OOF FRAMEWORK KNOWLEDGE ===
-{LLM_CALL2_CONTEXT}
-=== END OOF FRAMEWORK ==="""
+                    # Anthropic Claude streaming API with prompt caching.
+                    # SHARED_LLM_CONTEXT is the EXACT same cached block used in Call 1.
+                    # Since Call 1 runs seconds before Call 2, this guarantees a cache HIT
+                    # on the entire shared prefix, eliminating Call 2's cache write cost.
+                    # CRITICAL: static_system_content must be byte-identical to Call 1's.
+                    static_system_content = SHARED_LLM_CONTEXT
 
                     # Dynamic portion varies based on web_search and reverse_mapping
                     # Build conditional sections separately to avoid f-string nesting issues
@@ -2524,7 +2523,18 @@ HIGH BREAKTHROUGH PROBABILITY (0.70+):
 
                     section4_title = "SECTION 4: TRANSFORMATION PATH" if reverse_mapping else "SECTION 4: DIRECTION"
 
-                    dynamic_system_content = f"""
+                    dynamic_system_content = f"""You are Reality Transformer, a consciousness-based transformation engine.
+
+CRITICAL - READ FIRST:
+- Generate ONE single response only
+- Do NOT repeat or duplicate any content
+- Do NOT regenerate previous sections
+- Each paragraph must contain NEW information
+- If you notice you're repeating, STOP and continue with new content
+
+You are receiving a STRUCTURED ANALYSIS from the One Origin Framework (OOF).
+Your task is to ARTICULATE these insights in NATURAL, DOMAIN-APPROPRIATE language.
+
 === RESPONSE MODE: {response_mode} ===
 
 {operator_interpretation_section}
@@ -2927,311 +2937,6 @@ def format_results_fallback_bridge(
     return "\n".join(lines)
 
 
-# =============================================================================
-# REVERSE CAUSALITY MAPPING ENDPOINTS
-# =============================================================================
-
-@app.get("/api/reverse-map")
-async def reverse_map(
-    goal: str = Query(..., description="Desired future state or goal"),
-    current_s_level: float = Query(..., description="Current S-level (1-8)"),
-    target_s_level: float = Query(None, description="Target S-level (optional)")
-):
-    """
-    Reverse Causality Mapping endpoint.
-    Works backward from a desired future state to calculate required consciousness configuration.
-
-    Returns:
-    - Required consciousness signature
-    - Current gap analysis
-    - 3-5 viable transformation pathways with trade-off analysis
-    - Specific Tier 1 operator changes needed
-    - Timeline estimates and monitoring indicators
-    """
-    return EventSourceResponse(
-        reverse_map_stream(goal, current_s_level, target_s_level),
-        media_type="text/event-stream"
-    )
-
-
-async def reverse_map_stream(
-    goal: str,
-    current_s_level: float,
-    target_s_level: Optional[float]
-) -> AsyncGenerator[dict, None]:
-    """Generate SSE events for reverse causality mapping"""
-    import time
-    start_time = time.time()
-
-    try:
-        # Step 1: Parse goal and extract current state
-        yield {
-            "event": "status",
-            "data": json.dumps({"message": "Analyzing desired future state..."})
-        }
-
-        # Get current operators from goal description using LLM
-        evidence = await parse_query_with_web_research(goal)
-        current_operators, operator_confidence = _extract_operators_from_evidence(evidence)
-        reverse_logger.debug(f"[REVERSE STREAM] Extracted {len(current_operators)} operators with confidence data")
-
-        # Find matching signatures
-        yield {
-            "event": "status",
-            "data": json.dumps({"message": "Matching goal to consciousness signatures..."})
-        }
-
-        matching_signatures = signature_library.find_signatures_for_goal(goal, current_s_level)
-
-        if matching_signatures:
-            primary_signature = matching_signatures[0]
-            required_operators = primary_signature.operator_minimums.copy()
-            # Set maximums as targets for blockers
-            for op, max_val in primary_signature.operator_maximums.items():
-                if op not in required_operators or required_operators[op] > max_val:
-                    required_operators[op] = max_val  # Use actual maximum as target
-
-            sig_target_s = primary_signature.optimal_s_level
-        else:
-            # Use reverse engine for custom goal
-            result = reverse_engine.solve_for_outcome(
-                'breakthrough_probability', 0.7, current_operators
-            )
-            required_operators = result.required_state.operator_values
-            sig_target_s = target_s_level
-
-        final_target_s = target_s_level or sig_target_s
-
-        yield {
-            "event": "status",
-            "data": json.dumps({
-                "message": f"Found {len(matching_signatures)} matching signatures, target S-level: {f'{final_target_s:.1f}' if final_target_s is not None else 'N/C'}"
-            })
-        }
-
-        # Step 2: Check constraints
-        yield {
-            "event": "status",
-            "data": json.dumps({"message": "Validating feasibility constraints..."})
-        }
-
-        constraint_result = constraint_checker.check_all_constraints(
-            current_operators, required_operators, current_s_level, final_target_s, goal
-        )
-
-        yield {
-            "event": "constraints",
-            "data": json.dumps({
-                "feasible": constraint_result.feasible,
-                "score": constraint_result.overall_feasibility_score,
-                "blocking_count": constraint_result.blocking_count,
-                "prerequisites": constraint_result.prerequisites[:3]
-            })
-        }
-
-        # Step 3: Validate coherence
-        yield {
-            "event": "status",
-            "data": json.dumps({"message": "Validating fractal coherence..."})
-        }
-
-        coherence_result = coherence_validator.validate_coherence(
-            required_operators, final_target_s
-        )
-
-        # Apply corrections if needed
-        if coherence_result.suggested_adjustments:
-            for op, val in coherence_result.suggested_adjustments.items():
-                required_operators[op] = val
-
-        yield {
-            "event": "coherence",
-            "data": json.dumps({
-                "coherent": coherence_result.is_coherent,
-                "score": coherence_result.coherence_score,
-                "violations": coherence_result.critical_violations
-            })
-        }
-
-        # Step 4: Generate pathways
-        yield {
-            "event": "status",
-            "data": json.dumps({"message": "Generating transformation pathways..."})
-        }
-
-        pathways = pathway_generator.generate_pathways(
-            current_operators=current_operators,
-            required_operators=required_operators,
-            current_s_level=current_s_level,
-            target_s_level=final_target_s,
-            num_pathways=5
-        )
-
-        # Optimize pathways
-        optimization_result = pathway_optimizer.optimize_pathways(pathways)
-
-        yield {
-            "event": "pathways",
-            "data": json.dumps({
-                "count": len(pathways),
-                "best_pathway": optimization_result.best_pathway.pathway_name,
-                "best_score": optimization_result.best_pathway.total_score,
-                "pathways": [
-                    {
-                        "name": p.name,
-                        "strategy": p.strategy,
-                        "success_prob": p.success_probability,
-                        "steps": len(p.steps)
-                    }
-                    for p in pathways
-                ]
-            })
-        }
-
-        # Step 5: Calculate MVT (Minimum Viable Transformation)
-        yield {
-            "event": "status",
-            "data": json.dumps({"message": "Calculating minimum viable transformation..."})
-        }
-
-        mvt = mvt_calculator.calculate_mvt(
-            current_operators, required_operators, max_operators=5
-        )
-
-        yield {
-            "event": "mvt",
-            "data": json.dumps({
-                "operators_to_change": mvt.total_operators_changed,
-                "full_operators": mvt.full_transformation_operators,
-                "efficiency": mvt.mvt_efficiency,
-                "success_probability": mvt.success_probability,
-                "changes": [
-                    {
-                        "operator": c.operator,
-                        "current": c.current_value,
-                        "target": c.target_value,
-                        "priority": c.priority
-                    }
-                    for c in mvt.changes
-                ]
-            })
-        }
-
-        # Step 6: Analyze death requirements
-        yield {
-            "event": "status",
-            "data": json.dumps({"message": "Analyzing identity death requirements..."})
-        }
-
-        death_sequence = death_sequencer.analyze_death_requirements(
-            current_operators, required_operators, goal
-        )
-
-        yield {
-            "event": "death_sequence",
-            "data": json.dumps({
-                "deaths_required": len(death_sequence.deaths_required),
-                "sequence": death_sequence.sequence_order,
-                "void_tolerance_required": death_sequence.void_tolerance_required,
-                "current_void_tolerance": death_sequence.current_void_tolerance
-            })
-        }
-
-        # Step 7: Calculate grace requirements
-        yield {
-            "event": "status",
-            "data": json.dumps({"message": "Calculating grace activation requirements..."})
-        }
-
-        grace_req = grace_calculator.calculate_grace_requirements(
-            current_operators, required_operators, goal
-        )
-
-        yield {
-            "event": "grace",
-            "data": json.dumps({
-                "dependency": grace_req.grace_dependency,
-                "current_availability": grace_req.current_grace_availability,
-                "required_availability": grace_req.required_grace_availability,
-                "gap": grace_req.grace_gap,
-                "timing_probability": grace_req.grace_timing_probability,
-                "multiplication_factor": grace_req.potential_multiplication_factor
-            })
-        }
-
-        # Step 8: Generate monitoring plan
-        yield {
-            "event": "status",
-            "data": json.dumps({"message": "Generating monitoring plan..."})
-        }
-
-        best_pathway = pathways[0]  # Use best pathway for monitoring
-        monitoring_plan = progress_tracker.generate_monitoring_plan(
-            best_pathway, current_operators, required_operators
-        )
-
-        yield {
-            "event": "monitoring",
-            "data": json.dumps({
-                "total_stages": monitoring_plan.total_stages,
-                "check_in_schedule": monitoring_plan.check_in_schedule,
-                "pivot_conditions": monitoring_plan.pivot_conditions[:3],
-                "success_conditions": monitoring_plan.success_conditions[:3]
-            })
-        }
-
-        # Step 9: Generate articulation
-        yield {
-            "event": "status",
-            "data": json.dumps({"message": "Generating transformation guidance..."})
-        }
-
-        # Build comprehensive reverse mapping result
-        reverse_result = {
-            "goal": goal,
-            "current_s_level": current_s_level,
-            "target_s_level": final_target_s,
-            "feasible": constraint_result.feasible,
-            "coherent": coherence_result.is_coherent,
-            "mvt": {
-                "operators": [c.operator for c in mvt.changes],
-                "implementation_order": mvt.implementation_order
-            },
-            "best_pathway": optimization_result.best_pathway.pathway_name,
-            "grace_dependency": grace_req.grace_dependency,
-            "timeline": primary_signature.typical_timeline if matching_signatures else None
-        }
-
-        # Stream articulation
-        async for token in articulate_reverse_map(goal, evidence, reverse_result):
-            yield {
-                "event": "token",
-                "data": json.dumps({"text": token})
-            }
-
-        # Done
-        elapsed = time.time() - start_time
-        yield {
-            "event": "done",
-            "data": json.dumps({
-                "elapsed_ms": int(elapsed * 1000),
-                "summary": {
-                    "goal_achievable": constraint_result.feasible,
-                    "mvt_operators": mvt.total_operators_changed,
-                    "pathways_generated": len(pathways)
-                }
-            })
-        }
-
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        yield {
-            "event": "error",
-            "data": json.dumps({"message": str(e)})
-        }
-
-
 async def run_reverse_mapping_for_articulation(
     goal: str,
     evidence: dict,
@@ -3569,135 +3274,6 @@ def _extract_operators_from_evidence(evidence: dict) -> Tuple[Dict[str, float], 
     return operators, confidence
 
 
-async def articulate_reverse_map(
-    goal: str,
-    evidence: dict,
-    reverse_result: dict
-) -> AsyncGenerator[str, None]:
-    """Generate natural language articulation of reverse mapping results."""
-
-    if not OPENAI_API_KEY:
-        # Fallback text
-        text = f"""## Transformation Path to Your Goal
-
-**Goal:** {goal}
-
-Based on the reverse causality analysis, here's your path:
-
-### Minimum Viable Transformation
-Focus on these {len(reverse_result['mvt']['operators'])} key changes:
-{', '.join(reverse_result['mvt']['operators'])}
-
-### Recommended Pathway
-{reverse_result['best_pathway']}
-
-### Timeline
-Estimated: {reverse_result['timeline']}
-
-### Grace Dependency
-This transformation is {f"{reverse_result['grace_dependency']:.0%}" if reverse_result.get('grace_dependency') is not None else "N/C"} grace-dependent.
-"""
-        for word in text.split():
-            yield word + " "
-            await asyncio.sleep(0.02)
-        return
-
-    instructions = f"""You are Reality Transformer's Reverse Causality Guide.
-
-You are receiving a REVERSE CAUSALITY ANALYSIS - we've worked backward from the user's
-desired future state to calculate what consciousness changes are required.
-
-=== OOF FRAMEWORK KNOWLEDGE ===
-{LLM_CALL2_CONTEXT}
-=== END OOF FRAMEWORK ===
-
-=== ARTICULATION RULES ===
-1. Focus on the PATH FORWARD, not technical analysis
-2. Use natural, inspiring language
-3. Be specific about the changes needed
-4. Acknowledge the gap while emphasizing achievability
-5. Translate framework concepts into practical guidance
-6. End with clear first steps
-=== END ARTICULATION RULES ==="""
-
-    user_content = f"""User's Goal: {goal}
-
-Current S-Level: {reverse_result['current_s_level']}
-Target S-Level: {reverse_result['target_s_level']}
-
-Feasibility: {'✓ Achievable' if reverse_result['feasible'] else '⚠️ Requires intermediate steps'}
-Coherence: {'✓ Coherent' if reverse_result['coherent'] else '⚠️ Needs adjustment'}
-
-=== MINIMUM VIABLE TRANSFORMATION ===
-Instead of changing everything, focus on these key operators:
-{reverse_result['mvt']['operators']}
-Implementation order: {' → '.join(reverse_result['mvt']['implementation_order'])}
-
-=== RECOMMENDED PATHWAY ===
-{reverse_result['best_pathway']}
-Timeline: {reverse_result['timeline']}
-
-=== GRACE DEPENDENCY ===
-{f"{reverse_result['grace_dependency']:.0%}" if reverse_result.get('grace_dependency') is not None else "N/C"} grace-dependent
-
-=== TASK ===
-Provide transformation guidance that:
-1. Acknowledges where they are and where they want to go
-2. Explains the key changes in practical terms
-3. Describes the recommended pathway naturally
-4. Addresses grace vs effort balance
-5. Gives specific first steps
-6. Inspires confidence in the transformation"""
-
-    request_body = {
-        "model": OPENAI_MODEL,
-        "instructions": instructions,
-        "input": [{
-            "type": "message",
-            "role": "user",
-            "content": [{"type": "input_text", "text": user_content}]
-        }],
-        "temperature": 0.85,
-        "stream": True
-    }
-
-    try:
-        async with httpx.AsyncClient(timeout=180.0) as client:
-            async with client.stream(
-                "POST",
-                OPENAI_RESPONSES_URL,
-                headers={
-                    "Authorization": f"Bearer {OPENAI_API_KEY}",
-                    "Content-Type": "application/json"
-                },
-                json=request_body
-            ) as response:
-                if response.status_code != 200:
-                    error_text = await response.aread()
-                    api_logger.error(f"OpenAI streaming error: {response.status_code} - {error_text}")
-                    raise Exception(f"OpenAI API error: {response.status_code}")
-
-                async for line in response.aiter_lines():
-                    if line.startswith("data: "):
-                        data_str = line[6:]
-                        if data_str == "[DONE]":
-                            break
-                        try:
-                            data = json.loads(data_str)
-                            # ONLY handle delta events to avoid duplication
-                            event_type = data.get("type") if isinstance(data, dict) else ""
-                            if event_type == "response.output_text.delta" and "delta" in data:
-                                yield data["delta"]
-                            elif event_type == "response.content_part.delta":
-                                if "delta" in data and "text" in data["delta"]:
-                                    yield data["delta"]["text"]
-                        except json.JSONDecodeError:
-                            continue
-
-    except Exception as e:
-        api_logger.error(f"Articulation error: {e}")
-        yield f"\n\nTransformation guidance: Focus on {', '.join(reverse_result['mvt']['operators'][:3])} first."
-
 
 def detect_future_oriented_language(text: str) -> bool:
     """Detect if user query is future-oriented (goal/desire) vs current state analysis."""
@@ -3769,7 +3345,6 @@ async def health_check():
         },
         "reverse_causality_mapping": {
             "enabled": True,
-            "endpoint": "/api/reverse-map",
             "integrated_with_run": True,
             "components": [
                 "ReverseCausalityEngine",
