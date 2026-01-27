@@ -754,14 +754,14 @@ especially operators that were uncertain (low confidence) in the initial extract
             question_gen = ConstellationQuestionGenerator()
             missing_operator_priority = evidence.get('missing_operator_priority', [])
 
-            # Build goal context from evidence
-            goal_ctx_data = evidence.get('goal_context', {})
+            # Build goal context from evidence (validated in parse_query_with_web_research)
+            goal_ctx_data = evidence['goal_context']
             from consciousness_state import GoalContext
             val_goal_context = GoalContext(
-                goal_text=goal_ctx_data.get('goal_text', prompt[:200]),
-                goal_category=goal_ctx_data.get('goal_category', 'achievement'),
-                emotional_undertone=goal_ctx_data.get('emotional_undertone', 'neutral'),
-                domain=goal_ctx_data.get('domain', 'personal')
+                goal_text=goal_ctx_data['goal_text'],
+                goal_category=goal_ctx_data['goal_category'],
+                emotional_undertone=goal_ctx_data['emotional_undertone'],
+                domain=goal_ctx_data['domain']
             )
 
             question_context = question_gen.get_question_context(
@@ -958,14 +958,14 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
             "data": json.dumps({"message": f"Extracted {obs_count} tier-1 operator values..."})
         }
 
-        # Build goal context from LLM Call 1's extraction (replaces keyword matching)
+        # Build goal context from LLM Call 1's extraction (validated in parse_query_with_web_research)
         question_gen = ConstellationQuestionGenerator()
         from consciousness_state import GoalContext
         goal_context = GoalContext(
-            goal_text=evidence.get('goal', prompt[:200]),
-            goal_category=evidence.get('goal_category', 'achievement'),
-            emotional_undertone=evidence.get('emotional_undertone', 'neutral'),
-            domain=evidence.get('domain', 'personal')
+            goal_text=evidence.get('goal') or prompt[:200],
+            goal_category=evidence['goal_category'],
+            emotional_undertone=evidence['emotional_undertone'],
+            domain=evidence['domain']
         )
 
         evidence['goal_context'] = {
@@ -1962,6 +1962,32 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
                 # Validate required fields
                 if "observations" not in result or not result["observations"]:
                     raise ValueError("Response missing required 'observations' field")
+
+                # Validate goal context fields (enforced by OpenAI schema, must validate for Anthropic)
+                valid_goal_categories = {'achievement', 'relationship', 'peace', 'transformation'}
+                valid_undertones = {'urgency', 'uncertainty', 'curiosity', 'openness', 'neutral'}
+                valid_domains = {'business', 'personal', 'health', 'spiritual'}
+
+                if result.get('goal_category') not in valid_goal_categories:
+                    api_logger.warning(f"[PARSE] LLM returned invalid/missing goal_category: {result.get('goal_category')!r} — re-extracting from query_pattern")
+                    # Map query_pattern to goal_category (LLM's own classification)
+                    pattern = result.get('query_pattern', '').lower()
+                    if pattern in ('relationship',):
+                        result['goal_category'] = 'relationship'
+                    elif pattern in ('purpose', 'transformation'):
+                        result['goal_category'] = 'transformation'
+                    elif pattern in ('blockage',):
+                        result['goal_category'] = 'peace'
+                    else:
+                        result['goal_category'] = 'achievement'
+
+                if result.get('emotional_undertone') not in valid_undertones:
+                    api_logger.warning(f"[PARSE] LLM returned invalid/missing emotional_undertone: {result.get('emotional_undertone')!r}")
+                    result['emotional_undertone'] = 'neutral'
+
+                if result.get('domain') not in valid_domains:
+                    api_logger.warning(f"[PARSE] LLM returned invalid/missing domain: {result.get('domain')!r}")
+                    result['domain'] = 'personal'
 
                 api_logger.info(f"[PARSE] Successfully parsed response with {len(result.get('observations'))} observations")
                 return result
