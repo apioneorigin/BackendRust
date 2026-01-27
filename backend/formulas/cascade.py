@@ -670,7 +670,7 @@ class CascadeCalculator:
         }
 
         choices = []
-        for choice_name, description in choice_definitions.get(level):
+        for choice_name, description in choice_definitions.get(level, []):
             choices.append(DemuxChoice(
                 level=level,
                 choice_name=choice_name,

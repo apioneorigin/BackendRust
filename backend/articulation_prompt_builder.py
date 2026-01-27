@@ -875,7 +875,7 @@ def build_articulation_context(
         search_guidance.query_pattern = search_guidance_data.get('query_pattern')
 
         # Build evidence search queries
-        for esq in search_guidance_data.get('evidence_search_queries'):
+        for esq in search_guidance_data.get('evidence_search_queries', []):
             if isinstance(esq, dict):
                 search_guidance.evidence_search_queries.append(
                     EvidenceSearchQuery(
@@ -886,7 +886,7 @@ def build_articulation_context(
                 )
 
         # Build consciousness-to-reality mappings
-        for crm in search_guidance_data.get('consciousness_to_reality_mappings'):
+        for crm in search_guidance_data.get('consciousness_to_reality_mappings', []):
             if isinstance(crm, dict):
                 search_guidance.consciousness_to_reality_mappings.append(
                     ConsciousnessRealityMapping(

@@ -109,7 +109,7 @@ class LeverageIdentifier:
         if coherence > self.COHERENCE_THRESHOLD and grace > self.GRACE_THRESHOLD:
             # Calculate multiplier based on values
             base_mult = 1.0 + (coherence * grace)  # 1.0 to ~1.64
-            if network_mult > 1.0:
+            if network_mult is not None and network_mult > 1.0:
                 base_mult *= network_mult
 
             multiplier = min(2.5, base_mult)

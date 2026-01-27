@@ -692,7 +692,7 @@ especially operators that were uncertain (low confidence) in the initial extract
         # Build articulation context
         articulation_context = build_articulation_context(
             user_identity=evidence.get('user_identity'),
-            domain=evidence.get('goal_context').get('domain'),
+            domain=evidence.get('goal_context', {}).get('domain'),
             goal=prompt,
             current_situation=prompt,
             consciousness_state=consciousness_state,
@@ -736,7 +736,7 @@ especially operators that were uncertain (low confidence) in the initial extract
         already_validated = session_data.get('_validation_asked') if session_data else False
 
         extracted_operators = {}
-        for obs in evidence.get('observations'):
+        for obs in evidence.get('observations', []):
             if isinstance(obs, dict) and 'var' in obs and 'value' in obs:
                 canonical = SHORT_TO_CANONICAL.get(obs['var'])
                 if canonical in CANONICAL_OPERATOR_NAMES:
@@ -755,13 +755,13 @@ especially operators that were uncertain (low confidence) in the initial extract
             missing_operator_priority = evidence.get('missing_operator_priority', [])
 
             # Build goal context from evidence (validated in parse_query_with_web_research)
-            goal_ctx_data = evidence['goal_context']
+            goal_ctx_data = evidence.get('goal_context', {})
             from consciousness_state import GoalContext
             val_goal_context = GoalContext(
-                goal_text=goal_ctx_data['goal_text'],
-                goal_category=goal_ctx_data['goal_category'],
-                emotional_undertone=goal_ctx_data['emotional_undertone'],
-                domain=goal_ctx_data['domain']
+                goal_text=goal_ctx_data.get('goal_text', ''),
+                goal_category=goal_ctx_data.get('goal_category', 'achievement'),
+                emotional_undertone=goal_ctx_data.get('emotional_undertone', 'neutral'),
+                domain=goal_ctx_data.get('domain', 'personal')
             )
 
             question_context = question_gen.get_question_context(
@@ -977,7 +977,7 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
 
         # Identify extracted vs missing operators (for logging and post-response question)
         extracted_operators = {}
-        for obs in evidence.get('observations'):
+        for obs in evidence.get('observations', []):
             if isinstance(obs, dict) and 'var' in obs and 'value' in obs:
                 canonical = SHORT_TO_CANONICAL.get(obs['var'])
                 if canonical in CANONICAL_OPERATOR_NAMES:
@@ -2862,7 +2862,7 @@ def format_results_fallback(prompt: str, evidence: dict, posteriors: dict) -> st
         f"### Evidence Detected",
     ]
 
-    for obs in evidence.get("observations"):
+    for obs in evidence.get("observations", []):
         if isinstance(obs, dict) and 'var' in obs and 'value' in obs:
             conf_val = obs.get('confidence')
             conf_str = f"{conf_val:.2f}" if conf_val is not None else "N/A"
@@ -2873,7 +2873,7 @@ def format_results_fallback(prompt: str, evidence: dict, posteriors: dict) -> st
 
     # Show top posteriors
     sorted_posteriors = sorted(
-        posteriors.get("values").items(),
+        posteriors.get("values", {}).items(),
         key=lambda x: abs(x[1] - 0.5),
         reverse=True
     )[:10]
@@ -3557,7 +3557,7 @@ def _extract_operators_from_evidence(evidence: dict) -> Tuple[Dict[str, float], 
         'Ch': 'Ch_chitta', 'Chitta': 'Ch_chitta',
     }
 
-    for obs in evidence.get('observations'):
+    for obs in evidence.get('observations', []):
         if isinstance(obs, dict):
             var = obs.get('var')
             value = obs.get('value')

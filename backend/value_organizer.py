@@ -767,14 +767,15 @@ class ValueOrganizer:
         goal_data = tier1_values.get('goal_context')
         if not goal_data:
             logger.warning("[_extract_goal_context] missing: no goal_context in tier1_values")
+            return GoalContext()
 
         gc = GoalContext(
-            category=goal_data.get('category'),
-            explicit_goal=goal_data.get('explicit_goal'),
-            implicit_goal=goal_data.get('implicit_goal'),
-            why_category=goal_data.get('why_category'),
-            death_architecture_required=goal_data.get('death_architecture_required'),
-            s_level_requirement=goal_data.get('s_level_requirement')
+            category=goal_data.get('category', ''),
+            explicit_goal=goal_data.get('explicit_goal', ''),
+            implicit_goal=goal_data.get('implicit_goal', ''),
+            why_category=goal_data.get('why_category', ''),
+            death_architecture_required=goal_data.get('death_architecture_required', ''),
+            s_level_requirement=goal_data.get('s_level_requirement', 3.0)
         )
         logger.debug(
             f"[VALUE_ORGANIZER] Goal context extracted: category={gc.category} "

@@ -1075,10 +1075,10 @@ class RealismEngine:
 
         for cat in current_cats:
             idx = category_order.index(cat) if cat in category_order else None
-            if idx < len(category_order) - 1:
+            if idx is not None and idx < len(category_order) - 1:
                 next_cat = category_order[idx + 1]
                 # Find a realism in next category appropriate for S-level
-                for realism_name in self.CATEGORIES.get(next_cat):
+                for realism_name in self.CATEGORIES.get(next_cat, []):
                     realism = self.REALISM_TYPES.get(realism_name)
                     if realism and realism.s_level_range[0] <= s_level + 0.5:
                         recommendations.append(realism_name)
