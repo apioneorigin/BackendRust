@@ -958,11 +958,14 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
             "data": json.dumps({"message": f"Extracted {obs_count} tier-1 operator values..."})
         }
 
-        # Parse goal context from evidence (used downstream and for post-response question)
+        # Build goal context from LLM Call 1's extraction (replaces keyword matching)
         question_gen = ConstellationQuestionGenerator()
-        goal_context = question_gen.parse_goal_context(
-            query=prompt,
-            detected_targets=evidence.get('targets')
+        from consciousness_state import GoalContext
+        goal_context = GoalContext(
+            goal_text=evidence.get('goal', prompt[:200]),
+            goal_category=evidence.get('goal_category', 'achievement'),
+            emotional_undertone=evidence.get('emotional_undertone', 'neutral'),
+            domain=evidence.get('domain', 'personal')
         )
 
         evidence['goal_context'] = {
@@ -1421,12 +1424,33 @@ CRITICAL: Return ONLY valid JSON. You MUST include ALL 25 operators in observati
 The observations array MUST contain EXACTLY these 25 operators (use these exact var names):
 Ψ, K, M, G, W, A, P, E, V, L, R, At, Av, Se, Ce, Su, As, Fe, De, Re, Hf, Sa, Bu, Ma, Ch
 
+GOAL CONTEXT CLASSIFICATION (CRITICAL for downstream question targeting):
+- "goal_category": Classify the user's primary goal into exactly one of: achievement, relationship, peace, transformation
+  * achievement: revenue, profit, business growth, career, promotion, success, market leadership, funding
+  * relationship: partner, marriage, family, connection, love, dating, intimacy, friendship
+  * peace: calm, anxiety relief, stress reduction, inner quiet, meditation, mindfulness, serenity
+  * transformation: change, reinvention, transition, new beginning, career pivot, relocation
+- "emotional_undertone": Detect the user's emotional state from query. One of: urgency, uncertainty, curiosity, openness, neutral
+  * urgency: desperate, critical need, failing, emergency, "must", "have to", "can't"
+  * uncertainty: stuck, lost, confused, unclear, "don't know"
+  * curiosity: exploring, wondering, interested, "what if"
+  * openness: ready, willing, excited, looking forward
+  * neutral: none of the above
+- "domain": The primary domain context. One of: business, personal, health, spiritual
+  * business: company, corporate, organization, team, market, industry
+  * spiritual: consciousness, awakening, enlightenment, meditation, dharma, karma
+  * health: body, fitness, medical, diet, exercise
+  * personal: default if none of the above
+
 JSON structure:
 {{
   "user_identity": "detailed description based on query + research",
   "goal": "their goal informed by research context",
   "s_level": "S1-S8 estimated consciousness level",
   "query_pattern": "primary pattern detected (innovation/transformation/purpose/relationship/performance/blockage/strategy)",
+  "goal_category": "achievement|relationship|peace|transformation",
+  "emotional_undertone": "urgency|uncertainty|curiosity|openness|neutral",
+  "domain": "business|personal|health|spiritual",
   "web_research_summary": "key insights from web research that informed calculations",
   "search_queries_used": ["query1", "query2", ...],
   "key_facts": [
@@ -1542,12 +1566,33 @@ CRITICAL: Return ONLY valid JSON. You MUST include ALL 25 operators in observati
 The observations array MUST contain EXACTLY these 25 operators (use these exact var names):
 Ψ, K, M, G, W, A, P, E, V, L, R, At, Av, Se, Ce, Su, As, Fe, De, Re, Hf, Sa, Bu, Ma, Ch
 
+GOAL CONTEXT CLASSIFICATION (CRITICAL for downstream question targeting):
+- "goal_category": Classify the user's primary goal into exactly one of: achievement, relationship, peace, transformation
+  * achievement: revenue, profit, business growth, career, promotion, success, market leadership, funding
+  * relationship: partner, marriage, family, connection, love, dating, intimacy, friendship
+  * peace: calm, anxiety relief, stress reduction, inner quiet, meditation, mindfulness, serenity
+  * transformation: change, reinvention, transition, new beginning, career pivot, relocation
+- "emotional_undertone": Detect the user's emotional state from query. One of: urgency, uncertainty, curiosity, openness, neutral
+  * urgency: desperate, critical need, failing, emergency, "must", "have to", "can't"
+  * uncertainty: stuck, lost, confused, unclear, "don't know"
+  * curiosity: exploring, wondering, interested, "what if"
+  * openness: ready, willing, excited, looking forward
+  * neutral: none of the above
+- "domain": The primary domain context. One of: business, personal, health, spiritual
+  * business: company, corporate, organization, team, market, industry
+  * spiritual: consciousness, awakening, enlightenment, meditation, dharma, karma
+  * health: body, fitness, medical, diet, exercise
+  * personal: default if none of the above
+
 JSON structure:
 {{
   "user_identity": "detailed description based on query + research",
   "goal": "their goal informed by research context",
   "s_level": "S1-S8 estimated consciousness level",
   "query_pattern": "primary pattern detected (innovation/transformation/purpose/relationship/performance/blockage/strategy)",
+  "goal_category": "achievement|relationship|peace|transformation",
+  "emotional_undertone": "urgency|uncertainty|curiosity|openness|neutral",
+  "domain": "business|personal|health|spiritual",
   "web_research_summary": "key insights from web research that informed calculations",
   "search_queries_used": ["query1", "query2", ...],
   "key_facts": [
@@ -1570,7 +1615,8 @@ JSON structure:
     ... (all 25 operators)
   ],
   "targets": ["At_attachment", "F_fear", "R_resistance", ...],
-  "relevant_oof_components": ["Sacred Chain", "Cascade", "UCB", "Seven Matrices", "Death Architecture"]
+  "relevant_oof_components": ["Sacred Chain", "Cascade", "UCB", "Seven Matrices", "Death Architecture"],
+  "missing_operator_priority": ["V", "Se", "Ce", "Su"]
 }}
 
 CRITICAL REQUIREMENTS FOR TARGET SELECTION:
@@ -1688,6 +1734,18 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
                                         "goal": {"type": "string"},
                                         "s_level": {"type": "string"},
                                         "query_pattern": {"type": "string"},
+                                        "goal_category": {
+                                            "type": "string",
+                                            "enum": ["achievement", "relationship", "peace", "transformation"]
+                                        },
+                                        "emotional_undertone": {
+                                            "type": "string",
+                                            "enum": ["urgency", "uncertainty", "curiosity", "openness", "neutral"]
+                                        },
+                                        "domain": {
+                                            "type": "string",
+                                            "enum": ["business", "personal", "health", "spiritual"]
+                                        },
                                         "web_research_summary": {"type": "string"},
                                         "search_queries_used": {"type": "array", "items": {"type": "string"}},
                                         "key_facts": {
@@ -1759,7 +1817,7 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
                                             "description": "Operators not extractable from user input, ordered by priority for follow-up questions. Most important missing operators first."
                                         }
                                     },
-                                    "required": ["user_identity", "goal", "s_level", "query_pattern", "web_research_summary", "search_queries_used", "key_facts", "search_guidance", "observations", "targets", "relevant_oof_components", "missing_operator_priority"],
+                                    "required": ["user_identity", "goal", "s_level", "query_pattern", "goal_category", "emotional_undertone", "domain", "web_research_summary", "search_queries_used", "key_facts", "search_guidance", "observations", "targets", "relevant_oof_components", "missing_operator_priority"],
                                     "additionalProperties": False
                                 },
                                 "strict": True

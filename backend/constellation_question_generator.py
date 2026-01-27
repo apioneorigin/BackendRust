@@ -19,7 +19,7 @@ SINGLE QUESTION MANDATE:
 - NEVER ask 2, 3, 4, or more questions
 """
 
-from typing import Dict, Any, List, Optional, Set, Tuple
+from typing import Dict, Any, List, Optional, Set
 from dataclasses import dataclass, field
 
 # Import GoalContext from consciousness_state to avoid duplication
@@ -63,105 +63,6 @@ class ConstellationQuestionGenerator:
 
     def __init__(self):
         self._question_counter = 0
-
-    def parse_goal_context(
-        self,
-        query: str,
-        detected_targets: List[str] = None
-    ) -> GoalContext:
-        """
-        Extract goal category and emotional undertone from query.
-
-        Args:
-            query: User's original query text
-            detected_targets: Targets detected by LLM Call 1 (optional)
-
-        Returns:
-            GoalContext with category, undertone, and domain
-        """
-        if detected_targets is None:
-            detected_targets = []
-
-        query_lower = query.lower()
-
-        # Detect goal category
-        if any(kw in query_lower for kw in [
-            'revenue', 'profit', 'business', 'career', 'promotion',
-            'success', 'achieve', 'goal', 'target', 'sales', 'growth',
-            'market', 'company', 'startup', 'funding', 'investor'
-        ]):
-            category = 'achievement'
-        elif any(kw in query_lower for kw in [
-            'relationship', 'partner', 'marriage', 'family', 'connection',
-            'love', 'dating', 'spouse', 'friend', 'intimacy', 'divorce',
-            'children', 'parent', 'sibling'
-        ]):
-            category = 'relationship'
-        elif any(kw in query_lower for kw in [
-            'peace', 'calm', 'anxiety', 'stress', 'overthink', 'worry',
-            'relax', 'quiet', 'still', 'nervous', 'panic', 'fear',
-            'meditation', 'mindful', 'serene'
-        ]):
-            category = 'peace'
-        elif any(kw in query_lower for kw in [
-            'change', 'transform', 'reinvent', 'transition', 'shift',
-            'move', 'quit', 'new', 'different', 'start over', 'pivot',
-            'career change', 'relocate', 'rebrand'
-        ]):
-            category = 'transformation'
-        else:
-            category = 'achievement'  # Default
-
-        # Detect emotional undertone
-        if any(kw in query_lower for kw in [
-            'urgent', 'desperate', 'need', 'must', 'have to', "can't",
-            'help', 'emergency', 'critical', 'failing', 'dying'
-        ]):
-            undertone = 'urgency'
-        elif any(kw in query_lower for kw in [
-            'stuck', 'lost', "don't know", 'confused', 'unclear',
-            'uncertain', 'maybe', 'might', 'could'
-        ]):
-            undertone = 'uncertainty'
-        elif any(kw in query_lower for kw in [
-            'curious', 'explore', 'wonder', 'interested', 'considering',
-            'thinking about', 'what if', 'possible'
-        ]):
-            undertone = 'curiosity'
-        elif any(kw in query_lower for kw in [
-            'open', 'ready', 'willing', 'excited', 'looking forward'
-        ]):
-            undertone = 'openness'
-        else:
-            undertone = 'neutral'
-
-        # Extract domain
-        if any(kw in query_lower for kw in [
-            'company', 'business', 'corporate', 'organization', 'team',
-            'enterprise', 'firm', 'market', 'industry'
-        ]):
-            domain = 'business'
-        elif any(kw in query_lower for kw in [
-            'spiritual', 'consciousness', 'awakening', 'enlightenment',
-            'meditation', 'dharma', 'karma', 'soul'
-        ]):
-            domain = 'spiritual'
-        elif any(kw in query_lower for kw in [
-            'health', 'body', 'physical', 'fitness', 'medical',
-            'doctor', 'diet', 'exercise'
-        ]):
-            domain = 'health'
-        else:
-            domain = 'personal'
-
-        gc = GoalContext(
-            goal_text=query[:200],  # First 200 chars
-            goal_category=category,
-            emotional_undertone=undertone,
-            domain=domain
-        )
-        logger.info(f"[QUESTION_GEN] Parsed goal: category={category} undertone={undertone} domain={domain}")
-        return gc
 
     def identify_pivot_operators(
         self,
@@ -327,9 +228,9 @@ class ConstellationQuestionGenerator:
                 if canonical in missing_operators and canonical not in target_operators:
                     target_operators.append(canonical)
 
-        # Human-readable descriptions for LLM prompt
+        # Human-readable descriptions for LLM prompt (keys match CANONICAL_OPERATOR_NAMES)
         operator_descriptions = {
-            'Psi_consciousness': 'overall consciousness quality',
+            'Psi_quality': 'overall consciousness quality',
             'K_karma': 'accumulated karma / past action patterns',
             'M_maya': 'illusion / gap between perception and reality',
             'G_grace': 'grace / openness to receiving support',
@@ -342,14 +243,13 @@ class ConstellationQuestionGenerator:
             'R_resistance': 'resistance / friction against what is',
             'At_attachment': 'attachment / clinging to outcomes',
             'Av_aversion': 'aversion / pushing away discomfort',
-            'Se_seva': 'seva / service orientation',
+            'Se_service': 'seva / service orientation',
             'Ce_cleaning': 'cleaning / purification practice',
             'Su_suffering': 'suffering / relationship with pain',
-            'As_aspiration': 'aspiration / growth drive',
+            'As_asmita': 'asmita / ego identity / sense of separate self',
             'F_fear': 'fear / relationship with threat',
             'De_desire': 'desire / wanting patterns',
-            'Re_resistance': 'active resistance / pushing against change',
-            'Hf_habit_force': 'habit force / strength of automatic patterns',
+            'Hf_habit': 'habit force / strength of automatic patterns',
             'Sa_samskara': 'samskara / deep impressions from past',
             'Bu_buddhi': 'buddhi / discriminative intelligence',
             'Ma_manas': 'manas / mind activity level',
@@ -360,6 +260,15 @@ class ConstellationQuestionGenerator:
             'Tr_trust': 'trust / basic trust in life',
             'O_openness': 'openness / receptivity to new experience',
             'J_joy': 'joy / innate happiness',
+            'D_dharma': 'dharma / life purpose alignment',
+            'Sh_shakti': 'shakti / creative energy',
+            'Ss_struct': 'structural integrity / system coherence',
+            'Lf_lovefear': 'love-fear balance / fundamental orientation',
+            'Rs_resonance': 'resonance / vibrational alignment',
+            'Av_avidya': 'avidya / fundamental ignorance',
+            'Ra_raga': 'raga / craving attachment',
+            'Dv_dvesha': 'dvesha / aversion-repulsion',
+            'Ab_abhinivesha': 'abhinivesha / fear of death-dissolution',
         }
 
         target_descriptions = []
