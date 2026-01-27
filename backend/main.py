@@ -265,9 +265,9 @@ def repair_truncated_json(text: str) -> str:
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 
-# Model configurations with pricing (per million tokens, Jan 2026)
-# Sources: OpenAI API Pricing, Anthropic Claude Pricing
-# Anthropic prompt caching: cache_write = 1.25x input, cache_read = 0.1x input (90% savings)
+# Model configurations with pricing (per million tokens)
+# Anthropic prompt caching: 5-min cache_write = 1.25x input, cache_read = 0.1x input
+# Opus 4.5 also has 1-hr extended cache at 2x input
 MODEL_CONFIGS = {
     "gpt-5.2": {
         "provider": "openai",
@@ -313,10 +313,11 @@ MODEL_CONFIGS = {
         "endpoint": "https://api.anthropic.com/v1/messages",
         "streaming_endpoint": "https://api.anthropic.com/v1/messages",
         "pricing": {
-            "input": 15.00,         # Updated: Opus 4.5 is $15/M input
-            "output": 75.00,        # Updated: Opus 4.5 is $75/M output
-            "cache_write": 18.75,   # 1.25x input price
-            "cache_read": 1.50,     # 0.1x input price (90% savings)
+            "input": 5.00,           # Opus 4.5: $5/MTok input
+            "output": 25.00,         # Opus 4.5: $25/MTok output
+            "cache_write": 6.25,     # 5-min cache write: 1.25x input
+            "cache_write_1h": 10.00, # 1-hr cache write: 2x input
+            "cache_read": 0.50,      # Cache hits & refreshes: 0.1x input
         },
     },
 }
