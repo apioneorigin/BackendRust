@@ -460,15 +460,14 @@ class OOFInferenceEngine:
                     if name in lib_weights and value is not None:
                         lib_sum += value * lib_weights[name]
                         lib_weight_total += lib_weights[name]
-                profile.liberation_index = lib_sum / lib_weight_total if lib_weight_total > 0 else None
+                if lib_weight_total > 0:
+                    profile.liberation_index = lib_sum / lib_weight_total
 
                 # Integration score (how well modules align)
                 if len(values) > 1:
                     mean_val = sum(values) / len(values)
                     variance = sum((v - mean_val) ** 2 for v in values) / len(values)
                     profile.integration_score = 1 - (variance ** 0.5)
-                else:
-                    profile.integration_score = None
 
                 # Transformation potential
                 if profile.panchakritya_profile and profile.death_profile:
