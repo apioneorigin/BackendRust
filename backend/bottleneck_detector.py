@@ -402,7 +402,7 @@ class BottleneckDetector:
         high_impact = [b for b in bottlenecks if b.impact == 'high']
         categories = {}
         for b in bottlenecks:
-            categories[b.category] = categories.get(b.category) + 1
+            categories[b.category] = categories.get(b.category, 0) + 1
 
         return {
             'total_count': len(bottlenecks),

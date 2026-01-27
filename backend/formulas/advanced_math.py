@@ -784,7 +784,7 @@ def calculate_excitation_from_vacuum(
     Represents: Localized consciousness arising from void
     """
     new_state = occupation_numbers.copy()
-    new_state[mode] = new_state.get(mode) + 1
+    new_state[mode] = new_state.get(mode, 0) + 1
     return new_state
 
 

@@ -140,21 +140,21 @@ class PathwayOptimizer:
         for i, s in enumerate(scored):
             s.percentile_rank = int(100 * (len(scored) - i) / len(scored))
 
-        # Find best in each category
-        fastest = max(scored, key=lambda x: x.speed_score.score)
-        most_stable = max(scored, key=lambda x: x.stability_score.score)
-        easiest = max(scored, key=lambda x: x.effort_score.score)  # Higher = easier
+        # Find best in each category (guard None scores)
+        fastest = max(scored, key=lambda x: x.speed_score.score if x.speed_score.score is not None else 0.0)
+        most_stable = max(scored, key=lambda x: x.stability_score.score if x.stability_score.score is not None else 0.0)
+        easiest = max(scored, key=lambda x: x.effort_score.score if x.effort_score.score is not None else 0.0)  # Higher = easier
 
         # Mark recommendations
         for s in scored:
             if s.total_score == scored[0].total_score:
                 s.recommended = True
                 s.recommendation_reason = "Highest overall score based on balanced criteria"
-            elif s.pathway_id == fastest.pathway_id and fastest.speed_score.score > 0.7:
+            elif s.pathway_id == fastest.pathway_id and fastest.speed_score.score is not None and fastest.speed_score.score > 0.7:
                 s.recommendation_reason = "Fastest path if speed is priority"
-            elif s.pathway_id == most_stable.pathway_id and most_stable.stability_score.score > 0.8:
+            elif s.pathway_id == most_stable.pathway_id and most_stable.stability_score.score is not None and most_stable.stability_score.score > 0.8:
                 s.recommendation_reason = "Most stable if sustainability is priority"
-            elif s.pathway_id == easiest.pathway_id and easiest.effort_score.score > 0.7:
+            elif s.pathway_id == easiest.pathway_id and easiest.effort_score.score is not None and easiest.effort_score.score > 0.7:
                 s.recommendation_reason = "Easiest if energy conservation is priority"
 
         # Build preference match map
@@ -247,14 +247,11 @@ class PathwayOptimizer:
         """
         Score pathway on speed (faster = higher score).
         """
-        score = None
-
-        # Adjust for step count
+        # Speed score based on step count (fewer steps = faster = higher score)
         step_adjustment = 1 - (len(pathway.steps) * 0.03)
-        if score is not None:
-            score *= max(0.7, step_adjustment)
+        score = max(0.2, min(1.0, step_adjustment))
 
-        description = "Timeline: N/A"
+        description = f"Timeline: {len(pathway.steps)} steps"
 
         logger.debug(f"[_score_speed] result: {score}")
         return WeightedDimensionScore(
@@ -404,24 +401,24 @@ class PathwayOptimizer:
         avoid_if = []
 
         # Analyze speed vs stability trade-off
-        if speed.score > 0.7:
+        if speed.score is not None and speed.score > 0.7:
             strengths.append("Fast results")
             best_for.append("Urgent transformation needs")
-        elif speed.score < 0.4:
+        elif speed.score is not None and speed.score < 0.4:
             weaknesses.append("Longer timeline")
             avoid_if.append("Need quick results")
 
-        if stability.score > 0.8:
+        if stability.score is not None and stability.score > 0.8:
             strengths.append("Highly sustainable changes")
             best_for.append("Long-term transformation")
-        elif stability.score < 0.5:
+        elif stability.score is not None and stability.score < 0.5:
             weaknesses.append("Risk of instability")
             avoid_if.append("Prone to overwhelm")
 
-        if effort.score > 0.7:
+        if effort.score is not None and effort.score > 0.7:
             strengths.append("Low effort required")
             best_for.append("Low energy periods")
-        elif effort.score < 0.4:
+        elif effort.score is not None and effort.score < 0.4:
             weaknesses.append("Requires significant effort")
             avoid_if.append("Already stretched thin")
 

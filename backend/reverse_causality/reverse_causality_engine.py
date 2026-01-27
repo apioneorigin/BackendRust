@@ -415,7 +415,10 @@ class ReverseCausalityEngine:
             if achieved is None:
                 continue
             gap_terms.append(abs(achieved - v))
-        total_gap = sum(gap_terms) / len(desired_outcomes) if gap_terms else None
+        if not gap_terms:
+            logger.warning("[solve_multi_outcome] no gap terms computed, skipping")
+            return None
+        total_gap = sum(gap_terms) / len(desired_outcomes)
 
         achievement_prob = self._calculate_achievement_probability(
             current_operators, required_operators
@@ -433,7 +436,7 @@ class ReverseCausalityEngine:
             current_operators=current_operators,
             gap=total_gap
         )
-        logger.debug(f"[solve_multi_outcome] result: gap={total_gap:.3f} prob={achievement_prob:.3f}")
+        logger.debug(f"[solve_multi_outcome] result: gap={total_gap:.3f} prob={achievement_prob if achievement_prob is not None else 'None'}")
         return result
 
     def _gradient_descent_solve(
@@ -484,7 +487,10 @@ class ReverseCausalityEngine:
             for op in relevant_operators:
                 # Forward difference
                 operators_plus = operators.copy()
-                operators_plus[op] = min(1.0, operators_plus.get(op) + epsilon)
+                current_op_val = operators_plus.get(op)
+                if current_op_val is None:
+                    continue
+                operators_plus[op] = min(1.0, current_op_val + epsilon)
                 value_plus = formula(operators_plus)
                 if value_plus is None:
                     return None
@@ -572,7 +578,10 @@ class ReverseCausalityEngine:
 
             for op in relevant_operators:
                 operators_plus = operators.copy()
-                operators_plus[op] = min(1.0, operators_plus.get(op) + epsilon)
+                current_op_val = operators_plus.get(op)
+                if current_op_val is None:
+                    continue
+                operators_plus[op] = min(1.0, current_op_val + epsilon)
                 loss_plus = loss_fn(operators_plus)
                 if loss_plus is None:
                     return None
