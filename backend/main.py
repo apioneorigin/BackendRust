@@ -815,6 +815,29 @@ especially operators that were uncertain (low confidence) in the initial extract
                 )
 
                 if llm_question:
+                    # Extract Call 3 token usage and emit updated totals
+                    call3_token_usage = llm_question.pop('_call3_token_usage', None)
+                    if call3_token_usage:
+                        c3_in = call3_token_usage["input_tokens"]
+                        c3_out = call3_token_usage["output_tokens"]
+                        updated_in = c1_in + c2_in + c3_in
+                        updated_out = c1_out + c2_out + c3_out
+                        updated_all = updated_in + updated_out
+                        updated_cost = (updated_in * pricing["input"] + updated_out * pricing["output"]) / 1_000_000
+                        api_logger.info(f"[TOKEN USAGE] Call 1: {c1_in}+{c1_out}={c1_in+c1_out} | Call 2: {c2_in}+{c2_out}={c2_in+c2_out} | Call 3: {c3_in}+{c3_out}={c3_in+c3_out} | Total: {updated_in}+{updated_out}={updated_all} | Cost: ${updated_cost:.6f}")
+                        yield {
+                            "event": "usage",
+                            "data": json.dumps({
+                                "call1": {"input_tokens": c1_in, "output_tokens": c1_out, "total_tokens": c1_in + c1_out},
+                                "call2": {"input_tokens": c2_in, "output_tokens": c2_out, "total_tokens": c2_in + c2_out},
+                                "call3": {"input_tokens": c3_in, "output_tokens": c3_out, "total_tokens": c3_in + c3_out},
+                                "input_tokens": updated_in,
+                                "output_tokens": updated_out,
+                                "total_tokens": updated_all,
+                                "cost": round(updated_cost, 6),
+                            })
+                        }
+
                     from constellation_question_generator import MultiDimensionalQuestion
                     validation_question = MultiDimensionalQuestion(
                         question_id=question_context['question_id'],
@@ -1288,6 +1311,29 @@ Articulation Tokens: {token_count}
             )
 
             if llm_question:
+                # Extract Call 3 token usage and emit updated totals
+                call3_token_usage = llm_question.pop('_call3_token_usage', None)
+                if call3_token_usage:
+                    c3_in = call3_token_usage["input_tokens"]
+                    c3_out = call3_token_usage["output_tokens"]
+                    updated_in = c1_in + c2_in + c3_in
+                    updated_out = c1_out + c2_out + c3_out
+                    updated_all = updated_in + updated_out
+                    updated_cost = (updated_in * pricing["input"] + updated_out * pricing["output"]) / 1_000_000
+                    api_logger.info(f"[TOKEN USAGE] Call 1: {c1_in}+{c1_out}={c1_in+c1_out} | Call 2: {c2_in}+{c2_out}={c2_in+c2_out} | Call 3: {c3_in}+{c3_out}={c3_in+c3_out} | Total: {updated_in}+{updated_out}={updated_all} | Cost: ${updated_cost:.6f}")
+                    yield {
+                        "event": "usage",
+                        "data": json.dumps({
+                            "call1": {"input_tokens": c1_in, "output_tokens": c1_out, "total_tokens": c1_in + c1_out},
+                            "call2": {"input_tokens": c2_in, "output_tokens": c2_out, "total_tokens": c2_in + c2_out},
+                            "call3": {"input_tokens": c3_in, "output_tokens": c3_out, "total_tokens": c3_in + c3_out},
+                            "input_tokens": updated_in,
+                            "output_tokens": updated_out,
+                            "total_tokens": updated_all,
+                            "cost": round(updated_cost, 6),
+                        })
+                    }
+
                 from constellation_question_generator import MultiDimensionalQuestion
                 question = MultiDimensionalQuestion(
                     question_id=question_context['question_id'],
@@ -2191,6 +2237,11 @@ Return ONLY valid JSON:
                     if block.get("type") == "text":
                         response_text += block.get("text", "")
 
+                # Extract token usage from Anthropic response
+                usage = data.get("usage", {})
+                call3_input = usage.get("input_tokens", 0)
+                call3_output = usage.get("output_tokens", 0)
+
             else:
                 # OpenAI
                 headers = {
@@ -2217,6 +2268,11 @@ Return ONLY valid JSON:
                             if content.get("type") == "output_text":
                                 response_text += content.get("text", "")
 
+                # Extract token usage from OpenAI response
+                openai_usage = data.get("usage", {})
+                call3_input = openai_usage.get("input_tokens", 0)
+                call3_output = openai_usage.get("output_tokens", 0)
+
         if not response_text:
             api_logger.error("[QUESTION_LLM] Empty response from LLM")
             return None
@@ -2235,6 +2291,13 @@ Return ONLY valid JSON:
             api_logger.error("[QUESTION_LLM] Missing required fields in response")
             return None
 
+        call3_total = (call3_input or 0) + (call3_output or 0)
+        result['_call3_token_usage'] = {
+            "input_tokens": call3_input or 0,
+            "output_tokens": call3_output or 0,
+            "total_tokens": call3_total,
+        }
+        api_logger.info(f"[CALL 3 TOKENS] Input: {call3_input}, Output: {call3_output}, Total: {call3_total}")
         api_logger.info(f"[QUESTION_LLM] Generated question: '{result['question_text'][:80]}...'")
         return result
 

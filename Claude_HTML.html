@@ -435,6 +435,23 @@
             </div>
           </div>
           <div class="metric-group">
+            <div class="metric-group-label">Call 3 (Question)</div>
+            <div class="metric-group-row">
+              <div class="metric">
+                <div class="metric-label">Input</div>
+                <div class="metric-value" id="call3Input">—</div>
+              </div>
+              <div class="metric">
+                <div class="metric-label">Output</div>
+                <div class="metric-value" id="call3Output">—</div>
+              </div>
+              <div class="metric">
+                <div class="metric-label">Total</div>
+                <div class="metric-value" id="call3Total">—</div>
+              </div>
+            </div>
+          </div>
+          <div class="metric-group">
             <div class="metric-group-label">Combined</div>
             <div class="metric-group-row">
               <div class="metric">
@@ -550,6 +567,11 @@
           updateMetric('call2Input', data.call2.input_tokens.toLocaleString());
           updateMetric('call2Output', data.call2.output_tokens.toLocaleString());
           updateMetric('call2Total', data.call2.total_tokens.toLocaleString());
+        }
+        if (data.call3) {
+          updateMetric('call3Input', data.call3.input_tokens.toLocaleString());
+          updateMetric('call3Output', data.call3.output_tokens.toLocaleString());
+          updateMetric('call3Total', data.call3.total_tokens.toLocaleString());
         }
         // Combined totals
         updateMetric('inputTokens', data.input_tokens.toLocaleString());
@@ -691,6 +713,9 @@
       updateMetric('call2Input', '—');
       updateMetric('call2Output', '—');
       updateMetric('call2Total', '—');
+      updateMetric('call3Input', '—');
+      updateMetric('call3Output', '—');
+      updateMetric('call3Total', '—');
       updateMetric('inputTokens', '—');
       updateMetric('outputTokens', '—');
       updateMetric('totalTokens', '—');
