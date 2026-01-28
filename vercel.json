@@ -12,7 +12,8 @@
       "config": {
         "maxLambdaSize": "50mb",
         "maxDuration": 300,
-        "supportsResponseStreaming": true
+        "supportsResponseStreaming": true,
+        "includeFiles": "backend/**,LLM_Call_1.txt,LLM_Call_2.txt,Claude_HTML.html"
       }
     },
     {
