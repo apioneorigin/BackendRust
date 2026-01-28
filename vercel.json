@@ -20,14 +20,14 @@
       "use": "@vercel/static"
     }
   ],
-  "routes": [
+  "rewrites": [
     {
-      "src": "/api/(.*)",
-      "dest": "api/index.py"
+      "source": "/api/(.*)",
+      "destination": "/api/index.py"
     },
     {
-      "src": "/",
-      "dest": "/Claude_HTML.html"
+      "source": "/",
+      "destination": "/Claude_HTML.html"
     }
   ],
   "headers": [
