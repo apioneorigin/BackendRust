@@ -1618,8 +1618,16 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
     last_error = None
     response_text = ""
     search_queries_logged = []
+    parse_start_time = time.time()
+    PARSE_TIMEOUT_BUDGET = 240  # seconds — abort retries before 300s Vercel limit
 
     for attempt in range(STREAMING_MAX_RETRIES + 1):
+        # Abort retries if we've consumed most of the timeout budget
+        elapsed_so_far = time.time() - parse_start_time
+        if attempt > 0 and elapsed_so_far > PARSE_TIMEOUT_BUDGET:
+            api_logger.warning(f"[PARSE] Aborting retries — {elapsed_so_far:.0f}s elapsed, exceeds {PARSE_TIMEOUT_BUDGET}s budget")
+            break
+
         try:
             async with httpx.AsyncClient(timeout=120.0) as client:
                 if provider == "anthropic":
@@ -1744,10 +1752,16 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
                         "model": model,
                         "max_tokens": 8192,
                         "system": system_content,
-                        "messages": [{
-                            "role": "user",
-                            "content": user_content
-                        }]
+                        "messages": [
+                            {
+                                "role": "user",
+                                "content": user_content
+                            },
+                            {
+                                "role": "assistant",
+                                "content": "{"
+                            }
+                        ]
                     }
 
                     # Add web search tool if enabled
@@ -1816,6 +1830,9 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
                     if not response_text:
                         api_logger.error(f"[PARSE] Anthropic returned no text. Content types: {[b.get('type') for b in content]}")
                         raise Exception(f"Anthropic returned no text content. Response structure: {list(data.keys())}")
+
+                    # Prepend "{" since assistant prefill forces JSON but isn't included in response
+                    response_text = "{" + response_text
 
                 else:
                     # OpenAI Responses API with optional web search
