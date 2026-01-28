@@ -11,6 +11,7 @@
       "use": "@vercel/python",
       "config": {
         "maxLambdaSize": "50mb",
+        "maxDuration": 300,
         "supportsResponseStreaming": true
       }
     },
@@ -19,11 +20,6 @@
       "use": "@vercel/static"
     }
   ],
-  "functions": {
-    "api/index.py": {
-      "maxDuration": 300
-    }
-  },
   "routes": [
     {
       "src": "/api/(.*)",
