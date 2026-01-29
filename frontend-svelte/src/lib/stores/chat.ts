@@ -357,6 +357,7 @@ export const chat = createChatStore();
 
 // Derived stores
 export const currentConversation = derived(chat, $chat => $chat.currentConversation);
+export const conversations = derived(chat, $chat => $chat.conversations);
 export const messages = derived(chat, $chat => $chat.messages);
 export const goals = derived(chat, $chat => $chat.goals);
 export const insights = derived(chat, $chat => $chat.insights);

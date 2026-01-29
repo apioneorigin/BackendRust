@@ -69,3 +69,22 @@ function createToastStore() {
 }
 
 export const toast = createToastStore();
+
+// Export convenience functions for easier imports
+export const addToast = (type: ToastType, title: string, message?: string) => {
+	// Handle both (type, message) and (type, title, message) signatures
+	const actualMessage = message ?? title;
+	switch (type) {
+		case 'success':
+			return toast.success(actualMessage);
+		case 'error':
+			return toast.error(actualMessage);
+		case 'warning':
+			return toast.warning(actualMessage);
+		case 'info':
+			return toast.info(actualMessage);
+	}
+};
+
+export const removeToast = (id: string) => toast.remove(id);
+export const toasts = toast;
