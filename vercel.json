@@ -3,10 +3,15 @@
   "git": {
     "deploymentEnabled": false
   },
+  "build": {
+    "env": {
+      "PYTHON_INSTALLER": "pip"
+    }
+  },
   "builds": [
     {
       "src": "api/index.py",
-      "use": "@vercel/python",
+      "use": "@vercel/python@4.3.1",
       "config": {
         "maxLambdaSize": "50mb",
         "maxDuration": 300,
