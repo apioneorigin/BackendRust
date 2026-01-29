@@ -57,12 +57,25 @@ function createThemeStore() {
 			applyTheme(theme);
 		},
 
+		setLight() {
+			this.setTheme('light');
+		},
+
+		setDark() {
+			this.setTheme('dark');
+		},
+
 		toggle() {
 			update(current => {
 				const newTheme = getEffectiveTheme(current) === 'dark' ? 'light' : 'dark';
 				applyTheme(newTheme);
 				return newTheme;
 			});
+		},
+
+		// Getter for isDark - used in templates
+		get isDark() {
+			return getEffectiveTheme(get({ subscribe })) === 'dark';
 		},
 	};
 }
