@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Reality Transformer - Master Startup Script
-# Starts all services automatically
+# Starts Python backend + SvelteKit frontend
 #
 
 set -e
@@ -16,10 +16,12 @@ NC='\033[0m' # No Color
 # Project root directory
 PROJECT_ROOT="$(cd "$(dirname "$0")" && pwd)"
 BACKEND_DIR="$PROJECT_ROOT/backend"
+FRONTEND_DIR="$PROJECT_ROOT/frontend-svelte"
 LOG_DIR="$PROJECT_ROOT/logs"
 
 # Ports
-BACKEND_PORT=3000
+BACKEND_PORT=8000
+FRONTEND_PORT=5173
 
 # PID files
 PID_DIR="$PROJECT_ROOT/.pids"
@@ -42,7 +44,6 @@ check_port() {
     elif command -v netstat &> /dev/null; then
         netstat -tuln | grep -q ":$port "
     else
-        # Fallback: try to connect
         (echo > /dev/tcp/localhost/$port) 2>/dev/null
     fi
 }
@@ -71,22 +72,26 @@ wait_for_service() {
 stop_existing() {
     echo -e "${YELLOW}Checking for existing services...${NC}"
 
-    if [ -f "$PID_DIR/backend.pid" ]; then
-        local pid=$(cat "$PID_DIR/backend.pid" 2>/dev/null)
-        if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
-            echo "  Stopping existing backend (PID: $pid)..."
-            kill "$pid" 2>/dev/null || true
+    for service in backend frontend; do
+        if [ -f "$PID_DIR/$service.pid" ]; then
+            local pid=$(cat "$PID_DIR/$service.pid" 2>/dev/null)
+            if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+                echo "  Stopping existing $service (PID: $pid)..."
+                kill "$pid" 2>/dev/null || true
+                sleep 1
+            fi
+            rm -f "$PID_DIR/$service.pid"
+        fi
+    done
+
+    # Free ports if still in use
+    for port in $BACKEND_PORT $FRONTEND_PORT; do
+        if check_port $port; then
+            echo -e "  ${YELLOW}Port $port still in use, attempting to free...${NC}"
+            fuser -k $port/tcp 2>/dev/null || true
             sleep 1
         fi
-        rm -f "$PID_DIR/backend.pid"
-    fi
-
-    # Also check if port is still in use
-    if check_port $BACKEND_PORT; then
-        echo -e "  ${YELLOW}Port $BACKEND_PORT still in use, attempting to free...${NC}"
-        fuser -k $BACKEND_PORT/tcp 2>/dev/null || true
-        sleep 1
-    fi
+    done
 }
 
 # Function to setup Python environment
@@ -95,20 +100,31 @@ setup_python() {
 
     cd "$BACKEND_DIR"
 
-    # Create virtual environment if it doesn't exist
     if [ ! -d "venv" ]; then
         echo "  Creating virtual environment..."
         python3 -m venv venv
     fi
 
-    # Activate virtual environment
     source venv/bin/activate
 
-    # Install/update dependencies
     echo "  Installing dependencies..."
     pip install -q -r requirements.txt 2>/dev/null
 
     echo -e "  ${GREEN}Python environment ready${NC}"
+}
+
+# Function to setup Node environment
+setup_node() {
+    echo -e "${BLUE}Setting up Node environment...${NC}"
+
+    cd "$FRONTEND_DIR"
+
+    if [ ! -d "node_modules" ]; then
+        echo "  Installing npm dependencies..."
+        npm install
+    fi
+
+    echo -e "  ${GREEN}Node environment ready${NC}"
 }
 
 # Function to check OpenAI configuration
@@ -121,7 +137,6 @@ check_openai() {
     fi
 
     echo -e "  ${YELLOW}OpenAI API key not configured (running in fallback mode)${NC}"
-    echo -e "  ${YELLOW}To enable AI features: cp backend/.env.example backend/.env${NC}"
     return 1
 }
 
@@ -132,7 +147,6 @@ start_backend() {
     cd "$BACKEND_DIR"
     source venv/bin/activate
 
-    # Start uvicorn in background
     nohup python -m uvicorn main:app \
         --host 0.0.0.0 \
         --port $BACKEND_PORT \
@@ -143,12 +157,34 @@ start_backend() {
 
     echo "  Backend starting (PID: $pid)..."
 
-    # Wait for it to be ready
     if wait_for_service $BACKEND_PORT "Backend"; then
         echo -e "  ${GREEN}Backend running on http://localhost:$BACKEND_PORT${NC}"
         return 0
     else
         echo -e "  ${RED}Backend failed to start. Check $LOG_DIR/backend.log${NC}"
+        return 1
+    fi
+}
+
+# Function to start the frontend
+start_frontend() {
+    echo -e "${BLUE}Starting SvelteKit Frontend...${NC}"
+
+    cd "$FRONTEND_DIR"
+
+    nohup npm run dev -- --host 0.0.0.0 --port $FRONTEND_PORT \
+        > "$LOG_DIR/frontend.log" 2>&1 &
+
+    local pid=$!
+    echo $pid > "$PID_DIR/frontend.pid"
+
+    echo "  Frontend starting (PID: $pid)..."
+
+    if wait_for_service $FRONTEND_PORT "Frontend"; then
+        echo -e "  ${GREEN}Frontend running on http://localhost:$FRONTEND_PORT${NC}"
+        return 0
+    else
+        echo -e "  ${RED}Frontend failed to start. Check $LOG_DIR/frontend.log${NC}"
         return 1
     fi
 }
@@ -160,14 +196,16 @@ show_status() {
     echo -e "${GREEN}All services started successfully!${NC}"
     echo -e "${BLUE}═══════════════════════════════════════════════════════════${NC}"
     echo ""
-    echo "  Frontend:  http://localhost:$BACKEND_PORT"
+    echo "  Frontend:  http://localhost:$FRONTEND_PORT"
+    echo "  Backend:   http://localhost:$BACKEND_PORT"
     echo "  Health:    http://localhost:$BACKEND_PORT/health"
-    echo "  Logs:      $LOG_DIR/backend.log"
+    echo ""
+    echo -e "${YELLOW}Logs:${NC}"
+    echo "  Backend:   tail -f $LOG_DIR/backend.log"
+    echo "  Frontend:  tail -f $LOG_DIR/frontend.log"
     echo ""
     echo -e "${YELLOW}Commands:${NC}"
-    echo "  View logs:     tail -f $LOG_DIR/backend.log"
-    echo "  Stop all:      $PROJECT_ROOT/stop.sh"
-    echo "  Check status:  curl http://localhost:$BACKEND_PORT/health"
+    echo "  Stop all:  $PROJECT_ROOT/stop.sh"
     echo ""
 }
 
@@ -175,19 +213,12 @@ show_status() {
 main() {
     cd "$PROJECT_ROOT"
 
-    # Stop any existing services
     stop_existing
-
-    # Setup Python
     setup_python
-
-    # Check OpenAI (non-fatal)
+    setup_node
     check_openai || true
-
-    # Start backend
     start_backend
-
-    # Show final status
+    start_frontend
     show_status
 }
 
