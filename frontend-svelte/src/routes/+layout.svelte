@@ -18,15 +18,6 @@
 		// Try to load user on mount
 		auth.loadUser();
 	});
-
-	// Toast auto-dismiss
-	$: $toasts.forEach((toast) => {
-		if (toast.duration && toast.duration > 0) {
-			setTimeout(() => {
-				removeToast(toast.id);
-			}, toast.duration);
-		}
-	});
 </script>
 
 <div class="app" class:dark={$theme.isDark}>
@@ -35,17 +26,14 @@
 	<!-- Toast notifications -->
 	{#if $toasts.length > 0}
 		<div class="toast-container">
-			{#each $toasts as toast (toast.id)}
-				<div class="toast toast-{toast.type}" role="alert">
+			{#each $toasts as t (t.id)}
+				<div class="toast toast-{t.type}" role="alert">
 					<div class="toast-content">
-						{#if toast.title}
-							<strong class="toast-title">{toast.title}</strong>
-						{/if}
-						<p class="toast-message">{toast.message}</p>
+						<p class="toast-message">{t.message}</p>
 					</div>
 					<button
 						class="toast-close"
-						on:click={() => removeToast(toast.id)}
+						on:click={() => removeToast(t.id)}
 						aria-label="Close"
 					>
 						&times;
