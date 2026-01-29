@@ -62,6 +62,7 @@ function createAuthStore() {
 					isAuthenticated: true,
 					isLoading: false,
 				}));
+				return user;
 			} catch (error) {
 				update(state => ({
 					...state,
@@ -70,6 +71,7 @@ function createAuthStore() {
 					isAuthenticated: false,
 					isLoading: false,
 				}));
+				return null;
 			}
 		},
 
