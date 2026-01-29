@@ -106,6 +106,53 @@ load_dotenv()
 app = FastAPI(title="Reality Transformer", version="4.1.0")
 
 # =====================================================================
+# DATABASE AND ROUTERS INITIALIZATION
+# =====================================================================
+
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan manager for startup/shutdown."""
+    # Startup: Initialize database
+    from database import init_db
+    await init_db()
+    api_logger.info("Database initialized")
+    yield
+    # Shutdown: Close database connections
+    from database import close_db
+    await close_db()
+    api_logger.info("Database connections closed")
+
+# Re-create app with lifespan
+app = FastAPI(title="Reality Transformer", version="4.1.0", lifespan=lifespan)
+
+# Include routers
+from routers import (
+    auth_router,
+    users_router,
+    sessions_router,
+    chat_router,
+    goals_router,
+    documents_router,
+    credits_router,
+    admin_router,
+    health_router,
+)
+
+app.include_router(auth_router)
+app.include_router(users_router)
+app.include_router(sessions_router)
+app.include_router(chat_router)
+app.include_router(goals_router)
+app.include_router(documents_router)
+app.include_router(credits_router)
+app.include_router(admin_router)
+app.include_router(health_router)
+
+api_logger.info("All routers registered")
+
+# =====================================================================
 # SESSION STORAGE FOR CONSTELLATION Q&A FLOW
 # =====================================================================
 
