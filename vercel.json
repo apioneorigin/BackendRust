@@ -3,54 +3,24 @@
   "git": {
     "deploymentEnabled": false
   },
+  "buildCommand": "cd frontend-svelte && npm install && npm run build",
+  "outputDirectory": "frontend-svelte/.svelte-kit/output",
+  "framework": "sveltekit",
   "build": {
     "env": {
       "PYTHON_INSTALLER": "pip"
     }
   },
-  "builds": [
-    {
-      "src": "api/index.py",
-      "use": "@vercel/python@4.3.1",
-      "config": {
-        "maxLambdaSize": "50mb",
-        "maxDuration": 300,
-        "supportsResponseStreaming": true,
-        "includeFiles": "backend/**,LLM_Call_1.txt,LLM_Call_2.txt,Claude_HTML.html"
-      }
-    },
-    {
-      "src": "Claude_HTML.html",
-      "use": "@vercel/static"
+  "functions": {
+    "api/index.py": {
+      "runtime": "@vercel/python@4.3.1",
+      "maxDuration": 60
     }
-  ],
+  },
   "rewrites": [
     {
-      "source": "/api/(.*)",
+      "source": "/api/:path*",
       "destination": "/api/index.py"
-    },
-    {
-      "source": "/",
-      "destination": "/Claude_HTML.html"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-store, no-cache, must-revalidate, proxy-revalidate"
-        },
-        {
-          "key": "Pragma",
-          "value": "no-cache"
-        },
-        {
-          "key": "Expires",
-          "value": "0"
-        }
-      ]
     }
   ]
 }
