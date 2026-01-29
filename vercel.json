@@ -3,7 +3,7 @@
   "git": {
     "deploymentEnabled": false
   },
-  "buildCommand": "cd frontend-svelte && npm install && npm run build && cp -r .vercel/output ../",
+  "buildCommand": "cd frontend-svelte && npm install && npm run build && mkdir -p ../.vercel && cp -r .vercel/output ../.vercel/",
   "outputDirectory": ".vercel/output",
   "installCommand": "echo 'skipping root install'",
   "framework": null,
