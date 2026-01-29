@@ -191,7 +191,7 @@ class UserInteraction(Base):
     element: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     action: Mapped[str] = mapped_column(String, nullable=False)  # 'click' | 'input' | etc.
     timestamp: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    metadata: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    interaction_data: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="user_interactions")

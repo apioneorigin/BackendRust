@@ -183,7 +183,7 @@ async def get_usage_history(
             id=r.id,
             usage_type=r.usage_type.value,
             quantity=r.quantity,
-            metadata=r.metadata,
+            metadata=r.usage_metadata,
             created_at=r.created_at,
         )
         for r in records
