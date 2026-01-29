@@ -15,6 +15,10 @@ Set-Location $scriptDir
 $BACKEND_PORT = 8000
 $FRONTEND_PORT = 5173
 
+# Close existing terminal windows by title (from batch script)
+Write-Host "Closing existing terminal windows..." -ForegroundColor Yellow
+Get-Process | Where-Object { $_.MainWindowTitle -like "Reality Transformer*" } | Stop-Process -Force -ErrorAction SilentlyContinue
+
 # Kill existing processes on ports
 Write-Host "Stopping existing services..." -ForegroundColor Yellow
 foreach ($port in @($BACKEND_PORT, $FRONTEND_PORT)) {
