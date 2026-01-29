@@ -45,6 +45,11 @@ function createAuthStore() {
 	return {
 		subscribe,
 
+		// Alias for initialize - used by layout
+		async loadUser() {
+			return this.initialize();
+		},
+
 		async initialize() {
 			update(state => ({ ...state, isLoading: true, error: null }));
 			try {
