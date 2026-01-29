@@ -3,6 +3,10 @@
 	import { goto } from '$app/navigation';
 	import { auth, isAuthenticated } from '$lib/stores';
 
+	// Accept SvelteKit props
+	export let data: Record<string, unknown> = {};
+	let _restProps = $$restProps;
+
 	onMount(async () => {
 		// Try to load user, redirect based on auth status
 		const user = await auth.loadUser();

@@ -3,6 +3,10 @@
 	import { documents, documentList, addToast } from '$lib/stores';
 	import type { Document } from '$lib/stores/documents';
 
+	// Accept SvelteKit props
+	export let data: Record<string, unknown> = {};
+	let _restProps = $$restProps;
+
 	let domainFilter = '';
 
 	onMount(async () => {

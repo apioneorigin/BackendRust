@@ -3,6 +3,10 @@
 	import { goals, activeGoals, completedGoals, addToast } from '$lib/stores';
 	import type { Goal } from '$lib/stores/goals';
 
+	// Accept SvelteKit props
+	export let data: Record<string, unknown> = {};
+	let _restProps = $$restProps;
+
 	let isCreating = false;
 	let newGoalTitle = '';
 	let newGoalDescription = '';

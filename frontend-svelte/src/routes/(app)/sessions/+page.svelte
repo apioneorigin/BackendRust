@@ -4,6 +4,10 @@
 	import { session, sessions, addToast } from '$lib/stores';
 	import type { Session } from '$lib/stores/session';
 
+	// Accept SvelteKit props
+	export let data: Record<string, unknown> = {};
+	let _restProps = $$restProps;
+
 	onMount(async () => {
 		await session.loadSessions();
 	});

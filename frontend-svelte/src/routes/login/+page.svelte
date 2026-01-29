@@ -2,6 +2,10 @@
 	import { goto } from '$app/navigation';
 	import { auth, addToast } from '$lib/stores';
 
+	// Accept SvelteKit props
+	export let data: Record<string, unknown> = {};
+	let _restProps = $$restProps;
+
 	let email = '';
 	let password = '';
 	let isLoading = false;
@@ -12,9 +16,9 @@
 		isLoading = true;
 
 		try {
-			const user = await auth.login(email, password);
-			if (user) {
-				addToast('success', 'Welcome back!', `Logged in as ${user.email}`);
+			const success = await auth.login(email, password);
+			if (success) {
+				addToast('success', 'Welcome back!', `Logged in as ${email}`);
 				goto('/chat');
 			} else {
 				error = 'Invalid email or password';

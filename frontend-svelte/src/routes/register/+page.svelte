@@ -2,6 +2,10 @@
 	import { goto } from '$app/navigation';
 	import { auth, addToast } from '$lib/stores';
 
+	// Accept SvelteKit props
+	export let data: Record<string, unknown> = {};
+	let _restProps = $$restProps;
+
 	let name = '';
 	let email = '';
 	let password = '';
@@ -25,8 +29,8 @@
 		isLoading = true;
 
 		try {
-			const user = await auth.register(email, password, name || undefined);
-			if (user) {
+			const success = await auth.register(email, password, name || undefined);
+			if (success) {
 				addToast('success', 'Welcome!', 'Your account has been created');
 				goto('/chat');
 			} else {

@@ -3,6 +3,10 @@
 	import { auth, theme, toasts, removeToast, credits } from '$lib/stores';
 	import '../styles/globals.css';
 
+	// Accept SvelteKit props
+	export let data: Record<string, unknown> = {};
+	let _restProps = $$restProps;
+
 	// Initialize theme on mount
 	onMount(() => {
 		// Check for system preference
