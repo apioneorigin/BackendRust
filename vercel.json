@@ -5,32 +5,24 @@
       "main": true
     }
   },
+  "buildCommand": "cd frontend-svelte && npm install && npm run build",
+  "outputDirectory": "frontend-svelte/.svelte-kit/output",
+  "framework": "sveltekit",
   "build": {
     "env": {
       "PYTHON_INSTALLER": "pip"
     }
   },
-  "builds": [
-    {
-      "src": "api/index.py",
-      "use": "@vercel/python@4.3.1",
-      "config": {
-        "maxLambdaSize": "50mb"
-      }
-    },
-    {
-      "src": "Claude_HTML.html",
-      "use": "@vercel/static"
+  "functions": {
+    "api/index.py": {
+      "runtime": "@vercel/python@4.3.1",
+      "maxDuration": 60
     }
-  ],
-  "routes": [
+  },
+  "rewrites": [
     {
-      "src": "/api/(.*)",
-      "dest": "api/index.py"
-    },
-    {
-      "src": "/",
-      "dest": "/Claude_HTML.html"
+      "source": "/api/:path*",
+      "destination": "/api/index.py"
     }
   ]
 }
