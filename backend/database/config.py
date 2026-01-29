@@ -1,6 +1,6 @@
 """
-Database configuration for SQLAlchemy async support.
-Supports SQLite (default for local dev) and PostgreSQL (production).
+Database configuration for PostgreSQL with SQLAlchemy async support.
+Mirrors the Prisma/PostgreSQL setup from reality-transformer.
 """
 
 import os
@@ -10,38 +10,25 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Get DATABASE_URL from environment
-# Default to SQLite for easy local development
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./reality_transformer.db")
+# Get DATABASE_URL from environment (same as Prisma uses)
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://localhost:5432/reality_transformer")
 
-# Convert to async URL
+# Convert to async URL if needed
 if DATABASE_URL.startswith("postgresql://"):
     ASYNC_DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
 elif DATABASE_URL.startswith("postgres://"):
     ASYNC_DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+asyncpg://", 1)
-elif DATABASE_URL.startswith("sqlite:///"):
-    ASYNC_DATABASE_URL = DATABASE_URL.replace("sqlite:///", "sqlite+aiosqlite:///", 1)
 else:
     ASYNC_DATABASE_URL = DATABASE_URL
 
-# Determine if using SQLite
-is_sqlite = ASYNC_DATABASE_URL.startswith("sqlite")
-
-# Create async engine with appropriate settings
-if is_sqlite:
-    engine = create_async_engine(
-        ASYNC_DATABASE_URL,
-        echo=False,
-        connect_args={"check_same_thread": False},
-    )
-else:
-    engine = create_async_engine(
-        ASYNC_DATABASE_URL,
-        echo=False,
-        pool_size=10,
-        max_overflow=20,
-        pool_pre_ping=True,
-    )
+# Create async engine
+engine = create_async_engine(
+    ASYNC_DATABASE_URL,
+    echo=False,  # Set to True for SQL logging
+    pool_size=10,
+    max_overflow=20,
+    pool_pre_ping=True,
+)
 
 # Create async session factory
 AsyncSessionLocal = async_sessionmaker(
@@ -71,7 +58,6 @@ async def init_db():
     """Initialize database tables."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    print(f"[Database] Initialized: {ASYNC_DATABASE_URL.split('://')[0]}")
 
 
 async def close_db():
