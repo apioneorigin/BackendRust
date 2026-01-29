@@ -80,7 +80,7 @@ function createAuthStore() {
 					email,
 					password,
 				});
-				// Token is stored in httpOnly cookie by server
+				api.setToken(response.token);
 				const org = await api.get<Organization>('/api/organization');
 				update(state => ({
 					...state,
@@ -109,6 +109,7 @@ function createAuthStore() {
 					name,
 					organization_name: organizationName,
 				});
+				api.setToken(response.token);
 				const org = await api.get<Organization>('/api/organization');
 				update(state => ({
 					...state,
@@ -134,6 +135,7 @@ function createAuthStore() {
 			} catch (error) {
 				// Ignore logout errors
 			}
+			api.clearToken();
 			set(initialState);
 			update(state => ({ ...state, isLoading: false }));
 		},

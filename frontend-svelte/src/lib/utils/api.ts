@@ -1,9 +1,9 @@
 /**
  * API client for communicating with Python FastAPI backend
- * Replaces the api-client.ts from reality-transformer
  */
 
 const API_BASE_URL = '';  // Uses Vite proxy in dev, same origin in prod
+const TOKEN_KEY = 'auth_token';
 
 interface RequestOptions {
 	headers?: Record<string, string>;
@@ -22,6 +22,21 @@ class ApiError extends Error {
 	}
 }
 
+function getToken(): string | null {
+	if (typeof window === 'undefined') return null;
+	return localStorage.getItem(TOKEN_KEY);
+}
+
+function setToken(token: string): void {
+	if (typeof window === 'undefined') return;
+	localStorage.setItem(TOKEN_KEY, token);
+}
+
+function clearToken(): void {
+	if (typeof window === 'undefined') return;
+	localStorage.removeItem(TOKEN_KEY);
+}
+
 async function request<T>(
 	method: string,
 	endpoint: string,
@@ -30,13 +45,19 @@ async function request<T>(
 ): Promise<T> {
 	const { headers = {}, timeout = 30000, retries = 3 } = options;
 
+	const token = getToken();
+	const authHeaders: Record<string, string> = {};
+	if (token) {
+		authHeaders['Authorization'] = `Bearer ${token}`;
+	}
+
 	const config: RequestInit = {
 		method,
 		headers: {
 			'Content-Type': 'application/json',
+			...authHeaders,
 			...headers,
 		},
-		credentials: 'include', // For httpOnly cookies
 	};
 
 	if (data && method !== 'GET') {
@@ -111,13 +132,19 @@ export const api = {
 	 * Raw fetch for streaming responses (SSE)
 	 */
 	async stream(endpoint: string, data?: any, options?: RequestOptions): Promise<Response> {
+		const token = getToken();
+		const authHeaders: Record<string, string> = {};
+		if (token) {
+			authHeaders['Authorization'] = `Bearer ${token}`;
+		}
+
 		const config: RequestInit = {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
+				...authHeaders,
 				...options?.headers,
 			},
-			credentials: 'include',
 		};
 
 		if (data) {
@@ -126,6 +153,10 @@ export const api = {
 
 		return fetch(`${API_BASE_URL}${endpoint}`, config);
 	},
+
+	setToken,
+	clearToken,
+	getToken,
 };
 
 export { ApiError };
