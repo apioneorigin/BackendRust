@@ -1,14 +1,9 @@
 {
   "version": 2,
-  "git": {
-    "deploymentEnabled": {
-      "main": true
-    }
-  },
-  "buildCommand": "cd frontend-svelte && npm install && npm run build && mkdir -p ../.vercel && cp -r .vercel/output ../.vercel/",
-  "outputDirectory": ".vercel/output",
-  "installCommand": "echo 'skipping root install'",
-  "framework": null,
+  "framework": "sveltekit",
+  "installCommand": "cd frontend-svelte && npm install",
+  "buildCommand": "cd frontend-svelte && npm run build",
+  "outputDirectory": "frontend-svelte/.vercel/output",
   "build": {
     "env": {
       "PYTHON_INSTALLER": "pip"
@@ -19,5 +14,8 @@
       "runtime": "@vercel/python@4.3.1",
       "maxDuration": 60
     }
-  }
+  },
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "/api/index.py" }
+  ]
 }
