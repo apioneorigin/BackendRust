@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Reality Transformer - Master Startup Script
-# Starts Python backend + SvelteKit frontend
+# Kills existing servers and starts fresh
 #
 
 set -e
@@ -36,6 +36,53 @@ echo -e "${NC}"
 # Create directories
 mkdir -p "$LOG_DIR" "$PID_DIR"
 
+# Function to kill process on port
+kill_port() {
+    local port=$1
+    local pids=""
+
+    # Try lsof first
+    if command -v lsof &> /dev/null; then
+        pids=$(lsof -ti :$port 2>/dev/null || true)
+    fi
+
+    # Try fuser as fallback
+    if [ -z "$pids" ] && command -v fuser &> /dev/null; then
+        pids=$(fuser $port/tcp 2>/dev/null || true)
+    fi
+
+    if [ -n "$pids" ]; then
+        echo -e "  ${YELLOW}Killing processes on port $port: $pids${NC}"
+        for pid in $pids; do
+            kill -9 $pid 2>/dev/null || true
+        done
+        sleep 1
+    fi
+}
+
+# Function to stop all services
+stop_all() {
+    echo -e "${YELLOW}Stopping all running services...${NC}"
+
+    # Kill by PID files
+    for service in backend frontend; do
+        if [ -f "$PID_DIR/$service.pid" ]; then
+            local pid=$(cat "$PID_DIR/$service.pid" 2>/dev/null)
+            if [ -n "$pid" ]; then
+                echo "  Stopping $service (PID: $pid)..."
+                kill -9 "$pid" 2>/dev/null || true
+            fi
+            rm -f "$PID_DIR/$service.pid"
+        fi
+    done
+
+    # Kill any process on our ports
+    kill_port $BACKEND_PORT
+    kill_port $FRONTEND_PORT
+
+    echo -e "  ${GREEN}All services stopped${NC}"
+}
+
 # Function to check if a port is in use
 check_port() {
     local port=$1
@@ -66,32 +113,6 @@ wait_for_service() {
     done
     echo -e " ${RED}Timeout!${NC}"
     return 1
-}
-
-# Function to stop existing services
-stop_existing() {
-    echo -e "${YELLOW}Checking for existing services...${NC}"
-
-    for service in backend frontend; do
-        if [ -f "$PID_DIR/$service.pid" ]; then
-            local pid=$(cat "$PID_DIR/$service.pid" 2>/dev/null)
-            if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
-                echo "  Stopping existing $service (PID: $pid)..."
-                kill "$pid" 2>/dev/null || true
-                sleep 1
-            fi
-            rm -f "$PID_DIR/$service.pid"
-        fi
-    done
-
-    # Free ports if still in use
-    for port in $BACKEND_PORT $FRONTEND_PORT; do
-        if check_port $port; then
-            echo -e "  ${YELLOW}Port $port still in use, attempting to free...${NC}"
-            fuser -k $port/tcp 2>/dev/null || true
-            sleep 1
-        fi
-    done
 }
 
 # Function to setup Python environment
@@ -205,6 +226,7 @@ show_status() {
     echo "  Frontend:  tail -f $LOG_DIR/frontend.log"
     echo ""
     echo -e "${YELLOW}Commands:${NC}"
+    echo "  Restart:   $PROJECT_ROOT/start.sh"
     echo "  Stop all:  $PROJECT_ROOT/stop.sh"
     echo ""
 }
@@ -213,7 +235,9 @@ show_status() {
 main() {
     cd "$PROJECT_ROOT"
 
-    stop_existing
+    # Always stop existing services first
+    stop_all
+
     setup_python
     setup_node
     check_openai || true

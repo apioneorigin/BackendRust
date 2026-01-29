@@ -15,6 +15,19 @@ cd /d "%~dp0"
 set BACKEND_PORT=8000
 set FRONTEND_PORT=5173
 
+REM Kill existing processes on ports
+echo Stopping existing services...
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":%BACKEND_PORT%" ^| findstr "LISTENING"') do (
+    echo   Killing process on port %BACKEND_PORT% (PID: %%a)...
+    taskkill /F /PID %%a >nul 2>&1
+)
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":%FRONTEND_PORT%" ^| findstr "LISTENING"') do (
+    echo   Killing process on port %FRONTEND_PORT% (PID: %%a)...
+    taskkill /F /PID %%a >nul 2>&1
+)
+timeout /t 1 >nul
+echo [OK] Existing services stopped
+
 REM Check if directories exist
 if not exist "backend" (
     echo ERROR: backend directory not found!

@@ -15,6 +15,23 @@ Set-Location $scriptDir
 $BACKEND_PORT = 8000
 $FRONTEND_PORT = 5173
 
+# Kill existing processes on ports
+Write-Host "Stopping existing services..." -ForegroundColor Yellow
+foreach ($port in @($BACKEND_PORT, $FRONTEND_PORT)) {
+    $connections = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue
+    if ($connections) {
+        $pids = $connections | Select-Object -ExpandProperty OwningProcess -Unique
+        foreach ($pid in $pids) {
+            if ($pid -and $pid -ne 0) {
+                Write-Host "  Killing process on port $port (PID: $pid)..." -ForegroundColor Yellow
+                Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue
+            }
+        }
+    }
+}
+Start-Sleep -Seconds 1
+Write-Host "[OK] Existing services stopped" -ForegroundColor Green
+
 # Check if backend directory exists
 if (-not (Test-Path "backend")) {
     Write-Host "ERROR: backend directory not found!" -ForegroundColor Red
