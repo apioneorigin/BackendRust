@@ -2,15 +2,15 @@
 FastAPI routers for all API endpoints.
 """
 
-from .auth import router as auth_router
-from .users import router as users_router
-from .sessions import router as sessions_router
-from .chat import router as chat_router
-from .goals import router as goals_router
-from .documents import router as documents_router
-from .credits import router as credits_router
-from .admin import router as admin_router
-from .health import router as health_router
+from routers.auth import router as auth_router
+from routers.users import router as users_router
+from routers.sessions import router as sessions_router
+from routers.chat import router as chat_router
+from routers.goals import router as goals_router
+from routers.documents import router as documents_router
+from routers.credits import router as credits_router
+from routers.admin import router as admin_router
+from routers.health import router as health_router
 
 __all__ = [
     "auth_router",

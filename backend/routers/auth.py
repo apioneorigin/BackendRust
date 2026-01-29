@@ -14,7 +14,7 @@ from pydantic import BaseModel, EmailStr
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..database import get_db, User, UserSession, Organization, UserRole
+from database import get_db, User, UserSession, Organization, UserRole
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 

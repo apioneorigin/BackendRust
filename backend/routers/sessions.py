@@ -10,8 +10,8 @@ from pydantic import BaseModel
 from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..database import get_db, User, Session, Organization
-from .auth import get_current_user, generate_id
+from database import get_db, User, Session, Organization
+from routers.auth import get_current_user, generate_id
 
 router = APIRouter(prefix="/api/session", tags=["sessions"])
 
