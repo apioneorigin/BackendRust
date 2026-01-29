@@ -45,3 +45,6 @@ backend/venv/
 backend/.env
 .vercel
 .env*.local
+
+# SvelteKit build output
+frontend-svelte/.svelte-kit/
