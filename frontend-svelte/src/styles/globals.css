@@ -1,0 +1,156 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+	/* Primary - Deep Ocean */
+	--color-primary-50: #e6f1f8;
+	--color-primary-100: #cce3f1;
+	--color-primary-200: #99c7e3;
+	--color-primary-300: #66abd5;
+	--color-primary-400: #338fc7;
+	--color-primary-500: #0073b9;
+	--color-primary-600: #005c94;
+	--color-primary-700: #00456f;
+	--color-primary-800: #002e4a;
+	--color-primary-900: #001725;
+
+	/* Accent - Deep Teal */
+	--color-accent: #0d9488;
+
+	/* Challenger - Warm Orange */
+	--color-challenger: #f97316;
+
+	/* Light Theme */
+	--color-field: #ffffff;
+	--color-field-elevated: #f8fafc;
+	--color-field-sunken: #f1f5f9;
+	--color-text-source: #0f172a;
+	--color-text-manifest: #1e293b;
+	--color-text-flow: #334155;
+	--color-text-whisper: #64748b;
+	--color-text-hint: #94a3b8;
+	--color-veil: #e2e8f0;
+	--color-veil-soft: #f1f5f9;
+	--color-veil-strong: #cbd5e1;
+
+	/* Shadows */
+	--shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+	--shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+	--shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+	--shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+	--shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.1);
+
+	/* Touch targets */
+	--touch-target-min: 44px;
+	--touch-target-comfortable: 48px;
+	--touch-target-large: 56px;
+
+	/* Layout */
+	--input-height-mobile: 52px;
+	--tab-bar-height-mobile: 56px;
+}
+
+[data-theme="dark"] {
+	--color-field: #0f172a;
+	--color-field-elevated: #1e293b;
+	--color-field-sunken: #020617;
+	--color-text-source: #f8fafc;
+	--color-text-manifest: #e2e8f0;
+	--color-text-flow: #cbd5e1;
+	--color-text-whisper: #94a3b8;
+	--color-text-hint: #64748b;
+	--color-veil: #334155;
+	--color-veil-soft: #1e293b;
+	--color-veil-strong: #475569;
+}
+
+/* Base styles */
+html {
+	font-family: 'Inter', system-ui, -apple-system, sans-serif;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+body {
+	background-color: var(--color-field);
+	color: var(--color-text-manifest);
+	margin: 0;
+	padding: 0;
+	min-height: 100vh;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+	width: 8px;
+	height: 8px;
+}
+
+::-webkit-scrollbar-track {
+	background: var(--color-field-sunken);
+	border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+	background: var(--color-veil-strong);
+	border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: var(--color-text-hint);
+}
+
+/* Focus styles */
+*:focus-visible {
+	outline: 2px solid var(--color-primary-500);
+	outline-offset: 2px;
+}
+
+/* Animations */
+@keyframes spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes slideUp {
+	from {
+		opacity: 0;
+		transform: translateY(10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes thinkingPulse {
+	0%, 100% {
+		opacity: 0.4;
+	}
+	50% {
+		opacity: 1;
+	}
+}
+
+/* Utility classes */
+.animate-spin {
+	animation: spin 1s linear infinite;
+}
+
+.animate-fade-in {
+	animation: fadeIn 0.2s ease-out;
+}
+
+.animate-slide-up {
+	animation: slideUp 0.3s ease-out;
+}
