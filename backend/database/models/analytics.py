@@ -83,7 +83,7 @@ class UsageRecord(Base):
     session_id: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     usage_type: Mapped[UsageType] = mapped_column(nullable=False)
     quantity: Mapped[int] = mapped_column(Integer, default=1)
-    metadata: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    usage_metadata: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     # Relationships
