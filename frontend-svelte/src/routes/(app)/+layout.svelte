@@ -3,10 +3,6 @@
 	import { goto } from '$app/navigation';
 	import { auth, isAuthenticated, user, theme, addToast } from '$lib/stores';
 
-	// Accept SvelteKit props
-	export let data: Record<string, unknown> = {};
-	let _restProps = $$restProps;
-
 	let isLoading = true;
 
 	onMount(async () => {

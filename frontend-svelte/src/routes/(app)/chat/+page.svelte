@@ -9,10 +9,6 @@
 		addToast
 	} from '$lib/stores';
 
-	// Accept SvelteKit props
-	export let data: Record<string, unknown> = {};
-	let _restProps = $$restProps;
-
 	let messageInput = '';
 	let messagesContainer: HTMLElement;
 	let selectedModel = 'gpt-4.1';

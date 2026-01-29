@@ -2,10 +2,6 @@
 	import { goto } from '$app/navigation';
 	import { auth, addToast } from '$lib/stores';
 
-	// Accept SvelteKit props
-	export let data: Record<string, unknown> = {};
-	let _restProps = $$restProps;
-
 	let email = '';
 	let password = '';
 	let isLoading = false;
