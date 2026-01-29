@@ -4,7 +4,8 @@
   "outputDirectory": "frontend-svelte/.vercel/output",
   "functions": {
     "api/*.py": {
-      "runtime": "@vercel/python@4.3.1"
+      "runtime": "@vercel/python@4.3.1",
+      "includeFiles": "backend/**"
     }
   }
 }
