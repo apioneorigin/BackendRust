@@ -15,12 +15,7 @@ cd /d "%~dp0"
 set BACKEND_PORT=8000
 set FRONTEND_PORT=5173
 
-REM Close existing terminal windows by title
-echo Closing existing terminal windows...
-taskkill /F /FI "WINDOWTITLE eq Reality Transformer - Backend*" >nul 2>&1
-taskkill /F /FI "WINDOWTITLE eq Reality Transformer - Frontend*" >nul 2>&1
-
-REM Kill existing processes on ports
+REM Kill existing processes on ports (this also closes their terminal windows)
 echo Stopping existing services...
 for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":%BACKEND_PORT%" ^| findstr "LISTENING"') do (
     echo   Killing process on port %BACKEND_PORT% (PID: %%a)...
