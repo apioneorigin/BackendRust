@@ -23,6 +23,8 @@ jobs:
 
       - name: Build Project
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          PYTHON_INSTALLER: pip
 
       - name: Deploy to Vercel (force cache purge)
         run: vercel deploy --prebuilt --prod --force --token=${{ secrets.VERCEL_TOKEN }}
