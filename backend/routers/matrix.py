@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db, User, ChatConversation
 from routers.auth import get_current_user
+from utils import get_or_404
 
 router = APIRouter(prefix="/api/matrix", tags=["matrix"])
 
@@ -82,16 +83,7 @@ async def get_matrix_data(
     db: AsyncSession = Depends(get_db)
 ):
     """Get all matrix data (rows, columns, cells) for a conversation."""
-    result = await db.execute(
-        select(ChatConversation).where(
-            ChatConversation.id == conversation_id,
-            ChatConversation.user_id == current_user.id
-        )
-    )
-    conversation = result.scalar_one_or_none()
-
-    if not conversation:
-        raise HTTPException(status_code=404, detail="Conversation not found")
+    conversation = await get_or_404(db, ChatConversation, conversation_id, user_id=current_user.id)
 
     if not conversation.matrix_data:
         return None
@@ -106,16 +98,7 @@ async def get_row_options(
     db: AsyncSession = Depends(get_db)
 ):
     """Get row options (causation factors) for a conversation."""
-    result = await db.execute(
-        select(ChatConversation).where(
-            ChatConversation.id == conversation_id,
-            ChatConversation.user_id == current_user.id
-        )
-    )
-    conversation = result.scalar_one_or_none()
-
-    if not conversation:
-        raise HTTPException(status_code=404, detail="Conversation not found")
+    conversation = await get_or_404(db, ChatConversation, conversation_id, user_id=current_user.id)
 
     if not conversation.matrix_data:
         return []
@@ -130,16 +113,7 @@ async def get_column_options(
     db: AsyncSession = Depends(get_db)
 ):
     """Get column options (effect factors) for a conversation."""
-    result = await db.execute(
-        select(ChatConversation).where(
-            ChatConversation.id == conversation_id,
-            ChatConversation.user_id == current_user.id
-        )
-    )
-    conversation = result.scalar_one_or_none()
-
-    if not conversation:
-        raise HTTPException(status_code=404, detail="Conversation not found")
+    conversation = await get_or_404(db, ChatConversation, conversation_id, user_id=current_user.id)
 
     if not conversation.matrix_data:
         return []
@@ -156,16 +130,7 @@ async def get_cell(
     db: AsyncSession = Depends(get_db)
 ):
     """Get a specific cell's data."""
-    result = await db.execute(
-        select(ChatConversation).where(
-            ChatConversation.id == conversation_id,
-            ChatConversation.user_id == current_user.id
-        )
-    )
-    conversation = result.scalar_one_or_none()
-
-    if not conversation:
-        raise HTTPException(status_code=404, detail="Conversation not found")
+    conversation = await get_or_404(db, ChatConversation, conversation_id, user_id=current_user.id)
 
     if not conversation.matrix_data:
         return None
@@ -189,16 +154,7 @@ async def update_cell(
     db: AsyncSession = Depends(get_db)
 ):
     """Update a cell's dimension values (slider changes)."""
-    result = await db.execute(
-        select(ChatConversation).where(
-            ChatConversation.id == conversation_id,
-            ChatConversation.user_id == current_user.id
-        )
-    )
-    conversation = result.scalar_one_or_none()
-
-    if not conversation:
-        raise HTTPException(status_code=404, detail="Conversation not found")
+    conversation = await get_or_404(db, ChatConversation, conversation_id, user_id=current_user.id)
 
     if not conversation.matrix_data:
         raise HTTPException(status_code=400, detail="No matrix data exists")
@@ -227,16 +183,7 @@ async def get_paths(
     db: AsyncSession = Depends(get_db)
 ):
     """Get generated strategic paths for a conversation."""
-    result = await db.execute(
-        select(ChatConversation).where(
-            ChatConversation.id == conversation_id,
-            ChatConversation.user_id == current_user.id
-        )
-    )
-    conversation = result.scalar_one_or_none()
-
-    if not conversation:
-        raise HTTPException(status_code=404, detail="Conversation not found")
+    conversation = await get_or_404(db, ChatConversation, conversation_id, user_id=current_user.id)
 
     if not conversation.generated_paths:
         return []
@@ -251,16 +198,7 @@ async def get_documents(
     db: AsyncSession = Depends(get_db)
 ):
     """Get generated documents for a conversation."""
-    result = await db.execute(
-        select(ChatConversation).where(
-            ChatConversation.id == conversation_id,
-            ChatConversation.user_id == current_user.id
-        )
-    )
-    conversation = result.scalar_one_or_none()
-
-    if not conversation:
-        raise HTTPException(status_code=404, detail="Conversation not found")
+    conversation = await get_or_404(db, ChatConversation, conversation_id, user_id=current_user.id)
 
     if not conversation.generated_documents:
         return []
@@ -276,16 +214,7 @@ async def get_document(
     db: AsyncSession = Depends(get_db)
 ):
     """Get a specific generated document."""
-    result = await db.execute(
-        select(ChatConversation).where(
-            ChatConversation.id == conversation_id,
-            ChatConversation.user_id == current_user.id
-        )
-    )
-    conversation = result.scalar_one_or_none()
-
-    if not conversation:
-        raise HTTPException(status_code=404, detail="Conversation not found")
+    conversation = await get_or_404(db, ChatConversation, conversation_id, user_id=current_user.id)
 
     if not conversation.generated_documents:
         return None

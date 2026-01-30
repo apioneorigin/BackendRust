@@ -15,6 +15,7 @@ from database import (
     Session, ChatConversation, AIServiceLog
 )
 from routers.auth import get_current_user, generate_id
+from utils import to_response, to_response_list, paginate
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -118,17 +119,7 @@ async def create_promo_code(
     await db.commit()
     await db.refresh(promo_code)
 
-    return PromoCodeResponse(
-        id=promo_code.id,
-        code=promo_code.code,
-        credits=promo_code.credits,
-        max_uses=promo_code.max_uses,
-        used_count=promo_code.used_count,
-        created_by=promo_code.created_by,
-        created_at=promo_code.created_at,
-        expires_at=promo_code.expires_at,
-        is_active=promo_code.is_active,
-    )
+    return to_response(promo_code, PromoCodeResponse)
 
 
 @router.get("/promo-codes", response_model=List[PromoCodeResponse])
@@ -145,20 +136,7 @@ async def list_promo_codes(
     )
     codes = result.scalars().all()
 
-    return [
-        PromoCodeResponse(
-            id=c.id,
-            code=c.code,
-            credits=c.credits,
-            max_uses=c.max_uses,
-            used_count=c.used_count,
-            created_by=c.created_by,
-            created_at=c.created_at,
-            expires_at=c.expires_at,
-            is_active=c.is_active,
-        )
-        for c in codes
-    ]
+    return to_response_list(codes, PromoCodeResponse)
 
 
 @router.patch("/promo-codes/{code_id}", response_model=PromoCodeResponse)
@@ -185,17 +163,7 @@ async def update_promo_code(
     await db.commit()
     await db.refresh(promo_code)
 
-    return PromoCodeResponse(
-        id=promo_code.id,
-        code=promo_code.code,
-        credits=promo_code.credits,
-        max_uses=promo_code.max_uses,
-        used_count=promo_code.used_count,
-        created_by=promo_code.created_by,
-        created_at=promo_code.created_at,
-        expires_at=promo_code.expires_at,
-        is_active=promo_code.is_active,
-    )
+    return to_response(promo_code, PromoCodeResponse)
 
 
 # Global Settings
@@ -221,12 +189,7 @@ async def get_global_settings(
         await db.commit()
         await db.refresh(settings)
 
-    return GlobalSettingsResponse(
-        free_trial_credits=settings.free_trial_credits,
-        trial_duration_days=settings.trial_duration_days,
-        updated_at=settings.updated_at,
-        updated_by=settings.updated_by,
-    )
+    return to_response(settings, GlobalSettingsResponse)
 
 
 @router.patch("/settings", response_model=GlobalSettingsResponse)
@@ -256,12 +219,7 @@ async def update_global_settings(
     await db.commit()
     await db.refresh(settings)
 
-    return GlobalSettingsResponse(
-        free_trial_credits=settings.free_trial_credits,
-        trial_duration_days=settings.trial_duration_days,
-        updated_at=settings.updated_at,
-        updated_by=settings.updated_by,
-    )
+    return to_response(settings, GlobalSettingsResponse)
 
 
 # Dashboard
