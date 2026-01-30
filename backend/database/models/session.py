@@ -82,6 +82,10 @@ class Session(Base):
         Index("ix_sessions_organization_id", "organization_id"),
         Index("ix_sessions_user_id", "user_id"),
         Index("ix_sessions_last_conversation_id", "last_conversation_id"),
+        # Composite index for sessions by org/user (common query pattern)
+        Index("ix_sessions_org_user", "organization_id", "user_id"),
+        # Composite index for completed sessions queries
+        Index("ix_sessions_completed_created", "completed", "created_at"),
     )
 
 

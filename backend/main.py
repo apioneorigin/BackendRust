@@ -114,6 +114,18 @@ app = FastAPI(title="Reality Transformer", version="4.1.0")
 
 from contextlib import asynccontextmanager
 
+async def _session_cleanup_task():
+    """Background task to periodically clean up expired API sessions."""
+    while True:
+        await asyncio.sleep(300)  # Run every 5 minutes
+        try:
+            expired = await api_session_store.cleanup_expired(max_age_seconds=3600)
+            if expired > 0:
+                api_logger.info(f"[SESSION CLEANUP] Removed {expired} expired sessions, {api_session_store.session_count()} active")
+        except Exception as e:
+            api_logger.error(f"[SESSION CLEANUP] Error: {e}")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager for startup/shutdown."""
@@ -121,8 +133,21 @@ async def lifespan(app: FastAPI):
     from database import init_db
     await init_db()
     api_logger.info("Database initialized")
+
+    # Start background session cleanup task
+    cleanup_task = asyncio.create_task(_session_cleanup_task())
+    api_logger.info("Session cleanup task started")
+
     yield
-    # Shutdown: Close database connections
+
+    # Shutdown: Cancel cleanup task and close database
+    cleanup_task.cancel()
+    try:
+        await cleanup_task
+    except asyncio.CancelledError:
+        pass
+    api_logger.info("Session cleanup task stopped")
+
     from database import close_db
     await close_db()
     api_logger.info("Database connections closed")
@@ -161,12 +186,11 @@ api_logger.info("All routers registered")
 # SESSION STORAGE FOR CONSTELLATION Q&A FLOW
 # =====================================================================
 
-import threading
 import uuid
 
 class APISessionStore:
     """
-    Thread-safe session storage for constellation Q&A flow.
+    Async-safe session storage for constellation Q&A flow.
     Simple key-value store for FastAPI endpoints.
 
     Note: This is distinct from session_store.SessionStore which handles
@@ -177,35 +201,40 @@ class APISessionStore:
 
     def __init__(self):
         self._sessions: Dict[str, Dict[str, Any]] = {}
-        self._lock = threading.Lock()
+        self._lock = asyncio.Lock()
 
-    def create(self, session_id: str, data: Dict[str, Any]) -> None:
-        with self._lock:
+    async def create(self, session_id: str, data: Dict[str, Any]) -> None:
+        async with self._lock:
             self._sessions[session_id] = data
 
     def get(self, session_id: str) -> Optional[Dict[str, Any]]:
-        with self._lock:
-            return self._sessions.get(session_id)
+        """Get session data (non-blocking read)."""
+        return self._sessions.get(session_id)
 
-    def update(self, session_id: str, data: Dict[str, Any]) -> None:
-        with self._lock:
+    async def update(self, session_id: str, data: Dict[str, Any]) -> None:
+        async with self._lock:
             self._sessions[session_id] = data
 
-    def delete(self, session_id: str) -> None:
-        with self._lock:
+    async def delete(self, session_id: str) -> None:
+        async with self._lock:
             self._sessions.pop(session_id, None)
 
-    def cleanup_expired(self, max_age_seconds: int = 3600) -> int:
+    async def cleanup_expired(self, max_age_seconds: int = 3600) -> int:
         """Remove sessions older than max_age_seconds."""
         now = time.time()
         expired = []
-        with self._lock:
+        async with self._lock:
             for sid, data in self._sessions.items():
-                if now - data.get('_created_at') > max_age_seconds:
+                created = data.get('_created_at', 0)
+                if created and now - created > max_age_seconds:
                     expired.append(sid)
             for sid in expired:
                 del self._sessions[sid]
         return len(expired)
+
+    def session_count(self) -> int:
+        """Get current session count."""
+        return len(self._sessions)
 
 # Global session store instance for API endpoints
 api_session_store = APISessionStore()
@@ -545,7 +574,7 @@ async def process_constellation_answer(
     session_data['_selected_answer_text'] = selected_text
     session_data['_question_text'] = pending_question.question_text
     session_data['_pending_question'] = None
-    api_session_store.update(session_id, session_data)
+    await api_session_store.update(session_id, session_data)
 
     api_logger.info(f"[ANSWER] Stored answer: {selected_option} -> '{selected_text[:80]}...'")
 
@@ -717,7 +746,7 @@ especially operators that were uncertain (low confidence) in the initial extract
             session_data = api_session_store.get(session_id)
             if session_data:
                 session_data['evidence'] = evidence
-                api_session_store.update(session_id, session_data)
+                await api_session_store.update(session_id, session_data)
 
         # Step 2: Run inference with enriched operators
         api_logger.info("[STEP 2 CONTINUED] Running inference engine with enriched operators")
@@ -898,7 +927,7 @@ especially operators that were uncertain (low confidence) in the initial extract
                     session_data['_pending_question'] = validation_question
                     session_data['_validation_asked'] = True
                     session_data['evidence'] = evidence
-                    api_session_store.update(session_id, session_data)
+                    await api_session_store.update(session_id, session_data)
 
                     yield sse_event("validation_question", {
                         "session_id": session_id,
@@ -924,7 +953,7 @@ especially operators that were uncertain (low confidence) in the initial extract
                     return
 
         # Normal cleanup - no validation needed
-        api_session_store.delete(session_id)
+        await api_session_store.delete(session_id)
 
         elapsed = time.time() - start_time
         api_logger.info(f"[PIPELINE COMPLETE] Total time: {elapsed:.2f}s")
@@ -1036,7 +1065,7 @@ async def inference_stream(
 
     # Create session for constellation Q&A flow
     session_id = str(uuid.uuid4())
-    api_session_store.create(session_id, {
+    await api_session_store.create(session_id, {
         '_created_at': start_time,
         'prompt': prompt,
         'model_config': model_config,
@@ -1162,7 +1191,7 @@ async def inference_stream(
         # Store evidence in session
         session_data = api_session_store.get(session_id)
         session_data['evidence'] = evidence
-        api_session_store.update(session_id, session_data)
+        await api_session_store.update(session_id, session_data)
 
         # Step 1.5: Validate evidence before inference
         validation_errors = _validate_evidence(evidence)
@@ -1412,7 +1441,7 @@ Articulation Tokens: {token_count}
                 session_data['evidence'] = evidence
                 session_data['_pending_question'] = question
                 session_data['_question_asked'] = True
-                api_session_store.update(session_id, session_data)
+                await api_session_store.update(session_id, session_data)
 
                 yield sse_event("question", {
                     "session_id": session_id,

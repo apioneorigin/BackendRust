@@ -82,9 +82,10 @@ async def paginate(
     Returns:
         Tuple of (items list, total count)
     """
-    # Get total count efficiently
-    count_result = await db.execute(query)
-    total = len(count_result.scalars().all())
+    # Get total count efficiently using subquery (avoids loading all rows)
+    count_query = select(func.count()).select_from(query.subquery())
+    count_result = await db.execute(count_query)
+    total = count_result.scalar() or 0
 
     # Apply ordering if specified
     if order_by_field is not None:

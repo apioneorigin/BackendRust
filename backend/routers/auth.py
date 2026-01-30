@@ -2,6 +2,7 @@
 Authentication endpoints: login, register, logout, password management.
 """
 
+import asyncio
 import os
 import secrets
 from datetime import datetime, timedelta
@@ -13,6 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request
 from pydantic import BaseModel, EmailStr
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 from database import get_db, User, UserSession, Organization, UserRole
 
@@ -57,14 +59,24 @@ class UserResponse(BaseModel):
     credit_quota: Optional[int]
 
 
-def hash_password(password: str) -> str:
-    """Hash a password using bcrypt."""
+def _hash_password_sync(password: str) -> str:
+    """Hash a password using bcrypt (sync, CPU-bound)."""
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
 
-def verify_password(password: str, hashed: str) -> bool:
-    """Verify a password against its hash."""
+def _verify_password_sync(password: str, hashed: str) -> bool:
+    """Verify a password against its hash (sync, CPU-bound)."""
     return bcrypt.checkpw(password.encode(), hashed.encode())
+
+
+async def hash_password(password: str) -> str:
+    """Hash a password using bcrypt (async, non-blocking)."""
+    return await asyncio.to_thread(_hash_password_sync, password)
+
+
+async def verify_password(password: str, hashed: str) -> bool:
+    """Verify a password against its hash (async, non-blocking)."""
+    return await asyncio.to_thread(_verify_password_sync, password, hashed)
 
 
 def create_token(user_id: str, email: str) -> str:
@@ -101,28 +113,29 @@ async def get_current_user(
     token = auth_header.split(" ")[1]
     payload = decode_token(token)
 
-    # Check if session exists and is valid
+    # Single query: validate session and get user via join
     result = await db.execute(
-        select(UserSession).where(
+        select(UserSession)
+        .options(joinedload(UserSession.user))
+        .where(
             UserSession.token == token,
-            UserSession.expires_at > datetime.utcnow()
+            UserSession.expires_at > datetime.utcnow(),
+            UserSession.user_id == payload["sub"]
         )
     )
     session = result.scalar_one_or_none()
+
     if not session:
         raise HTTPException(status_code=401, detail="Session expired or invalid")
 
-    # Get user
-    result = await db.execute(select(User).where(User.id == payload["sub"]))
-    user = result.scalar_one_or_none()
-    if not user:
+    if not session.user:
         raise HTTPException(status_code=401, detail="User not found")
 
     # Update last active
     session.last_active_at = datetime.utcnow()
     await db.commit()
 
-    return user
+    return session.user
 
 
 def generate_id() -> str:
@@ -159,12 +172,15 @@ async def register(
     db.add(organization)
 
     # Create user
+    # Hash password asynchronously (non-blocking)
+    password_hash = await hash_password(request.password)
+
     user = User(
         id=generate_id(),
         organization_id=organization.id,
         email=request.email,
         name=request.name,
-        password_hash=hash_password(request.password),
+        password_hash=password_hash,
         role=UserRole.ORG_OWNER,
     )
     db.add(user)
@@ -209,7 +225,8 @@ async def login(
     if not user or not user.password_hash:
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
-    if not verify_password(request.password, user.password_hash):
+    # Verify password asynchronously (non-blocking)
+    if not await verify_password(request.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
     # Update last login
@@ -285,10 +302,12 @@ async def change_password(
     if not current_user.password_hash:
         raise HTTPException(status_code=400, detail="User has no password set")
 
-    if not verify_password(request.current_password, current_user.password_hash):
+    # Verify current password asynchronously (non-blocking)
+    if not await verify_password(request.current_password, current_user.password_hash):
         raise HTTPException(status_code=401, detail="Current password is incorrect")
 
-    current_user.password_hash = hash_password(request.new_password)
+    # Hash new password asynchronously (non-blocking)
+    current_user.password_hash = await hash_password(request.new_password)
     await db.commit()
 
     return {"status": "success"}

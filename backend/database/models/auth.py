@@ -105,6 +105,7 @@ class User(Base):
     __table_args__ = (
         Index("ix_users_email", "email"),
         Index("ix_users_organization_id", "organization_id"),
+        Index("ix_users_last_login_at", "last_login_at"),
     )
 
 
@@ -128,6 +129,8 @@ class UserSession(Base):
         Index("ix_user_sessions_user_id", "user_id"),
         Index("ix_user_sessions_token", "token"),
         Index("ix_user_sessions_expires_at", "expires_at"),
+        # Composite index for auth query: token + expires_at + user_id
+        Index("ix_user_sessions_token_expires_user", "token", "expires_at", "user_id"),
     )
 
 

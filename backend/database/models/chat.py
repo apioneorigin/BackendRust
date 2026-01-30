@@ -64,6 +64,8 @@ class ChatConversation(Base):
         Index("ix_chat_conversations_organization_id", "organization_id"),
         Index("ix_chat_conversations_session_id", "session_id"),
         Index("ix_chat_conversations_is_active", "is_active"),
+        # Composite index for active conversations by user (common query pattern)
+        Index("ix_chat_conversations_user_active", "user_id", "is_active"),
     )
 
 
