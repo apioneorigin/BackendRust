@@ -71,7 +71,6 @@
 
 	const models = [
 		{ id: 'claude-opus-4-5-20251101', name: 'Claude Opus 4.5' },
-		{ id: 'claude-sonnet-4-5-20250929', name: 'Claude Sonnet 4.5' },
 		{ id: 'gpt-5.2', name: 'GPT-5.2' },
 		{ id: 'gpt-4.1-mini', name: 'GPT-4.1 Mini' }
 	];
