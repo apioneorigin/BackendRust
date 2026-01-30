@@ -1,10 +1,12 @@
 """
-Database configuration for PostgreSQL with SQLAlchemy async support.
-Mirrors the Prisma/PostgreSQL setup from reality-transformer.
+Database configuration with SQLite for development and PostgreSQL for production.
+- Set DATABASE_URL for PostgreSQL (production)
+- Leave DATABASE_URL unset or set USE_SQLITE=true for SQLite (development)
 """
 
 import os
 import ssl
+from pathlib import Path
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
@@ -12,55 +14,78 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Get DATABASE_URL from environment (same as Prisma uses)
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://localhost:5432/reality_transformer")
+# Get DATABASE_URL from environment
+DATABASE_URL = os.getenv("DATABASE_URL", "")
+USE_SQLITE = os.getenv("USE_SQLITE", "").lower() in ("true", "1", "yes") or not DATABASE_URL
 
+# Determine which database to use
+if USE_SQLITE:
+    # SQLite for local development
+    # Store database file in backend/data directory
+    DATA_DIR = Path(__file__).parent.parent / "data"
+    DATA_DIR.mkdir(exist_ok=True)
+    SQLITE_PATH = DATA_DIR / "dev.db"
 
-def prepare_async_url(url: str) -> tuple[str, dict]:
-    """
-    Prepare database URL for asyncpg.
-    Strips sslmode/channel_binding from URL and returns connect_args for SSL.
-    """
-    parsed = urlparse(url)
+    ASYNC_DATABASE_URL = f"sqlite+aiosqlite:///{SQLITE_PATH}"
+    connect_args = {"check_same_thread": False}
 
-    # Parse query parameters
-    query_params = parse_qs(parsed.query)
+    # SQLite-specific engine settings
+    engine = create_async_engine(
+        ASYNC_DATABASE_URL,
+        echo=False,
+        connect_args=connect_args,
+    )
 
-    # Check if SSL is required
-    ssl_required = query_params.pop('sslmode', [None])[0] in ('require', 'verify-ca', 'verify-full')
-    query_params.pop('channel_binding', None)  # asyncpg doesn't support this
+    print(f"[Database] Using SQLite for development: {SQLITE_PATH}")
 
-    # Rebuild query string without unsupported params
-    new_query = urlencode({k: v[0] for k, v in query_params.items()}, doseq=False)
+else:
+    # PostgreSQL for production
+    def prepare_async_url(url: str) -> tuple[str, dict]:
+        """
+        Prepare database URL for asyncpg.
+        Strips sslmode/channel_binding from URL and returns connect_args for SSL.
+        """
+        parsed = urlparse(url)
 
-    # Rebuild URL with postgresql+asyncpg scheme
-    scheme = 'postgresql+asyncpg'
-    new_parsed = parsed._replace(scheme=scheme, query=new_query)
-    clean_url = urlunparse(new_parsed)
+        # Parse query parameters
+        query_params = parse_qs(parsed.query)
 
-    # Prepare connect_args for SSL
-    connect_args = {}
-    if ssl_required:
-        ssl_context = ssl.create_default_context()
-        ssl_context.check_hostname = False
-        ssl_context.verify_mode = ssl.CERT_NONE
-        connect_args['ssl'] = ssl_context
+        # Check if SSL is required
+        ssl_required = query_params.pop('sslmode', [None])[0] in ('require', 'verify-ca', 'verify-full')
+        query_params.pop('channel_binding', None)  # asyncpg doesn't support this
 
-    return clean_url, connect_args
+        # Rebuild query string without unsupported params
+        new_query = urlencode({k: v[0] for k, v in query_params.items()}, doseq=False)
 
+        # Rebuild URL with postgresql+asyncpg scheme
+        scheme = 'postgresql+asyncpg'
+        new_parsed = parsed._replace(scheme=scheme, query=new_query)
+        clean_url = urlunparse(new_parsed)
 
-# Convert to async URL and get SSL config
-ASYNC_DATABASE_URL, connect_args = prepare_async_url(DATABASE_URL)
+        # Prepare connect_args for SSL
+        conn_args = {}
+        if ssl_required:
+            ssl_context = ssl.create_default_context()
+            ssl_context.check_hostname = False
+            ssl_context.verify_mode = ssl.CERT_NONE
+            conn_args['ssl'] = ssl_context
 
-# Create async engine
-engine = create_async_engine(
-    ASYNC_DATABASE_URL,
-    echo=False,  # Set to True for SQL logging
-    pool_size=10,
-    max_overflow=20,
-    pool_pre_ping=True,
-    connect_args=connect_args,
-)
+        return clean_url, conn_args
+
+    # Convert to async URL and get SSL config
+    ASYNC_DATABASE_URL, connect_args = prepare_async_url(DATABASE_URL)
+
+    # Create async engine for PostgreSQL
+    engine = create_async_engine(
+        ASYNC_DATABASE_URL,
+        echo=False,
+        pool_size=10,
+        max_overflow=20,
+        pool_pre_ping=True,
+        connect_args=connect_args,
+    )
+
+    print(f"[Database] Using PostgreSQL: {urlparse(DATABASE_URL).hostname}")
 
 # Create async session factory
 AsyncSessionLocal = async_sessionmaker(
