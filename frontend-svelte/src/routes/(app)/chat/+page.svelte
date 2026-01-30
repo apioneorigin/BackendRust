@@ -14,6 +14,7 @@
 	 */
 
 	import { onMount, onDestroy, tick } from 'svelte';
+	import { goto } from '$app/navigation';
 	import {
 		chat,
 		messages,
@@ -23,6 +24,8 @@
 		streamingContent,
 		addToast,
 		user,
+		auth,
+		theme,
 		matrix,
 		matrixData as matrixDataStore,
 		rowHeaders as rowHeadersStore,
@@ -51,6 +54,10 @@
 	let isDragging = false;
 	let placeholderIndex = 0;
 	let placeholderInterval: ReturnType<typeof setInterval>;
+
+	// Sidebar state
+	let sidebarCollapsed = false;
+	let userMenuOpen = false;
 
 	// Popup state
 	let showCausationPopup = false;
@@ -269,6 +276,25 @@
 	function handleEffectSubmit() {
 		showEffectPopup = false;
 	}
+
+	// Sidebar functions
+	function toggleSidebar() {
+		sidebarCollapsed = !sidebarCollapsed;
+	}
+
+	function toggleUserMenu() {
+		userMenuOpen = !userMenuOpen;
+	}
+
+	function toggleTheme() {
+		theme.toggle();
+	}
+
+	async function handleLogout() {
+		await auth.logout();
+		addToast('info', 'Signed out', 'You have been logged out');
+		goto('/login');
+	}
 </script>
 
 <svelte:head>
@@ -276,35 +302,121 @@
 </svelte:head>
 
 <div class="unified-layout">
-	<!-- Conversation sidebar -->
-	<aside class="sidebar">
+	<!-- Collapsible Conversation Sidebar -->
+	<aside class="sidebar" class:collapsed={sidebarCollapsed}>
+		<!-- Sidebar header with logo and collapse toggle -->
 		<div class="sidebar-header">
-			<h3>Conversations</h3>
-			<Button variant="primary" size="sm" on:click={handleNewChat}>
-				<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+			{#if !sidebarCollapsed}
+				<h2 class="sidebar-logo">Reality Transformer</h2>
+			{/if}
+			<button class="collapse-btn" on:click={toggleSidebar} title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
+				<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class:rotated={sidebarCollapsed}>
+					<path d="m15 18-6-6 6-6"/>
+				</svg>
+			</button>
+		</div>
+
+		<!-- New chat button -->
+		<div class="new-chat-section">
+			<button class="new-chat-btn" on:click={handleNewChat} title="New conversation">
+				<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 					<path d="M12 5v14" />
 					<path d="M5 12h14" />
 				</svg>
-				New
-			</Button>
+				{#if !sidebarCollapsed}
+					<span>New Chat</span>
+				{/if}
+			</button>
 		</div>
 
+		<!-- Conversations list -->
 		<div class="conversations-list">
 			{#each $conversations as conversation (conversation.id)}
 				<button
 					class="conversation-item"
 					class:active={$currentConversation?.id === conversation.id}
 					on:click={() => handleSelectConversation(conversation.id)}
+					title={conversation.title || 'New Conversation'}
 				>
-					<span class="conversation-title">{conversation.title || 'New Conversation'}</span>
-					<span class="conversation-time">{formatTimestamp(conversation.createdAt)}</span>
+					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="conversation-icon">
+						<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+					</svg>
+					{#if !sidebarCollapsed}
+						<div class="conversation-info">
+							<span class="conversation-title">{conversation.title || 'New Conversation'}</span>
+							<span class="conversation-time">{formatTimestamp(conversation.createdAt)}</span>
+						</div>
+					{/if}
 				</button>
 			{/each}
 
-			{#if $conversations.length === 0}
+			{#if $conversations.length === 0 && !sidebarCollapsed}
 				<div class="empty-conversations">
 					<p>No conversations yet</p>
 					<p class="hint">Start a new chat to begin</p>
+				</div>
+			{/if}
+		</div>
+
+		<!-- User menu at bottom -->
+		<div class="sidebar-footer">
+			<button class="user-avatar-btn" on:click={toggleUserMenu} class:active={userMenuOpen} title={$user?.name || 'User menu'}>
+				<div class="user-avatar">
+					{$user?.name?.[0] || $user?.email?.[0] || 'U'}
+				</div>
+				{#if !sidebarCollapsed}
+					<div class="user-details">
+						<span class="user-name">{$user?.name || 'User'}</span>
+						<span class="user-email">{$user?.email}</span>
+					</div>
+					<svg class="chevron" class:rotated={userMenuOpen} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="m6 9 6 6 6-6" />
+					</svg>
+				{/if}
+			</button>
+
+			{#if userMenuOpen}
+				<div class="user-menu" class:collapsed-menu={sidebarCollapsed}>
+					<a href="/documents" class="user-menu-item">
+						<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+							<polyline points="14 2 14 8 20 8" />
+						</svg>
+						{#if !sidebarCollapsed}<span>Documents</span>{/if}
+					</a>
+					<a href="/settings" class="user-menu-item">
+						<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+							<circle cx="12" cy="12" r="3" />
+						</svg>
+						{#if !sidebarCollapsed}<span>Settings</span>{/if}
+					</a>
+					<button class="user-menu-item" on:click={toggleTheme}>
+						{#if $theme.isDark}
+							<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<circle cx="12" cy="12" r="4" />
+								<path d="M12 2v2" /><path d="M12 20v2" />
+								<path d="m4.93 4.93 1.41 1.41" /><path d="m17.66 17.66 1.41 1.41" />
+								<path d="M2 12h2" /><path d="M20 12h2" />
+								<path d="m6.34 17.66-1.41 1.41" /><path d="m19.07 4.93-1.41 1.41" />
+							</svg>
+							{#if !sidebarCollapsed}<span>Light Mode</span>{/if}
+						{:else}
+							<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+							</svg>
+							{#if !sidebarCollapsed}<span>Dark Mode</span>{/if}
+						{/if}
+					</button>
+					<div class="user-menu-divider"></div>
+					<button class="user-menu-item logout" on:click={handleLogout}>
+						<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+							<polyline points="16 17 21 12 16 7" />
+							<line x1="21" x2="9" y1="12" y2="12" />
+						</svg>
+						{#if !sidebarCollapsed}<span>Sign Out</span>{/if}
+					</button>
 				</div>
 			{/if}
 		</div>
@@ -634,7 +746,7 @@
 		overflow: hidden;
 	}
 
-	/* Sidebar */
+	/* Sidebar - Collapsible */
 	.sidebar {
 		width: 260px;
 		min-width: 260px;
@@ -643,6 +755,12 @@
 		display: flex;
 		flex-direction: column;
 		overflow: hidden;
+		transition: width 0.2s ease, min-width 0.2s ease;
+	}
+
+	.sidebar.collapsed {
+		width: 60px;
+		min-width: 60px;
 	}
 
 	.sidebar-header {
@@ -651,14 +769,85 @@
 		justify-content: space-between;
 		padding: 1rem;
 		border-bottom: 1px solid var(--color-veil-thin);
+		gap: 0.5rem;
 	}
 
-	.sidebar-header h3 {
-		font-size: 0.875rem;
-		font-weight: 600;
+	.sidebar.collapsed .sidebar-header {
+		justify-content: center;
+		padding: 1rem 0.5rem;
+	}
+
+	.sidebar-logo {
+		font-size: 1rem;
+		font-weight: 700;
+		background: var(--gradient-primary);
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+		background-clip: text;
+		white-space: nowrap;
+		overflow: hidden;
+	}
+
+	.collapse-btn {
+		width: 32px;
+		height: 32px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: none;
+		border: none;
+		color: var(--color-text-whisper);
+		cursor: pointer;
+		border-radius: 0.375rem;
+		transition: all 0.15s ease;
+		flex-shrink: 0;
+	}
+
+	.collapse-btn:hover {
+		background: var(--color-field-depth);
 		color: var(--color-text-source);
 	}
 
+	.collapse-btn svg.rotated {
+		transform: rotate(180deg);
+	}
+
+	/* New chat section */
+	.new-chat-section {
+		padding: 0.5rem;
+		border-bottom: 1px solid var(--color-veil-thin);
+	}
+
+	.new-chat-btn {
+		width: 100%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+		padding: 0.625rem;
+		background: var(--color-primary-500);
+		border: none;
+		border-radius: 0.5rem;
+		color: white;
+		font-size: 0.875rem;
+		font-weight: 500;
+		cursor: pointer;
+		transition: background-color 0.15s ease;
+	}
+
+	.new-chat-btn:hover {
+		background: var(--color-primary-600);
+	}
+
+	.sidebar.collapsed .new-chat-btn {
+		padding: 0.625rem;
+	}
+
+	.sidebar.collapsed .new-chat-btn span {
+		display: none;
+	}
+
+	/* Conversations list */
 	.conversations-list {
 		flex: 1;
 		overflow-y: auto;
@@ -668,16 +857,20 @@
 	.conversation-item {
 		width: 100%;
 		display: flex;
-		flex-direction: column;
-		align-items: flex-start;
-		gap: 0.25rem;
-		padding: 0.75rem;
+		align-items: center;
+		gap: 0.625rem;
+		padding: 0.625rem;
 		background: none;
 		border: none;
 		border-radius: 0.5rem;
 		cursor: pointer;
 		transition: background-color 0.15s ease;
 		text-align: left;
+	}
+
+	.sidebar.collapsed .conversation-item {
+		justify-content: center;
+		padding: 0.625rem 0.5rem;
 	}
 
 	.conversation-item:hover {
@@ -692,6 +885,23 @@
 		background: rgba(15, 76, 117, 0.3);
 	}
 
+	.conversation-icon {
+		flex-shrink: 0;
+		color: var(--color-text-whisper);
+	}
+
+	.conversation-item.active .conversation-icon {
+		color: var(--color-primary-500);
+	}
+
+	.conversation-info {
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 0.125rem;
+	}
+
 	.conversation-title {
 		font-size: 0.8125rem;
 		font-weight: 500;
@@ -699,7 +909,6 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
-		max-width: 100%;
 	}
 
 	.conversation-time {
@@ -721,6 +930,151 @@
 		font-size: 0.75rem;
 		color: var(--color-text-hint);
 		margin-top: 0.25rem;
+	}
+
+	/* Sidebar footer / User menu */
+	.sidebar-footer {
+		padding: 0.5rem;
+		border-top: 1px solid var(--color-veil-thin);
+	}
+
+	.user-avatar-btn {
+		width: 100%;
+		display: flex;
+		align-items: center;
+		gap: 0.625rem;
+		padding: 0.5rem;
+		background: none;
+		border: none;
+		border-radius: 0.5rem;
+		cursor: pointer;
+		transition: all 0.15s ease;
+		text-align: left;
+	}
+
+	.sidebar.collapsed .user-avatar-btn {
+		justify-content: center;
+	}
+
+	.user-avatar-btn:hover,
+	.user-avatar-btn.active {
+		background: var(--color-field-depth);
+	}
+
+	.user-avatar {
+		width: 32px;
+		height: 32px;
+		background: var(--gradient-primary);
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: white;
+		font-weight: 600;
+		font-size: 0.8125rem;
+		flex-shrink: 0;
+	}
+
+	.user-details {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.user-name {
+		display: block;
+		font-weight: 500;
+		font-size: 0.8125rem;
+		color: var(--color-text-source);
+	}
+
+	.user-email {
+		display: block;
+		font-size: 0.6875rem;
+		color: var(--color-text-whisper);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.chevron {
+		color: var(--color-text-whisper);
+		transition: transform 0.2s ease;
+		flex-shrink: 0;
+	}
+
+	.chevron.rotated {
+		transform: rotate(180deg);
+	}
+
+	/* User menu dropdown */
+	.user-menu {
+		margin-top: 0.5rem;
+		padding: 0.375rem;
+		background: var(--color-field-depth);
+		border-radius: 0.5rem;
+		animation: slideUp 0.15s ease;
+	}
+
+	.user-menu.collapsed-menu {
+		position: absolute;
+		bottom: 60px;
+		left: 60px;
+		width: 200px;
+		box-shadow: var(--shadow-elevated);
+		z-index: 50;
+	}
+
+	@keyframes slideUp {
+		from {
+			opacity: 0;
+			transform: translateY(8px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	.user-menu-item {
+		display: flex;
+		align-items: center;
+		gap: 0.625rem;
+		width: 100%;
+		padding: 0.5rem 0.625rem;
+		background: none;
+		border: none;
+		border-radius: 0.375rem;
+		color: var(--color-text-manifest);
+		text-decoration: none;
+		font-size: 0.8125rem;
+		font-weight: 500;
+		cursor: pointer;
+		transition: all 0.15s ease;
+		text-align: left;
+	}
+
+	.user-menu-item:hover {
+		background: var(--color-field-surface);
+		color: var(--color-text-source);
+	}
+
+	.user-menu-item.logout {
+		color: var(--color-error-500);
+	}
+
+	.user-menu-item.logout:hover {
+		background: var(--color-error-50);
+		color: var(--color-error-600);
+	}
+
+	[data-theme='dark'] .user-menu-item.logout:hover {
+		background: rgba(239, 68, 68, 0.1);
+	}
+
+	.user-menu-divider {
+		height: 1px;
+		background: var(--color-veil-thin);
+		margin: 0.375rem 0.5rem;
 	}
 
 	/* Main content */

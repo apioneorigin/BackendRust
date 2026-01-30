@@ -9,6 +9,10 @@
 	let mobileMenuOpen = false;
 	let userMenuOpen = false;
 
+	// Hide layout sidebar on chat page (chat has its own unified sidebar)
+	$: isChatPage = $page.url.pathname === '/chat' || $page.url.pathname.startsWith('/chat/');
+	$: showLayoutSidebar = !isChatPage;
+
 	onMount(async () => {
 		const currentUser = await auth.loadUser();
 		if (!currentUser) {
@@ -101,7 +105,8 @@
 			<div class="mobile-overlay" on:click={closeMobileMenu} role="presentation"></div>
 		{/if}
 
-		<!-- Sidebar -->
+		<!-- Sidebar (hidden on chat page - chat has its own unified sidebar) -->
+		{#if showLayoutSidebar}
 		<aside class="sidebar" class:open={mobileMenuOpen}>
 			<div class="sidebar-header">
 				<h2 class="logo">Reality Transformer</h2>
@@ -275,6 +280,7 @@
 				{/if}
 			</div>
 		</aside>
+		{/if}
 
 		<!-- Main content -->
 		<main class="main-content">
