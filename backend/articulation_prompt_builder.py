@@ -854,11 +854,31 @@ Output this EXACT marker followed by valid JSON:
         "impact_score": 0.75,
         "relationship": "...",
         "dimensions": [
-          {"name": "Probability", "value": 3, "min": 1, "max": 5, "description": "..."},
-          {"name": "Magnitude", "value": 4, "min": 1, "max": 5, "description": "..."},
-          {"name": "Timeframe", "value": 2, "min": 1, "max": 5, "description": "..."},
-          {"name": "Reversibility", "value": 3, "min": 1, "max": 5, "description": "..."},
-          {"name": "Leverage", "value": 5, "min": 1, "max": 5, "description": "..."}
+          {
+            "name": "Probability",
+            "value": 50,
+            "step_labels": ["Unlikely", "Possible", "Probable", "Likely", "Certain"]
+          },
+          {
+            "name": "Magnitude",
+            "value": 75,
+            "step_labels": ["Minimal", "Minor", "Moderate", "Major", "Transformative"]
+          },
+          {
+            "name": "Timeframe",
+            "value": 25,
+            "step_labels": ["Years", "Quarters", "Months", "Weeks", "Days"]
+          },
+          {
+            "name": "Reversibility",
+            "value": 50,
+            "step_labels": ["Permanent", "Difficult", "Moderate", "Easy", "Instant"]
+          },
+          {
+            "name": "Leverage",
+            "value": 100,
+            "step_labels": ["None", "Low", "Medium", "High", "Maximum"]
+          }
         ]
       },
       ... (400 total cells for 20x20 matrix)
@@ -901,13 +921,20 @@ Output this EXACT marker followed by valid JSON:
 1. **Row Options (20)**: Causation factors - what DRIVES change in this context
 2. **Column Options (20)**: Effect factors - what is AFFECTED by changes
 3. **Cells (400)**: Cross-impact for each row-column pair
-   - Each cell has 5 dimensions with slider values 1-5
+   - Each cell has 5 dimensions (dials)
+   - Each dimension has:
+     - `value`: One of [0, 25, 50, 75, 100] representing the 5 discrete steps
+     - `step_labels`: Array of 5 contextual labels for this dimension IN THIS CELL
+   - Step labels must be contextual to the specific row-column intersection
+   - Example: For "Marketing Budget" × "Brand Awareness", the Timeframe steps might be
+     ["Campaign Cycle", "Quarter", "Month", "Sprint", "Week"] - not generic time units
    - impact_score: 0-1 representing overall relationship strength
 4. **Paths (5)**: Strategic approaches from conservative to aggressive
 5. **Documents (9)**: One of each type, tailored to the user's query
 
-Base all generated data on the consciousness values and user context provided.
-Make labels and descriptions domain-appropriate (concealed framework terminology)."""
+**CRITICAL**: Step labels must be domain-appropriate and contextual to each cell.
+Generic labels like ["Low", "Below", "Mid", "Above", "High"] are NOT acceptable.
+Each cell's dimension labels should make sense for that specific causation-effect pair."""
 
     def _build_user_query(self, user_context: UserContext) -> str:
         """Build the user query section"""
