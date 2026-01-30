@@ -214,10 +214,18 @@ function createChatStore() {
 			abortController = new AbortController();
 
 			try {
+				// Get auth token for the request
+				const token = api.getToken();
+				const headers: Record<string, string> = {
+					'Content-Type': 'application/json',
+				};
+				if (token) {
+					headers['Authorization'] = `Bearer ${token}`;
+				}
+
 				const response = await fetch(`/api/chat/conversations/${conversationId}/messages`, {
 					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					credentials: 'include',
+					headers,
 					body: JSON.stringify({
 						content,
 						model,
