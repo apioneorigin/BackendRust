@@ -1,7 +1,7 @@
 """
 Reality Transformer Backend
 FastAPI server with OpenAI Responses API integration, web research, and SSE streaming
-Uses gpt-5.2 model exclusively
+Uses claude-opus-4-5-20251101 model exclusively
 
 ================================================================================
 ARCHITECTURE PRINCIPLE: PURE SEPARATION OF CONCERNS
@@ -369,8 +369,8 @@ MODEL_CONFIGS = {
     },
 }
 
-DEFAULT_MODEL = "gpt-5.2"
-OPENAI_MODEL = DEFAULT_MODEL
+DEFAULT_MODEL = "claude-opus-4-5-20251101"
+OPENAI_MODEL = DEFAULT_MODEL  # Legacy name, now points to Anthropic model
 OPENAI_RESPONSES_URL = MODEL_CONFIGS[DEFAULT_MODEL]["streaming_endpoint"]
 
 def get_model_config(model: str) -> dict:
