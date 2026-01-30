@@ -1,11 +1,11 @@
 """
-Run SQL migration against the database.
-Usage: python run_migration.py
+Migrate database columns from camelCase to snake_case.
+Queries actual schema and renames columns dynamically.
 """
 
 import asyncio
 import os
-from pathlib import Path
+import re
 from dotenv import load_dotenv
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
@@ -19,6 +19,12 @@ DATABASE_URL = os.getenv("DATABASE_URL", "")
 if not DATABASE_URL:
     print("ERROR: DATABASE_URL not set")
     exit(1)
+
+
+def camel_to_snake(name: str) -> str:
+    """Convert camelCase to snake_case."""
+    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 
 
 def prepare_async_url(url: str) -> tuple[str, dict]:
@@ -43,47 +49,56 @@ def prepare_async_url(url: str) -> tuple[str, dict]:
 
 
 async def run_migration():
-    migration_file = Path(__file__).parent / "001_camelcase_to_snake_case.sql"
-
-    if not migration_file.exists():
-        print(f"ERROR: Migration file not found: {migration_file}")
-        exit(1)
-
-    sql_content = migration_file.read_text()
-
-    # Remove BEGIN/COMMIT as we'll handle transaction ourselves
-    sql_content = sql_content.replace("BEGIN;", "").replace("COMMIT;", "")
-
-    # Split into individual statements
-    statements = [s.strip() for s in sql_content.split(";") if s.strip() and not s.strip().startswith("--")]
-
     async_url, connect_args = prepare_async_url(DATABASE_URL)
     engine = create_async_engine(async_url, connect_args=connect_args)
 
     print(f"Connecting to: {urlparse(DATABASE_URL).hostname}")
-    print(f"Running {len(statements)} ALTER statements...")
 
     async with engine.begin() as conn:
+        # Get all tables and columns from the database
+        result = await conn.execute(text("""
+            SELECT table_name, column_name
+            FROM information_schema.columns
+            WHERE table_schema = 'public'
+            ORDER BY table_name, ordinal_position
+        """))
+        columns = result.fetchall()
+
+        # Find columns that need renaming (camelCase -> snake_case)
+        renames = []
+        for table_name, column_name in columns:
+            snake_name = camel_to_snake(column_name)
+            if snake_name != column_name and column_name != column_name.lower():
+                renames.append((table_name, column_name, snake_name))
+
+        print(f"Found {len(renames)} columns to rename")
+
+        if not renames:
+            print("No columns need renaming - database already uses snake_case")
+            await engine.dispose()
+            return
+
+        # Execute renames
         success = 0
-        skipped = 0
-        for i, stmt in enumerate(statements):
-            if not stmt:
-                continue
+        failed = 0
+        for table_name, old_name, new_name in renames:
             try:
+                # Use quoted identifiers for the old name (camelCase)
+                stmt = f'ALTER TABLE "{table_name}" RENAME COLUMN "{old_name}" TO "{new_name}"'
                 await conn.execute(text(stmt))
                 success += 1
-                if (i + 1) % 50 == 0:
-                    print(f"  Progress: {i + 1}/{len(statements)}")
+                print(f"  Renamed: {table_name}.{old_name} -> {new_name}")
             except Exception as e:
                 error_msg = str(e)
-                if "does not exist" in error_msg or "already exists" in error_msg:
-                    skipped += 1  # Column already renamed or doesn't exist
+                if "does not exist" in error_msg:
+                    pass  # Column already renamed
                 else:
-                    print(f"  Warning: {stmt[:60]}... - {error_msg[:80]}")
-                    skipped += 1
+                    print(f"  Failed: {table_name}.{old_name} - {error_msg[:60]}")
+                    failed += 1
+
+        print(f"\nMigration complete: {success} renamed, {failed} failed")
 
     await engine.dispose()
-    print(f"\nMigration complete: {success} renamed, {skipped} skipped")
 
 
 if __name__ == "__main__":
