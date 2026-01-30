@@ -52,6 +52,9 @@
 	let placeholderIndex = 0;
 	let placeholderInterval: ReturnType<typeof setInterval>;
 
+	// Welcome state - shows strategic overview until user starts chatting
+	$: isWelcomeState = $messages.length === 0 && !$isStreaming;
+
 	// Popup state
 	let showCausationPopup = false;
 	let showEffectPopup = false;
@@ -285,13 +288,18 @@
 				<div class="welcome-screen">
 					<div class="welcome-spacer"></div>
 					<div class="welcome-greeting">
-						<svg class="welcome-logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-							<circle cx="50" cy="50" r="45" fill="#0f4c75" stroke="#3d93ce" stroke-width="4"/>
-							<text x="50" y="72" font-family="'Product Sans', 'Roboto', sans-serif" font-size="55" font-weight="500" font-style="italic" fill="#FFFFFF" text-anchor="middle">G</text>
-						</svg>
+						<div class="welcome-logo-container">
+							<svg class="welcome-logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+								<circle cx="50" cy="50" r="45" fill="#0f4c75" stroke="#3d93ce" stroke-width="4"/>
+								<text x="50" y="72" font-family="'Product Sans', 'Roboto', sans-serif" font-size="55" font-weight="500" font-style="italic" fill="#FFFFFF" text-anchor="middle">G</text>
+							</svg>
+						</div>
 						<h1>{greeting}</h1>
+						<p class="welcome-tagline">Strategic Intelligence Platform</p>
 					</div>
-					<p class="welcome-subtitle">Your transformation map awaits on the right</p>
+					<div class="welcome-description">
+						<p>Transform complex business challenges into actionable strategies through cross-impact analysis and scenario modeling.</p>
+					</div>
 					<div class="welcome-spacer"></div>
 				</div>
 			{:else}
@@ -472,39 +480,104 @@
 		</div>
 	</div>
 
-	<!-- Right column: Matrix + Preview -->
+	<!-- Right column: Matrix + Preview (or Welcome State) -->
 	<div class="matrix-column">
-		<!-- Matrix (50%) -->
-		<div class="matrix-box">
-			<MatrixPanel
-				matrixData={$matrixDataStore}
-				rowHeaders={$rowHeadersStore}
-				columnHeaders={$columnHeadersStore}
+		{#if isWelcomeState}
+			<!-- Strategic Welcome State - explains the tool -->
+			<div class="welcome-matrix-container">
+				<div class="welcome-quadrant causation-quadrant">
+					<div class="quadrant-icon">
+						<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<circle cx="12" cy="12" r="10"/>
+							<path d="M12 16v-4"/>
+							<path d="M12 8h.01"/>
+						</svg>
+					</div>
+					<h3>Causation Analysis</h3>
+					<p>Map the root drivers that shape your strategic landscape. Identify what truly influences outcomes.</p>
+				</div>
+
+				<div class="welcome-quadrant effect-quadrant">
+					<div class="quadrant-icon">
+						<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+						</svg>
+					</div>
+					<h3>Effect Mapping</h3>
+					<p>Trace how actions ripple through your system. Understand second and third-order consequences.</p>
+				</div>
+
+				<div class="welcome-quadrant matrix-quadrant">
+					<div class="quadrant-icon">
+						<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<rect x="3" y="3" width="7" height="7"/>
+							<rect x="14" y="3" width="7" height="7"/>
+							<rect x="14" y="14" width="7" height="7"/>
+							<rect x="3" y="14" width="7" height="7"/>
+						</svg>
+					</div>
+					<h3>Strategic Matrix</h3>
+					<p>Visualize cross-impact relationships. Find leverage points where small changes create large effects.</p>
+				</div>
+
+				<div class="welcome-quadrant preview-quadrant">
+					<div class="quadrant-icon">
+						<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+							<polyline points="7.5 4.21 12 6.81 16.5 4.21"/>
+							<polyline points="7.5 19.79 7.5 14.6 3 12"/>
+							<polyline points="21 12 16.5 14.6 16.5 19.79"/>
+							<polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+							<line x1="12" y1="22.08" x2="12" y2="12"/>
+						</svg>
+					</div>
+					<h3>Live Scenario Preview</h3>
+					<p>See real-time coherence metrics and power spots. Simulate changes before committing.</p>
+				</div>
+			</div>
+
+			<div class="welcome-cta">
+				<p class="cta-text">Describe your strategic challenge to begin</p>
+				<div class="cta-arrow">
+					<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M19 12H5"/>
+						<path d="m12 19-7-7 7-7"/>
+					</svg>
+				</div>
+			</div>
+		{:else}
+			<!-- Active State - shows actual matrix -->
+			<div class="matrix-box">
+				<MatrixPanel
+					matrixData={$matrixDataStore}
+					rowHeaders={$rowHeadersStore}
+					columnHeaders={$columnHeadersStore}
+					showRiskHeatmap={$showRiskHeatmapStore}
+					compact={true}
+					on:cellClick={handleCellClick}
+					on:cellChange={handleCellChange}
+				/>
+			</div>
+
+			<!-- Toolbar between matrix and preview -->
+			<MatrixToolbar
 				showRiskHeatmap={$showRiskHeatmapStore}
-				compact={true}
-				on:cellClick={handleCellClick}
-				on:cellChange={handleCellChange}
+				on:openPopup={handleToolbarPopup}
+				on:toggleRisk={handleToggleRisk}
 			/>
-		</div>
 
-		<!-- Toolbar between matrix and preview -->
-		<MatrixToolbar
-			showRiskHeatmap={$showRiskHeatmapStore}
-			on:openPopup={handleToolbarPopup}
-			on:toggleRisk={handleToggleRisk}
-		/>
-
-		<!-- Live Preview (50%) -->
-		<div class="preview-box">
-			<LivePreviewBox
-				coherence={$coherenceStore}
-				balance={Math.round(($coherenceStore + $populationStore) / 2)}
-				population={$populationStore}
-				avgScore={$avgScoreStore}
-				powerSpots={$powerSpotsStore}
-				pendingChanges={0}
-			/>
-		</div>
+			<!-- Live Preview (50%) -->
+			<div class="preview-box">
+				<LivePreviewBox
+					coherence={$coherenceStore}
+					balance={Math.round(($coherenceStore + $populationStore) / 2)}
+					population={$populationStore}
+					avgScore={$avgScoreStore}
+					powerSpots={$powerSpotsStore}
+					pendingChanges={0}
+				/>
+			</div>
+		{/if}
 	</div>
 </div>
 
@@ -626,6 +699,7 @@
 		justify-content: center;
 		height: 100%;
 		text-align: center;
+		padding: 2rem;
 	}
 
 	.welcome-spacer {
@@ -636,24 +710,45 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 1rem;
+		gap: 0.5rem;
+	}
+
+	.welcome-logo-container {
+		margin-bottom: 0.5rem;
 	}
 
 	.welcome-logo {
-		width: 64px;
-		height: 64px;
+		width: 72px;
+		height: 72px;
 	}
 
 	.welcome-greeting h1 {
-		font-size: 1.5rem;
+		font-size: 1.75rem;
 		font-weight: 600;
 		color: var(--color-text-source);
 	}
 
-	.welcome-subtitle {
+	.welcome-tagline {
 		font-size: 0.875rem;
-		color: var(--color-text-whisper);
-		margin-top: 0.5rem;
+		font-weight: 500;
+		color: var(--color-primary-500);
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+
+	[data-theme='dark'] .welcome-tagline {
+		color: var(--color-primary-400);
+	}
+
+	.welcome-description {
+		margin-top: 1.5rem;
+		max-width: 360px;
+	}
+
+	.welcome-description p {
+		font-size: 0.9375rem;
+		line-height: 1.6;
+		color: var(--color-text-manifest);
 	}
 
 	/* Messages */
@@ -955,6 +1050,138 @@
 	.preview-box {
 		flex: 1;
 		min-height: 0;
+	}
+
+	/* Strategic Welcome State */
+	.welcome-matrix-container {
+		flex: 1;
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		grid-template-rows: 1fr 1fr;
+		gap: 0.75rem;
+		padding: 0.5rem;
+	}
+
+	.welcome-quadrant {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		text-align: center;
+		padding: 1.25rem 1rem;
+		border-radius: 0.75rem;
+		border: 1px solid var(--color-veil-thin);
+		background: var(--color-field-surface);
+		transition: all 0.2s ease;
+	}
+
+	.welcome-quadrant:hover {
+		border-color: var(--color-primary-300);
+		background: var(--color-field-depth);
+	}
+
+	[data-theme='dark'] .welcome-quadrant:hover {
+		border-color: var(--color-primary-500);
+	}
+
+	.welcome-quadrant .quadrant-icon {
+		width: 48px;
+		height: 48px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 0.75rem;
+		margin-bottom: 0.75rem;
+	}
+
+	.causation-quadrant .quadrant-icon {
+		background: rgba(59, 130, 246, 0.1);
+		color: #3b82f6;
+	}
+
+	.effect-quadrant .quadrant-icon {
+		background: rgba(168, 85, 247, 0.1);
+		color: #a855f7;
+	}
+
+	.matrix-quadrant .quadrant-icon {
+		background: rgba(34, 197, 94, 0.1);
+		color: #22c55e;
+	}
+
+	.preview-quadrant .quadrant-icon {
+		background: rgba(249, 115, 22, 0.1);
+		color: #f97316;
+	}
+
+	[data-theme='dark'] .causation-quadrant .quadrant-icon {
+		background: rgba(59, 130, 246, 0.15);
+		color: #60a5fa;
+	}
+
+	[data-theme='dark'] .effect-quadrant .quadrant-icon {
+		background: rgba(168, 85, 247, 0.15);
+		color: #c084fc;
+	}
+
+	[data-theme='dark'] .matrix-quadrant .quadrant-icon {
+		background: rgba(34, 197, 94, 0.15);
+		color: #4ade80;
+	}
+
+	[data-theme='dark'] .preview-quadrant .quadrant-icon {
+		background: rgba(249, 115, 22, 0.15);
+		color: #fb923c;
+	}
+
+	.welcome-quadrant h3 {
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: var(--color-text-source);
+		margin-bottom: 0.375rem;
+	}
+
+	.welcome-quadrant p {
+		font-size: 0.75rem;
+		line-height: 1.4;
+		color: var(--color-text-whisper);
+		max-width: 180px;
+	}
+
+	.welcome-cta {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.75rem;
+		padding: 1rem;
+		background: var(--color-field-surface);
+		border-radius: 0.75rem;
+		border: 1px solid var(--color-veil-thin);
+	}
+
+	.cta-text {
+		font-size: 0.875rem;
+		font-weight: 500;
+		color: var(--color-text-manifest);
+	}
+
+	.cta-arrow {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: var(--color-primary-500);
+		animation: pulse-left 1.5s ease-in-out infinite;
+	}
+
+	@keyframes pulse-left {
+		0%, 100% {
+			transform: translateX(0);
+			opacity: 1;
+		}
+		50% {
+			transform: translateX(-5px);
+			opacity: 0.6;
+		}
 	}
 
 	/* Popup styles */
