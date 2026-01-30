@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { auth, isAuthenticated, user, theme, addToast } from '$lib/stores';
+	import { auth, isAuthenticated, user, theme, addToast, chat } from '$lib/stores';
 	import { Spinner } from '$lib/components/ui';
 
 	let isLoading = true;
@@ -29,6 +29,11 @@
 		await auth.logout();
 		addToast('info', 'Signed out', 'You have been logged out');
 		goto('/login');
+	}
+
+	async function handleNewChat() {
+		await chat.createConversation();
+		goto('/chat');
 	}
 
 	function toggleTheme() {
@@ -117,6 +122,17 @@
 					<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class:rotated={sidebarCollapsed}>
 						<path d="m15 18-6-6 6-6"/>
 					</svg>
+				</button>
+			</div>
+
+			<!-- New Chat button -->
+			<div class="new-chat-section">
+				<button class="new-chat-btn" on:click={handleNewChat} title="New Chat">
+					<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M12 5v14"/>
+						<path d="M5 12h14"/>
+					</svg>
+					{#if !sidebarCollapsed}<span>New Chat</span>{/if}
 				</button>
 			</div>
 
@@ -284,6 +300,40 @@
 
 	.collapse-btn svg.rotated {
 		transform: rotate(180deg);
+	}
+
+	/* New Chat button */
+	.new-chat-section {
+		padding: 0.5rem;
+	}
+
+	.new-chat-btn {
+		width: 100%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+		padding: 0.625rem 0.75rem;
+		background: var(--color-primary-500);
+		border: none;
+		border-radius: 0.5rem;
+		color: white;
+		font-size: 0.875rem;
+		font-weight: 500;
+		cursor: pointer;
+		transition: all 0.15s ease;
+	}
+
+	.new-chat-btn:hover {
+		background: var(--color-primary-600);
+	}
+
+	.sidebar.collapsed .new-chat-btn {
+		padding: 0.625rem;
+	}
+
+	.sidebar.collapsed .new-chat-btn span {
+		display: none;
 	}
 
 	/* Navigation */
