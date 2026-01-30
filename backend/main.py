@@ -62,6 +62,7 @@ from pathlib import Path
 from typing import Optional, AsyncGenerator, Dict, Any, Tuple, List
 
 from fastapi import FastAPI, Query, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, FileResponse
 from sse_starlette.sse import EventSourceResponse
 from dotenv import load_dotenv
@@ -154,6 +155,16 @@ async def lifespan(app: FastAPI):
 
 # Re-create app with lifespan
 app = FastAPI(title="Reality Transformer", version="4.1.0", lifespan=lifespan)
+
+# Add CORS middleware for cross-origin requests
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, specify allowed origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["*"],
+)
 
 # Include routers
 from routers import (

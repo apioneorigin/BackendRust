@@ -108,33 +108,58 @@ async def get_current_user(
     """Dependency to get the current authenticated user."""
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
+        print(f"[AUTH DEBUG] Missing/invalid auth header: {auth_header[:50] if auth_header else 'None'}")
         raise HTTPException(status_code=401, detail="Missing or invalid authorization header")
 
     token = auth_header.split(" ")[1]
-    payload = decode_token(token)
+
+    try:
+        payload = decode_token(token)
+        print(f"[AUTH DEBUG] Token decoded, user_id: {payload.get('sub', 'N/A')[:20]}")
+    except HTTPException as e:
+        print(f"[AUTH DEBUG] Token decode failed: {e.detail}")
+        raise
 
     # Single query: validate session and get user via join
-    result = await db.execute(
-        select(UserSession)
-        .options(joinedload(UserSession.user))
-        .where(
-            UserSession.token == token,
-            UserSession.expires_at > datetime.utcnow(),
-            UserSession.user_id == payload["sub"]
+    try:
+        result = await db.execute(
+            select(UserSession)
+            .options(joinedload(UserSession.user))
+            .where(
+                UserSession.token == token,
+                UserSession.expires_at > datetime.utcnow(),
+                UserSession.user_id == payload["sub"]
+            )
         )
-    )
-    session = result.scalar_one_or_none()
+        session = result.scalar_one_or_none()
+        print(f"[AUTH DEBUG] Session query result: {'found' if session else 'NOT FOUND'}")
+    except Exception as e:
+        print(f"[AUTH DEBUG] Database query error: {type(e).__name__}: {e}")
+        raise HTTPException(status_code=401, detail=f"Database error: {str(e)[:100]}")
 
     if not session:
+        # Debug: check if session exists at all
+        debug_result = await db.execute(
+            select(UserSession).where(UserSession.user_id == payload["sub"])
+        )
+        debug_sessions = debug_result.scalars().all()
+        print(f"[AUTH DEBUG] User has {len(debug_sessions)} sessions in DB")
+        if debug_sessions:
+            for s in debug_sessions[:2]:
+                expired = "EXPIRED" if s.expires_at < datetime.utcnow() else "VALID"
+                token_match = "TOKEN_MATCH" if s.token == token else "TOKEN_MISMATCH"
+                print(f"[AUTH DEBUG]   Session: {expired}, {token_match}, expires: {s.expires_at}")
         raise HTTPException(status_code=401, detail="Session expired or invalid")
 
     if not session.user:
+        print(f"[AUTH DEBUG] Session found but user is None")
         raise HTTPException(status_code=401, detail="User not found")
 
     # Update last active
     session.last_active_at = datetime.utcnow()
     await db.commit()
 
+    print(f"[AUTH DEBUG] Auth successful for user: {session.user.email}")
     return session.user
 
 
