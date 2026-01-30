@@ -240,7 +240,7 @@ async def send_message(
 
     # Import the inference engine from main
     # This will be integrated with the existing consciousness engine
-    from ..main import inference_stream, get_model_config
+    from main import inference_stream, get_model_config
 
     model_config = get_model_config(request.model)
 
@@ -363,7 +363,7 @@ async def generate_title(
     context_text = "\n".join(context_parts)
 
     # Generate title using LLM
-    from ..main import get_model_config
+    from main import get_model_config
     import openai
 
     model_config = get_model_config("claude-haiku")  # Use fast model for title generation
