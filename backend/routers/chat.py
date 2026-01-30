@@ -31,6 +31,14 @@ class SendMessageRequest(BaseModel):
     model: str = "claude-opus-4-5-20251101"
     web_search_data: bool = True
     web_search_insights: bool = True
+    attachments: Optional[List[dict]] = None  # File attachments: [{"name": "file.pdf", "content": "...", "type": "pdf"}]
+
+
+class ConversationContext(BaseModel):
+    """Context from conversation history and files for LLM calls."""
+    messages: List[dict]  # Previous messages: [{"role": "user"|"assistant", "content": "..."}]
+    file_summaries: List[dict] = []  # Summarized files: [{"name": "...", "summary": "...", "entities": [...]}]
+    conversation_summary: Optional[str] = None  # Summary of older messages if conversation is long
 
 
 class ConversationResponse(BaseModel):
@@ -257,12 +265,54 @@ async def send_message(
     if not conversation:
         raise HTTPException(status_code=404, detail="Conversation not found")
 
-    # Save user message
+    # Load conversation history for context
+    history_result = await db.execute(
+        select(ChatMessage)
+        .where(ChatMessage.conversation_id == conversation_id)
+        .order_by(ChatMessage.created_at)
+        .limit(20)  # Last 20 messages for context
+    )
+    previous_messages = history_result.scalars().all()
+
+    # Extract file summaries from system messages with attachments
+    existing_file_summaries = []
+    for msg in previous_messages:
+        if msg.role == "system" and msg.attachments:
+            for att in msg.attachments:
+                if isinstance(att, dict):
+                    existing_file_summaries.append({
+                        "name": att.get("name", "unnamed"),
+                        "summary": att.get("summary", "")[:5000],
+                        "type": att.get("type", "unknown")
+                    })
+
+    # Build conversation context
+    conversation_context = ConversationContext(
+        messages=[
+            {"role": m.role, "content": m.content[:2000]}  # Truncate long messages
+            for m in previous_messages
+            if m.role in ("user", "assistant")  # Only include user/assistant messages in history
+        ],
+        file_summaries=existing_file_summaries,  # Start with existing file summaries
+        conversation_summary=conversation.context  # Use stored conversation context/summary
+    )
+
+    # Add any new file attachments from this request
+    if request.attachments:
+        for attachment in request.attachments:
+            conversation_context.file_summaries.append({
+                "name": attachment.get("name", "unnamed"),
+                "summary": attachment.get("content", "")[:5000],  # First 5K chars as summary
+                "type": attachment.get("type", "unknown")
+            })
+
+    # Save user message with attachments
     user_message = ChatMessage(
         id=generate_id(),
         conversation_id=conversation_id,
         role="user",
         content=request.content,
+        attachments=request.attachments,
     )
     db.add(user_message)
     await db.commit()
@@ -283,7 +333,8 @@ async def send_message(
             request.content,
             model_config,
             request.web_search_data,
-            request.web_search_insights
+            request.web_search_insights,
+            conversation_context.model_dump()  # Pass conversation context
         ):
             # Parse SSE event
             if isinstance(event, dict):
@@ -351,3 +402,75 @@ async def delete_conversation(
     await db.commit()
 
     return {"status": "success"}
+
+
+class FileUploadRequest(BaseModel):
+    """Request to upload files to a conversation."""
+    files: List[dict]  # [{"name": "file.pdf", "content": "base64...", "type": "pdf"}]
+
+
+class FileUploadResponse(BaseModel):
+    """Response after file upload."""
+    message_id: str
+    files_processed: int
+    summaries: List[dict]
+
+
+@router.post("/conversations/{conversation_id}/files", response_model=FileUploadResponse)
+async def upload_files(
+    conversation_id: str,
+    request: FileUploadRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Upload files to a conversation for context-aware analysis.
+    Files are stored as attachments on a system message and their content
+    is used to inform subsequent LLM calls.
+    """
+    # Verify access
+    result = await db.execute(
+        select(ChatConversation).where(
+            ChatConversation.id == conversation_id,
+            ChatConversation.user_id == current_user.id
+        )
+    )
+    conversation = result.scalar_one_or_none()
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
+    # Process files and create summaries
+    file_summaries = []
+    for file_data in request.files[:10]:  # Max 10 files
+        name = file_data.get("name", "unnamed")
+        content = file_data.get("content", "")
+        file_type = file_data.get("type", "unknown")
+
+        # Create a simple summary (first N chars)
+        # In production, this would use an LLM to summarize
+        summary = content[:5000] if len(content) > 5000 else content
+
+        file_summaries.append({
+            "name": name,
+            "type": file_type,
+            "summary": summary,
+            "char_count": len(content)
+        })
+
+    # Create a system message with file attachments
+    file_message = ChatMessage(
+        id=generate_id(),
+        conversation_id=conversation_id,
+        role="system",  # System message to indicate file upload
+        content=f"Files uploaded: {', '.join(f['name'] for f in file_summaries)}",
+        attachments=file_summaries,
+    )
+    db.add(file_message)
+    conversation.updated_at = datetime.utcnow()
+    await db.commit()
+
+    return FileUploadResponse(
+        message_id=file_message.id,
+        files_processed=len(file_summaries),
+        summaries=file_summaries
+    )

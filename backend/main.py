@@ -1001,8 +1001,97 @@ especially operators that were uncertain (low confidence) in the initial extract
 # =====================================================================
 
 
-async def inference_stream(prompt: str, model_config: dict, web_search_data: bool = True, web_search_insights: bool = True) -> AsyncGenerator[dict, None]:
-    """Generate SSE events for the inference pipeline with evidence enrichment and optional reverse mapping"""
+def _build_context_enhanced_prompt(prompt: str, conversation_context: Optional[dict] = None) -> str:
+    """Build a prompt that includes conversation history and file context.
+
+    This enriches the user's current message with:
+    1. Previous conversation messages (for continuity)
+    2. File summaries (for domain knowledge)
+    3. Conversation summary (for long conversations)
+
+    Used by both Call 1 (query analysis) and Call 2 (articulation).
+    """
+    if not conversation_context:
+        return prompt
+
+    sections = []
+
+    # Add conversation summary if available (for long conversations)
+    conv_summary = conversation_context.get('conversation_summary')
+    if conv_summary:
+        sections.append(f"""=== CONVERSATION SUMMARY ===
+{conv_summary}
+""")
+
+    # Add file context if available
+    file_summaries = conversation_context.get('file_summaries', [])
+    if file_summaries:
+        file_sections = []
+        for f in file_summaries[:5]:  # Max 5 files
+            file_name = f.get('name', 'Unknown')
+            file_type = f.get('type', 'unknown')
+            file_summary = f.get('summary', '')[:3000]  # Truncate long summaries
+            file_sections.append(f"**{file_name}** ({file_type}):\n{file_summary}")
+
+        sections.append(f"""=== UPLOADED FILES CONTEXT ===
+The user has uploaded the following files. Use this information to inform your analysis:
+
+{chr(10).join(file_sections)}
+""")
+
+    # Add conversation history if available
+    messages = conversation_context.get('messages', [])
+    if messages:
+        # Format last N messages as conversation history
+        history_lines = []
+        for msg in messages[-10:]:  # Last 10 messages
+            role = msg.get('role', 'unknown').upper()
+            content = msg.get('content', '')[:1000]  # Truncate long messages
+            history_lines.append(f"[{role}]: {content}")
+
+        if history_lines:
+            sections.append(f"""=== CONVERSATION HISTORY ===
+Previous messages in this conversation (use for context):
+
+{chr(10).join(history_lines)}
+""")
+
+    # Combine context with current prompt
+    if sections:
+        context_block = '\n'.join(sections)
+        return f"""{context_block}
+=== CURRENT USER MESSAGE ===
+{prompt}
+
+IMPORTANT: Use the conversation history and file context above to:
+1. Maintain consistency with previous analysis
+2. Reference specific information from uploaded files
+3. Build on previous insights rather than starting fresh
+"""
+    return prompt
+
+
+async def inference_stream(
+    prompt: str,
+    model_config: dict,
+    web_search_data: bool = True,
+    web_search_insights: bool = True,
+    conversation_context: Optional[dict] = None
+) -> AsyncGenerator[dict, None]:
+    """Generate SSE events for the inference pipeline with evidence enrichment and optional reverse mapping.
+
+    Args:
+        prompt: The user's current message
+        model_config: Model configuration (provider, api_key, model)
+        web_search_data: Enable web search for data gathering in Call 1
+        web_search_insights: Enable web search for evidence grounding in Call 2
+        conversation_context: Context from conversation history and files
+            {
+                "messages": [{"role": "user"|"assistant", "content": "..."}],
+                "file_summaries": [{"name": "...", "summary": "...", "type": "..."}],
+                "conversation_summary": "..."
+            }
+    """
     start_time = time.time()
 
     # Create session for constellation Q&A flow
@@ -1013,6 +1102,7 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
         'model_config': model_config,
         'web_search_data': web_search_data,
         'web_search_insights': web_search_insights,
+        'conversation_context': conversation_context,  # Store context in session
         'evidence': None,
         '_pending_question': None,
         '_question_asked': False
@@ -1034,6 +1124,14 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
         api_logger.info(f"[QUERY MODE] Future-oriented: {is_future_oriented} → Mode: {query_mode}")
         pipeline_logger.log_step("Query Analysis", {"future_oriented": is_future_oriented, "mode": query_mode})
 
+        # Build context-enhanced prompt for Call 1
+        context_enhanced_prompt = _build_context_enhanced_prompt(prompt, conversation_context)
+        api_logger.info(f"[CONTEXT] Conversation context: {'provided' if conversation_context else 'none'}")
+        if conversation_context:
+            msg_count = len(conversation_context.get('messages', []))
+            file_count = len(conversation_context.get('file_summaries', []))
+            api_logger.info(f"[CONTEXT] Messages: {msg_count}, Files: {file_count}")
+
         # Step 1: Parse query with OpenAI + Web Research
         api_logger.info(f"[STEP 1] Parsing query (web_search_data={web_search_data})")
         yield {
@@ -1041,7 +1139,7 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
             "data": json.dumps({"message": f"{'Researching context and parsing' if web_search_data else 'Parsing'} query..."})
         }
 
-        evidence = await parse_query_with_web_research(prompt, model_config, web_search_data)
+        evidence = await parse_query_with_web_research(context_enhanced_prompt, model_config, web_search_data)
         call1_token_usage = evidence.pop('_call1_token_usage', None)
         obs_count = len(evidence.get('observations'))
         api_logger.info(f"[EVIDENCE] Extracted {obs_count} observations")
@@ -1294,7 +1392,8 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
         full_content = ""  # Collect full response for structured data extraction
         call2_token_usage = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
         async for token in format_results_streaming_bridge(
-            prompt, evidence, posteriors, consciousness_state, reverse_mapping_data, model_config, web_search_insights
+            prompt, evidence, posteriors, consciousness_state, reverse_mapping_data, model_config, web_search_insights,
+            conversation_context=conversation_context
         ):
             # Check if this is a token usage object (yielded at end of stream)
             if isinstance(token, dict) and token.get("__token_usage__"):
@@ -2427,7 +2526,8 @@ async def format_results_streaming_bridge(
     consciousness_state: ConsciousnessState,
     reverse_mapping: Optional[Dict[str, Any]] = None,
     model_config: Optional[dict] = None,
-    use_web_search: bool = True
+    use_web_search: bool = True,
+    conversation_context: Optional[dict] = None
 ) -> AsyncGenerator[str, None]:
     """
     Unified articulation with evidence enrichment and optional reverse mapping.
@@ -2437,6 +2537,7 @@ async def format_results_streaming_bridge(
     2. Uses calculated values to guide what to search for
     3. Integrates reverse mapping data when available (future-oriented queries)
     4. Produces natural, domain-appropriate insights
+    5. Uses conversation history and file context for continuity
     """
     articulation_logger.info(f"[ARTICULATION BRIDGE] Web search enabled: {use_web_search}")
     # Get model config
@@ -2478,6 +2579,12 @@ async def format_results_streaming_bridge(
         search_guidance_data['query_pattern'] = query_pattern
         articulation_logger.info(f"[ARTICULATION BRIDGE] Search guidance: {len(search_guidance_data.get('high_priority_values'))} high-priority values, pattern={query_pattern}")
 
+    # Log conversation context for Call 2
+    if conversation_context:
+        msg_count = len(conversation_context.get('messages', []))
+        file_count = len(conversation_context.get('file_summaries', []))
+        articulation_logger.info(f"[ARTICULATION BRIDGE] Conversation context: {msg_count} messages, {file_count} files")
+
     articulation_context = build_articulation_context(
         user_identity=evidence.get('user_identity'),
         domain=evidence.get('domain'),
@@ -2488,7 +2595,8 @@ async def format_results_streaming_bridge(
         key_facts=evidence.get('key_facts'),
         framework_concealment=True,  # Hide OOF terminology in output
         domain_language=True,  # Use natural domain language
-        search_guidance_data=search_guidance_data  # Pass search guidance for evidence grounding
+        search_guidance_data=search_guidance_data,  # Pass search guidance for evidence grounding
+        conversation_context=conversation_context  # Pass conversation history and files
     )
 
     # Build the structured articulation prompt
