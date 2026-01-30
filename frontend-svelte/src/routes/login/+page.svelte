@@ -16,7 +16,7 @@
 			const success = await auth.login(email, password);
 			if (success) {
 				addToast('success', 'Welcome back!');
-				goto('/chat');
+				goto('/');  // Root will check credits and redirect appropriately
 			} else {
 				error = 'Invalid email or password';
 			}
