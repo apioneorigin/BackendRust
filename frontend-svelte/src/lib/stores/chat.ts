@@ -148,7 +148,7 @@ function createChatStore() {
 			}
 		},
 
-		async sendMessage(content: string, model: string = 'claude-opus-4-5-20251101') {
+		async sendMessage(content: string, model: string = 'claude-opus-4-5-20251101', files: File[] = [], webSearch: boolean = true) {
 			const state = get({ subscribe });
 			if (!state.currentConversation) {
 				// Create new conversation first
@@ -188,8 +188,8 @@ function createChatStore() {
 					body: JSON.stringify({
 						content,
 						model,
-						web_search_data: true,
-						web_search_insights: true,
+						web_search_data: webSearch,
+						web_search_insights: webSearch,
 					}),
 					signal: abortController.signal,
 				});
