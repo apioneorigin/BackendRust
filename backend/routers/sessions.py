@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db, User, Session, Organization
 from routers.auth import get_current_user, generate_id
+from utils import get_or_404, paginate, to_response, to_response_list
 
 router = APIRouter(prefix="/api/session", tags=["sessions"])
 
@@ -91,24 +92,7 @@ async def create_session(
     await db.commit()
     await db.refresh(session)
 
-    return SessionResponse(
-        id=session.id,
-        organization_id=session.organization_id,
-        user_id=session.user_id,
-        stage=session.stage,
-        completed=session.completed,
-        current_screen=session.current_screen,
-        goal_text=session.goal_text,
-        goal_data=session.goal_data,
-        discover_data=session.discover_data,
-        decode_data=session.decode_data,
-        design_data=session.design_data,
-        dashboard_data=session.dashboard_data,
-        last_conversation_id=session.last_conversation_id,
-        created_at=session.created_at,
-        updated_at=session.updated_at,
-        last_accessed_at=session.last_accessed_at,
-    )
+    return to_response(session, SessionResponse)
 
 
 @router.get("/current", response_model=Optional[SessionResponse])
@@ -136,24 +120,7 @@ async def get_current_session(
     session.last_accessed_by = current_user.id
     await db.commit()
 
-    return SessionResponse(
-        id=session.id,
-        organization_id=session.organization_id,
-        user_id=session.user_id,
-        stage=session.stage,
-        completed=session.completed,
-        current_screen=session.current_screen,
-        goal_text=session.goal_text,
-        goal_data=session.goal_data,
-        discover_data=session.discover_data,
-        decode_data=session.decode_data,
-        design_data=session.design_data,
-        dashboard_data=session.dashboard_data,
-        last_conversation_id=session.last_conversation_id,
-        created_at=session.created_at,
-        updated_at=session.updated_at,
-        last_accessed_at=session.last_accessed_at,
-    )
+    return to_response(session, SessionResponse)
 
 
 @router.get("/{session_id}", response_model=SessionResponse)
@@ -163,40 +130,16 @@ async def get_session(
     db: AsyncSession = Depends(get_db)
 ):
     """Get a specific session."""
-    result = await db.execute(
-        select(Session).where(
-            Session.id == session_id,
-            Session.organization_id == current_user.organization_id
-        )
+    session = await get_or_404(
+        db, Session, session_id, organization_id=current_user.organization_id
     )
-    session = result.scalar_one_or_none()
-
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
 
     # Update last accessed
     session.last_accessed_at = datetime.utcnow()
     session.last_accessed_by = current_user.id
     await db.commit()
 
-    return SessionResponse(
-        id=session.id,
-        organization_id=session.organization_id,
-        user_id=session.user_id,
-        stage=session.stage,
-        completed=session.completed,
-        current_screen=session.current_screen,
-        goal_text=session.goal_text,
-        goal_data=session.goal_data,
-        discover_data=session.discover_data,
-        decode_data=session.decode_data,
-        design_data=session.design_data,
-        dashboard_data=session.dashboard_data,
-        last_conversation_id=session.last_conversation_id,
-        created_at=session.created_at,
-        updated_at=session.updated_at,
-        last_accessed_at=session.last_accessed_at,
-    )
+    return to_response(session, SessionResponse)
 
 
 @router.patch("/{session_id}", response_model=SessionResponse)
@@ -207,16 +150,9 @@ async def update_session(
     db: AsyncSession = Depends(get_db)
 ):
     """Update a session."""
-    result = await db.execute(
-        select(Session).where(
-            Session.id == session_id,
-            Session.organization_id == current_user.organization_id
-        )
+    session = await get_or_404(
+        db, Session, session_id, organization_id=current_user.organization_id
     )
-    session = result.scalar_one_or_none()
-
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
 
     # Update fields
     if request.stage is not None:
@@ -247,24 +183,7 @@ async def update_session(
     await db.commit()
     await db.refresh(session)
 
-    return SessionResponse(
-        id=session.id,
-        organization_id=session.organization_id,
-        user_id=session.user_id,
-        stage=session.stage,
-        completed=session.completed,
-        current_screen=session.current_screen,
-        goal_text=session.goal_text,
-        goal_data=session.goal_data,
-        discover_data=session.discover_data,
-        decode_data=session.decode_data,
-        design_data=session.design_data,
-        dashboard_data=session.dashboard_data,
-        last_conversation_id=session.last_conversation_id,
-        created_at=session.created_at,
-        updated_at=session.updated_at,
-        last_accessed_at=session.last_accessed_at,
-    )
+    return to_response(session, SessionResponse)
 
 
 @router.get("/", response_model=SessionListResponse)
@@ -284,39 +203,9 @@ async def list_sessions(
     if completed is not None:
         query = query.where(Session.completed == completed)
 
-    # Count total
-    count_result = await db.execute(query)
-    total = len(count_result.scalars().all())
-
-    # Get paginated results
-    result = await db.execute(
-        query.order_by(desc(Session.last_accessed_at))
-        .offset(offset)
-        .limit(limit)
-    )
-    sessions = result.scalars().all()
+    sessions, total = await paginate(db, query, offset, limit, Session.last_accessed_at)
 
     return SessionListResponse(
-        sessions=[
-            SessionResponse(
-                id=s.id,
-                organization_id=s.organization_id,
-                user_id=s.user_id,
-                stage=s.stage,
-                completed=s.completed,
-                current_screen=s.current_screen,
-                goal_text=s.goal_text,
-                goal_data=s.goal_data,
-                discover_data=s.discover_data,
-                decode_data=s.decode_data,
-                design_data=s.design_data,
-                dashboard_data=s.dashboard_data,
-                last_conversation_id=s.last_conversation_id,
-                created_at=s.created_at,
-                updated_at=s.updated_at,
-                last_accessed_at=s.last_accessed_at,
-            )
-            for s in sessions
-        ],
+        sessions=to_response_list(sessions, SessionResponse),
         total=total,
     )

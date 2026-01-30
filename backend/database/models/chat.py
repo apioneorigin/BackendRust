@@ -34,10 +34,19 @@ class ChatConversation(Base):
     current_phase: Mapped[int] = mapped_column(Integer, default=1)
 
     # Persistent state
-    tabs: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     question_answers: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
-    goal_ratings: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
-    insight_ratings: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+
+    # Generated matrix data (from LLM Call 2)
+    # Structure: { row_options: [...], column_options: [...], cells: { "r0_c0": {...}, ... } }
+    matrix_data: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+
+    # Generated strategic paths (5 paths from LLM Call 2)
+    # Structure: [{ id, name, description, steps: [...] }, ...]
+    generated_paths: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+
+    # Generated documents (9 documents from LLM Call 2)
+    # Structure: [{ id, type, title, content, sections: {...} }, ...]
+    generated_documents: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
@@ -52,6 +61,8 @@ class ChatConversation(Base):
         Index("ix_chat_conversations_organization_id", "organization_id"),
         Index("ix_chat_conversations_session_id", "session_id"),
         Index("ix_chat_conversations_is_active", "is_active"),
+        # Composite index for active conversations by user (common query pattern)
+        Index("ix_chat_conversations_user_active", "user_id", "is_active"),
     )
 
 

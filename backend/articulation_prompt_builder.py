@@ -6,11 +6,12 @@ ZERO-FALLBACK MODE: Properly handles null/missing operator values.
 Shows "Not available" for blocked calculations instead of assuming defaults.
 """
 
-from typing import List, Optional
+from typing import List, Optional, Dict
 from consciousness_state import (
     ArticulationContext, ConsciousnessState, Bottleneck, LeveragePoint,
     UserContext, WebResearch, ArticulationInstructions,
     SearchGuidance, EvidenceSearchQuery, ConsciousnessRealityMapping,
+    ConversationHistoryContext,
 )
 from logging_config import articulation_logger as logger
 
@@ -43,12 +44,14 @@ class ArticulationPromptBuilder:
         Build the complete articulation prompt from organized values.
 
         UNITY PRINCIPLE: Now includes unity metrics and dual pathway sections.
+        CONTINUITY: Now includes conversation history and file context.
         """
         logger.info("[PROMPT_BUILDER] Building articulation prompt")
 
         sections = [
             self._build_header(),
             self._build_framework_section(),
+            self._build_conversation_context_section(context.conversation_context),  # Conversation history + files
             self._build_context_section(context.user_context, context.web_research),
             self._build_consciousness_state_section(context.consciousness_state),
             self._build_unity_metrics_section(context.consciousness_state),
@@ -57,6 +60,7 @@ class ArticulationPromptBuilder:
             self._build_leverage_section(context.consciousness_state.leverage_points),
             self._build_search_guidance_section(context.search_guidance),
             self._build_generation_instructions(context.instructions),
+            self._build_structured_output_section(),
             self._build_user_query(context.user_context)
         ]
 
@@ -123,6 +127,65 @@ Each major insight should connect: Consciousness Pattern → Observable Reality 
 
         return '\n'.join(sections)
 
+    def _build_conversation_context_section(self, conversation_context: Optional[ConversationHistoryContext]) -> str:
+        """Build conversation history and file context section.
+
+        This provides continuity across multi-turn conversations and incorporates
+        information from uploaded files for domain-specific analysis.
+        """
+        if not conversation_context:
+            return ""
+
+        sections = ["## CONVERSATION CONTEXT\n"]
+        has_content = False
+
+        # Add conversation summary if available (for long conversations)
+        if conversation_context.conversation_summary:
+            has_content = True
+            sections.append(f"""**Previous Conversation Summary:**
+{conversation_context.conversation_summary}
+""")
+
+        # Add file context if available
+        if conversation_context.file_summaries:
+            has_content = True
+            sections.append("**Uploaded Files:**")
+            sections.append("The user has provided the following files. Use this information for context-aware analysis:\n")
+            for i, f in enumerate(conversation_context.file_summaries[:5], 1):  # Max 5 files
+                file_name = f.get('name', 'Unknown')
+                file_type = f.get('type', 'unknown')
+                file_summary = f.get('summary', '')[:2000]  # Truncate
+                sections.append(f"**{i}. {file_name}** ({file_type})")
+                sections.append(f"{file_summary}\n")
+
+        # Add conversation history if available
+        if conversation_context.messages:
+            has_content = True
+            sections.append("**Recent Conversation History:**")
+            sections.append("Use this history to maintain continuity and build on previous insights:\n")
+            for msg in conversation_context.messages[-8:]:  # Last 8 messages
+                role = msg.get('role', 'unknown').upper()
+                content = msg.get('content', '')[:800]  # Truncate long messages
+                sections.append(f"[{role}]: {content}\n")
+
+        if not has_content:
+            return ""
+
+        sections.append("""**CONTINUITY INSTRUCTIONS:**
+- Reference specific information from uploaded files when relevant
+- Build on insights from previous messages rather than starting fresh
+- Maintain consistency with any analysis or recommendations from earlier in the conversation
+- Use domain-specific terminology found in the uploaded documents
+""")
+
+        logger.debug(
+            f"[_build_conversation_context_section] messages={len(conversation_context.messages)} "
+            f"files={len(conversation_context.file_summaries)} "
+            f"summary={'yes' if conversation_context.conversation_summary else 'no'}"
+        )
+
+        return '\n'.join(sections)
+
     def _build_header(self) -> str:
         """Build the prompt header"""
         return """# REALITY TRANSFORMER: CONSCIOUSNESS ARTICULATION
@@ -137,14 +200,10 @@ CRITICAL: You must CONCEAL framework terminology. Never say "Maya operator" or "
         """Build framework reference section - FREEDOM-RESPECTING VERSION"""
         return """## FRAMEWORK REFERENCE
 
-The OOF.txt framework document is available in your context. Use it for:
-- Operator definitions and interpretation ranges
-- Transformation matrix meanings
-- S-level characteristics
-- Consciousness physics principles
+You are receiving pre-calculated consciousness values from the backend inference engine.
+These values are your source of truth - interpret and articulate them naturally.
 
-Reference the framework internally but express insights naturally - as if
-speaking to a trusted friend or client.
+Express insights as if speaking to a trusted friend or client.
 
 ## VALUE SELECTION PROTOCOL
 
@@ -831,6 +890,114 @@ When consciousness values are calculated, ground them in observable reality:
 - Integrate evidence into narrative flow naturally
 - Let evidence strengthen insights, not replace them"""
 
+    def _build_structured_output_section(self) -> str:
+        """Build instructions for generating structured matrix/paths/documents data."""
+        return """## STRUCTURED OUTPUT GENERATION
+
+After your main articulation, you MUST generate structured data in the following JSON format.
+This data will be stored and used for the interactive matrix interface.
+
+Output this EXACT marker followed by valid JSON:
+
+```json
+===STRUCTURED_DATA_START===
+{
+  "matrix_data": {
+    "row_options": [
+      {"id": "r0", "label": "...", "description": "..."},
+      ... (20 total row options - causation factors)
+    ],
+    "column_options": [
+      {"id": "c0", "label": "...", "description": "..."},
+      ... (20 total column options - effect factors)
+    ],
+    "cells": {
+      "r0_c0": {
+        "impact_score": 0.75,
+        "relationship": "...",
+        "dimensions": [
+          {
+            "name": "Probability",
+            "value": 50,
+            "step_labels": ["Unlikely", "Possible", "Probable", "Likely", "Certain"]
+          },
+          {
+            "name": "Magnitude",
+            "value": 75,
+            "step_labels": ["Minimal", "Minor", "Moderate", "Major", "Transformative"]
+          },
+          {
+            "name": "Timeframe",
+            "value": 25,
+            "step_labels": ["Years", "Quarters", "Months", "Weeks", "Days"]
+          },
+          {
+            "name": "Reversibility",
+            "value": 50,
+            "step_labels": ["Permanent", "Difficult", "Moderate", "Easy", "Instant"]
+          },
+          {
+            "name": "Leverage",
+            "value": 100,
+            "step_labels": ["None", "Low", "Medium", "High", "Maximum"]
+          }
+        ]
+      },
+      ... (400 total cells for 20x20 matrix)
+    }
+  },
+  "paths": [
+    {
+      "id": "p0",
+      "name": "...",
+      "description": "...",
+      "risk_level": "low|medium|high",
+      "time_horizon": "...",
+      "steps": [
+        {"order": 1, "action": "...", "rationale": "..."},
+        ...
+      ]
+    },
+    ... (5 total strategic paths)
+  ],
+  "documents": [
+    {
+      "id": "d0",
+      "type": "strategy|analysis|action_plan|risk_assessment|opportunity_map|stakeholder_brief|timeline|metrics|executive_summary",
+      "title": "...",
+      "summary": "...",
+      "sections": {
+        "key_insights": "...",
+        "recommendations": "...",
+        "next_steps": "..."
+      }
+    },
+    ... (9 total documents)
+  ]
+}
+===STRUCTURED_DATA_END===
+```
+
+### GENERATION RULES:
+
+1. **Row Options (20)**: Causation factors - what DRIVES change in this context
+2. **Column Options (20)**: Effect factors - what is AFFECTED by changes
+3. **Cells (400)**: Cross-impact for each row-column pair
+   - Each cell has 5 dimensions (dials)
+   - Each dimension has:
+     - `value`: One of [0, 25, 50, 75, 100] representing the 5 discrete steps
+     - `step_labels`: Array of 5 contextual labels for this dimension IN THIS CELL
+   - Step labels must be contextual to the specific row-column intersection
+   - Example: For "Marketing Budget" × "Brand Awareness", the Timeframe steps might be
+     ["Campaign Cycle", "Quarter", "Month", "Sprint", "Week"] - not generic time units
+   - impact_score: 0-1 representing overall relationship strength
+4. **Paths (5)**: Strategic approaches from conservative to aggressive
+5. **Documents (9)**: One of each type, tailored to the user's query
+
+**CRITICAL**: Step labels must be domain-appropriate and contextual to each cell.
+Generic labels like ["Low", "Below", "Mid", "Above", "High"] are NOT acceptable.
+Each cell's dimension labels should make sense for that specific causation-effect pair."""
+
     def _build_user_query(self, user_context: UserContext) -> str:
         """Build the user query section"""
         query_text = user_context.goal or user_context.current_situation or 'Transform my situation'
@@ -841,7 +1008,11 @@ When consciousness values are calculated, ground them in observable reality:
 
 ---
 
-Now generate your response, following all articulation instructions above.
+Now generate your response in TWO parts:
+
+1. **FIRST**: Your main articulation - insights, analysis, and guidance
+2. **THEN**: The structured JSON data block (===STRUCTURED_DATA_START=== ... ===STRUCTURED_DATA_END===)
+
 Express insights with wisdom and warmth. Speak truth without judgment.
 Guide without controlling. Illuminate without overwhelming."""
 
@@ -856,7 +1027,8 @@ def build_articulation_context(
     key_facts: Optional[List[str]] = None,
     framework_concealment: bool = True,
     domain_language: bool = True,
-    search_guidance_data: Optional[dict] = None
+    search_guidance_data: Optional[dict] = None,
+    conversation_context: Optional[dict] = None
 ) -> ArticulationContext:
     """
     Helper function to build ArticulationContext from components.
@@ -867,6 +1039,12 @@ def build_articulation_context(
                 "high_priority_values": [...],
                 "evidence_search_queries": [...],
                 "consciousness_to_reality_mappings": [...]
+            }
+        conversation_context: Optional dict with conversation history and files:
+            {
+                "messages": [{"role": "user"|"assistant", "content": "..."}],
+                "file_summaries": [{"name": "...", "summary": "...", "type": "..."}],
+                "conversation_summary": "..."
             }
     """
     # Build search_guidance from dict if provided
@@ -896,6 +1074,18 @@ def build_articulation_context(
                         proof_search=crm.get('proof_search')
                     )
                 )
+
+    # Build conversation history context if provided
+    conv_history_context = None
+    if conversation_context:
+        conv_history_context = ConversationHistoryContext(
+            messages=conversation_context.get('messages', []),
+            file_summaries=conversation_context.get('file_summaries', []),
+            conversation_summary=conversation_context.get('conversation_summary')
+        )
+        msg_count = len(conv_history_context.messages)
+        file_count = len(conv_history_context.file_summaries)
+        logger.info(f"[ARTICULATION_CONTEXT] Conversation context: {msg_count} messages, {file_count} files")
 
     logger.info(
         f"[ARTICULATION_CONTEXT] Building context: domain={domain} "
@@ -937,5 +1127,6 @@ def build_articulation_context(
                 "transformation_pathway"
             ]
         ),
-        search_guidance=search_guidance
+        search_guidance=search_guidance,
+        conversation_context=conv_history_context
     )

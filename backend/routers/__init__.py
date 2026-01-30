@@ -11,6 +11,7 @@ from routers.documents import router as documents_router
 from routers.credits import router as credits_router
 from routers.admin import router as admin_router
 from routers.health import router as health_router
+from routers.matrix import router as matrix_router
 
 __all__ = [
     "auth_router",
@@ -22,4 +23,5 @@ __all__ = [
     "credits_router",
     "admin_router",
     "health_router",
+    "matrix_router",
 ]

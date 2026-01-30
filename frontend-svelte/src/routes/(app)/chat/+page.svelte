@@ -46,7 +46,8 @@
 	let messagesContainer: HTMLElement;
 	let inputElement: HTMLTextAreaElement;
 	let fileInputElement: HTMLInputElement;
-	let selectedModel = 'gpt-4.1';
+	let selectedModel = 'claude-opus-4-5-20251101';
+	let webSearchEnabled = true;
 	let attachedFiles: File[] = [];
 	let isDragging = false;
 	let placeholderIndex = 0;
@@ -70,13 +71,9 @@
 	];
 
 	const models = [
-		{ id: 'gpt-4.1', name: 'GPT-4.1' },
-		{ id: 'gpt-4.1-mini', name: 'GPT-4.1 Mini' },
-		{ id: 'gpt-4.5-preview', name: 'GPT-4.5 Preview' },
-		{ id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4' },
-		{ id: 'claude-opus-4-20250514', name: 'Claude Opus 4' },
-		{ id: 'o3', name: 'o3' },
-		{ id: 'o4-mini', name: 'o4 Mini' }
+		{ id: 'claude-opus-4-5-20251101', name: 'Claude Opus 4.5' },
+		{ id: 'gpt-5.2', name: 'GPT-5.2' },
+		{ id: 'gpt-4.1-mini', name: 'GPT-4.1 Mini' }
 	];
 
 	// Get time-based greeting
@@ -134,7 +131,7 @@
 		}
 
 		try {
-			await chat.sendMessage(content, selectedModel, files);
+			await chat.sendMessage(content, selectedModel, files, webSearchEnabled);
 		} catch (error: any) {
 			addToast('error', error.message || 'Failed to send message');
 		}
@@ -456,6 +453,16 @@
 							<option value={model.id}>{model.name}</option>
 						{/each}
 					</select>
+
+					<label class="web-search-toggle" title="Enable web research">
+						<input type="checkbox" bind:checked={webSearchEnabled} />
+						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<circle cx="12" cy="12" r="10"/>
+							<path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+							<path d="M2 12h20"/>
+						</svg>
+						<span>Research</span>
+					</label>
 
 					{#if $isStreaming}
 						<button class="send-btn stop-btn" on:click={stopGeneration}>
@@ -1000,6 +1007,44 @@
 	.model-select:focus {
 		outline: none;
 		border-color: var(--color-primary-400);
+	}
+
+	.web-search-toggle {
+		display: flex;
+		align-items: center;
+		gap: 0.375rem;
+		padding: 0.375rem 0.5rem;
+		border: 1px solid var(--color-veil-thin);
+		border-radius: 0.375rem;
+		background: var(--color-field-void);
+		color: var(--color-text-whisper);
+		font-size: 0.75rem;
+		cursor: pointer;
+		transition: all 0.15s ease;
+	}
+
+	.web-search-toggle:hover {
+		border-color: var(--color-primary-400);
+		color: var(--color-text-source);
+	}
+
+	.web-search-toggle:has(input:checked) {
+		border-color: var(--color-primary-500);
+		background: var(--color-primary-50);
+		color: var(--color-primary-600);
+	}
+
+	[data-theme='dark'] .web-search-toggle:has(input:checked) {
+		background: rgba(15, 76, 117, 0.2);
+		color: var(--color-primary-400);
+	}
+
+	.web-search-toggle input {
+		display: none;
+	}
+
+	.web-search-toggle svg {
+		flex-shrink: 0;
 	}
 
 	.send-btn {

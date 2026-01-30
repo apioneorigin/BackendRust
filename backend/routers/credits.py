@@ -14,6 +14,7 @@ from database import (
     get_db, User, Organization, PromoCode, PromoCodeRedemption, UsageRecord
 )
 from routers.auth import get_current_user, generate_id
+from utils import to_response, to_response_list
 
 router = APIRouter(prefix="/api", tags=["credits"])
 
@@ -129,12 +130,7 @@ async def redeem_promo_code(
     await db.commit()
     await db.refresh(redemption)
 
-    return RedemptionResponse(
-        id=redemption.id,
-        promo_code_id=redemption.promo_code_id,
-        credits=redemption.credits,
-        redeemed_at=redemption.redeemed_at,
-    )
+    return to_response(redemption, RedemptionResponse)
 
 
 @router.get("/credits/history", response_model=List[RedemptionResponse])
@@ -152,15 +148,7 @@ async def get_redemption_history(
     )
     redemptions = result.scalars().all()
 
-    return [
-        RedemptionResponse(
-            id=r.id,
-            promo_code_id=r.promo_code_id,
-            credits=r.credits,
-            redeemed_at=r.redeemed_at,
-        )
-        for r in redemptions
-    ]
+    return to_response_list(redemptions, RedemptionResponse)
 
 
 @router.get("/usage/history", response_model=List[UsageRecordResponse])
@@ -178,13 +166,4 @@ async def get_usage_history(
     )
     records = result.scalars().all()
 
-    return [
-        UsageRecordResponse(
-            id=r.id,
-            usage_type=r.usage_type.value,
-            quantity=r.quantity,
-            metadata=r.usage_metadata,
-            created_at=r.created_at,
-        )
-        for r in records
-    ]
+    return to_response_list(records, UsageRecordResponse, {"metadata": "usage_metadata"})

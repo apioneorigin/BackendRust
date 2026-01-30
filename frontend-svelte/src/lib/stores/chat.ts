@@ -46,6 +46,37 @@ export interface Question {
 	selectedOption?: string;
 }
 
+export interface StructuredData {
+	matrix_data?: {
+		row_options: { id: string; label: string; description?: string }[];
+		column_options: { id: string; label: string; description?: string }[];
+		cells: Record<string, {
+			impact_score: number;
+			relationship?: string;
+			dimensions: {
+				name: string;
+				value: number;  // One of [0, 25, 50, 75, 100]
+				step_labels: string[];  // 5 contextual labels for this dimension
+			}[];
+		}>;
+	};
+	paths?: {
+		id: string;
+		name: string;
+		description?: string;
+		risk_level?: string;
+		time_horizon?: string;
+		steps: { order: number; action: string; rationale?: string }[];
+	}[];
+	documents?: {
+		id: string;
+		type: string;
+		title: string;
+		summary?: string;
+		sections?: Record<string, string>;
+	}[];
+}
+
 interface ChatState {
 	conversations: Conversation[];
 	currentConversation: Conversation | null;
@@ -53,6 +84,7 @@ interface ChatState {
 	goals: Goal[];
 	insights: Insight[];
 	questions: Question[];
+	structuredData: StructuredData | null;
 	isLoading: boolean;
 	isStreaming: boolean;
 	streamingContent: string;
@@ -66,6 +98,7 @@ const initialState: ChatState = {
 	goals: [],
 	insights: [],
 	questions: [],
+	structuredData: null,
 	isLoading: false,
 	isStreaming: false,
 	streamingContent: '',
@@ -148,7 +181,7 @@ function createChatStore() {
 			}
 		},
 
-		async sendMessage(content: string, model: string = 'gpt-5.2') {
+		async sendMessage(content: string, model: string = 'claude-opus-4-5-20251101', files: File[] = [], webSearch: boolean = true) {
 			const state = get({ subscribe });
 			if (!state.currentConversation) {
 				// Create new conversation first
@@ -188,8 +221,8 @@ function createChatStore() {
 					body: JSON.stringify({
 						content,
 						model,
-						web_search_data: true,
-						web_search_insights: true,
+						web_search_data: webSearch,
+						web_search_insights: webSearch,
 					}),
 					signal: abortController.signal,
 				});
@@ -254,6 +287,14 @@ function createChatStore() {
 									update(state => ({
 										...state,
 										questions: [...state.questions, parsed],
+									}));
+									break;
+
+								case 'structured_data':
+									// Store structured matrix/paths/documents data
+									update(state => ({
+										...state,
+										structuredData: parsed,
 									}));
 									break;
 

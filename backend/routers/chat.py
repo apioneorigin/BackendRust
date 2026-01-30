@@ -3,6 +3,7 @@ Chat conversation endpoints with streaming support.
 Integrates with the consciousness inference engine.
 """
 
+import asyncio
 from datetime import datetime
 from typing import Optional, List, AsyncGenerator
 import json
@@ -16,6 +17,7 @@ from sse_starlette.sse import EventSourceResponse
 
 from database import get_db, User, ChatConversation, ChatMessage, ChatSummary, Session
 from routers.auth import get_current_user, generate_id
+from utils import get_or_404, paginate, to_response, to_response_list, safe_json_loads
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
@@ -28,9 +30,17 @@ class CreateConversationRequest(BaseModel):
 
 class SendMessageRequest(BaseModel):
     content: str
-    model: str = "gpt-5.2"
+    model: str = "claude-opus-4-5-20251101"
     web_search_data: bool = True
     web_search_insights: bool = True
+    attachments: Optional[List[dict]] = None  # File attachments: [{"name": "file.pdf", "content": "...", "type": "pdf"}]
+
+
+class ConversationContext(BaseModel):
+    """Context from conversation history and files for LLM calls."""
+    messages: List[dict]  # Previous messages: [{"role": "user"|"assistant", "content": "..."}]
+    file_summaries: List[dict] = []  # Summarized files: [{"name": "...", "summary": "...", "entities": [...]}]
+    conversation_summary: Optional[str] = None  # Summary of older messages if conversation is long
 
 
 class ConversationResponse(BaseModel):
@@ -94,19 +104,7 @@ async def create_conversation(
     await db.commit()
     await db.refresh(conversation)
 
-    return ConversationResponse(
-        id=conversation.id,
-        user_id=conversation.user_id,
-        organization_id=conversation.organization_id,
-        session_id=conversation.session_id,
-        title=conversation.title,
-        context=conversation.context,
-        is_active=conversation.is_active,
-        total_tokens=conversation.total_tokens,
-        current_phase=conversation.current_phase,
-        created_at=conversation.created_at,
-        updated_at=conversation.updated_at,
-    )
+    return to_response(conversation, ConversationResponse)
 
 
 @router.get("/conversations", response_model=ConversationListResponse)
@@ -126,35 +124,12 @@ async def list_conversations(
     if session_id:
         query = query.where(ChatConversation.session_id == session_id)
 
-    # Count
-    count_result = await db.execute(query)
-    total = len(count_result.scalars().all())
-
-    # Paginate
-    result = await db.execute(
-        query.order_by(desc(ChatConversation.updated_at))
-        .offset(offset)
-        .limit(limit)
+    conversations, total = await paginate(
+        db, query, offset, limit, ChatConversation.updated_at
     )
-    conversations = result.scalars().all()
 
     return ConversationListResponse(
-        conversations=[
-            ConversationResponse(
-                id=c.id,
-                user_id=c.user_id,
-                organization_id=c.organization_id,
-                session_id=c.session_id,
-                title=c.title,
-                context=c.context,
-                is_active=c.is_active,
-                total_tokens=c.total_tokens,
-                current_phase=c.current_phase,
-                created_at=c.created_at,
-                updated_at=c.updated_at,
-            )
-            for c in conversations
-        ],
+        conversations=to_response_list(conversations, ConversationResponse),
         total=total,
     )
 
@@ -166,30 +141,10 @@ async def get_conversation(
     db: AsyncSession = Depends(get_db)
 ):
     """Get a specific conversation."""
-    result = await db.execute(
-        select(ChatConversation).where(
-            ChatConversation.id == conversation_id,
-            ChatConversation.user_id == current_user.id
-        )
+    conversation = await get_or_404(
+        db, ChatConversation, conversation_id, user_id=current_user.id
     )
-    conversation = result.scalar_one_or_none()
-
-    if not conversation:
-        raise HTTPException(status_code=404, detail="Conversation not found")
-
-    return ConversationResponse(
-        id=conversation.id,
-        user_id=conversation.user_id,
-        organization_id=conversation.organization_id,
-        session_id=conversation.session_id,
-        title=conversation.title,
-        context=conversation.context,
-        is_active=conversation.is_active,
-        total_tokens=conversation.total_tokens,
-        current_phase=conversation.current_phase,
-        created_at=conversation.created_at,
-        updated_at=conversation.updated_at,
-    )
+    return to_response(conversation, ConversationResponse)
 
 
 @router.get("/conversations/{conversation_id}/messages", response_model=List[MessageResponse])
@@ -201,14 +156,7 @@ async def get_conversation_messages(
 ):
     """Get messages for a conversation."""
     # Verify access
-    result = await db.execute(
-        select(ChatConversation).where(
-            ChatConversation.id == conversation_id,
-            ChatConversation.user_id == current_user.id
-        )
-    )
-    if not result.scalar_one_or_none():
-        raise HTTPException(status_code=404, detail="Conversation not found")
+    await get_or_404(db, ChatConversation, conversation_id, user_id=current_user.id)
 
     # Get messages
     result = await db.execute(
@@ -219,20 +167,7 @@ async def get_conversation_messages(
     )
     messages = result.scalars().all()
 
-    return [
-        MessageResponse(
-            id=m.id,
-            conversation_id=m.conversation_id,
-            role=m.role,
-            content=m.content,
-            cos_data=m.cos_data,
-            input_tokens=m.input_tokens,
-            output_tokens=m.output_tokens,
-            total_tokens=m.total_tokens,
-            created_at=m.created_at,
-        )
-        for m in messages
-    ]
+    return to_response_list(messages, MessageResponse)
 
 
 @router.post("/conversations/{conversation_id}/messages")
@@ -246,23 +181,59 @@ async def send_message(
     Send a message and get streaming response.
     This integrates with the consciousness inference engine.
     """
-    # Verify access
-    result = await db.execute(
-        select(ChatConversation).where(
-            ChatConversation.id == conversation_id,
-            ChatConversation.user_id == current_user.id
-        )
+    # Parallel queries: verify access and load history simultaneously
+    conversation_task = get_or_404(
+        db, ChatConversation, conversation_id, user_id=current_user.id
     )
-    conversation = result.scalar_one_or_none()
-    if not conversation:
-        raise HTTPException(status_code=404, detail="Conversation not found")
+    history_task = db.execute(
+        select(ChatMessage)
+        .where(ChatMessage.conversation_id == conversation_id)
+        .order_by(ChatMessage.created_at)
+        .limit(20)  # Last 20 messages for context
+    )
 
-    # Save user message
+    conversation, history_result = await asyncio.gather(conversation_task, history_task)
+    previous_messages = history_result.scalars().all()
+
+    # Extract file summaries from system messages with attachments
+    existing_file_summaries = []
+    for msg in previous_messages:
+        if msg.role == "system" and msg.attachments:
+            for att in msg.attachments:
+                if isinstance(att, dict):
+                    existing_file_summaries.append({
+                        "name": att.get("name", "unnamed"),
+                        "summary": att.get("summary", "")[:5000],
+                        "type": att.get("type", "unknown")
+                    })
+
+    # Build conversation context
+    conversation_context = ConversationContext(
+        messages=[
+            {"role": m.role, "content": m.content[:2000]}  # Truncate long messages
+            for m in previous_messages
+            if m.role in ("user", "assistant")  # Only include user/assistant messages in history
+        ],
+        file_summaries=existing_file_summaries,  # Start with existing file summaries
+        conversation_summary=conversation.context  # Use stored conversation context/summary
+    )
+
+    # Add any new file attachments from this request
+    if request.attachments:
+        for attachment in request.attachments:
+            conversation_context.file_summaries.append({
+                "name": attachment.get("name", "unnamed"),
+                "summary": attachment.get("content", "")[:5000],  # First 5K chars as summary
+                "type": attachment.get("type", "unknown")
+            })
+
+    # Save user message with attachments
     user_message = ChatMessage(
         id=generate_id(),
         conversation_id=conversation_id,
         role="user",
         content=request.content,
+        attachments=request.attachments,
     )
     db.add(user_message)
     await db.commit()
@@ -283,7 +254,8 @@ async def send_message(
             request.content,
             model_config,
             request.web_search_data,
-            request.web_search_insights
+            request.web_search_insights,
+            conversation_context.model_dump()  # Pass conversation context
         ):
             # Parse SSE event
             if isinstance(event, dict):
@@ -291,10 +263,10 @@ async def send_message(
                 data = event.get("data", "")
 
                 if event_type == "token":
-                    token_data = json.loads(data) if isinstance(data, str) else data
+                    token_data = safe_json_loads(data)
                     full_response += token_data.get("text", "")
                 elif event_type == "usage":
-                    usage_data = json.loads(data) if isinstance(data, str) else data
+                    usage_data = safe_json_loads(data)
                     input_tokens = usage_data.get("input_tokens", 0)
                     output_tokens = usage_data.get("output_tokens", 0)
 
@@ -335,19 +307,170 @@ async def delete_conversation(
     db: AsyncSession = Depends(get_db)
 ):
     """Soft delete a conversation (set inactive)."""
-    result = await db.execute(
-        select(ChatConversation).where(
-            ChatConversation.id == conversation_id,
-            ChatConversation.user_id == current_user.id
-        )
+    conversation = await get_or_404(
+        db, ChatConversation, conversation_id, user_id=current_user.id
     )
-    conversation = result.scalar_one_or_none()
-
-    if not conversation:
-        raise HTTPException(status_code=404, detail="Conversation not found")
 
     conversation.is_active = False
     conversation.updated_at = datetime.utcnow()
     await db.commit()
 
     return {"status": "success"}
+
+
+class GenerateTitleResponse(BaseModel):
+    title: str
+    conversation_id: str
+
+
+@router.post("/conversations/{conversation_id}/generate-title", response_model=GenerateTitleResponse)
+async def generate_title(
+    conversation_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Auto-generate a title for a conversation using LLM.
+    Uses first few messages as context with priority weighting.
+    """
+    # Verify access and load conversation + messages in parallel
+    conversation_task = get_or_404(
+        db, ChatConversation, conversation_id, user_id=current_user.id
+    )
+    messages_task = db.execute(
+        select(ChatMessage)
+        .where(ChatMessage.conversation_id == conversation_id)
+        .order_by(ChatMessage.created_at)
+        .limit(6)  # First 6 messages for context
+    )
+
+    conversation, messages_result = await asyncio.gather(conversation_task, messages_task)
+    messages = messages_result.scalars().all()
+
+    if not messages:
+        raise HTTPException(status_code=400, detail="No messages to generate title from")
+
+    # Build context with priority: first user message > first assistant > rest
+    context_parts = []
+    for i, msg in enumerate(messages):
+        if msg.role == "user":
+            # User messages get full weight
+            context_parts.append(f"User: {msg.content[:500]}")
+        elif msg.role == "assistant":
+            # Assistant responses - shorter context
+            context_parts.append(f"Assistant: {msg.content[:200]}")
+
+    context_text = "\n".join(context_parts)
+
+    # Generate title using LLM
+    from ..main import get_model_config
+    import openai
+
+    model_config = get_model_config("claude-haiku")  # Use fast model for title generation
+
+    try:
+        client = openai.AsyncOpenAI(
+            api_key=model_config.get("api_key"),
+            base_url=model_config.get("base_url")
+        )
+
+        response = await client.chat.completions.create(
+            model=model_config.get("model", "claude-3-5-haiku-20241022"),
+            messages=[
+                {
+                    "role": "system",
+                    "content": "Generate a concise, descriptive title (4-8 words) for this conversation. Return ONLY the title, no quotes or punctuation at the end."
+                },
+                {
+                    "role": "user",
+                    "content": f"Conversation:\n{context_text}"
+                }
+            ],
+            max_tokens=30,
+            temperature=0.3
+        )
+
+        title = response.choices[0].message.content.strip()
+        # Clean up title - remove quotes if present
+        title = title.strip('"\'')
+
+    except Exception as e:
+        # Fallback: use first user message truncated
+        first_user = next((m for m in messages if m.role == "user"), None)
+        if first_user:
+            title = first_user.content[:50] + ("..." if len(first_user.content) > 50 else "")
+        else:
+            title = "New Conversation"
+
+    # Update conversation title
+    conversation.title = title
+    conversation.updated_at = datetime.utcnow()
+    await db.commit()
+
+    return GenerateTitleResponse(title=title, conversation_id=conversation_id)
+
+
+class FileUploadRequest(BaseModel):
+    """Request to upload files to a conversation."""
+    files: List[dict]  # [{"name": "file.pdf", "content": "base64...", "type": "pdf"}]
+
+
+class FileUploadResponse(BaseModel):
+    """Response after file upload."""
+    message_id: str
+    files_processed: int
+    summaries: List[dict]
+
+
+@router.post("/conversations/{conversation_id}/files", response_model=FileUploadResponse)
+async def upload_files(
+    conversation_id: str,
+    request: FileUploadRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Upload files to a conversation for context-aware analysis.
+    Files are stored as attachments on a system message and their content
+    is used to inform subsequent LLM calls.
+    """
+    # Verify access
+    conversation = await get_or_404(
+        db, ChatConversation, conversation_id, user_id=current_user.id
+    )
+
+    # Process files and create summaries
+    file_summaries = []
+    for file_data in request.files[:10]:  # Max 10 files
+        name = file_data.get("name", "unnamed")
+        content = file_data.get("content", "")
+        file_type = file_data.get("type", "unknown")
+
+        # Create a simple summary (first N chars)
+        # In production, this would use an LLM to summarize
+        summary = content[:5000] if len(content) > 5000 else content
+
+        file_summaries.append({
+            "name": name,
+            "type": file_type,
+            "summary": summary,
+            "char_count": len(content)
+        })
+
+    # Create a system message with file attachments
+    file_message = ChatMessage(
+        id=generate_id(),
+        conversation_id=conversation_id,
+        role="system",  # System message to indicate file upload
+        content=f"Files uploaded: {', '.join(f['name'] for f in file_summaries)}",
+        attachments=file_summaries,
+    )
+    db.add(file_message)
+    conversation.updated_at = datetime.utcnow()
+    await db.commit()
+
+    return FileUploadResponse(
+        message_id=file_message.id,
+        files_processed=len(file_summaries),
+        summaries=file_summaries
+    )

@@ -1,7 +1,7 @@
 """
 Reality Transformer Backend
 FastAPI server with OpenAI Responses API integration, web research, and SSE streaming
-Uses gpt-5.2 model exclusively
+Uses claude-opus-4-5-20251101 model exclusively
 
 ================================================================================
 ARCHITECTURE PRINCIPLE: PURE SEPARATION OF CONCERNS
@@ -99,6 +99,9 @@ from reverse_causality import (
     MVTCalculator
 )
 
+# SSE utilities for standardized streaming events
+from utils import sse_status, sse_token, sse_error, sse_done, sse_event
+
 # Load environment variables
 load_dotenv()
 
@@ -111,6 +114,18 @@ app = FastAPI(title="Reality Transformer", version="4.1.0")
 
 from contextlib import asynccontextmanager
 
+async def _session_cleanup_task():
+    """Background task to periodically clean up expired API sessions."""
+    while True:
+        await asyncio.sleep(300)  # Run every 5 minutes
+        try:
+            expired = await api_session_store.cleanup_expired(max_age_seconds=3600)
+            if expired > 0:
+                api_logger.info(f"[SESSION CLEANUP] Removed {expired} expired sessions, {api_session_store.session_count()} active")
+        except Exception as e:
+            api_logger.error(f"[SESSION CLEANUP] Error: {e}")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager for startup/shutdown."""
@@ -118,8 +133,21 @@ async def lifespan(app: FastAPI):
     from database import init_db
     await init_db()
     api_logger.info("Database initialized")
+
+    # Start background session cleanup task
+    cleanup_task = asyncio.create_task(_session_cleanup_task())
+    api_logger.info("Session cleanup task started")
+
     yield
-    # Shutdown: Close database connections
+
+    # Shutdown: Cancel cleanup task and close database
+    cleanup_task.cancel()
+    try:
+        await cleanup_task
+    except asyncio.CancelledError:
+        pass
+    api_logger.info("Session cleanup task stopped")
+
     from database import close_db
     await close_db()
     api_logger.info("Database connections closed")
@@ -138,6 +166,7 @@ from routers import (
     credits_router,
     admin_router,
     health_router,
+    matrix_router,
 )
 
 app.include_router(auth_router)
@@ -149,6 +178,7 @@ app.include_router(documents_router)
 app.include_router(credits_router)
 app.include_router(admin_router)
 app.include_router(health_router)
+app.include_router(matrix_router)
 
 api_logger.info("All routers registered")
 
@@ -156,12 +186,11 @@ api_logger.info("All routers registered")
 # SESSION STORAGE FOR CONSTELLATION Q&A FLOW
 # =====================================================================
 
-import threading
 import uuid
 
 class APISessionStore:
     """
-    Thread-safe session storage for constellation Q&A flow.
+    Async-safe session storage for constellation Q&A flow.
     Simple key-value store for FastAPI endpoints.
 
     Note: This is distinct from session_store.SessionStore which handles
@@ -172,35 +201,40 @@ class APISessionStore:
 
     def __init__(self):
         self._sessions: Dict[str, Dict[str, Any]] = {}
-        self._lock = threading.Lock()
+        self._lock = asyncio.Lock()
 
-    def create(self, session_id: str, data: Dict[str, Any]) -> None:
-        with self._lock:
+    async def create(self, session_id: str, data: Dict[str, Any]) -> None:
+        async with self._lock:
             self._sessions[session_id] = data
 
     def get(self, session_id: str) -> Optional[Dict[str, Any]]:
-        with self._lock:
-            return self._sessions.get(session_id)
+        """Get session data (non-blocking read)."""
+        return self._sessions.get(session_id)
 
-    def update(self, session_id: str, data: Dict[str, Any]) -> None:
-        with self._lock:
+    async def update(self, session_id: str, data: Dict[str, Any]) -> None:
+        async with self._lock:
             self._sessions[session_id] = data
 
-    def delete(self, session_id: str) -> None:
-        with self._lock:
+    async def delete(self, session_id: str) -> None:
+        async with self._lock:
             self._sessions.pop(session_id, None)
 
-    def cleanup_expired(self, max_age_seconds: int = 3600) -> int:
+    async def cleanup_expired(self, max_age_seconds: int = 3600) -> int:
         """Remove sessions older than max_age_seconds."""
         now = time.time()
         expired = []
-        with self._lock:
+        async with self._lock:
             for sid, data in self._sessions.items():
-                if now - data.get('_created_at') > max_age_seconds:
+                created = data.get('_created_at', 0)
+                if created and now - created > max_age_seconds:
                     expired.append(sid)
             for sid in expired:
                 del self._sessions[sid]
         return len(expired)
+
+    def session_count(self) -> int:
+        """Get current session count."""
+        return len(self._sessions)
 
 # Global session store instance for API endpoints
 api_session_store = APISessionStore()
@@ -369,8 +403,8 @@ MODEL_CONFIGS = {
     },
 }
 
-DEFAULT_MODEL = "gpt-5.2"
-OPENAI_MODEL = DEFAULT_MODEL
+DEFAULT_MODEL = "claude-opus-4-5-20251101"
+OPENAI_MODEL = DEFAULT_MODEL  # Legacy name, now points to Anthropic model
 OPENAI_RESPONSES_URL = MODEL_CONFIGS[DEFAULT_MODEL]["streaming_endpoint"]
 
 def get_model_config(model: str) -> dict:
@@ -434,6 +468,43 @@ progress_tracker = ProgressTracker()
 coherence_validator = CoherenceValidator()
 mvt_calculator = MVTCalculator()
 api_logger.info("Reverse Causality Mapping initialized: 10 components loaded")
+
+
+def extract_structured_data(content: str) -> Optional[dict]:
+    """
+    Extract structured JSON data from LLM response.
+    Looks for data between ===STRUCTURED_DATA_START=== and ===STRUCTURED_DATA_END=== markers.
+    Returns parsed JSON or None if not found/invalid.
+    """
+    import re
+
+    # Look for the structured data markers
+    pattern = r'===STRUCTURED_DATA_START===\s*([\s\S]*?)\s*===STRUCTURED_DATA_END==='
+    match = re.search(pattern, content)
+
+    if not match:
+        api_logger.debug("[STRUCTURED DATA] No structured data markers found in response")
+        return None
+
+    json_str = match.group(1).strip()
+
+    # Remove markdown code block markers if present
+    if json_str.startswith('```json'):
+        json_str = json_str[7:]
+    elif json_str.startswith('```'):
+        json_str = json_str[3:]
+    if json_str.endswith('```'):
+        json_str = json_str[:-3]
+    json_str = json_str.strip()
+
+    try:
+        data = json.loads(json_str)
+        api_logger.info(f"[STRUCTURED DATA] Successfully parsed structured data")
+        return data
+    except json.JSONDecodeError as e:
+        api_logger.error(f"[STRUCTURED DATA] Failed to parse JSON: {e}")
+        api_logger.debug(f"[STRUCTURED DATA] Raw content: {json_str[:500]}...")
+        return None
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -503,7 +574,7 @@ async def process_constellation_answer(
     session_data['_selected_answer_text'] = selected_text
     session_data['_question_text'] = pending_question.question_text
     session_data['_pending_question'] = None
-    api_session_store.update(session_id, session_data)
+    await api_session_store.update(session_id, session_data)
 
     api_logger.info(f"[ANSWER] Stored answer: {selected_option} -> '{selected_text[:80]}...'")
 
@@ -589,10 +660,7 @@ async def inference_stream_continue(
         # Step 1B: Re-run LLM Call 1 with full accumulated context + answer
         if answer_text:
             api_logger.info("[STEP 1B] Re-running LLM Call 1 with full context + answer")
-            yield {
-                "event": "status",
-                "data": json.dumps({"message": "Re-analyzing with your response..."})
-            }
+            yield sse_status("Re-analyzing with your response...")
 
             # Build combined prompt with ALL accumulated context
             # 1. Original query
@@ -678,14 +746,11 @@ especially operators that were uncertain (low confidence) in the initial extract
             session_data = api_session_store.get(session_id)
             if session_data:
                 session_data['evidence'] = evidence
-                api_session_store.update(session_id, session_data)
+                await api_session_store.update(session_id, session_data)
 
         # Step 2: Run inference with enriched operators
         api_logger.info("[STEP 2 CONTINUED] Running inference engine with enriched operators")
-        yield {
-            "event": "status",
-            "data": json.dumps({"message": f"Running consciousness inference ({inference_engine.formula_count} formulas)..."})
-        }
+        yield sse_status(f"Running consciousness inference ({inference_engine.formula_count} formulas)...")
 
         posteriors = await asyncio.to_thread(
             inference_engine.run_inference,
@@ -695,13 +760,7 @@ especially operators that were uncertain (low confidence) in the initial extract
         # Check for inference errors
         if posteriors.get('error'):
             api_logger.error(f"[INFERENCE] Error: {posteriors.get('error')}")
-            yield {
-                "event": "error",
-                "data": json.dumps({
-                    "message": f"Inference failed: {posteriors.get('error')}",
-                    "recoverable": False
-                })
-            }
+            yield sse_error(f"Inference failed: {posteriors.get('error')}")
             return
 
         # Log inference results
@@ -710,19 +769,11 @@ especially operators that were uncertain (low confidence) in the initial extract
         posteriors_count = len(posteriors.get('values'))
         api_logger.info(f"[INFERENCE] Formulas: {formula_count} | Tiers: {tiers_executed} | Posteriors: {posteriors_count}")
 
-        yield {
-            "event": "status",
-            "data": json.dumps({
-                "message": f"Inference complete: {formula_count} formulas, {tiers_executed} tiers, {posteriors_count} posteriors"
-            })
-        }
+        yield sse_status(f"Inference complete: {formula_count} formulas, {tiers_executed} tiers, {posteriors_count} posteriors")
 
         # Step 3: Articulation Bridge - Organize, Detect, Build Prompt
         api_logger.info("[STEP 3] Articulation Bridge processing")
-        yield {
-            "event": "status",
-            "data": json.dumps({"message": "Organizing consciousness state into semantic categories..."})
-        }
+        yield sse_status("Organizing consciousness state into semantic categories...")
 
         # Organize values into semantic structure
         consciousness_state = value_organizer.organize(
@@ -741,19 +792,11 @@ especially operators that were uncertain (low confidence) in the initial extract
 
         api_logger.info(f"[ARTICULATION] Bottlenecks: {len(bottlenecks)} | Leverage: {len(leverage_points)}")
 
-        yield {
-            "event": "status",
-            "data": json.dumps({
-                "message": f"Analysis complete: {len(bottlenecks)} bottlenecks, {len(leverage_points)} leverage points"
-            })
-        }
+        yield sse_status(f"Analysis complete: {len(bottlenecks)} bottlenecks, {len(leverage_points)} leverage points")
 
         # Step 4: LLM Call 2 - Articulation via streaming bridge
         api_logger.info("[STEP 4] LLM Call 2 - Articulation (streaming bridge)")
-        yield {
-            "event": "status",
-            "data": json.dumps({"message": "Generating insights (streaming)..."})
-        }
+        yield sse_status("Generating insights (streaming)...")
 
         # Stream articulation response using the unified bridge
         token_count = 0
@@ -773,10 +816,7 @@ especially operators that were uncertain (low confidence) in the initial extract
                 api_logger.info(f"[CALL 2 TOKENS] Input: {input_tokens}, Output: {output_tokens}, Total: {total_tokens}")
             else:
                 token_count += 1
-                yield {
-                    "event": "token",
-                    "data": json.dumps({"text": token})
-                }
+                yield sse_token(token)
 
         api_logger.info(f"[ARTICULATION] Streamed {token_count} tokens")
 
@@ -792,25 +832,14 @@ especially operators that were uncertain (low confidence) in the initial extract
         cost = (total_in * pricing["input"] + total_out * pricing["output"]) / 1_000_000
         api_logger.info(f"[TOKEN USAGE] Call 1: {c1_in}+{c1_out}={c1_in+c1_out} | Call 2: {c2_in}+{c2_out}={c2_in+c2_out} | Total: {total_in}+{total_out}={total_all} | Cost: ${cost:.6f}")
 
-        yield {
-            "event": "usage",
-            "data": json.dumps({
-                "call1": {
-                    "input_tokens": c1_in,
-                    "output_tokens": c1_out,
-                    "total_tokens": c1_in + c1_out,
-                },
-                "call2": {
-                    "input_tokens": c2_in,
-                    "output_tokens": c2_out,
-                    "total_tokens": c2_in + c2_out,
-                },
-                "input_tokens": total_in,
-                "output_tokens": total_out,
-                "total_tokens": total_all,
-                "cost": round(cost, 6),
-            })
-        }
+        yield sse_event("usage", {
+            "call1": {"input_tokens": c1_in, "output_tokens": c1_out, "total_tokens": c1_in + c1_out},
+            "call2": {"input_tokens": c2_in, "output_tokens": c2_out, "total_tokens": c2_in + c2_out},
+            "input_tokens": total_in,
+            "output_tokens": total_out,
+            "total_tokens": total_all,
+            "cost": round(cost, 6),
+        })
 
         # Check if response validation question should be asked (only once per session)
         session_data = api_session_store.get(session_id)
@@ -872,18 +901,15 @@ especially operators that were uncertain (low confidence) in the initial extract
                         updated_all = updated_in + updated_out
                         updated_cost = (updated_in * pricing["input"] + updated_out * pricing["output"]) / 1_000_000
                         api_logger.info(f"[TOKEN USAGE] Call 1: {c1_in}+{c1_out}={c1_in+c1_out} | Call 2: {c2_in}+{c2_out}={c2_in+c2_out} | Call 3: {c3_in}+{c3_out}={c3_in+c3_out} | Total: {updated_in}+{updated_out}={updated_all} | Cost: ${updated_cost:.6f}")
-                        yield {
-                            "event": "usage",
-                            "data": json.dumps({
-                                "call1": {"input_tokens": c1_in, "output_tokens": c1_out, "total_tokens": c1_in + c1_out},
-                                "call2": {"input_tokens": c2_in, "output_tokens": c2_out, "total_tokens": c2_in + c2_out},
-                                "call3": {"input_tokens": c3_in, "output_tokens": c3_out, "total_tokens": c3_in + c3_out},
-                                "input_tokens": updated_in,
-                                "output_tokens": updated_out,
-                                "total_tokens": updated_all,
-                                "cost": round(updated_cost, 6),
-                            })
-                        }
+                        yield sse_event("usage", {
+                            "call1": {"input_tokens": c1_in, "output_tokens": c1_out, "total_tokens": c1_in + c1_out},
+                            "call2": {"input_tokens": c2_in, "output_tokens": c2_out, "total_tokens": c2_in + c2_out},
+                            "call3": {"input_tokens": c3_in, "output_tokens": c3_out, "total_tokens": c3_in + c3_out},
+                            "input_tokens": updated_in,
+                            "output_tokens": updated_out,
+                            "total_tokens": updated_all,
+                            "cost": round(updated_cost, 6),
+                        })
 
                     from constellation_question_generator import MultiDimensionalQuestion
                     validation_question = MultiDimensionalQuestion(
@@ -901,26 +927,17 @@ especially operators that were uncertain (low confidence) in the initial extract
                     session_data['_pending_question'] = validation_question
                     session_data['_validation_asked'] = True
                     session_data['evidence'] = evidence
-                    api_session_store.update(session_id, session_data)
+                    await api_session_store.update(session_id, session_data)
 
-                    yield {
-                        "event": "validation_question",
-                        "data": json.dumps({
-                            "session_id": session_id,
-                            "question_id": validation_question.question_id,
-                            "question_text": validation_question.question_text,
-                            "options": [
-                                {
-                                    "id": opt_id,
-                                    "text": opt_text
-                                }
-                                for opt_id, opt_text in validation_question.answer_options.items()
-                            ],
-                            "diagnostic_power": validation_question.diagnostic_power,
-                            "purposes_served": validation_question.purposes_served,
-                            "continue_after_answer": f"/api/run/continue?session_id={session_id}"
-                        })
-                    }
+                    yield sse_event("validation_question", {
+                        "session_id": session_id,
+                        "question_id": validation_question.question_id,
+                        "question_text": validation_question.question_text,
+                        "options": [{"id": opt_id, "text": opt_text} for opt_id, opt_text in validation_question.answer_options.items()],
+                        "diagnostic_power": validation_question.diagnostic_power,
+                        "purposes_served": validation_question.purposes_served,
+                        "continue_after_answer": f"/api/run/continue?session_id={session_id}"
+                    })
 
                     api_logger.info(f"[VALIDATION] Question sent: {validation_question.question_id}")
                     api_logger.info(f"[VALIDATION] Missing operators: {len(remaining_missing)}")
@@ -928,33 +945,24 @@ especially operators that were uncertain (low confidence) in the initial extract
                     elapsed = time.time() - start_time
                     api_logger.info(f"[PIPELINE PARTIAL] Time before validation: {elapsed:.2f}s")
 
-                    yield {
-                        "event": "awaiting_answer",
-                        "data": json.dumps({
-                            "message": "Waiting for response validation selection...",
-                            "session_id": session_id,
-                            "continue_after_answer": f"/api/run/continue?session_id={session_id}"
-                        })
-                    }
+                    yield sse_event("awaiting_answer", {
+                        "message": "Waiting for response validation selection...",
+                        "session_id": session_id,
+                        "continue_after_answer": f"/api/run/continue?session_id={session_id}"
+                    })
                     return
 
         # Normal cleanup - no validation needed
-        api_session_store.delete(session_id)
+        await api_session_store.delete(session_id)
 
         elapsed = time.time() - start_time
         api_logger.info(f"[PIPELINE COMPLETE] Total time: {elapsed:.2f}s")
 
-        yield {
-            "event": "done",
-            "data": json.dumps({"elapsed_time": elapsed})
-        }
+        yield sse_done(elapsed_time=elapsed)
 
     except Exception as e:
         api_logger.error(f"[PIPELINE ERROR] {type(e).__name__}: {e}", exc_info=True)
-        yield {
-            "event": "error",
-            "data": json.dumps({"message": str(e)})
-        }
+        yield sse_error(str(e))
 
 
 # =====================================================================
@@ -962,28 +970,115 @@ especially operators that were uncertain (low confidence) in the initial extract
 # =====================================================================
 
 
-async def inference_stream(prompt: str, model_config: dict, web_search_data: bool = True, web_search_insights: bool = True) -> AsyncGenerator[dict, None]:
-    """Generate SSE events for the inference pipeline with evidence enrichment and optional reverse mapping"""
+def _build_context_enhanced_prompt(prompt: str, conversation_context: Optional[dict] = None) -> str:
+    """Build a prompt that includes conversation history and file context.
+
+    This enriches the user's current message with:
+    1. Previous conversation messages (for continuity)
+    2. File summaries (for domain knowledge)
+    3. Conversation summary (for long conversations)
+
+    Used by both Call 1 (query analysis) and Call 2 (articulation).
+    """
+    if not conversation_context:
+        return prompt
+
+    sections = []
+
+    # Add conversation summary if available (for long conversations)
+    conv_summary = conversation_context.get('conversation_summary')
+    if conv_summary:
+        sections.append(f"""=== CONVERSATION SUMMARY ===
+{conv_summary}
+""")
+
+    # Add file context if available
+    file_summaries = conversation_context.get('file_summaries', [])
+    if file_summaries:
+        file_sections = []
+        for f in file_summaries[:5]:  # Max 5 files
+            file_name = f.get('name', 'Unknown')
+            file_type = f.get('type', 'unknown')
+            file_summary = f.get('summary', '')[:3000]  # Truncate long summaries
+            file_sections.append(f"**{file_name}** ({file_type}):\n{file_summary}")
+
+        sections.append(f"""=== UPLOADED FILES CONTEXT ===
+The user has uploaded the following files. Use this information to inform your analysis:
+
+{chr(10).join(file_sections)}
+""")
+
+    # Add conversation history if available
+    messages = conversation_context.get('messages', [])
+    if messages:
+        # Format last N messages as conversation history
+        history_lines = []
+        for msg in messages[-10:]:  # Last 10 messages
+            role = msg.get('role', 'unknown').upper()
+            content = msg.get('content', '')[:1000]  # Truncate long messages
+            history_lines.append(f"[{role}]: {content}")
+
+        if history_lines:
+            sections.append(f"""=== CONVERSATION HISTORY ===
+Previous messages in this conversation (use for context):
+
+{chr(10).join(history_lines)}
+""")
+
+    # Combine context with current prompt
+    if sections:
+        context_block = '\n'.join(sections)
+        return f"""{context_block}
+=== CURRENT USER MESSAGE ===
+{prompt}
+
+IMPORTANT: Use the conversation history and file context above to:
+1. Maintain consistency with previous analysis
+2. Reference specific information from uploaded files
+3. Build on previous insights rather than starting fresh
+"""
+    return prompt
+
+
+async def inference_stream(
+    prompt: str,
+    model_config: dict,
+    web_search_data: bool = True,
+    web_search_insights: bool = True,
+    conversation_context: Optional[dict] = None
+) -> AsyncGenerator[dict, None]:
+    """Generate SSE events for the inference pipeline with evidence enrichment and optional reverse mapping.
+
+    Args:
+        prompt: The user's current message
+        model_config: Model configuration (provider, api_key, model)
+        web_search_data: Enable web search for data gathering in Call 1
+        web_search_insights: Enable web search for evidence grounding in Call 2
+        conversation_context: Context from conversation history and files
+            {
+                "messages": [{"role": "user"|"assistant", "content": "..."}],
+                "file_summaries": [{"name": "...", "summary": "...", "type": "..."}],
+                "conversation_summary": "..."
+            }
+    """
     start_time = time.time()
 
     # Create session for constellation Q&A flow
     session_id = str(uuid.uuid4())
-    api_session_store.create(session_id, {
+    await api_session_store.create(session_id, {
         '_created_at': start_time,
         'prompt': prompt,
         'model_config': model_config,
         'web_search_data': web_search_data,
         'web_search_insights': web_search_insights,
+        'conversation_context': conversation_context,  # Store context in session
         'evidence': None,
         '_pending_question': None,
         '_question_asked': False
     })
 
     # Yield session ID so client can use it for answer endpoint
-    yield {
-        "event": "session",
-        "data": json.dumps({"session_id": session_id})
-    }
+    yield sse_event("session", {"session_id": session_id})
 
     # Start pipeline logging
     pipeline_logger.start_pipeline(prompt)
@@ -995,14 +1090,19 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
         api_logger.info(f"[QUERY MODE] Future-oriented: {is_future_oriented} → Mode: {query_mode}")
         pipeline_logger.log_step("Query Analysis", {"future_oriented": is_future_oriented, "mode": query_mode})
 
+        # Build context-enhanced prompt for Call 1
+        context_enhanced_prompt = _build_context_enhanced_prompt(prompt, conversation_context)
+        api_logger.info(f"[CONTEXT] Conversation context: {'provided' if conversation_context else 'none'}")
+        if conversation_context:
+            msg_count = len(conversation_context.get('messages', []))
+            file_count = len(conversation_context.get('file_summaries', []))
+            api_logger.info(f"[CONTEXT] Messages: {msg_count}, Files: {file_count}")
+
         # Step 1: Parse query with OpenAI + Web Research
         api_logger.info(f"[STEP 1] Parsing query (web_search_data={web_search_data})")
-        yield {
-            "event": "status",
-            "data": json.dumps({"message": f"{'Researching context and parsing' if web_search_data else 'Parsing'} query..."})
-        }
+        yield sse_status(f"{'Researching context and parsing' if web_search_data else 'Parsing'} query...")
 
-        evidence = await parse_query_with_web_research(prompt, model_config, web_search_data)
+        evidence = await parse_query_with_web_research(context_enhanced_prompt, model_config, web_search_data)
         call1_token_usage = evidence.pop('_call1_token_usage', None)
         obs_count = len(evidence.get('observations'))
         api_logger.info(f"[EVIDENCE] Extracted {obs_count} observations")
@@ -1058,10 +1158,7 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
             "consciousness_mappings": len(consciousness_mappings)
         })
 
-        yield {
-            "event": "status",
-            "data": json.dumps({"message": f"Extracted {obs_count} tier-1 operator values..."})
-        }
+        yield sse_status(f"Extracted {obs_count} tier-1 operator values...")
 
         # Build goal context from LLM Call 1's extraction (validated in parse_query_with_web_research)
         question_gen = ConstellationQuestionGenerator()
@@ -1094,29 +1191,20 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
         # Store evidence in session
         session_data = api_session_store.get(session_id)
         session_data['evidence'] = evidence
-        api_session_store.update(session_id, session_data)
+        await api_session_store.update(session_id, session_data)
 
         # Step 1.5: Validate evidence before inference
         validation_errors = _validate_evidence(evidence)
         if validation_errors:
             api_logger.error(f"[VALIDATION] Evidence validation failed: {validation_errors}")
-            yield {
-                "event": "error",
-                "data": json.dumps({
-                    "message": f"Evidence validation failed: {'; '.join(validation_errors)}",
-                    "recoverable": False
-                })
-            }
+            yield sse_error(f"Evidence validation failed: {'; '.join(validation_errors)}")
             return
 
         api_logger.info(f"[VALIDATION] Evidence passed validation with {obs_count} observations")
 
         # Step 2: Run inference
         api_logger.info("[STEP 2] Running inference engine")
-        yield {
-            "event": "status",
-            "data": json.dumps({"message": f"Running consciousness inference ({inference_engine.formula_count} formulas)..."})
-        }
+        yield sse_status(f"Running consciousness inference ({inference_engine.formula_count} formulas)...")
 
         posteriors = await asyncio.to_thread(
             inference_engine.run_inference,
@@ -1126,13 +1214,7 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
         # Check for inference errors
         if posteriors.get('error'):
             api_logger.error(f"[INFERENCE] Error: {posteriors.get('error')}")
-            yield {
-                "event": "error",
-                "data": json.dumps({
-                    "message": f"Inference failed: {posteriors.get('error')}",
-                    "recoverable": False
-                })
-            }
+            yield sse_error(f"Inference failed: {posteriors.get('error')}")
             return
 
         # Log inference results
@@ -1142,19 +1224,11 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
         api_logger.info(f"[INFERENCE] Formulas: {formula_count} | Tiers: {tiers_executed} | Posteriors: {posteriors_count}")
         pipeline_logger.log_step("Inference", {"formulas": formula_count, "tiers": tiers_executed, "posteriors": posteriors_count})
 
-        yield {
-            "event": "status",
-            "data": json.dumps({
-                "message": f"Inference complete: {formula_count} formulas, {tiers_executed} tiers, {posteriors_count} posteriors"
-            })
-        }
+        yield sse_status(f"Inference complete: {formula_count} formulas, {tiers_executed} tiers, {posteriors_count} posteriors")
 
         # Step 3: Articulation Bridge - Organize, Detect, Build Prompt
         api_logger.info("[STEP 3] Articulation Bridge processing")
-        yield {
-            "event": "status",
-            "data": json.dumps({"message": "Organizing consciousness state into semantic categories..."})
-        }
+        yield sse_status("Organizing consciousness state into semantic categories...")
 
         # Organize values into semantic structure
         articulation_logger.info("[VALUE ORGANIZER] Organizing posteriors into consciousness state")
@@ -1195,21 +1269,13 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
             articulation_logger.debug(f"  - {lp.description[:50]}... (multiplier: {lp.multiplier:.2f}x)")
         pipeline_logger.log_step("Leverage Identification", {"count": leverage_summary['total_count'], "max_mult": leverage_summary['max_multiplier']})
 
-        yield {
-            "event": "status",
-            "data": json.dumps({
-                "message": f"Analysis complete: {bottleneck_summary['total_count']} bottlenecks, {leverage_summary['total_count']} leverage points (max {leverage_summary['max_multiplier']}x)"
-            })
-        }
+        yield sse_status(f"Analysis complete: {bottleneck_summary['total_count']} bottlenecks, {leverage_summary['total_count']} leverage points (max {leverage_summary['max_multiplier']}x)")
 
         # Step 3.5: Run reverse mapping if future-oriented
         reverse_mapping_data = None
         if is_future_oriented:
             reverse_logger.info("[REVERSE MAPPING] Starting future-oriented transformation analysis")
-            yield {
-                "event": "status",
-                "data": json.dumps({"message": "Computing transformation pathways (reverse causality mapping)..."})
-            }
+            yield sse_status("Computing transformation pathways (reverse causality mapping)...")
 
             try:
                 reverse_mapping_data = await run_reverse_mapping_for_articulation(
@@ -1223,38 +1289,27 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
                 reverse_logger.info(f"[REVERSE MAPPING] Complete: {pathway_count} pathways, {mvt_count} MVT operators")
                 pipeline_logger.log_step("Reverse Mapping", {"pathways": pathway_count, "mvt_operators": mvt_count})
 
-                yield {
-                    "event": "status",
-                    "data": json.dumps({
-                        "message": f"Reverse mapping complete: {pathway_count} pathways, {mvt_count} key operators identified"
-                    })
-                }
+                yield sse_status(f"Reverse mapping complete: {pathway_count} pathways, {mvt_count} key operators identified")
             except Exception as e:
                 reverse_logger.error(f"[REVERSE MAPPING] Error: {e}", exc_info=True)
                 # Emit warning to user - pipeline can continue but reverse mapping failed
-                yield {
-                    "event": "warning",
-                    "data": json.dumps({
-                        "component": "reverse_mapping",
-                        "message": f"Reverse causality mapping failed: {str(e)[:100]}",
-                        "impact": "Transformation pathways not available, current state analysis continues"
-                    })
-                }
+                yield sse_event("warning", {
+                    "component": "reverse_mapping",
+                    "message": f"Reverse causality mapping failed: {str(e)[:100]}",
+                    "impact": "Transformation pathways not available, current state analysis continues"
+                })
                 reverse_mapping_data = None
 
         # Step 4: Build articulation prompt and stream response with evidence enrichment
         api_logger.info("[STEP 4] Generating articulation response")
-        yield {
-            "event": "status",
-            "data": json.dumps({
-                "message": f"Generating articulation with evidence enrichment ({query_mode})..."
-            })
-        }
+        yield sse_status(f"Generating articulation with evidence enrichment ({query_mode})...")
 
         token_count = 0
+        full_content = ""  # Collect full response for structured data extraction
         call2_token_usage = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
         async for token in format_results_streaming_bridge(
-            prompt, evidence, posteriors, consciousness_state, reverse_mapping_data, model_config, web_search_insights
+            prompt, evidence, posteriors, consciousness_state, reverse_mapping_data, model_config, web_search_insights,
+            conversation_context=conversation_context
         ):
             # Check if this is a token usage object (yielded at end of stream)
             if isinstance(token, dict) and token.get("__token_usage__"):
@@ -1269,12 +1324,16 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
                 api_logger.info(f"[CALL 2 TOKENS] Input: {input_tokens}, Output: {output_tokens}, Total: {total_tokens}")
             else:
                 token_count += 1
-                yield {
-                    "event": "token",
-                    "data": json.dumps({"text": token})
-                }
+                full_content += token  # Collect for parsing
+                yield sse_token(token)
 
         api_logger.info(f"[ARTICULATION] Streamed {token_count} tokens")
+
+        # Extract and emit structured data if present
+        structured_data = extract_structured_data(full_content)
+        if structured_data:
+            api_logger.info(f"[STRUCTURED DATA] Extracted: matrix={bool(structured_data.get('matrix_data'))}, paths={len(structured_data.get('paths', []))}, docs={len(structured_data.get('documents', []))}")
+            yield sse_event("structured_data", structured_data)
         pipeline_logger.log_step("Articulation", {"tokens": token_count})
 
         # Log comprehensive evidence-grounding metrics
@@ -1312,25 +1371,14 @@ Articulation Tokens: {token_count}
         api_logger.info(f"[TOKEN USAGE] Call 1: {c1_in}+{c1_out}={c1_in+c1_out} | Call 2: {c2_in}+{c2_out}={c2_in+c2_out} | Total: {total_in}+{total_out}={total_all} | Cost: ${cost:.6f}")
 
         # Send token usage event with per-call breakdown
-        yield {
-            "event": "usage",
-            "data": json.dumps({
-                "call1": {
-                    "input_tokens": c1_in,
-                    "output_tokens": c1_out,
-                    "total_tokens": c1_in + c1_out,
-                },
-                "call2": {
-                    "input_tokens": c2_in,
-                    "output_tokens": c2_out,
-                    "total_tokens": c2_in + c2_out,
-                },
-                "input_tokens": total_in,
-                "output_tokens": total_out,
-                "total_tokens": total_all,
-                "cost": round(cost, 6),
-            })
-        }
+        yield sse_event("usage", {
+            "call1": {"input_tokens": c1_in, "output_tokens": c1_out, "total_tokens": c1_in + c1_out},
+            "call2": {"input_tokens": c2_in, "output_tokens": c2_out, "total_tokens": c2_in + c2_out},
+            "input_tokens": total_in,
+            "output_tokens": total_out,
+            "total_tokens": total_all,
+            "cost": round(cost, 6),
+        })
 
         # =====================================================================
         # LLM-DRIVEN QUESTION FLOW - After full response
@@ -1368,18 +1416,15 @@ Articulation Tokens: {token_count}
                     updated_all = updated_in + updated_out
                     updated_cost = (updated_in * pricing["input"] + updated_out * pricing["output"]) / 1_000_000
                     api_logger.info(f"[TOKEN USAGE] Call 1: {c1_in}+{c1_out}={c1_in+c1_out} | Call 2: {c2_in}+{c2_out}={c2_in+c2_out} | Call 3: {c3_in}+{c3_out}={c3_in+c3_out} | Total: {updated_in}+{updated_out}={updated_all} | Cost: ${updated_cost:.6f}")
-                    yield {
-                        "event": "usage",
-                        "data": json.dumps({
-                            "call1": {"input_tokens": c1_in, "output_tokens": c1_out, "total_tokens": c1_in + c1_out},
-                            "call2": {"input_tokens": c2_in, "output_tokens": c2_out, "total_tokens": c2_in + c2_out},
-                            "call3": {"input_tokens": c3_in, "output_tokens": c3_out, "total_tokens": c3_in + c3_out},
-                            "input_tokens": updated_in,
-                            "output_tokens": updated_out,
-                            "total_tokens": updated_all,
-                            "cost": round(updated_cost, 6),
-                        })
-                    }
+                    yield sse_event("usage", {
+                        "call1": {"input_tokens": c1_in, "output_tokens": c1_out, "total_tokens": c1_in + c1_out},
+                        "call2": {"input_tokens": c2_in, "output_tokens": c2_out, "total_tokens": c2_in + c2_out},
+                        "call3": {"input_tokens": c3_in, "output_tokens": c3_out, "total_tokens": c3_in + c3_out},
+                        "input_tokens": updated_in,
+                        "output_tokens": updated_out,
+                        "total_tokens": updated_all,
+                        "cost": round(updated_cost, 6),
+                    })
 
                 from constellation_question_generator import MultiDimensionalQuestion
                 question = MultiDimensionalQuestion(
@@ -1396,37 +1441,25 @@ Articulation Tokens: {token_count}
                 session_data['evidence'] = evidence
                 session_data['_pending_question'] = question
                 session_data['_question_asked'] = True
-                api_session_store.update(session_id, session_data)
+                await api_session_store.update(session_id, session_data)
 
-                yield {
-                    "event": "question",
-                    "data": json.dumps({
-                        "session_id": session_id,
-                        "question_id": question.question_id,
-                        "question_text": question.question_text,
-                        "options": [
-                            {
-                                "id": opt_id,
-                                "text": opt_text
-                            }
-                            for opt_id, opt_text in question.answer_options.items()
-                        ],
-                        "diagnostic_power": question.diagnostic_power,
-                        "purposes_served": question.purposes_served
-                    })
-                }
+                yield sse_event("question", {
+                    "session_id": session_id,
+                    "question_id": question.question_id,
+                    "question_text": question.question_text,
+                    "options": [{"id": opt_id, "text": opt_text} for opt_id, opt_text in question.answer_options.items()],
+                    "diagnostic_power": question.diagnostic_power,
+                    "purposes_served": question.purposes_served
+                })
 
                 api_logger.info(f"[QUESTION_LLM] Question sent: {question.question_id}")
                 api_logger.info(f"[QUESTION_LLM] Missing operators: {len(missing_operators)}")
 
-                yield {
-                    "event": "awaiting_answer",
-                    "data": json.dumps({
-                        "message": "Waiting for selection...",
-                        "session_id": session_id,
-                        "continue_after_answer": f"/api/run/continue?session_id={session_id}"
-                    })
-                }
+                yield sse_event("awaiting_answer", {
+                    "message": "Waiting for selection...",
+                    "session_id": session_id,
+                    "continue_after_answer": f"/api/run/continue?session_id={session_id}"
+                })
                 return
         # =====================================================================
         # END LLM-DRIVEN QUESTION FLOW
@@ -1437,22 +1470,12 @@ Articulation Tokens: {token_count}
         api_logger.info(f"[PIPELINE COMPLETE] Total time: {elapsed:.2f}s | Mode: {query_mode} | Reverse mapping: {reverse_mapping_data is not None}")
         pipeline_logger.end_pipeline(success=True)
 
-        yield {
-            "event": "done",
-            "data": json.dumps({
-                "elapsed_ms": int(elapsed * 1000),
-                "mode": query_mode,
-                "reverse_mapping_applied": reverse_mapping_data is not None
-            })
-        }
+        yield sse_done(elapsed_ms=int(elapsed * 1000), mode=query_mode, reverse_mapping_applied=reverse_mapping_data is not None)
 
     except Exception as e:
         api_logger.error(f"[PIPELINE ERROR] {type(e).__name__}: {e}", exc_info=True)
         pipeline_logger.end_pipeline(success=False)
-        yield {
-            "event": "error",
-            "data": json.dumps({"message": str(e)})
-        }
+        yield sse_error(str(e))
 
 
 async def parse_query_with_web_research(prompt: str, model_config: dict, use_web_search: bool = True) -> dict:
@@ -2377,7 +2400,8 @@ async def format_results_streaming_bridge(
     consciousness_state: ConsciousnessState,
     reverse_mapping: Optional[Dict[str, Any]] = None,
     model_config: Optional[dict] = None,
-    use_web_search: bool = True
+    use_web_search: bool = True,
+    conversation_context: Optional[dict] = None
 ) -> AsyncGenerator[str, None]:
     """
     Unified articulation with evidence enrichment and optional reverse mapping.
@@ -2387,6 +2411,7 @@ async def format_results_streaming_bridge(
     2. Uses calculated values to guide what to search for
     3. Integrates reverse mapping data when available (future-oriented queries)
     4. Produces natural, domain-appropriate insights
+    5. Uses conversation history and file context for continuity
     """
     articulation_logger.info(f"[ARTICULATION BRIDGE] Web search enabled: {use_web_search}")
     # Get model config
@@ -2428,6 +2453,12 @@ async def format_results_streaming_bridge(
         search_guidance_data['query_pattern'] = query_pattern
         articulation_logger.info(f"[ARTICULATION BRIDGE] Search guidance: {len(search_guidance_data.get('high_priority_values'))} high-priority values, pattern={query_pattern}")
 
+    # Log conversation context for Call 2
+    if conversation_context:
+        msg_count = len(conversation_context.get('messages', []))
+        file_count = len(conversation_context.get('file_summaries', []))
+        articulation_logger.info(f"[ARTICULATION BRIDGE] Conversation context: {msg_count} messages, {file_count} files")
+
     articulation_context = build_articulation_context(
         user_identity=evidence.get('user_identity'),
         domain=evidence.get('domain'),
@@ -2438,7 +2469,8 @@ async def format_results_streaming_bridge(
         key_facts=evidence.get('key_facts'),
         framework_concealment=True,  # Hide OOF terminology in output
         domain_language=True,  # Use natural domain language
-        search_guidance_data=search_guidance_data  # Pass search guidance for evidence grounding
+        search_guidance_data=search_guidance_data,  # Pass search guidance for evidence grounding
+        conversation_context=conversation_context  # Pass conversation history and files
     )
 
     # Build the structured articulation prompt

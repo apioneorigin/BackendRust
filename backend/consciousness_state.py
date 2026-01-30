@@ -820,6 +820,14 @@ class ArticulationInstructions:
 
 
 @dataclass
+class ConversationHistoryContext:
+    """Conversation history and file context for Call 2 continuity"""
+    messages: List[Dict[str, str]] = field(default_factory=list)  # [{"role": "user"|"assistant", "content": "..."}]
+    file_summaries: List[Dict[str, str]] = field(default_factory=list)  # [{"name": "...", "summary": "...", "type": "..."}]
+    conversation_summary: Optional[str] = None  # Summary of older messages
+
+
+@dataclass
 class ArticulationContext:
     """Complete context for articulation Call 2"""
     user_context: UserContext = field(default_factory=UserContext)
@@ -827,3 +835,4 @@ class ArticulationContext:
     consciousness_state: ConsciousnessState = field(default_factory=ConsciousnessState)
     instructions: ArticulationInstructions = field(default_factory=ArticulationInstructions)
     search_guidance: SearchGuidance = field(default_factory=SearchGuidance)  # Guidance for evidence grounding
+    conversation_context: Optional[ConversationHistoryContext] = None  # Conversation history and files

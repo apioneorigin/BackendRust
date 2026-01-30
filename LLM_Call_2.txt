@@ -17,14 +17,10 @@ def _build_framework_section(self) -> str:
     """Build framework reference section - FREEDOM-RESPECTING VERSION"""
     return """## FRAMEWORK REFERENCE
 
-The OOF.txt framework document is available in your context. Use it for:
-- Operator definitions and interpretation ranges
-- Transformation matrix meanings
-- S-level characteristics
-- Consciousness physics principles
+You are receiving pre-calculated consciousness values from the backend inference engine.
+These values are your source of truth - interpret and articulate them naturally.
 
-Reference the framework internally but express insights naturally - as if 
-speaking to a trusted friend or client.
+Express insights as if speaking to a trusted friend or client.
 
 ## VALUE SELECTION PROTOCOL
 
