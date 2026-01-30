@@ -239,6 +239,7 @@
 	.sidebar {
 		width: 260px;
 		min-width: 260px;
+		height: 100dvh;
 		background: var(--color-field-surface);
 		border-right: 1px solid var(--color-veil-thin);
 		display: flex;
