@@ -62,8 +62,7 @@ def to_response(
 
     for field in fields:
         value = _get_value(instance, field, field_map)
-        if value is not None or field in (field_map or {}):
-            data[field] = value
+        data[field] = value
 
     return response_model(**data)
 
