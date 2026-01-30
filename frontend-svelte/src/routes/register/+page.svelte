@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { auth, addToast } from '$lib/stores';
+	import { Button } from '$lib/components/ui';
 
 	let name = '';
 	let email = '';
@@ -27,7 +28,7 @@
 		try {
 			const success = await auth.register(email, password, name || undefined);
 			if (success) {
-				addToast('success', 'Welcome!', 'Your account has been created');
+				addToast('success', 'Your account has been created');
 				goto('/chat');
 			} else {
 				error = 'Registration failed';
@@ -45,7 +46,26 @@
 </svelte:head>
 
 <div class="auth-container">
-	<div class="auth-card">
+	<div class="auth-card card-elevated">
+		<div class="auth-logo">
+			<div class="logo-icon">
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					width="32"
+					height="32"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				>
+					<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+				</svg>
+			</div>
+			<span class="logo-text">Reality Transformer</span>
+		</div>
+
 		<div class="auth-header">
 			<h1>Create Account</h1>
 			<p>Start your transformation journey today</p>
@@ -54,6 +74,21 @@
 		<form on:submit|preventDefault={handleSubmit} class="auth-form">
 			{#if error}
 				<div class="error-message" role="alert">
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						width="16"
+						height="16"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					>
+						<circle cx="12" cy="12" r="10" />
+						<line x1="12" x2="12" y1="8" y2="12" />
+						<line x1="12" x2="12.01" y1="16" y2="16" />
+					</svg>
 					{error}
 				</div>
 			{/if}
@@ -66,6 +101,7 @@
 					bind:value={name}
 					placeholder="Your name"
 					disabled={isLoading}
+					class="input-field"
 				/>
 			</div>
 
@@ -78,6 +114,7 @@
 					placeholder="you@example.com"
 					required
 					disabled={isLoading}
+					class="input-field"
 				/>
 			</div>
 
@@ -90,6 +127,7 @@
 					placeholder="At least 8 characters"
 					required
 					disabled={isLoading}
+					class="input-field"
 				/>
 			</div>
 
@@ -102,17 +140,13 @@
 					placeholder="Confirm your password"
 					required
 					disabled={isLoading}
+					class="input-field"
 				/>
 			</div>
 
-			<button type="submit" class="btn-primary" disabled={isLoading}>
-				{#if isLoading}
-					<span class="spinner-small"></span>
-					Creating account...
-				{:else}
-					Create Account
-				{/if}
-			</button>
+			<Button variant="primary" type="submit" fullWidth loading={isLoading}>
+				{isLoading ? 'Creating account...' : 'Create Account'}
+			</Button>
 		</form>
 
 		<div class="auth-footer">
@@ -129,19 +163,44 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		min-height: 100vh;
-		padding: 1rem;
-		background: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%);
+		min-height: 100dvh;
+		padding: 1.5rem;
+		background: var(--color-field-void);
+		background-image: var(--gradient-field-presence);
 	}
 
 	.auth-card {
 		width: 100%;
-		max-width: 400px;
-		padding: 2rem;
-		background: hsl(var(--card));
-		border: 1px solid hsl(var(--border));
-		border-radius: 1rem;
-		box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+		max-width: 420px;
+		padding: 2.5rem;
+	}
+
+	.auth-logo {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.75rem;
+		margin-bottom: 2rem;
+	}
+
+	.logo-icon {
+		width: 48px;
+		height: 48px;
+		background: var(--gradient-primary);
+		border-radius: 0.75rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: white;
+	}
+
+	.logo-text {
+		font-size: 1.25rem;
+		font-weight: 700;
+		background: var(--gradient-primary);
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+		background-clip: text;
 	}
 
 	.auth-header {
@@ -150,14 +209,15 @@
 	}
 
 	.auth-header h1 {
-		font-size: 1.75rem;
+		font-size: 1.5rem;
 		font-weight: 700;
+		color: var(--color-text-source);
 		margin-bottom: 0.5rem;
 	}
 
 	.auth-header p {
-		color: hsl(var(--muted-foreground));
-		font-size: 0.875rem;
+		color: var(--color-text-whisper);
+		font-size: 0.9375rem;
 	}
 
 	.auth-form {
@@ -173,94 +233,75 @@
 	}
 
 	.form-group label {
-		font-size: 0.875rem;
+		font-size: 0.8125rem;
 		font-weight: 500;
+		color: var(--color-text-manifest);
 	}
 
-	.form-group input {
-		padding: 0.75rem 1rem;
-		border: 1px solid hsl(var(--border));
-		border-radius: 0.5rem;
-		background: hsl(var(--background));
-		color: hsl(var(--foreground));
-		font-size: 1rem;
-		transition: border-color 0.2s, box-shadow 0.2s;
+	.input-field {
+		padding: 0.875rem 1rem;
+		background: var(--color-field-depth);
+		border: 1px solid var(--color-veil-thin);
+		border-radius: 0.75rem;
+		color: var(--color-text-source);
+		font-size: 0.9375rem;
+		transition:
+			border-color 0.15s ease,
+			box-shadow 0.15s ease;
 	}
 
-	.form-group input:focus {
+	.input-field:focus {
 		outline: none;
-		border-color: hsl(var(--ring));
-		box-shadow: 0 0 0 3px hsl(var(--ring) / 0.1);
+		border-color: var(--color-primary-400);
+		box-shadow: 0 0 0 3px rgba(15, 76, 117, 0.1);
 	}
 
-	.form-group input:disabled {
+	.input-field:disabled {
 		opacity: 0.6;
 		cursor: not-allowed;
 	}
 
-	.btn-primary {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.5rem;
-		padding: 0.75rem 1rem;
-		background: hsl(var(--primary));
-		color: hsl(var(--primary-foreground));
-		border: none;
-		border-radius: 0.5rem;
-		font-size: 1rem;
-		font-weight: 600;
-		cursor: pointer;
-		transition: opacity 0.2s;
-	}
-
-	.btn-primary:hover:not(:disabled) {
-		opacity: 0.9;
-	}
-
-	.btn-primary:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
-	}
-
-	.spinner-small {
-		width: 16px;
-		height: 16px;
-		border: 2px solid transparent;
-		border-top-color: currentColor;
-		border-radius: 50%;
-		animation: spin 0.6s linear infinite;
-	}
-
-	@keyframes spin {
-		to {
-			transform: rotate(360deg);
-		}
+	.input-field::placeholder {
+		color: var(--color-text-hint);
 	}
 
 	.error-message {
-		padding: 0.75rem 1rem;
-		background: hsl(0 84% 60% / 0.1);
-		border: 1px solid hsl(0 84% 60%);
-		border-radius: 0.5rem;
-		color: hsl(0 84% 60%);
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.875rem 1rem;
+		background: rgba(239, 68, 68, 0.1);
+		border: 1px solid var(--color-error-500);
+		border-radius: 0.75rem;
+		color: var(--color-error-500);
 		font-size: 0.875rem;
 	}
 
 	.auth-footer {
-		margin-top: 1.5rem;
+		margin-top: 2rem;
+		padding-top: 1.5rem;
+		border-top: 1px solid var(--color-veil-thin);
 		text-align: center;
 		font-size: 0.875rem;
-		color: hsl(var(--muted-foreground));
+		color: var(--color-text-whisper);
 	}
 
 	.auth-footer a {
-		color: hsl(var(--primary));
+		color: var(--color-primary-500);
 		text-decoration: none;
 		font-weight: 500;
+		transition: color 0.15s ease;
 	}
 
 	.auth-footer a:hover {
+		color: var(--color-primary-600);
 		text-decoration: underline;
+	}
+
+	/* Mobile responsive */
+	@media (max-width: 767px) {
+		.auth-card {
+			padding: 1.5rem;
+		}
 	}
 </style>

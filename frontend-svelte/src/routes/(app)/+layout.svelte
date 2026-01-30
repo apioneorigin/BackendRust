@@ -1,9 +1,12 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { auth, isAuthenticated, user, theme, addToast } from '$lib/stores';
+	import { Spinner } from '$lib/components/ui';
 
 	let isLoading = true;
+	let mobileMenuOpen = false;
 
 	onMount(async () => {
 		const currentUser = await auth.loadUser();
@@ -14,6 +17,11 @@
 		isLoading = false;
 	});
 
+	// Close mobile menu on navigation
+	$: if ($page.url.pathname) {
+		mobileMenuOpen = false;
+	}
+
 	async function handleLogout() {
 		await auth.logout();
 		addToast('info', 'Signed out', 'You have been logged out');
@@ -23,51 +31,169 @@
 	function toggleTheme() {
 		theme.toggle();
 	}
+
+	function toggleMobileMenu() {
+		mobileMenuOpen = !mobileMenuOpen;
+	}
+
+	function closeMobileMenu() {
+		mobileMenuOpen = false;
+	}
 </script>
 
 {#if isLoading}
 	<div class="loading-container">
-		<div class="spinner"></div>
+		<div class="flex flex-col items-center gap-4">
+			<Spinner size="lg" />
+			<p class="text-text-whisper text-sm">Loading...</p>
+		</div>
 	</div>
 {:else}
 	<div class="app-layout">
+		<!-- Mobile header -->
+		<header class="mobile-header">
+			<button class="hamburger-btn" on:click={toggleMobileMenu} aria-label="Toggle menu">
+				{#if mobileMenuOpen}
+					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M18 6 6 18" />
+						<path d="m6 6 12 12" />
+					</svg>
+				{:else}
+					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<line x1="4" x2="20" y1="12" y2="12" />
+						<line x1="4" x2="20" y1="6" y2="6" />
+						<line x1="4" x2="20" y1="18" y2="18" />
+					</svg>
+				{/if}
+			</button>
+			<h1 class="mobile-logo">Reality Transformer</h1>
+			<div class="mobile-actions">
+				<button class="mobile-icon-btn" on:click={toggleTheme} title="Toggle theme">
+					{#if $theme.isDark}
+						<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<circle cx="12" cy="12" r="4" />
+							<path d="M12 2v2" />
+							<path d="M12 20v2" />
+							<path d="m4.93 4.93 1.41 1.41" />
+							<path d="m17.66 17.66 1.41 1.41" />
+							<path d="M2 12h2" />
+							<path d="M20 12h2" />
+							<path d="m6.34 17.66-1.41 1.41" />
+							<path d="m19.07 4.93-1.41 1.41" />
+						</svg>
+					{:else}
+						<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+						</svg>
+					{/if}
+				</button>
+			</div>
+		</header>
+
+		<!-- Mobile overlay -->
+		{#if mobileMenuOpen}
+			<div class="mobile-overlay" on:click={closeMobileMenu} role="presentation"></div>
+		{/if}
+
 		<!-- Sidebar -->
-		<aside class="sidebar">
+		<aside class="sidebar" class:open={mobileMenuOpen}>
 			<div class="sidebar-header">
 				<h2 class="logo">Reality Transformer</h2>
 			</div>
 
 			<nav class="sidebar-nav">
 				<a href="/chat" class="nav-item">
-					<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						width="20"
+						height="20"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					>
+						<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
 					</svg>
 					<span>Chat</span>
 				</a>
-				<a href="/goals" class="nav-item">
-					<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						<circle cx="12" cy="12" r="10"/>
-						<circle cx="12" cy="12" r="6"/>
-						<circle cx="12" cy="12" r="2"/>
-					</svg>
-					<span>Goals</span>
-				</a>
 				<a href="/documents" class="nav-item">
-					<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
-						<polyline points="14 2 14 8 20 8"/>
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						width="20"
+						height="20"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					>
+						<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+						<polyline points="14 2 14 8 20 8" />
 					</svg>
 					<span>Documents</span>
 				</a>
-				<a href="/sessions" class="nav-item">
-					<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						<rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
-						<line x1="16" x2="16" y1="2" y2="6"/>
-						<line x1="8" x2="8" y1="2" y2="6"/>
-						<line x1="3" x2="21" y1="10" y2="10"/>
+				<a href="/matrix" class="nav-item">
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						width="20"
+						height="20"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					>
+						<rect x="3" y="3" width="7" height="7" />
+						<rect x="14" y="3" width="7" height="7" />
+						<rect x="14" y="14" width="7" height="7" />
+						<rect x="3" y="14" width="7" height="7" />
 					</svg>
-					<span>Sessions</span>
+					<span>Matrix</span>
 				</a>
+				<a href="/settings" class="nav-item">
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						width="20"
+						height="20"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					>
+						<path
+							d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"
+						/>
+						<circle cx="12" cy="12" r="3" />
+					</svg>
+					<span>Settings</span>
+				</a>
+
+				{#if $user?.isGlobalAdmin}
+					<a href="/admin" class="nav-item">
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							width="20"
+							height="20"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+						>
+							<path
+								d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"
+							/>
+						</svg>
+						<span>Admin</span>
+					</a>
+				{/if}
 			</nav>
 
 			<div class="sidebar-footer">
@@ -82,30 +208,60 @@
 				</div>
 
 				<div class="footer-actions">
-					<button class="icon-btn" on:click={toggleTheme} title="Toggle theme">
+					<button class="sidebar-icon-btn" on:click={toggleTheme} title="Toggle theme">
 						{#if $theme.isDark}
-							<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-								<circle cx="12" cy="12" r="4"/>
-								<path d="M12 2v2"/>
-								<path d="M12 20v2"/>
-								<path d="m4.93 4.93 1.41 1.41"/>
-								<path d="m17.66 17.66 1.41 1.41"/>
-								<path d="M2 12h2"/>
-								<path d="M20 12h2"/>
-								<path d="m6.34 17.66-1.41 1.41"/>
-								<path d="m19.07 4.93-1.41 1.41"/>
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								width="20"
+								height="20"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							>
+								<circle cx="12" cy="12" r="4" />
+								<path d="M12 2v2" />
+								<path d="M12 20v2" />
+								<path d="m4.93 4.93 1.41 1.41" />
+								<path d="m17.66 17.66 1.41 1.41" />
+								<path d="M2 12h2" />
+								<path d="M20 12h2" />
+								<path d="m6.34 17.66-1.41 1.41" />
+								<path d="m19.07 4.93-1.41 1.41" />
 							</svg>
 						{:else}
-							<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-								<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								width="20"
+								height="20"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							>
+								<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
 							</svg>
 						{/if}
 					</button>
-					<button class="icon-btn" on:click={handleLogout} title="Sign out">
-						<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-							<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-							<polyline points="16 17 21 12 16 7"/>
-							<line x1="21" x2="9" y1="12" y2="12"/>
+					<button class="sidebar-icon-btn" on:click={handleLogout} title="Sign out">
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							width="20"
+							height="20"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+						>
+							<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+							<polyline points="16 17 21 12 16 7" />
+							<line x1="21" x2="9" y1="12" y2="12" />
 						</svg>
 					</button>
 				</div>
@@ -124,33 +280,19 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		min-height: 100vh;
-	}
-
-	.spinner {
-		width: 40px;
-		height: 40px;
-		border: 3px solid hsl(var(--muted));
-		border-top-color: hsl(var(--primary));
-		border-radius: 50%;
-		animation: spin 1s linear infinite;
-	}
-
-	@keyframes spin {
-		to {
-			transform: rotate(360deg);
-		}
+		min-height: 100dvh;
+		background-color: var(--color-field-void);
 	}
 
 	.app-layout {
 		display: flex;
-		min-height: 100vh;
+		min-height: 100dvh;
 	}
 
 	.sidebar {
 		width: 260px;
-		background: hsl(var(--card));
-		border-right: 1px solid hsl(var(--border));
+		background: var(--color-field-surface);
+		border-right: 1px solid var(--color-veil-thin);
 		display: flex;
 		flex-direction: column;
 		flex-shrink: 0;
@@ -158,13 +300,13 @@
 
 	.sidebar-header {
 		padding: 1.25rem;
-		border-bottom: 1px solid hsl(var(--border));
+		border-bottom: 1px solid var(--color-veil-thin);
 	}
 
 	.logo {
 		font-size: 1.125rem;
 		font-weight: 700;
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		background: var(--gradient-primary);
 		-webkit-background-clip: text;
 		-webkit-text-fill-color: transparent;
 		background-clip: text;
@@ -183,19 +325,22 @@
 		align-items: center;
 		gap: 0.75rem;
 		padding: 0.75rem 1rem;
-		border-radius: 0.5rem;
-		color: hsl(var(--foreground));
+		border-radius: 0.625rem;
+		color: var(--color-text-manifest);
 		text-decoration: none;
-		transition: background-color 0.2s;
+		transition: all 0.15s ease;
+		font-weight: 500;
+		font-size: 0.875rem;
 	}
 
 	.nav-item:hover {
-		background: hsl(var(--accent));
+		background: var(--color-field-depth);
+		color: var(--color-text-source);
 	}
 
 	.sidebar-footer {
 		padding: 1rem;
-		border-top: 1px solid hsl(var(--border));
+		border-top: 1px solid var(--color-veil-thin);
 	}
 
 	.user-info {
@@ -208,7 +353,7 @@
 	.user-avatar {
 		width: 36px;
 		height: 36px;
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		background: var(--gradient-primary);
 		border-radius: 50%;
 		display: flex;
 		align-items: center;
@@ -227,12 +372,13 @@
 		display: block;
 		font-weight: 500;
 		font-size: 0.875rem;
+		color: var(--color-text-source);
 	}
 
 	.user-email {
 		display: block;
 		font-size: 0.75rem;
-		color: hsl(var(--muted-foreground));
+		color: var(--color-text-whisper);
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
@@ -243,24 +389,138 @@
 		gap: 0.5rem;
 	}
 
-	.icon-btn {
-		padding: 0.5rem;
-		background: none;
-		border: 1px solid hsl(var(--border));
-		border-radius: 0.5rem;
-		color: hsl(var(--foreground));
-		cursor: pointer;
-		transition: background-color 0.2s;
-	}
-
-	.icon-btn:hover {
-		background: hsl(var(--accent));
-	}
-
 	.main-content {
 		flex: 1;
 		overflow: hidden;
 		display: flex;
 		flex-direction: column;
+		background-color: var(--color-field-void);
+	}
+
+	/* Mobile header */
+	.mobile-header {
+		display: none;
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 56px;
+		background: var(--color-field-surface);
+		border-bottom: 1px solid var(--color-veil-thin);
+		padding: 0 1rem;
+		align-items: center;
+		justify-content: space-between;
+		z-index: 40;
+	}
+
+	.hamburger-btn {
+		width: 44px;
+		height: 44px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: none;
+		border: none;
+		color: var(--color-text-source);
+		cursor: pointer;
+		border-radius: 0.5rem;
+		transition: background-color 0.15s ease;
+	}
+
+	.hamburger-btn:hover {
+		background: var(--color-field-depth);
+	}
+
+	.mobile-logo {
+		font-size: 1rem;
+		font-weight: 700;
+		background: var(--gradient-primary);
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+		background-clip: text;
+	}
+
+	.mobile-actions {
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
+	}
+
+	.mobile-icon-btn {
+		width: 44px;
+		height: 44px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: none;
+		border: none;
+		color: var(--color-text-manifest);
+		cursor: pointer;
+		border-radius: 0.5rem;
+		transition: all 0.15s ease;
+	}
+
+	.mobile-icon-btn:hover {
+		background: var(--color-field-depth);
+		color: var(--color-text-source);
+	}
+
+	.mobile-overlay {
+		display: none;
+		position: fixed;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.5);
+		z-index: 45;
+	}
+
+	/* Mobile responsive */
+	@media (max-width: 767px) {
+		.mobile-header {
+			display: flex;
+		}
+
+		.mobile-overlay {
+			display: block;
+		}
+
+		.app-layout {
+			padding-top: 56px;
+		}
+
+		.sidebar {
+			position: fixed;
+			left: 0;
+			top: 0;
+			bottom: 0;
+			z-index: 50;
+			transform: translateX(-100%);
+			transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+			box-shadow: none;
+		}
+
+		.sidebar.open {
+			transform: translateX(0);
+			box-shadow: var(--shadow-lg);
+		}
+
+		.sidebar-header {
+			padding-top: 1.5rem;
+		}
+
+		.main-content {
+			margin-left: 0;
+		}
+	}
+
+	/* Touch target optimization */
+	@media (pointer: coarse) {
+		.nav-item {
+			min-height: 48px;
+		}
+
+		.sidebar-icon-btn {
+			min-width: 44px;
+			min-height: 44px;
+		}
 	}
 </style>

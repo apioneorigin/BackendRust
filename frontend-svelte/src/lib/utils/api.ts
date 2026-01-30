@@ -1,6 +1,16 @@
 /**
- * API client for communicating with Python FastAPI backend
+ * API Client for BackendRust
+ *
+ * Features:
+ * - Automatic token handling
+ * - Retry with exponential backoff
+ * - Streaming support (SSE with async generator)
+ * - Request timeout
+ * - Error handling
  */
+
+import { browser } from '$app/environment';
+import { goto } from '$app/navigation';
 
 const API_BASE_URL = '';  // Uses Vite proxy in dev, same origin in prod
 const TOKEN_KEY = 'auth_token';
@@ -76,6 +86,13 @@ async function request<T>(
 			clearTimeout(timeoutId);
 
 			if (!response.ok) {
+				// Handle 401 - redirect to login
+				if (response.status === 401) {
+					clearToken();
+					if (browser) {
+						goto('/login');
+					}
+				}
 				const errorData = await response.json().catch(() => ({}));
 				throw new ApiError(
 					errorData.detail || errorData.message || `Request failed with status ${response.status}`,
@@ -157,6 +174,79 @@ export const api = {
 	setToken,
 	clearToken,
 	getToken,
+
+	/**
+	 * Async generator for SSE streaming responses
+	 * Yields parsed data from each SSE event
+	 */
+	async *streamGenerator(
+		endpoint: string,
+		data?: any,
+		options?: RequestOptions
+	): AsyncGenerator<string, void, unknown> {
+		const token = getToken();
+		const authHeaders: Record<string, string> = {};
+		if (token) {
+			authHeaders['Authorization'] = `Bearer ${token}`;
+		}
+
+		const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'Accept': 'text/event-stream',
+				...authHeaders,
+				...options?.headers,
+			},
+			body: data ? JSON.stringify(data) : undefined,
+		});
+
+		if (!response.ok) {
+			throw new ApiError(
+				`Stream request failed: ${response.status}`,
+				response.status
+			);
+		}
+
+		const reader = response.body?.getReader();
+		if (!reader) {
+			throw new Error('No response body');
+		}
+
+		const decoder = new TextDecoder();
+		let buffer = '';
+
+		try {
+			while (true) {
+				const { done, value } = await reader.read();
+				if (done) break;
+
+				buffer += decoder.decode(value, { stream: true });
+				const lines = buffer.split('\n');
+				buffer = lines.pop() || '';
+
+				for (const line of lines) {
+					if (line.startsWith('data: ')) {
+						const eventData = line.slice(6);
+						if (eventData === '[DONE]') {
+							return;
+						}
+						yield eventData;
+					}
+				}
+			}
+
+			// Process any remaining data in buffer
+			if (buffer.startsWith('data: ')) {
+				const eventData = buffer.slice(6);
+				if (eventData !== '[DONE]') {
+					yield eventData;
+				}
+			}
+		} finally {
+			reader.releaseLock();
+		}
+	},
 };
 
 export { ApiError };
