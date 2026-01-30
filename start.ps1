@@ -3,14 +3,18 @@
 # ============================================
 #
 # Starts:
-# - Python/FastAPI backend on port 8000
-# - SvelteKit frontend on port 5173 (unified 4-box layout with embedded matrix)
+# - Python/FastAPI backend on port 8000 (with SQLite for local dev)
+# - SvelteKit frontend on port 5173
 #
 # Features:
 # - Auto-creates Python venv if missing
 # - Installs dependencies automatically
 # - Kills all existing servers and old PowerShell/cmd windows
-# - Starts fresh instances in new windows
+# - Uses SQLite for local development (no external database needed)
+#
+# UI Layout:
+# - Unified collapsible sidebar (consistent across all pages)
+# - Chat page: 4-box layout with matrix and live preview
 #
 
 Set-Location $PSScriptRoot
@@ -48,7 +52,7 @@ Get-Process -Name "node" -ErrorAction SilentlyContinue |
     Stop-Process -Force -ErrorAction SilentlyContinue
 
 # Kill cmd/powershell windows with our titles
-Get-Process -Name "cmd", "powershell" -ErrorAction SilentlyContinue |
+Get-Process -Name "cmd", "powershell", "pwsh" -ErrorAction SilentlyContinue |
     Where-Object { $_.MainWindowTitle -like "*Backend*" -or $_.MainWindowTitle -like "*Frontend*" } |
     Stop-Process -Force -ErrorAction SilentlyContinue
 
@@ -100,11 +104,17 @@ Start-Sleep -Seconds 1
 
 Write-Host "[5/5] Starting servers..." -ForegroundColor Yellow
 
-# Start backend
+# Start backend with USE_SQLITE for local dev
 $backendCmd = @"
 Set-Location '$PSScriptRoot\backend'
+`$env:USE_SQLITE = 'true'
 .\venv\Scripts\Activate.ps1
-Write-Host 'Starting Backend API on port $BACKEND_PORT...' -ForegroundColor Green
+Write-Host ''
+Write-Host '========================================' -ForegroundColor Green
+Write-Host '  Backend API starting on port $BACKEND_PORT' -ForegroundColor Green
+Write-Host '  Database: SQLite (local development)' -ForegroundColor Gray
+Write-Host '========================================' -ForegroundColor Green
+Write-Host ''
 python -m uvicorn main:app --host 0.0.0.0 --port $BACKEND_PORT --reload
 "@
 Start-Process powershell -ArgumentList "-NoExit", "-Command", $backendCmd -WindowStyle Normal
@@ -114,7 +124,11 @@ Start-Sleep -Seconds 3
 # Start frontend
 $frontendCmd = @"
 Set-Location '$PSScriptRoot\frontend-svelte'
-Write-Host 'Starting SvelteKit Frontend on port $FRONTEND_PORT...' -ForegroundColor Green
+Write-Host ''
+Write-Host '========================================' -ForegroundColor Green
+Write-Host '  Frontend starting on port $FRONTEND_PORT' -ForegroundColor Green
+Write-Host '========================================' -ForegroundColor Green
+Write-Host ''
 npm run dev -- --host 0.0.0.0 --port $FRONTEND_PORT
 "@
 Start-Process powershell -ArgumentList "-NoExit", "-Command", $frontendCmd -WindowStyle Normal
@@ -128,10 +142,11 @@ Write-Host "  Frontend: " -NoNewline; Write-Host "http://localhost:$FRONTEND_POR
 Write-Host "  Backend:  " -NoNewline; Write-Host "http://localhost:$BACKEND_PORT" -ForegroundColor Cyan
 Write-Host "  API Docs: " -NoNewline; Write-Host "http://localhost:$BACKEND_PORT/docs" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "  Layout: Unified 4-box with embedded matrix" -ForegroundColor White
-Write-Host "  - Sidebar: Conversation history" -ForegroundColor Gray
-Write-Host "  - Chat: Response container + Input panel" -ForegroundColor Gray
-Write-Host "  - Matrix: 5x5 transformation grid" -ForegroundColor Gray
-Write-Host "  - Preview: Live coherence metrics" -ForegroundColor Gray
+Write-Host "  Database: " -NoNewline; Write-Host "SQLite (backend/data/dev.db)" -ForegroundColor Gray
+Write-Host ""
+Write-Host "  UI Layout:" -ForegroundColor White
+Write-Host "  - Collapsible sidebar (all pages)" -ForegroundColor Gray
+Write-Host "  - Chat: 4-box grid with matrix" -ForegroundColor Gray
+Write-Host "  - Documents, Settings: Content area" -ForegroundColor Gray
 Write-Host ""
 Write-Host "============================================" -ForegroundColor Green

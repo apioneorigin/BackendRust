@@ -3,14 +3,18 @@
 # BackendRust Development Server Startup Script
 #
 # Starts:
-# - Python/FastAPI backend on port 8000
-# - SvelteKit frontend on port 5173 (unified 4-box layout with embedded matrix)
+# - Python/FastAPI backend on port 8000 (with SQLite for local dev)
+# - SvelteKit frontend on port 5173
 #
 # Features:
 # - Auto-creates Python venv if missing
 # - Installs dependencies automatically
 # - Kills all existing servers and old terminal windows
-# - Starts fresh instances in new terminal windows
+# - Uses SQLite for local development (no external database needed)
+#
+# UI Layout:
+# - Unified collapsible sidebar (consistent across all pages)
+# - Chat page: 4-box layout with matrix and live preview
 #
 
 cd "$(dirname "$0")"
@@ -97,25 +101,25 @@ sleep 1
 
 echo "[5/5] Starting servers..."
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    # macOS - use osascript
-    osascript -e "tell app \"Terminal\" to do script \"cd '$(pwd)/backend' && source venv/bin/activate && echo 'Starting Backend API on port $BACKEND_PORT...' && python -m uvicorn main:app --host 0.0.0.0 --port $BACKEND_PORT --reload\"" 2>/dev/null
+    # macOS - use osascript with USE_SQLITE
+    osascript -e "tell app \"Terminal\" to do script \"cd '$(pwd)/backend' && source venv/bin/activate && export USE_SQLITE=true && echo '' && echo '========================================' && echo '  Backend API starting on port $BACKEND_PORT' && echo '  Database: SQLite (local development)' && echo '========================================' && echo '' && python -m uvicorn main:app --host 0.0.0.0 --port $BACKEND_PORT --reload\"" 2>/dev/null
 elif command -v gnome-terminal &> /dev/null; then
     # Linux with GNOME
-    gnome-terminal --title="Backend API" -- bash -c "cd '$(pwd)/backend' && source venv/bin/activate && echo 'Starting Backend API on port $BACKEND_PORT...' && python -m uvicorn main:app --host 0.0.0.0 --port $BACKEND_PORT --reload; exec bash"
+    gnome-terminal --title="Backend API" -- bash -c "cd '$(pwd)/backend' && source venv/bin/activate && export USE_SQLITE=true && echo 'Starting Backend API on port $BACKEND_PORT...' && echo 'Database: SQLite (local development)' && python -m uvicorn main:app --host 0.0.0.0 --port $BACKEND_PORT --reload; exec bash"
 elif command -v xterm &> /dev/null; then
     # Fallback to xterm
-    xterm -title "Backend API" -e "cd '$(pwd)/backend' && source venv/bin/activate && python -m uvicorn main:app --host 0.0.0.0 --port $BACKEND_PORT --reload" &
+    xterm -title "Backend API" -e "cd '$(pwd)/backend' && source venv/bin/activate && export USE_SQLITE=true && python -m uvicorn main:app --host 0.0.0.0 --port $BACKEND_PORT --reload" &
 else
     # No GUI terminal, run in background
     echo "No GUI terminal found, starting in background..."
-    cd backend && source venv/bin/activate && python -m uvicorn main:app --host 0.0.0.0 --port $BACKEND_PORT --reload &
+    cd backend && source venv/bin/activate && export USE_SQLITE=true && python -m uvicorn main:app --host 0.0.0.0 --port $BACKEND_PORT --reload &
     cd ..
 fi
 
 sleep 3
 
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    osascript -e "tell app \"Terminal\" to do script \"cd '$(pwd)/frontend-svelte' && echo 'Starting SvelteKit Frontend on port $FRONTEND_PORT...' && npm run dev -- --host 0.0.0.0 --port $FRONTEND_PORT\"" 2>/dev/null
+    osascript -e "tell app \"Terminal\" to do script \"cd '$(pwd)/frontend-svelte' && echo '' && echo '========================================' && echo '  Frontend starting on port $FRONTEND_PORT' && echo '========================================' && echo '' && npm run dev -- --host 0.0.0.0 --port $FRONTEND_PORT\"" 2>/dev/null
 elif command -v gnome-terminal &> /dev/null; then
     gnome-terminal --title="Frontend SvelteKit" -- bash -c "cd '$(pwd)/frontend-svelte' && echo 'Starting SvelteKit Frontend on port $FRONTEND_PORT...' && npm run dev -- --host 0.0.0.0 --port $FRONTEND_PORT; exec bash"
 elif command -v xterm &> /dev/null; then
@@ -134,10 +138,11 @@ echo "  Frontend: http://localhost:$FRONTEND_PORT"
 echo "  Backend:  http://localhost:$BACKEND_PORT"
 echo "  API Docs: http://localhost:$BACKEND_PORT/docs"
 echo ""
-echo "  Layout: Unified 4-box with embedded matrix"
-echo "  - Sidebar: Conversation history"
-echo "  - Chat: Response container + Input panel"
-echo "  - Matrix: 5x5 transformation grid"
-echo "  - Preview: Live coherence metrics"
+echo "  Database: SQLite (backend/data/dev.db)"
+echo ""
+echo "  UI Layout:"
+echo "  - Collapsible sidebar (all pages)"
+echo "  - Chat: 4-box grid with matrix"
+echo "  - Documents, Settings: Content area"
 echo ""
 echo "============================================"

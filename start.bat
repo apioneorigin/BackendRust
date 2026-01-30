@@ -4,13 +4,18 @@ REM BackendRust Development Server Startup Script
 REM ============================================
 REM
 REM Starts:
-REM - Python/FastAPI backend on port 8000
-REM - SvelteKit frontend on port 5173 (unified 4-box layout with embedded matrix)
+REM - Python/FastAPI backend on port 8000 (with SQLite for local dev)
+REM - SvelteKit frontend on port 5173
 REM
 REM Features:
 REM - Kills ALL old server windows before starting
 REM - Auto-creates Python venv if missing
 REM - Installs dependencies automatically
+REM - Uses SQLite for local development (no external database needed)
+REM
+REM UI Layout:
+REM - Unified collapsible sidebar (consistent across all pages)
+REM - Chat page: 4-box layout with matrix and live preview
 REM
 
 cd /d "%~dp0"
@@ -125,8 +130,8 @@ REM STEP 5: Start fresh servers
 REM ============================================
 echo [5/5] Starting fresh server windows...
 
-REM Start backend in new window
-start "Backend API" cmd /k "cd /d "%~dp0backend" && call venv\Scripts\activate && echo. && echo ======================================== && echo   Backend API starting on port %BACKEND_PORT% && echo ======================================== && echo. && python -m uvicorn main:app --host 0.0.0.0 --port %BACKEND_PORT% --reload"
+REM Start backend in new window with USE_SQLITE for local dev
+start "Backend API" cmd /k "cd /d "%~dp0backend" && call venv\Scripts\activate && set USE_SQLITE=true && echo. && echo ======================================== && echo   Backend API starting on port %BACKEND_PORT% && echo   Database: SQLite (local development) && echo ======================================== && echo. && python -m uvicorn main:app --host 0.0.0.0 --port %BACKEND_PORT% --reload"
 
 REM Wait for backend to initialize
 timeout /t 3 >nul
@@ -143,11 +148,12 @@ echo   Frontend: http://localhost:%FRONTEND_PORT%
 echo   Backend:  http://localhost:%BACKEND_PORT%
 echo   API Docs: http://localhost:%BACKEND_PORT%/docs
 echo.
-echo   Layout: Unified 4-box with embedded matrix
-echo   - Sidebar: Conversation history
-echo   - Chat: Response container + Input panel
-echo   - Matrix: 5x5 transformation grid
-echo   - Preview: Live coherence metrics
+echo   Database: SQLite (backend/data/dev.db)
+echo.
+echo   UI Layout:
+echo   - Collapsible sidebar (all pages)
+echo   - Chat: 4-box grid with matrix
+echo   - Documents, Settings: Content area
 echo.
 echo ============================================
 echo.
