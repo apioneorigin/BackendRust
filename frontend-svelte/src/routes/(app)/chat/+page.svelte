@@ -14,7 +14,10 @@
 	let messageInput = '';
 	let messagesContainer: HTMLElement;
 	let inputElement: HTMLTextAreaElement;
+	let fileInputElement: HTMLInputElement;
 	let selectedModel = 'gpt-4.1';
+	let attachedFiles: File[] = [];
+	let isDragging = false;
 
 	const models = [
 		{ id: 'gpt-4.1', name: 'GPT-4.1' },
@@ -38,10 +41,12 @@
 	}
 
 	async function handleSendMessage() {
-		if (!messageInput.trim() || $isStreaming) return;
+		if ((!messageInput.trim() && attachedFiles.length === 0) || $isStreaming) return;
 
 		const content = messageInput.trim();
+		const files = [...attachedFiles];
 		messageInput = '';
+		attachedFiles = [];
 
 		// Reset textarea height
 		if (inputElement) {
@@ -49,7 +54,7 @@
 		}
 
 		try {
-			await chat.sendMessage(content, selectedModel);
+			await chat.sendMessage(content, selectedModel, files);
 		} catch (error: any) {
 			addToast('error', error.message || 'Failed to send message');
 		}
@@ -78,6 +83,80 @@
 
 	function stopGeneration() {
 		chat.stopStreaming();
+	}
+
+	// File upload handlers
+	function handleFileSelect(e: Event) {
+		const target = e.target as HTMLInputElement;
+		if (target.files) {
+			addFiles(Array.from(target.files));
+		}
+		// Reset input so same file can be selected again
+		target.value = '';
+	}
+
+	function addFiles(files: File[]) {
+		const validFiles = files.filter((file) => {
+			// Check file size (max 10MB)
+			if (file.size > 10 * 1024 * 1024) {
+				addToast('error', 'File too large', `${file.name} exceeds 10MB limit`);
+				return false;
+			}
+			// Check for duplicates
+			if (attachedFiles.some((f) => f.name === file.name && f.size === file.size)) {
+				return false;
+			}
+			return true;
+		});
+
+		attachedFiles = [...attachedFiles, ...validFiles];
+	}
+
+	function removeFile(index: number) {
+		attachedFiles = attachedFiles.filter((_, i) => i !== index);
+	}
+
+	function triggerFileInput() {
+		fileInputElement?.click();
+	}
+
+	// Drag and drop handlers
+	function handleDragOver(e: DragEvent) {
+		e.preventDefault();
+		isDragging = true;
+	}
+
+	function handleDragLeave(e: DragEvent) {
+		e.preventDefault();
+		isDragging = false;
+	}
+
+	function handleDrop(e: DragEvent) {
+		e.preventDefault();
+		isDragging = false;
+		if (e.dataTransfer?.files) {
+			addFiles(Array.from(e.dataTransfer.files));
+		}
+	}
+
+	function formatFileSize(bytes: number): string {
+		if (bytes < 1024) return bytes + ' B';
+		if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+		return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+	}
+
+	function getFileIcon(file: File): string {
+		const type = file.type;
+		if (type.startsWith('image/')) return '🖼️';
+		if (type.startsWith('video/')) return '🎬';
+		if (type.startsWith('audio/')) return '🎵';
+		if (type.includes('pdf')) return '📄';
+		if (type.includes('word') || type.includes('document')) return '📝';
+		if (type.includes('sheet') || type.includes('excel')) return '📊';
+		if (type.includes('presentation') || type.includes('powerpoint')) return '📽️';
+		if (type.includes('zip') || type.includes('rar') || type.includes('7z')) return '📦';
+		if (type.includes('text') || type.includes('json') || type.includes('xml')) return '📃';
+		return '📎';
 	}
 
 	function formatTimestamp(date: Date | string) {
@@ -294,7 +373,23 @@
 		</div>
 
 		<!-- Input area -->
-		<div class="input-area">
+		<div class="input-area"
+			on:dragover={handleDragOver}
+			on:dragleave={handleDragLeave}
+			on:drop={handleDrop}
+			class:drag-over={isDragging}
+			role="region"
+		>
+			<!-- Hidden file input -->
+			<input
+				type="file"
+				bind:this={fileInputElement}
+				on:change={handleFileSelect}
+				multiple
+				accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.json,.xml,.zip,.rar"
+				class="hidden-input"
+			/>
+
 			<div class="input-controls">
 				<select bind:value={selectedModel} class="model-select">
 					{#each models as model}
@@ -303,13 +398,44 @@
 				</select>
 			</div>
 
+			<!-- Attached files preview -->
+			{#if attachedFiles.length > 0}
+				<div class="attached-files">
+					{#each attachedFiles as file, index}
+						<div class="file-chip">
+							<span class="file-icon">{getFileIcon(file)}</span>
+							<span class="file-name">{file.name}</span>
+							<span class="file-size">{formatFileSize(file.size)}</span>
+							<button class="remove-file" on:click={() => removeFile(index)} title="Remove file">
+								<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<path d="M18 6 6 18" />
+									<path d="m6 6 12 12" />
+								</svg>
+							</button>
+						</div>
+					{/each}
+				</div>
+			{/if}
+
 			<div class="input-container input-premium">
+				<!-- File upload button -->
+				<button
+					class="attach-btn"
+					on:click={triggerFileInput}
+					disabled={$isStreaming}
+					title="Attach files"
+				>
+					<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+					</svg>
+				</button>
+
 				<textarea
 					bind:this={inputElement}
 					bind:value={messageInput}
 					on:keydown={handleKeyDown}
 					on:input={handleInput}
-					placeholder="Type your message..."
+					placeholder={attachedFiles.length > 0 ? "Add a message or send files..." : "Type your message..."}
 					rows="1"
 					disabled={$isStreaming}
 				></textarea>
@@ -332,7 +458,7 @@
 							variant="primary"
 							size="sm"
 							on:click={handleSendMessage}
-							disabled={!messageInput.trim()}
+							disabled={!messageInput.trim() && attachedFiles.length === 0}
 						>
 							<svg
 								xmlns="http://www.w3.org/2000/svg"
@@ -353,6 +479,20 @@
 					{/if}
 				</div>
 			</div>
+
+			<!-- Drag overlay -->
+			{#if isDragging}
+				<div class="drag-overlay">
+					<div class="drag-content">
+						<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+							<polyline points="17 8 12 3 7 8" />
+							<line x1="12" x2="12" y1="3" y2="15" />
+						</svg>
+						<p>Drop files here</p>
+					</div>
+				</div>
+			{/if}
 		</div>
 	</div>
 </div>
@@ -604,6 +744,134 @@
 	.input-area {
 		padding: 0.75rem 1.5rem 1.5rem;
 		background: var(--color-field-void);
+		position: relative;
+	}
+
+	.input-area.drag-over {
+		background: var(--color-primary-50);
+	}
+
+	[data-theme='dark'] .input-area.drag-over {
+		background: rgba(15, 76, 117, 0.1);
+	}
+
+	.hidden-input {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		border: 0;
+	}
+
+	/* Attached files */
+	.attached-files {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		margin-bottom: 0.75rem;
+	}
+
+	.file-chip {
+		display: flex;
+		align-items: center;
+		gap: 0.375rem;
+		padding: 0.375rem 0.5rem;
+		background: var(--color-field-surface);
+		border: 1px solid var(--color-veil-thin);
+		border-radius: 0.5rem;
+		font-size: 0.75rem;
+		animation: fadeIn 0.15s ease;
+	}
+
+	.file-icon {
+		font-size: 0.875rem;
+	}
+
+	.file-name {
+		max-width: 150px;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		color: var(--color-text-source);
+	}
+
+	.file-size {
+		color: var(--color-text-hint);
+	}
+
+	.remove-file {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 18px;
+		height: 18px;
+		padding: 0;
+		background: none;
+		border: none;
+		color: var(--color-text-whisper);
+		cursor: pointer;
+		border-radius: 50%;
+		transition: all 0.15s ease;
+	}
+
+	.remove-file:hover {
+		background: var(--color-error-100);
+		color: var(--color-error-500);
+	}
+
+	/* Attach button */
+	.attach-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 40px;
+		height: 40px;
+		padding: 0;
+		background: none;
+		border: none;
+		color: var(--color-text-whisper);
+		cursor: pointer;
+		border-radius: 0.5rem;
+		transition: all 0.15s ease;
+		flex-shrink: 0;
+	}
+
+	.attach-btn:hover:not(:disabled) {
+		background: var(--color-field-depth);
+		color: var(--color-primary-500);
+	}
+
+	.attach-btn:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	/* Drag overlay */
+	.drag-overlay {
+		position: absolute;
+		inset: 0;
+		background: rgba(15, 76, 117, 0.95);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 0.75rem;
+		z-index: 10;
+	}
+
+	.drag-content {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.75rem;
+		color: white;
+	}
+
+	.drag-content p {
+		font-size: 1rem;
+		font-weight: 500;
 	}
 
 	.input-controls {
