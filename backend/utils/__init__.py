@@ -18,6 +18,7 @@ from .sse import (
     sse_token,
     sse_usage,
     sse_error,
+    sse_done,
     sse_complete,
     sse_question,
 )
@@ -36,6 +37,7 @@ __all__ = [
     "sse_token",
     "sse_usage",
     "sse_error",
+    "sse_done",
     "sse_complete",
     "sse_question",
 ]

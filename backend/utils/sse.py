@@ -80,23 +80,40 @@ def sse_usage(
     return sse_event("usage", data)
 
 
-def sse_error(message: str, code: Optional[str] = None, **extra: Any) -> Dict[str, str]:
+def sse_error(message: str, recoverable: bool = False, **extra: Any) -> Dict[str, str]:
     """
     Create an error event.
 
     Args:
         message: Error message
-        code: Error code (optional)
+        recoverable: Whether the error is recoverable
         **extra: Additional fields
 
     Returns:
         SSE event dict
     """
-    data = {"error": message}
-    if code:
-        data["code"] = code
+    data = {"message": message}
+    if not recoverable:
+        data["recoverable"] = False
     data.update(extra)
     return sse_event("error", data)
+
+
+def sse_done(elapsed_time: Optional[float] = None, **extra: Any) -> Dict[str, str]:
+    """
+    Create a done event signaling pipeline completion.
+
+    Args:
+        elapsed_time: Total elapsed time in seconds
+        **extra: Additional fields (mode, reverse_mapping_applied, etc.)
+
+    Returns:
+        SSE event dict
+    """
+    data = {**extra}
+    if elapsed_time is not None:
+        data["elapsed_time"] = elapsed_time
+    return sse_event("done", data)
 
 
 def sse_complete(cos_data: Optional[dict] = None, **extra: Any) -> Dict[str, str]:
