@@ -167,15 +167,18 @@ async def update_goal(
 @router.get("/goals/{goal_id}/matrix", response_model=List[MatrixValueResponse])
 async def get_goal_matrix(
     goal_id: str,
+    limit: int = Query(100, ge=1, le=500),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """Get matrix values for a goal."""
+    """Get matrix values for a goal (limited to prevent unbounded queries)."""
     # Verify goal access
     await get_or_404(db, Goal, goal_id, user_id=current_user.id)
 
     result = await db.execute(
-        select(MatrixValue).where(MatrixValue.goal_id == goal_id)
+        select(MatrixValue)
+        .where(MatrixValue.goal_id == goal_id)
+        .limit(limit)
     )
     values = result.scalars().all()
 

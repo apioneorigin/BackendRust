@@ -3,6 +3,7 @@ Chat conversation endpoints with streaming support.
 Integrates with the consciousness inference engine.
 """
 
+import asyncio
 from datetime import datetime
 from typing import Optional, List, AsyncGenerator
 import json
@@ -180,18 +181,18 @@ async def send_message(
     Send a message and get streaming response.
     This integrates with the consciousness inference engine.
     """
-    # Verify access
-    conversation = await get_or_404(
+    # Parallel queries: verify access and load history simultaneously
+    conversation_task = get_or_404(
         db, ChatConversation, conversation_id, user_id=current_user.id
     )
-
-    # Load conversation history for context
-    history_result = await db.execute(
+    history_task = db.execute(
         select(ChatMessage)
         .where(ChatMessage.conversation_id == conversation_id)
         .order_by(ChatMessage.created_at)
         .limit(20)  # Last 20 messages for context
     )
+
+    conversation, history_result = await asyncio.gather(conversation_task, history_task)
     previous_messages = history_result.scalars().all()
 
     # Extract file summaries from system messages with attachments

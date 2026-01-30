@@ -5,9 +5,9 @@ User and organization management endpoints.
 from datetime import datetime
 from typing import Optional, List
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, EmailStr
-from sqlalchemy import select
+from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db, User, Organization, UserRole
@@ -122,15 +122,21 @@ async def get_organization(
 
 @router.get("/organization/users", response_model=List[UserResponse])
 async def get_organization_users(
+    limit: int = Query(100, ge=1, le=500),
+    offset: int = Query(0, ge=0),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """Get all users in current organization (org admins only)."""
+    """Get users in current organization (org admins only, paginated)."""
     if current_user.role not in [UserRole.ADMIN, UserRole.ORG_OWNER, UserRole.ORG_ADMIN]:
         raise HTTPException(status_code=403, detail="Not authorized to view organization users")
 
     result = await db.execute(
-        select(User).where(User.organization_id == current_user.organization_id)
+        select(User)
+        .where(User.organization_id == current_user.organization_id)
+        .order_by(desc(User.created_at))
+        .offset(offset)
+        .limit(limit)
     )
     users = result.scalars().all()
 
