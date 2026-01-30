@@ -1,21 +1,273 @@
 <script lang="ts">
-	import { user, auth, theme, addToast, credits } from '$lib/stores';
-	import { Button, Card, Spinner } from '$lib/components/ui';
+	/**
+	 * Settings Page - Redesigned Mobile-First UI
+	 *
+	 * Matches reality-transformer design principles:
+	 * - Mobile-first with responsive breakpoints
+	 * - Primary color system
+	 * - Consistent border radius
+	 * - Touch-friendly targets (min 48px)
+	 */
+
+	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
+	import { user, isAuthenticated, credits, creditBalance, addToast } from '$lib/stores';
+	import { Spinner } from '$lib/components/ui';
 	import { api } from '$lib/utils/api';
 
-	let isLoading = false;
-	let isSaving = false;
+	// Types
+	interface TeamMember {
+		id: string;
+		email: string;
+		name: string | null;
+		role: string;
+		credits: number;
+		creditsEnabled: boolean;
+		creditQuota: number;
+		createdAt: string;
+		lastLoginAt: string | null;
+	}
+
+	interface OrganizationInfo {
+		id: string;
+		creditsPool: number;
+		usedCredits: number;
+		totalAllocated: number;
+		availableForAllocation: number;
+	}
+
+	interface UsageEntry {
+		date: string;
+		operation: string;
+		cost: number;
+		balance: number;
+	}
+
+	interface CreditTransaction {
+		id: string;
+		type: 'redeemed' | 'spent';
+		amount: number;
+		description: string;
+		createdAt: string;
+	}
+
+	// State
+	let userRole: string | null = null;
+	let userCredits = 0;
+	let usageHistory: UsageEntry[] = [];
+	let creditHistory: CreditTransaction[] = [];
+	let showUsageHistory = false;
+	let showCreditHistory = false;
+	let promoCode = '';
+	let isRedeeming = false;
+	let isUpgrading = false;
+	let showUpgradeModal = false;
+
+	// Team management
+	let teamMembers: TeamMember[] = [];
+	let orgInfo: OrganizationInfo | null = null;
+	let loadingTeam = false;
+	let showCreateUserModal = false;
+	let newUserEmail = '';
+	let newUserName = '';
+	let newUserQuota = 0;
+	let isCreatingUser = false;
+
+	// Password change
+	let showPasswordModal = false;
 	let currentPassword = '';
 	let newPassword = '';
 	let confirmPassword = '';
+	let isChangingPassword = false;
+	let showCurrentPassword = false;
+	let showNewPassword = false;
+	let showConfirmPassword = false;
 
-	// User preferences
-	let displayName = $user?.name || '';
-	let emailNotifications = true;
+	$: isOrgAdmin = userRole === 'ORG_ADMIN' || userRole === 'ORG_OWNER';
 
-	async function handleChangePassword() {
+	onMount(async () => {
+		if (!$isAuthenticated) {
+			goto('/login');
+			return;
+		}
+
+		await fetchUserInfo();
+		await credits.loadBalance();
+		if ($creditBalance) {
+			userCredits = $creditBalance.creditQuota || 0;
+		}
+	});
+
+	async function fetchUserInfo() {
+		try {
+			const data = await api.get<{ role?: string; credits?: number }>('/api/auth/me');
+			userRole = data.role ?? null;
+			if (data.credits !== undefined) {
+				userCredits = data.credits;
+			}
+
+			if (data.role === 'ORG_ADMIN' || data.role === 'ORG_OWNER') {
+				loadTeamMembers();
+			}
+		} catch (error) {
+			// Ignore errors
+		}
+	}
+
+	async function loadTeamMembers() {
+		loadingTeam = true;
+		try {
+			const data = await api.get<{
+				success: boolean;
+				users?: TeamMember[];
+				organization?: OrganizationInfo;
+				error?: string;
+			}>('/api/org-admin/users/list');
+
+			if (data.success) {
+				teamMembers = data.users || [];
+				orgInfo = data.organization ?? null;
+			} else {
+				addToast('error', data.error || 'Failed to load team members');
+			}
+		} catch (error) {
+			// Ignore errors
+		} finally {
+			loadingTeam = false;
+		}
+	}
+
+	async function loadUsageHistory() {
+		if (showUsageHistory) {
+			showUsageHistory = false;
+			return;
+		}
+
+		try {
+			const data = await api.get<{ success: boolean; history?: UsageEntry[] }>(
+				'/api/credits/history'
+			);
+			if (data.success) {
+				usageHistory = data.history || [];
+				showUsageHistory = true;
+			}
+		} catch (error) {
+			addToast('error', 'Failed to load usage history');
+		}
+	}
+
+	async function loadCreditHistory() {
+		if (showCreditHistory) {
+			showCreditHistory = false;
+			return;
+		}
+
+		try {
+			const data = await api.get<{ success: boolean; transactions?: CreditTransaction[] }>(
+				'/api/credits/history'
+			);
+			if (data.success) {
+				creditHistory = data.transactions || [];
+				showCreditHistory = true;
+			}
+		} catch (error) {
+			addToast('error', 'Failed to load credit history');
+		}
+	}
+
+	function handlePurchaseCredits(packageSize: number) {
+		addToast('info', `Purchase ${packageSize} credits - Payment integration coming soon`);
+	}
+
+	async function handleRedeemPromoCode(e: Event) {
+		e.preventDefault();
+		if (!promoCode.trim()) {
+			addToast('warning', 'Please enter a promo code');
+			return;
+		}
+
+		isRedeeming = true;
+		try {
+			const redemption = await credits.redeemCode(promoCode.trim());
+			addToast('success', `Successfully redeemed! +${redemption.credits} credits`);
+			userCredits += redemption.credits;
+			promoCode = '';
+			goto('/chat');
+		} catch (error: any) {
+			addToast('error', error.message || 'Invalid promo code');
+		} finally {
+			isRedeeming = false;
+		}
+	}
+
+	async function handleUpgradeToOrgAdmin() {
+		isUpgrading = true;
+		try {
+			const data = await api.post<{ success: boolean; error?: string }>(
+				'/api/org-admin/upgrade',
+				{}
+			);
+
+			if (data.success) {
+				addToast('success', 'Successfully upgraded to Organization Admin!');
+				userRole = 'ORG_ADMIN';
+				showUpgradeModal = false;
+				loadTeamMembers();
+			} else {
+				addToast('error', data.error || 'Failed to upgrade');
+			}
+		} catch (error: any) {
+			addToast('error', error.message || 'Failed to upgrade');
+		} finally {
+			isUpgrading = false;
+		}
+	}
+
+	async function handleCreateUser(e: Event) {
+		e.preventDefault();
+		if (!newUserEmail.trim()) {
+			addToast('warning', 'Please enter an email address');
+			return;
+		}
+
+		isCreatingUser = true;
+		try {
+			const data = await api.post<{ success: boolean; error?: string }>(
+				'/api/org-admin/users/create',
+				{
+					email: newUserEmail.trim(),
+					name: newUserName.trim() || null,
+					creditQuota: newUserQuota
+				}
+			);
+
+			if (data.success) {
+				addToast('success', 'Team member created successfully!');
+				showCreateUserModal = false;
+				newUserEmail = '';
+				newUserName = '';
+				newUserQuota = 0;
+				loadTeamMembers();
+			} else {
+				addToast('error', data.error || 'Failed to create user');
+			}
+		} catch (error) {
+			addToast('error', 'Failed to create user');
+		} finally {
+			isCreatingUser = false;
+		}
+	}
+
+	async function handleChangePassword(e: Event) {
+		e.preventDefault();
+
 		if (!currentPassword || !newPassword || !confirmPassword) {
-			addToast('error', 'Please fill in all password fields');
+			addToast('warning', 'Please fill in all password fields');
+			return;
+		}
+
+		if (newPassword.length < 8) {
+			addToast('warning', 'New password must be at least 8 characters');
 			return;
 		}
 
@@ -24,46 +276,47 @@
 			return;
 		}
 
-		if (newPassword.length < 8) {
-			addToast('error', 'Password must be at least 8 characters');
-			return;
-		}
-
-		isSaving = true;
+		isChangingPassword = true;
 		try {
-			await api.post('/api/auth/change-password', {
-				current_password: currentPassword,
-				new_password: newPassword
-			});
-			addToast('success', 'Password changed successfully');
-			currentPassword = '';
-			newPassword = '';
-			confirmPassword = '';
+			const data = await api.post<{ success: boolean; error?: string }>(
+				'/api/auth/change-password',
+				{ currentPassword, newPassword }
+			);
+
+			if (data.success) {
+				addToast('success', 'Password changed successfully!');
+				closePasswordModal();
+			} else {
+				addToast('error', data.error || 'Failed to change password');
+			}
 		} catch (error: any) {
 			addToast('error', error.message || 'Failed to change password');
 		} finally {
-			isSaving = false;
+			isChangingPassword = false;
 		}
 	}
 
-	async function handleUpdateProfile() {
-		isSaving = true;
-		try {
-			await api.patch('/api/user/preferences', {
-				name: displayName,
-				email_notifications: emailNotifications
-			});
-			addToast('success', 'Profile updated successfully');
-		} catch (error: any) {
-			addToast('error', error.message || 'Failed to update profile');
-		} finally {
-			isSaving = false;
-		}
+	function closePasswordModal() {
+		showPasswordModal = false;
+		currentPassword = '';
+		newPassword = '';
+		confirmPassword = '';
+		showCurrentPassword = false;
+		showNewPassword = false;
+		showConfirmPassword = false;
 	}
 
-	function toggleTheme() {
-		theme.toggle();
+	function getRoleDisplay(): string {
+		if (userRole === 'ORG_OWNER') return 'Organization Owner';
+		if (userRole === 'ORG_ADMIN') return 'Organization Admin';
+		return 'User';
 	}
+
+	const purchasePackages = [
+		{ credits: 1000, price: 10, label: null, discount: null },
+		{ credits: 5000, price: 40, label: 'Popular', discount: '20%' },
+		{ credits: 10000, price: 70, label: 'Best', discount: '30%' }
+	];
 </script>
 
 <svelte:head>
@@ -71,351 +324,1676 @@
 </svelte:head>
 
 <div class="settings-page">
-	<div class="settings-header">
-		<h1>Settings</h1>
-		<p>Manage your account preferences and security</p>
-	</div>
+	<div class="settings-container">
+		<!-- Header -->
+		<div class="page-header">
+			<div class="header-icon">
+				<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+					<circle cx="12" cy="12" r="3"/>
+				</svg>
+			</div>
+			<div class="header-text">
+				<h1>Settings</h1>
+				<p>Manage your account</p>
+			</div>
+		</div>
 
-	<div class="settings-content">
-		<!-- Profile Section -->
-		<section class="settings-section">
-			<h2>Profile</h2>
-			<Card variant="default" padding="lg">
-				<div class="form-group">
-					<label for="email">Email</label>
-					<input
-						type="email"
-						id="email"
-						value={$user?.email || ''}
-						disabled
-						class="input-field disabled"
-					/>
-					<p class="help-text">Your email cannot be changed</p>
+		<!-- Account Card -->
+		<div class="card">
+			<div class="card-header">
+				<div class="card-icon">
+					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<circle cx="12" cy="8" r="5"/>
+						<path d="M20 21a8 8 0 0 0-16 0"/>
+					</svg>
 				</div>
+				<h2>Account</h2>
+			</div>
 
-				<div class="form-group">
-					<label for="displayName">Display Name</label>
+			<div class="info-rows">
+				<div class="info-row">
+					<span class="info-label">Email</span>
+					<span class="info-value">{$user?.email || '-'}</span>
+				</div>
+				<div class="info-row">
+					<span class="info-label">Name</span>
+					<span class="info-value">{$user?.name || 'Not set'}</span>
+				</div>
+				<div class="info-row">
+					<span class="info-label">Role</span>
+					<span class="info-value">{getRoleDisplay()}</span>
+				</div>
+			</div>
+
+			<div class="card-footer">
+				<button class="btn btn-secondary" on:click={() => (showPasswordModal = true)}>
+					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/>
+						<path d="m21 2-9.6 9.6"/>
+						<circle cx="7.5" cy="15.5" r="5.5"/>
+					</svg>
+					Change Password
+				</button>
+			</div>
+		</div>
+
+		<!-- Credits Card -->
+		<div class="card">
+			<div class="card-header">
+				<div class="card-icon">
+					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<rect width="20" height="14" x="2" y="5" rx="2"/>
+						<line x1="2" x2="22" y1="10" y2="10"/>
+					</svg>
+				</div>
+				<div>
+					<h2>Credits</h2>
+					<p class="card-subtitle">{isOrgAdmin ? 'Organization balance' : 'Your balance'}</p>
+				</div>
+			</div>
+
+			<!-- Credits Balance Display -->
+			<div class="credits-balance" class:low-balance={userCredits < 500}>
+				<div class="credits-amount">{userCredits.toLocaleString()}</div>
+				<div class="credits-label">credits available</div>
+				{#if userCredits < 500}
+					<div class="low-balance-warning">
+						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/>
+							<path d="M12 9v4"/>
+							<path d="M12 17h.01"/>
+						</svg>
+						<span>Low balance</span>
+					</div>
+				{/if}
+			</div>
+
+			<!-- Purchase Options -->
+			<div class="purchase-section">
+				<h3>Purchase Credits</h3>
+				<div class="purchase-grid">
+					{#each purchasePackages as pkg}
+						<button
+							class="purchase-option"
+							class:featured={pkg.label}
+							on:click={() => handlePurchaseCredits(pkg.credits)}
+						>
+							{#if pkg.label}
+								<div class="purchase-label">{pkg.label}</div>
+							{/if}
+							<div class="purchase-credits">{(pkg.credits / 1000).toFixed(0)}K</div>
+							<div class="purchase-price">${pkg.price}</div>
+							{#if pkg.discount}
+								<div class="purchase-discount">Save {pkg.discount}</div>
+							{/if}
+						</button>
+					{/each}
+				</div>
+			</div>
+
+			<!-- Promo Code -->
+			<div class="promo-section">
+				<div class="promo-header">
+					<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/>
+						<path d="M13 5v2"/>
+						<path d="M13 17v2"/>
+						<path d="M13 11v2"/>
+					</svg>
+					<span>Promo Code</span>
+				</div>
+				<form class="promo-form" on:submit={handleRedeemPromoCode}>
 					<input
 						type="text"
-						id="displayName"
-						bind:value={displayName}
-						placeholder="Enter your display name"
-						class="input-field"
+						bind:value={promoCode}
+						placeholder="ENTER CODE"
+						class="promo-input"
+						disabled={isRedeeming}
 					/>
-				</div>
+					<button type="submit" class="btn btn-primary" disabled={!promoCode.trim() || isRedeeming}>
+						{#if isRedeeming}
+							<Spinner size="sm" />
+						{:else}
+							Redeem
+						{/if}
+					</button>
+				</form>
+			</div>
+		</div>
 
-				<div class="form-actions">
-					<Button variant="primary" on:click={handleUpdateProfile} loading={isSaving}>
-						Save Changes
-					</Button>
-				</div>
-			</Card>
-		</section>
-
-		<!-- Appearance Section -->
-		<section class="settings-section">
-			<h2>Appearance</h2>
-			<Card variant="default" padding="lg">
-				<div class="setting-row">
-					<div class="setting-info">
-						<h3>Theme</h3>
-						<p>Choose between light and dark mode</p>
+		<!-- Upgrade to Org Admin (for USER role only) -->
+		{#if userRole === 'USER'}
+			<div class="card card-upgrade">
+				<div class="upgrade-content">
+					<div class="card-icon card-icon-green">
+						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+							<circle cx="9" cy="7" r="4"/>
+							<path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+							<path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+						</svg>
 					</div>
-					<div class="setting-control">
-						<button class="theme-toggle" on:click={toggleTheme}>
-							{#if $theme.isDark}
-								<svg
-									xmlns="http://www.w3.org/2000/svg"
-									width="20"
-									height="20"
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-								>
-									<circle cx="12" cy="12" r="4" />
-									<path d="M12 2v2" />
-									<path d="M12 20v2" />
-									<path d="m4.93 4.93 1.41 1.41" />
-									<path d="m17.66 17.66 1.41 1.41" />
-									<path d="M2 12h2" />
-									<path d="M20 12h2" />
-									<path d="m6.34 17.66-1.41 1.41" />
-									<path d="m19.07 4.93-1.41 1.41" />
-								</svg>
-								<span>Light Mode</span>
+					<div class="upgrade-text">
+						<h3>Manage a Team?</h3>
+						<p>Upgrade to invite team members and allocate credits</p>
+					</div>
+				</div>
+				<button class="btn btn-primary btn-sm" on:click={() => (showUpgradeModal = true)}>
+					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>
+					</svg>
+					Upgrade
+				</button>
+			</div>
+		{/if}
+
+		<!-- Team Management (for ORG_ADMIN/ORG_OWNER) -->
+		{#if isOrgAdmin}
+			<div class="card">
+				<div class="card-header card-header-flex">
+					<div class="card-header-left">
+						<div class="card-icon card-icon-green">
+							<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+								<circle cx="9" cy="7" r="4"/>
+								<path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+								<path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+							</svg>
+						</div>
+						<div>
+							<h2>Team</h2>
+							<p class="card-subtitle">Manage members</p>
+						</div>
+					</div>
+					<button class="btn btn-primary btn-sm" on:click={() => (showCreateUserModal = true)}>
+						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M5 12h14"/>
+							<path d="M12 5v14"/>
+						</svg>
+						<span class="hide-mobile">Add</span>
+					</button>
+				</div>
+
+				<!-- Org Stats -->
+				{#if orgInfo}
+					<div class="org-stats">
+						<div class="stat">
+							<div class="stat-label">Pool</div>
+							<div class="stat-value">{orgInfo.creditsPool.toLocaleString()}</div>
+						</div>
+						<div class="stat">
+							<div class="stat-label">Allocated</div>
+							<div class="stat-value stat-amber">{orgInfo.totalAllocated.toLocaleString()}</div>
+						</div>
+						<div class="stat">
+							<div class="stat-label">Used</div>
+							<div class="stat-value stat-red">{orgInfo.usedCredits.toLocaleString()}</div>
+						</div>
+						<div class="stat">
+							<div class="stat-label">Available</div>
+							<div class="stat-value stat-green">{orgInfo.availableForAllocation.toLocaleString()}</div>
+						</div>
+					</div>
+				{/if}
+
+				<!-- Team Members -->
+				{#if loadingTeam}
+					<div class="loading-state">
+						<Spinner />
+						<p>Loading team...</p>
+					</div>
+				{:else if teamMembers.length === 0}
+					<div class="empty-state">No team members yet</div>
+				{:else}
+					<div class="team-list">
+						{#each teamMembers as member}
+							<div class="team-member">
+								<div class="member-info">
+									<div class="member-email">{member.email}</div>
+									<div class="member-name">{member.name || member.role}</div>
+								</div>
+								<div class="member-quota">
+									<div class="quota-value">{member.creditQuota.toLocaleString()}</div>
+									<div class="quota-label">quota</div>
+								</div>
+							</div>
+						{/each}
+					</div>
+				{/if}
+			</div>
+		{/if}
+
+		<!-- Usage History -->
+		<div class="card">
+			<button class="card-toggle" on:click={loadUsageHistory}>
+				<div class="card-toggle-left">
+					<div class="card-icon">
+						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<circle cx="12" cy="12" r="10"/>
+							<polyline points="12 6 12 12 16 14"/>
+						</svg>
+					</div>
+					<span class="toggle-title">Usage History</span>
+				</div>
+				<svg class="chevron" class:rotated={showUsageHistory} xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="m6 9 6 6 6-6"/>
+				</svg>
+			</button>
+
+			{#if showUsageHistory}
+				{#if usageHistory.length > 0}
+					<div class="history-list">
+						{#each usageHistory.slice(0, 10) as entry}
+							<div class="history-item">
+								<div class="history-info">
+									<div class="history-operation">{entry.operation}</div>
+									<div class="history-date">{new Date(entry.date).toLocaleDateString()}</div>
+								</div>
+								<div class="history-cost">
+									<div class="cost-value" class:positive={entry.cost > 0} class:negative={entry.cost <= 0}>
+										{entry.cost > 0 ? '+' : ''}{entry.cost}
+									</div>
+									<div class="cost-balance">bal: {entry.balance.toLocaleString()}</div>
+								</div>
+							</div>
+						{/each}
+					</div>
+				{:else}
+					<div class="empty-state">No usage history yet</div>
+				{/if}
+			{/if}
+		</div>
+
+		<!-- Credit History -->
+		<div class="card">
+			<button class="card-toggle" on:click={loadCreditHistory}>
+				<div class="card-toggle-left">
+					<div class="card-icon card-icon-green">
+						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/>
+							<path d="M13 5v2"/>
+							<path d="M13 17v2"/>
+							<path d="M13 11v2"/>
+						</svg>
+					</div>
+					<span class="toggle-title">Credit History</span>
+				</div>
+				<svg class="chevron" class:rotated={showCreditHistory} xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="m6 9 6 6 6-6"/>
+				</svg>
+			</button>
+
+			{#if showCreditHistory}
+				{#if creditHistory.length > 0}
+					<div class="history-list">
+						{#each creditHistory.slice(0, 20) as txn}
+							<div class="history-item">
+								<div class="history-info">
+									<div class="txn-badge" class:earned={txn.type === 'redeemed'} class:spent={txn.type === 'spent'}>
+										{txn.type === 'redeemed' ? 'Earned' : 'Spent'}
+									</div>
+									<div class="history-operation">{txn.description}</div>
+									<div class="history-date">{new Date(txn.createdAt).toLocaleDateString()} {new Date(txn.createdAt).toLocaleTimeString()}</div>
+								</div>
+								<div class="txn-amount" class:positive={txn.amount > 0} class:negative={txn.amount <= 0}>
+									{txn.amount > 0 ? '+' : ''}{txn.amount.toLocaleString()}
+								</div>
+							</div>
+						{/each}
+					</div>
+				{:else}
+					<div class="empty-state">No credit transactions yet</div>
+				{/if}
+			{/if}
+		</div>
+
+		<!-- System Info -->
+		<div class="card">
+			<div class="card-header">
+				<div class="card-icon card-icon-muted">
+					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<circle cx="12" cy="12" r="10"/>
+						<path d="M12 16v-4"/>
+						<path d="M12 8h.01"/>
+					</svg>
+				</div>
+				<h2>System</h2>
+			</div>
+			<div class="info-rows">
+				<div class="info-row">
+					<span class="info-label">Version</span>
+					<span class="info-value">1.0.0</span>
+				</div>
+				<div class="info-row">
+					<span class="info-label">Environment</span>
+					<span class="info-value">production</span>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- Upgrade Modal -->
+{#if showUpgradeModal}
+	<div class="modal-overlay" on:click={() => (showUpgradeModal = false)} on:keydown={(e) => e.key === 'Escape' && (showUpgradeModal = false)} role="dialog" aria-modal="true" tabindex="-1">
+		<div class="modal" on:click|stopPropagation on:keydown|stopPropagation role="document">
+			<h2>Upgrade to Org Admin</h2>
+			<div class="modal-content">
+				<div class="upgrade-benefits">
+					<p>As an Organization Admin, you can:</p>
+					<ul>
+						<li>
+							<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+							Invite and manage team members
+						</li>
+						<li>
+							<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+							Allocate credits to your team
+						</li>
+						<li>
+							<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+							View team usage statistics
+						</li>
+					</ul>
+				</div>
+				<div class="modal-actions">
+					<button class="btn btn-secondary" on:click={() => (showUpgradeModal = false)}>Cancel</button>
+					<button class="btn btn-primary" on:click={handleUpgradeToOrgAdmin} disabled={isUpgrading}>
+						{#if isUpgrading}
+							<Spinner size="sm" />
+						{:else}
+							Confirm Upgrade
+						{/if}
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+{/if}
+
+<!-- Create User Modal -->
+{#if showCreateUserModal}
+	<div class="modal-overlay" on:click={() => (showCreateUserModal = false)} on:keydown={(e) => e.key === 'Escape' && (showCreateUserModal = false)} role="dialog" aria-modal="true" tabindex="-1">
+		<div class="modal" on:click|stopPropagation on:keydown|stopPropagation role="document">
+			<h2>Add Team Member</h2>
+			<form class="modal-form" on:submit={handleCreateUser}>
+				<div class="form-group">
+					<label for="newUserEmail">Email *</label>
+					<input type="email" id="newUserEmail" bind:value={newUserEmail} placeholder="team@example.com" />
+				</div>
+				<div class="form-group">
+					<label for="newUserName">Name</label>
+					<input type="text" id="newUserName" bind:value={newUserName} placeholder="Full Name (optional)" />
+				</div>
+				<div class="form-group">
+					<label for="newUserQuota">Credit Quota</label>
+					<input type="number" id="newUserQuota" bind:value={newUserQuota} placeholder="0" />
+					{#if orgInfo}
+						<p class="form-hint">Available: {orgInfo.availableForAllocation.toLocaleString()} credits</p>
+					{/if}
+				</div>
+				<div class="modal-actions">
+					<button type="button" class="btn btn-secondary" on:click={() => { showCreateUserModal = false; newUserEmail = ''; newUserName = ''; newUserQuota = 0; }}>Cancel</button>
+					<button type="submit" class="btn btn-primary" disabled={isCreatingUser}>
+						{#if isCreatingUser}
+							<Spinner size="sm" />
+						{:else}
+							Add Member
+						{/if}
+					</button>
+				</div>
+			</form>
+		</div>
+	</div>
+{/if}
+
+<!-- Change Password Modal -->
+{#if showPasswordModal}
+	<div class="modal-overlay" on:click={closePasswordModal} on:keydown={(e) => e.key === 'Escape' && closePasswordModal()} role="dialog" aria-modal="true" tabindex="-1">
+		<div class="modal" on:click|stopPropagation on:keydown|stopPropagation role="document">
+			<h2>Change Password</h2>
+			<form class="modal-form" on:submit={handleChangePassword}>
+				<div class="form-group">
+					<label for="currentPassword">Current Password *</label>
+					<div class="password-input">
+						{#if showCurrentPassword}
+							<input
+								type="text"
+								id="currentPasswordText"
+								bind:value={currentPassword}
+								placeholder="Enter current password"
+								disabled={isChangingPassword}
+							/>
+						{:else}
+							<input
+								type="password"
+								id="currentPassword"
+								bind:value={currentPassword}
+								placeholder="Enter current password"
+								disabled={isChangingPassword}
+							/>
+						{/if}
+						<button type="button" class="password-toggle" on:click={() => (showCurrentPassword = !showCurrentPassword)}>
+							{#if showCurrentPassword}
+								<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/></svg>
 							{:else}
-								<svg
-									xmlns="http://www.w3.org/2000/svg"
-									width="20"
-									height="20"
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-								>
-									<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
-								</svg>
-								<span>Dark Mode</span>
+								<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
 							{/if}
 						</button>
 					</div>
 				</div>
-			</Card>
-		</section>
-
-		<!-- Security Section -->
-		<section class="settings-section">
-			<h2>Security</h2>
-			<Card variant="default" padding="lg">
-				<h3>Change Password</h3>
 				<div class="form-group">
-					<label for="currentPassword">Current Password</label>
-					<input
-						type="password"
-						id="currentPassword"
-						bind:value={currentPassword}
-						placeholder="Enter current password"
-						class="input-field"
-					/>
+					<label for="newPassword">New Password *</label>
+					<div class="password-input">
+						{#if showNewPassword}
+							<input
+								type="text"
+								id="newPasswordText"
+								bind:value={newPassword}
+								placeholder="Enter new password"
+								disabled={isChangingPassword}
+							/>
+						{:else}
+							<input
+								type="password"
+								id="newPassword"
+								bind:value={newPassword}
+								placeholder="Enter new password"
+								disabled={isChangingPassword}
+							/>
+						{/if}
+						<button type="button" class="password-toggle" on:click={() => (showNewPassword = !showNewPassword)}>
+							{#if showNewPassword}
+								<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/></svg>
+							{:else}
+								<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
+							{/if}
+						</button>
+					</div>
+					<p class="form-hint">Must be at least 8 characters</p>
 				</div>
-
 				<div class="form-group">
-					<label for="newPassword">New Password</label>
-					<input
-						type="password"
-						id="newPassword"
-						bind:value={newPassword}
-						placeholder="Enter new password"
-						class="input-field"
-					/>
-				</div>
-
-				<div class="form-group">
-					<label for="confirmPassword">Confirm New Password</label>
-					<input
-						type="password"
-						id="confirmPassword"
-						bind:value={confirmPassword}
-						placeholder="Confirm new password"
-						class="input-field"
-					/>
-				</div>
-
-				<div class="form-actions">
-					<Button variant="outline" on:click={handleChangePassword} loading={isSaving}>
-						Change Password
-					</Button>
-				</div>
-			</Card>
-		</section>
-
-		<!-- Credits Section -->
-		<section class="settings-section">
-			<h2>Credits & Usage</h2>
-			<Card variant="default" padding="lg">
-				<div class="credits-display">
-					<div class="credits-amount">
-						<span class="credits-value">{$credits?.balance || 0}</span>
-						<span class="credits-label">Credits Remaining</span>
+					<label for="confirmPassword">Confirm New Password *</label>
+					<div class="password-input">
+						{#if showConfirmPassword}
+							<input
+								type="text"
+								id="confirmPasswordText"
+								bind:value={confirmPassword}
+								placeholder="Confirm new password"
+								disabled={isChangingPassword}
+							/>
+						{:else}
+							<input
+								type="password"
+								id="confirmPassword"
+								bind:value={confirmPassword}
+								placeholder="Confirm new password"
+								disabled={isChangingPassword}
+							/>
+						{/if}
+						<button type="button" class="password-toggle" on:click={() => (showConfirmPassword = !showConfirmPassword)}>
+							{#if showConfirmPassword}
+								<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/></svg>
+							{:else}
+								<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
+							{/if}
+						</button>
 					</div>
-					<Button variant="primary" on:click={() => window.location.href = '/add-credits'}>
-						Add Credits
-					</Button>
+					{#if confirmPassword && newPassword !== confirmPassword}
+						<p class="form-error">Passwords do not match</p>
+					{/if}
 				</div>
-			</Card>
-		</section>
-
-		<!-- Danger Zone -->
-		<section class="settings-section danger-zone">
-			<h2>Danger Zone</h2>
-			<Card variant="default" padding="lg">
-				<div class="setting-row">
-					<div class="setting-info">
-						<h3>Delete Account</h3>
-						<p>Permanently delete your account and all associated data</p>
-					</div>
-					<div class="setting-control">
-						<Button variant="danger">Delete Account</Button>
-					</div>
+				<div class="modal-actions">
+					<button type="button" class="btn btn-secondary" on:click={closePasswordModal} disabled={isChangingPassword}>Cancel</button>
+					<button type="submit" class="btn btn-primary" disabled={isChangingPassword || !currentPassword || !newPassword || !confirmPassword || newPassword !== confirmPassword}>
+						{#if isChangingPassword}
+							<Spinner size="sm" />
+						{:else}
+							Change Password
+						{/if}
+					</button>
 				</div>
-			</Card>
-		</section>
+			</form>
+		</div>
 	</div>
-</div>
+{/if}
 
 <style>
 	.settings-page {
-		padding: 2rem;
-		max-width: 800px;
-		margin: 0 auto;
+		width: 100%;
+		min-height: 100%;
+		background: var(--color-field-void);
 		overflow-y: auto;
-		height: 100%;
+		padding-bottom: env(safe-area-inset-bottom, 0);
 	}
 
-	.settings-header {
-		margin-bottom: 2rem;
-	}
-
-	.settings-header h1 {
-		font-size: 1.75rem;
-		font-weight: 700;
-		color: var(--color-text-source);
-		margin-bottom: 0.5rem;
-	}
-
-	.settings-header p {
-		color: var(--color-text-whisper);
-	}
-
-	.settings-content {
+	.settings-container {
+		max-width: 48rem;
+		margin: 0 auto;
+		padding: 1rem;
 		display: flex;
 		flex-direction: column;
-		gap: 2rem;
-	}
-
-	.settings-section h2 {
-		font-size: 1rem;
-		font-weight: 600;
-		color: var(--color-text-source);
-		margin-bottom: 1rem;
-	}
-
-	.settings-section h3 {
-		font-size: 0.9375rem;
-		font-weight: 600;
-		color: var(--color-text-source);
-		margin-bottom: 1rem;
-	}
-
-	.form-group {
-		margin-bottom: 1.25rem;
-	}
-
-	.form-group label {
-		display: block;
-		font-size: 0.8125rem;
-		font-weight: 500;
-		color: var(--color-text-manifest);
-		margin-bottom: 0.5rem;
-	}
-
-	.input-field {
-		width: 100%;
-		padding: 0.75rem 1rem;
-		background: var(--color-field-depth);
-		border: 1px solid var(--color-veil-thin);
-		border-radius: 0.625rem;
-		color: var(--color-text-source);
-		font-size: 0.9375rem;
-		transition: border-color 0.15s ease;
-	}
-
-	.input-field:focus {
-		outline: none;
-		border-color: var(--color-primary-400);
-	}
-
-	.input-field.disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
-	}
-
-	.help-text {
-		font-size: 0.75rem;
-		color: var(--color-text-hint);
-		margin-top: 0.375rem;
-	}
-
-	.form-actions {
-		margin-top: 1.5rem;
-	}
-
-	.setting-row {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
 		gap: 1rem;
 	}
 
-	.setting-info h3 {
-		margin-bottom: 0.25rem;
+	@media (min-width: 480px) {
+		.settings-container {
+			padding: 1.25rem;
+			gap: 1.25rem;
+		}
 	}
 
-	.setting-info p {
-		font-size: 0.8125rem;
+	@media (min-width: 768px) {
+		.settings-container {
+			padding: 1.5rem;
+		}
+	}
+
+	/* Page Header */
+	.page-header {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		padding: 0.5rem 0;
+	}
+
+	@media (min-width: 480px) {
+		.page-header {
+			gap: 1rem;
+		}
+	}
+
+	.header-icon {
+		width: 3rem;
+		height: 3rem;
+		border-radius: 1rem;
+		background: var(--color-primary-500);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: white;
+		box-shadow: var(--shadow-elevated);
+		flex-shrink: 0;
+	}
+
+	@media (min-width: 480px) {
+		.header-icon {
+			width: 3.5rem;
+			height: 3.5rem;
+		}
+	}
+
+	.header-text h1 {
+		font-size: 1.5rem;
+		font-weight: 700;
+		color: var(--color-text-source);
+	}
+
+	@media (min-width: 480px) {
+		.header-text h1 {
+			font-size: 1.875rem;
+		}
+	}
+
+	.header-text p {
+		font-size: 0.75rem;
+		color: var(--color-text-whisper);
+	}
+
+	@media (min-width: 480px) {
+		.header-text p {
+			font-size: 0.875rem;
+		}
+	}
+
+	/* Card */
+	.card {
+		background: var(--color-field-surface);
+		border-radius: 1rem;
+		border: 1px solid var(--color-veil-thin);
+		padding: 1rem;
+	}
+
+	@media (min-width: 480px) {
+		.card {
+			padding: 1.25rem;
+		}
+	}
+
+	@media (min-width: 768px) {
+		.card {
+			padding: 1.5rem;
+		}
+	}
+
+	.card-header {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		margin-bottom: 1rem;
+	}
+
+	@media (min-width: 480px) {
+		.card-header {
+			margin-bottom: 1.25rem;
+		}
+	}
+
+	.card-header-flex {
+		justify-content: space-between;
+	}
+
+	.card-header-left {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+	}
+
+	.card-header h2 {
+		font-size: 1.125rem;
+		font-weight: 700;
+		color: var(--color-text-source);
+	}
+
+	@media (min-width: 480px) {
+		.card-header h2 {
+			font-size: 1.25rem;
+		}
+	}
+
+	.card-subtitle {
+		font-size: 0.75rem;
 		color: var(--color-text-whisper);
 		margin: 0;
 	}
 
-	.theme-toggle {
+	@media (min-width: 480px) {
+		.card-subtitle {
+			font-size: 0.875rem;
+		}
+	}
+
+	.card-icon {
+		width: 2.5rem;
+		height: 2.5rem;
+		border-radius: 0.75rem;
+		background: var(--color-primary-100);
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
-		padding: 0.625rem 1rem;
+		justify-content: center;
+		color: var(--color-primary-600);
+		flex-shrink: 0;
+	}
+
+	[data-theme='dark'] .card-icon {
+		background: rgba(15, 76, 117, 0.3);
+		color: var(--color-primary-400);
+	}
+
+	@media (min-width: 480px) {
+		.card-icon {
+			width: 2.75rem;
+			height: 2.75rem;
+		}
+	}
+
+	.card-icon-green {
+		background: rgba(5, 150, 105, 0.1);
+		color: #059669;
+	}
+
+	[data-theme='dark'] .card-icon-green {
+		background: rgba(5, 150, 105, 0.2);
+		color: #34d399;
+	}
+
+	.card-icon-muted {
 		background: var(--color-field-depth);
-		border: 1px solid var(--color-veil-thin);
-		border-radius: 0.625rem;
-		color: var(--color-text-manifest);
-		font-size: 0.875rem;
-		cursor: pointer;
-		transition: all 0.15s ease;
-	}
-
-	.theme-toggle:hover {
-		background: var(--color-field-elevated);
-		border-color: var(--color-veil-present);
-	}
-
-	.credits-display {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-	}
-
-	.credits-amount {
-		display: flex;
-		flex-direction: column;
-	}
-
-	.credits-value {
-		font-size: 2rem;
-		font-weight: 700;
-		color: var(--color-primary-500);
-	}
-
-	.credits-label {
-		font-size: 0.8125rem;
 		color: var(--color-text-whisper);
 	}
 
-	.danger-zone h2 {
-		color: var(--color-error-500);
+	.card-footer {
+		margin-top: 1rem;
+		padding-top: 1rem;
+		border-top: 1px solid var(--color-veil-thin);
 	}
 
-	/* Mobile responsive */
-	@media (max-width: 767px) {
-		.settings-page {
+	/* Info Rows */
+	.info-rows {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	@media (min-width: 480px) {
+		.info-rows {
+			gap: 0.75rem;
+		}
+	}
+
+	.info-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 0.75rem 1rem;
+		border-radius: 0.75rem;
+		background: var(--color-field-depth);
+		min-height: 52px;
+	}
+
+	.info-label {
+		font-size: 0.875rem;
+		font-weight: 500;
+		color: var(--color-text-whisper);
+	}
+
+	@media (min-width: 480px) {
+		.info-label {
+			font-size: 1rem;
+		}
+	}
+
+	.info-value {
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: var(--color-text-source);
+		text-align: right;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		margin-left: 0.75rem;
+	}
+
+	@media (min-width: 480px) {
+		.info-value {
+			font-size: 1rem;
+		}
+	}
+
+	/* Buttons */
+	.btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+		font-weight: 600;
+		border-radius: 0.75rem;
+		transition: all 0.15s ease;
+		cursor: pointer;
+		border: none;
+		min-height: 48px;
+		padding: 0.75rem 1rem;
+		font-size: 0.875rem;
+	}
+
+	@media (min-width: 480px) {
+		.btn {
+			font-size: 1rem;
+		}
+	}
+
+	.btn:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	.btn:active:not(:disabled) {
+		transform: scale(0.98);
+	}
+
+	.btn-primary {
+		background: var(--color-primary-500);
+		color: white;
+	}
+
+	.btn-primary:hover:not(:disabled) {
+		background: var(--color-primary-600);
+	}
+
+	.btn-secondary {
+		background: var(--color-field-elevated);
+		color: var(--color-text-source);
+		border: 1px solid var(--color-veil-thin);
+	}
+
+	.btn-secondary:hover:not(:disabled) {
+		background: var(--color-field-depth);
+	}
+
+	.btn-sm {
+		min-height: 40px;
+		padding: 0.5rem 0.75rem;
+		font-size: 0.875rem;
+	}
+
+	.hide-mobile {
+		display: none;
+	}
+
+	@media (min-width: 480px) {
+		.hide-mobile {
+			display: inline;
+		}
+	}
+
+	/* Credits Balance */
+	.credits-balance {
+		padding: 1.25rem 1.5rem;
+		border-radius: 1rem;
+		text-align: center;
+		margin-bottom: 1.25rem;
+		background: var(--color-primary-50);
+		border: 1px solid var(--color-primary-200);
+	}
+
+	[data-theme='dark'] .credits-balance {
+		background: rgba(15, 76, 117, 0.15);
+		border-color: var(--color-primary-800);
+	}
+
+	.credits-balance.low-balance {
+		background: rgba(239, 68, 68, 0.05);
+		border-color: rgba(239, 68, 68, 0.2);
+	}
+
+	[data-theme='dark'] .credits-balance.low-balance {
+		background: rgba(239, 68, 68, 0.1);
+		border-color: rgba(239, 68, 68, 0.3);
+	}
+
+	.credits-amount {
+		font-size: 2.5rem;
+		font-weight: 700;
+		color: var(--color-text-source);
+		margin-bottom: 0.25rem;
+	}
+
+	@media (min-width: 480px) {
+		.credits-amount {
+			font-size: 3rem;
+		}
+	}
+
+	.credits-label {
+		font-size: 0.75rem;
+		font-weight: 500;
+		color: var(--color-text-whisper);
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+
+	@media (min-width: 480px) {
+		.credits-label {
+			font-size: 0.875rem;
+		}
+	}
+
+	.low-balance-warning {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+		margin-top: 0.75rem;
+		color: #dc2626;
+		font-size: 0.875rem;
+	}
+
+	[data-theme='dark'] .low-balance-warning {
+		color: #f87171;
+	}
+
+	/* Purchase Section */
+	.purchase-section {
+		margin-bottom: 1.25rem;
+	}
+
+	.purchase-section h3 {
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: var(--color-text-source);
+		margin-bottom: 0.75rem;
+	}
+
+	@media (min-width: 480px) {
+		.purchase-section h3 {
+			font-size: 1rem;
+		}
+	}
+
+	.purchase-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 0.5rem;
+	}
+
+	@media (min-width: 480px) {
+		.purchase-grid {
+			gap: 0.75rem;
+		}
+	}
+
+	.purchase-option {
+		padding: 0.75rem;
+		border-radius: 0.75rem;
+		border: 2px solid var(--color-veil-thin);
+		background: transparent;
+		cursor: pointer;
+		text-align: center;
+		transition: all 0.15s ease;
+	}
+
+	@media (min-width: 480px) {
+		.purchase-option {
 			padding: 1rem;
 		}
+	}
 
-		.setting-row {
-			flex-direction: column;
-			align-items: flex-start;
-		}
+	.purchase-option:hover {
+		border-color: var(--color-primary-400);
+	}
 
-		.setting-control {
-			margin-top: 1rem;
-		}
+	.purchase-option:active {
+		transform: scale(0.98);
+	}
 
-		.credits-display {
-			flex-direction: column;
-			align-items: flex-start;
-			gap: 1rem;
+	.purchase-option.featured {
+		border-color: var(--color-primary-500);
+		background: var(--color-primary-50);
+	}
+
+	[data-theme='dark'] .purchase-option.featured {
+		background: rgba(15, 76, 117, 0.1);
+	}
+
+	.purchase-label {
+		font-size: 0.625rem;
+		font-weight: 700;
+		color: var(--color-primary-600);
+		margin-bottom: 0.25rem;
+	}
+
+	[data-theme='dark'] .purchase-label {
+		color: var(--color-primary-400);
+	}
+
+	@media (min-width: 480px) {
+		.purchase-label {
+			font-size: 0.75rem;
 		}
+	}
+
+	.purchase-credits {
+		font-size: 1.125rem;
+		font-weight: 700;
+		color: var(--color-text-source);
+	}
+
+	@media (min-width: 480px) {
+		.purchase-credits {
+			font-size: 1.25rem;
+		}
+	}
+
+	.purchase-price {
+		font-size: 0.875rem;
+		font-weight: 700;
+		color: var(--color-primary-600);
+	}
+
+	[data-theme='dark'] .purchase-price {
+		color: var(--color-primary-400);
+	}
+
+	@media (min-width: 480px) {
+		.purchase-price {
+			font-size: 1rem;
+		}
+	}
+
+	.purchase-discount {
+		font-size: 0.625rem;
+		font-weight: 500;
+		color: #059669;
+	}
+
+	[data-theme='dark'] .purchase-discount {
+		color: #34d399;
+	}
+
+	@media (min-width: 480px) {
+		.purchase-discount {
+			font-size: 0.75rem;
+		}
+	}
+
+	/* Promo Section */
+	.promo-section {
+		padding: 1rem;
+		border-radius: 0.75rem;
+		background: var(--color-field-depth);
+	}
+
+	.promo-header {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		margin-bottom: 0.75rem;
+		color: var(--color-primary-600);
+		font-size: 0.875rem;
+		font-weight: 600;
+	}
+
+	[data-theme='dark'] .promo-header {
+		color: var(--color-primary-400);
+	}
+
+	.promo-form {
+		display: flex;
+		gap: 0.5rem;
+	}
+
+	.promo-input {
+		flex: 1;
+		padding: 0.75rem 1rem;
+		background: var(--color-field-void);
+		border: 1px solid var(--color-veil-thin);
+		border-radius: 0.75rem;
+		color: var(--color-text-source);
+		font-size: 0.875rem;
+		text-transform: uppercase;
+		font-family: monospace;
+		min-height: 48px;
+	}
+
+	.promo-input:focus {
+		outline: none;
+		border-color: var(--color-primary-400);
+	}
+
+	.promo-input::placeholder {
+		color: var(--color-text-hint);
+	}
+
+	/* Upgrade Card */
+	.card-upgrade {
+		border-color: var(--color-primary-200);
+		background: rgba(15, 76, 117, 0.03);
+	}
+
+	[data-theme='dark'] .card-upgrade {
+		border-color: var(--color-primary-800);
+		background: rgba(15, 76, 117, 0.1);
+	}
+
+	.upgrade-content {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.75rem;
+		margin-bottom: 0.75rem;
+	}
+
+	.upgrade-text h3 {
+		font-size: 1rem;
+		font-weight: 700;
+		color: var(--color-text-source);
+		margin-bottom: 0.25rem;
+	}
+
+	@media (min-width: 480px) {
+		.upgrade-text h3 {
+			font-size: 1.125rem;
+		}
+	}
+
+	.upgrade-text p {
+		font-size: 0.75rem;
+		color: var(--color-text-whisper);
+		margin: 0;
+	}
+
+	@media (min-width: 480px) {
+		.upgrade-text p {
+			font-size: 0.875rem;
+		}
+	}
+
+	/* Org Stats */
+	.org-stats {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 0.5rem;
+		margin-bottom: 1rem;
+	}
+
+	@media (min-width: 480px) {
+		.org-stats {
+			grid-template-columns: repeat(4, 1fr);
+			gap: 0.75rem;
+		}
+	}
+
+	.stat {
+		padding: 0.625rem 0.75rem;
+		border-radius: 0.75rem;
+		background: var(--color-field-depth);
+		text-align: center;
+	}
+
+	@media (min-width: 480px) {
+		.stat {
+			padding: 0.75rem;
+		}
+	}
+
+	.stat-label {
+		font-size: 0.625rem;
+		color: var(--color-text-whisper);
+		margin-bottom: 0.125rem;
+	}
+
+	@media (min-width: 480px) {
+		.stat-label {
+			font-size: 0.75rem;
+		}
+	}
+
+	.stat-value {
+		font-size: 0.875rem;
+		font-weight: 700;
+		color: var(--color-text-source);
+	}
+
+	@media (min-width: 480px) {
+		.stat-value {
+			font-size: 1rem;
+		}
+	}
+
+	.stat-amber {
+		color: #d97706;
+	}
+
+	[data-theme='dark'] .stat-amber {
+		color: #fbbf24;
+	}
+
+	.stat-red {
+		color: #dc2626;
+	}
+
+	[data-theme='dark'] .stat-red {
+		color: #f87171;
+	}
+
+	.stat-green {
+		color: #059669;
+	}
+
+	[data-theme='dark'] .stat-green {
+		color: #34d399;
+	}
+
+	/* Team List */
+	.team-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.team-member {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 0.75rem;
+		border-radius: 0.75rem;
+		background: var(--color-field-depth);
+	}
+
+	.member-info {
+		min-width: 0;
+		flex: 1;
+	}
+
+	.member-email {
+		font-size: 0.875rem;
+		font-weight: 500;
+		color: var(--color-text-source);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.member-name {
+		font-size: 0.75rem;
+		color: var(--color-text-whisper);
+	}
+
+	.member-quota {
+		text-align: right;
+		margin-left: 0.75rem;
+	}
+
+	.quota-value {
+		font-size: 0.875rem;
+		font-weight: 700;
+		color: var(--color-primary-600);
+	}
+
+	[data-theme='dark'] .quota-value {
+		color: var(--color-primary-400);
+	}
+
+	.quota-label {
+		font-size: 0.75rem;
+		color: var(--color-text-whisper);
+	}
+
+	/* Loading & Empty States */
+	.loading-state {
+		padding: 2rem 0;
+		text-align: center;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.75rem;
+	}
+
+	.loading-state p {
+		font-size: 0.875rem;
+		color: var(--color-text-whisper);
+	}
+
+	.empty-state {
+		padding: 2rem 0;
+		text-align: center;
+		font-size: 0.875rem;
+		color: var(--color-text-whisper);
+	}
+
+	/* Card Toggle (Collapsible) */
+	.card-toggle {
+		width: 100%;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		background: none;
+		border: none;
+		padding: 0;
+		cursor: pointer;
+		color: inherit;
+	}
+
+	.card-toggle-left {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+	}
+
+	.toggle-title {
+		font-size: 1.125rem;
+		font-weight: 700;
+		color: var(--color-text-source);
+	}
+
+	@media (min-width: 480px) {
+		.toggle-title {
+			font-size: 1.25rem;
+		}
+	}
+
+	.chevron {
+		color: var(--color-text-whisper);
+		transition: transform 0.2s ease;
+	}
+
+	.chevron.rotated {
+		transform: rotate(180deg);
+	}
+
+	/* History List */
+	.history-list {
+		margin-top: 1rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.history-item {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 0.75rem;
+		border-radius: 0.5rem;
+		background: var(--color-field-depth);
+	}
+
+	.history-info {
+		min-width: 0;
+		flex: 1;
+	}
+
+	.history-operation {
+		font-size: 0.875rem;
+		font-weight: 500;
+		color: var(--color-text-source);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.history-date {
+		font-size: 0.75rem;
+		color: var(--color-text-whisper);
+	}
+
+	.history-cost {
+		text-align: right;
+		margin-left: 0.75rem;
+	}
+
+	.cost-value {
+		font-size: 0.875rem;
+		font-weight: 700;
+	}
+
+	.cost-value.positive {
+		color: #059669;
+	}
+
+	[data-theme='dark'] .cost-value.positive {
+		color: #34d399;
+	}
+
+	.cost-value.negative {
+		color: #dc2626;
+	}
+
+	[data-theme='dark'] .cost-value.negative {
+		color: #f87171;
+	}
+
+	.cost-balance {
+		font-size: 0.75rem;
+		color: var(--color-text-whisper);
+	}
+
+	.txn-badge {
+		display: inline-block;
+		padding: 0.125rem 0.5rem;
+		border-radius: 0.25rem;
+		font-size: 0.625rem;
+		font-weight: 500;
+		margin-bottom: 0.25rem;
+	}
+
+	@media (min-width: 480px) {
+		.txn-badge {
+			font-size: 0.75rem;
+		}
+	}
+
+	.txn-badge.earned {
+		background: rgba(5, 150, 105, 0.1);
+		color: #059669;
+	}
+
+	[data-theme='dark'] .txn-badge.earned {
+		background: rgba(5, 150, 105, 0.2);
+		color: #34d399;
+	}
+
+	.txn-badge.spent {
+		background: rgba(220, 38, 38, 0.1);
+		color: #dc2626;
+	}
+
+	[data-theme='dark'] .txn-badge.spent {
+		background: rgba(220, 38, 38, 0.2);
+		color: #f87171;
+	}
+
+	.txn-amount {
+		font-size: 1rem;
+		font-weight: 700;
+	}
+
+	@media (min-width: 480px) {
+		.txn-amount {
+			font-size: 1.125rem;
+		}
+	}
+
+	.txn-amount.positive {
+		color: #059669;
+	}
+
+	[data-theme='dark'] .txn-amount.positive {
+		color: #34d399;
+	}
+
+	.txn-amount.negative {
+		color: #dc2626;
+	}
+
+	[data-theme='dark'] .txn-amount.negative {
+		color: #f87171;
+	}
+
+	/* Modal */
+	.modal-overlay {
+		position: fixed;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.5);
+		backdrop-filter: blur(4px);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 80;
+		padding: 0.75rem;
+	}
+
+	@media (min-width: 480px) {
+		.modal-overlay {
+			padding: 1rem;
+		}
+	}
+
+	.modal {
+		background: var(--color-field-surface);
+		border-radius: 1rem;
+		box-shadow: var(--shadow-elevated);
+		max-width: 95vw;
+		width: 28rem;
+		padding: 1rem;
+		border: 1px solid var(--color-veil-thin);
+		max-height: 85vh;
+		overflow-y: auto;
+	}
+
+	@media (min-width: 480px) {
+		.modal {
+			padding: 1.25rem;
+			max-height: 90vh;
+		}
+	}
+
+	@media (min-width: 768px) {
+		.modal {
+			padding: 1.5rem;
+		}
+	}
+
+	.modal h2 {
+		font-size: 1.125rem;
+		font-weight: 700;
+		color: var(--color-text-source);
+		margin-bottom: 0.75rem;
+	}
+
+	@media (min-width: 480px) {
+		.modal h2 {
+			font-size: 1.25rem;
+			margin-bottom: 1rem;
+		}
+	}
+
+	@media (min-width: 768px) {
+		.modal h2 {
+			font-size: 1.5rem;
+			margin-bottom: 1.25rem;
+		}
+	}
+
+	.modal-content {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+
+	.modal-form {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+
+	.modal-actions {
+		display: flex;
+		gap: 0.75rem;
+		margin-top: 0.5rem;
+	}
+
+	.modal-actions .btn {
+		flex: 1;
+	}
+
+	/* Upgrade Benefits */
+	.upgrade-benefits {
+		padding: 1rem;
+		border-radius: 0.75rem;
+		background: var(--color-primary-50);
+	}
+
+	[data-theme='dark'] .upgrade-benefits {
+		background: rgba(15, 76, 117, 0.15);
+	}
+
+	.upgrade-benefits p {
+		font-size: 0.875rem;
+		color: var(--color-text-whisper);
+		margin-bottom: 0.75rem;
+	}
+
+	.upgrade-benefits ul {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.upgrade-benefits li {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-size: 0.875rem;
+		color: var(--color-text-source);
+	}
+
+	.upgrade-benefits li svg {
+		color: #059669;
+		flex-shrink: 0;
+	}
+
+	[data-theme='dark'] .upgrade-benefits li svg {
+		color: #34d399;
+	}
+
+	/* Form Group */
+	.form-group {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.form-group label {
+		font-size: 0.875rem;
+		font-weight: 500;
+		color: var(--color-text-whisper);
+	}
+
+	.form-group input {
+		width: 100%;
+		padding: 0.75rem 1rem;
+		background: var(--color-field-depth);
+		border: 1px solid var(--color-veil-thin);
+		border-radius: 0.75rem;
+		color: var(--color-text-source);
+		font-size: 0.875rem;
+		min-height: 48px;
+		transition: border-color 0.15s ease;
+	}
+
+	@media (min-width: 480px) {
+		.form-group input {
+			font-size: 1rem;
+		}
+	}
+
+	.form-group input:focus {
+		outline: none;
+		border-color: var(--color-primary-400);
+	}
+
+	.form-group input::placeholder {
+		color: var(--color-text-hint);
+	}
+
+	.form-group input:disabled {
+		opacity: 0.5;
+	}
+
+	.form-hint {
+		font-size: 0.75rem;
+		color: var(--color-text-whisper);
+		margin: 0;
+	}
+
+	.form-error {
+		font-size: 0.75rem;
+		color: #dc2626;
+		margin: 0;
+	}
+
+	[data-theme='dark'] .form-error {
+		color: #f87171;
+	}
+
+	/* Password Input */
+	.password-input {
+		position: relative;
+	}
+
+	.password-input input {
+		width: 100%;
+		padding-right: 3rem;
+	}
+
+	.password-toggle {
+		position: absolute;
+		right: 0.75rem;
+		top: 50%;
+		transform: translateY(-50%);
+		background: none;
+		border: none;
+		padding: 0.375rem;
+		color: var(--color-text-whisper);
+		cursor: pointer;
+		transition: color 0.15s ease;
+	}
+
+	.password-toggle:hover {
+		color: var(--color-text-source);
 	}
 </style>

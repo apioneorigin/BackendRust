@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount, tick } from 'svelte';
+	import { onMount, onDestroy, tick } from 'svelte';
 	import {
 		chat,
 		messages,
@@ -7,7 +7,8 @@
 		conversations,
 		isStreaming,
 		streamingContent,
-		addToast
+		addToast,
+		user
 	} from '$lib/stores';
 	import { Button, Spinner, TypingIndicator } from '$lib/components/ui';
 
@@ -18,6 +19,17 @@
 	let selectedModel = 'gpt-4.1';
 	let attachedFiles: File[] = [];
 	let isDragging = false;
+	let placeholderIndex = 0;
+	let placeholderInterval: ReturnType<typeof setInterval>;
+
+	// Rotating placeholder prompts
+	const PLACEHOLDERS = [
+		"What's on your mind?",
+		"I'll help you understand the why, not just the what...",
+		"Share your thoughts, upload a file, or both...",
+		"I'll surface what you're really after...",
+		"Let's map what connects everything..."
+	];
 
 	const models = [
 		{ id: 'gpt-4.1', name: 'GPT-4.1' },
@@ -29,8 +41,37 @@
 		{ id: 'o4-mini', name: 'o4 Mini' }
 	];
 
+	// Get time-based greeting
+	function getGreeting(): string {
+		const hour = new Date().getHours();
+		const firstName = $user?.name?.trim().split(/\s+/)[0] || '';
+		const nameStr = firstName ? `, ${firstName}` : '';
+
+		if (hour >= 5 && hour < 12) {
+			return `Good morning${nameStr}`;
+		} else if (hour >= 12 && hour < 17) {
+			return `Good afternoon${nameStr}`;
+		} else {
+			return `Good evening${nameStr}`;
+		}
+	}
+
+	// Reactive greeting
+	$: greeting = getGreeting();
+
 	onMount(async () => {
 		await chat.loadConversations();
+
+		// Rotate placeholder every 3 seconds
+		placeholderInterval = setInterval(() => {
+			placeholderIndex = (placeholderIndex + 1) % PLACEHOLDERS.length;
+		}, 3000);
+	});
+
+	onDestroy(() => {
+		if (placeholderInterval) {
+			clearInterval(placeholderInterval);
+		}
 	});
 
 	// Auto-scroll when new messages or streaming
@@ -224,53 +265,94 @@
 		<div class="messages-container chat-scroll" bind:this={messagesContainer}>
 			{#if $messages.length === 0}
 				<div class="welcome-screen">
-					<div class="welcome-icon">
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							width="48"
-							height="48"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="1.5"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-						>
-							<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-						</svg>
-					</div>
-					<h2>Welcome to Reality Transformer</h2>
-					<p>Start a conversation to transform your goals into reality</p>
+					<!-- Spacer to push content down -->
+					<div class="welcome-spacer"></div>
 
-					<div class="starter-prompts">
-						<button
-							class="starter-prompt"
-							on:click={() => {
-								messageInput = 'Help me define and clarify my goals';
-								handleSendMessage();
-							}}
-						>
-							Help me define my goals
-						</button>
-						<button
-							class="starter-prompt"
-							on:click={() => {
-								messageInput = 'I want to create a transformation plan';
-								handleSendMessage();
-							}}
-						>
-							Create a transformation plan
-						</button>
-						<button
-							class="starter-prompt"
-							on:click={() => {
-								messageInput = 'Guide me through the discovery process';
-								handleSendMessage();
-							}}
-						>
-							Start discovery process
-						</button>
+					<!-- Greeting with logo -->
+					<div class="welcome-greeting">
+						<svg class="welcome-logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+							<circle cx="50" cy="50" r="45" fill="#0f4c75" stroke="#3d93ce" stroke-width="4"/>
+							<text x="50" y="72" font-family="'Product Sans', 'Roboto', 'Arial', sans-serif" font-size="55" font-weight="500" font-style="italic" fill="#FFFFFF" text-anchor="middle">G</text>
+						</svg>
+						<h1>{greeting}</h1>
 					</div>
+
+					<!-- Centered input with rotating placeholder -->
+					<div class="welcome-input-container">
+						<!-- Hidden file input -->
+						<input
+							type="file"
+							bind:this={fileInputElement}
+							on:change={handleFileSelect}
+							multiple
+							accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.json,.xml,.zip,.rar"
+							class="hidden-input"
+						/>
+
+						<!-- Attached files preview -->
+						{#if attachedFiles.length > 0}
+							<div class="welcome-attached-files">
+								{#each attachedFiles as file, index}
+									<div class="file-chip">
+										<span class="file-icon">{getFileIcon(file)}</span>
+										<span class="file-name">{file.name}</span>
+										<button class="remove-file" on:click={() => removeFile(index)} title="Remove file">
+											<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+												<path d="M18 6 6 18" />
+												<path d="m6 6 12 12" />
+											</svg>
+										</button>
+									</div>
+								{/each}
+							</div>
+						{/if}
+
+						<div class="welcome-input input-premium">
+							<textarea
+								bind:this={inputElement}
+								bind:value={messageInput}
+								on:keydown={handleKeyDown}
+								on:input={handleInput}
+								placeholder={PLACEHOLDERS[placeholderIndex]}
+								rows="2"
+								disabled={$isStreaming}
+							></textarea>
+
+							<div class="welcome-input-controls">
+								<button
+									class="attach-btn"
+									on:click={triggerFileInput}
+									disabled={$isStreaming}
+									title="Attach files"
+								>
+									<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+										<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+									</svg>
+								</button>
+
+								<div class="flex-spacer"></div>
+
+								<button
+									class="welcome-send-btn"
+									on:click={handleSendMessage}
+									disabled={(!messageInput.trim() && attachedFiles.length === 0) || $isStreaming}
+								>
+									<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+										<path d="M22 2L11 13" />
+										<path d="M22 2L15 22L11 13L2 9L22 2Z" />
+									</svg>
+								</button>
+							</div>
+						</div>
+
+						<p class="welcome-hint">
+							<span class="mobile-hint">Tap send or Enter to send</span>
+							<span class="desktop-hint">Press Enter to send, Shift+Enter for new line</span>
+						</p>
+					</div>
+
+					<!-- Spacer to push content up -->
+					<div class="welcome-spacer"></div>
 				</div>
 			{:else}
 				{#each $messages as message (message.id)}
@@ -462,8 +544,8 @@
 						>
 							<svg
 								xmlns="http://www.w3.org/2000/svg"
-								width="14"
-								height="14"
+								width="16"
+								height="16"
 								viewBox="0 0 24 24"
 								fill="none"
 								stroke="currentColor"
@@ -474,7 +556,6 @@
 								<path d="m22 2-7 20-4-9-9-4Z" />
 								<path d="M22 2 11 13" />
 							</svg>
-							Send
 						</Button>
 					{/if}
 				</div>
@@ -603,64 +684,171 @@
 		padding: 1.5rem;
 	}
 
-	/* Welcome screen */
+	/* Welcome screen - centered input like Claude.ai */
 	.welcome-screen {
 		height: 100%;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		justify-content: center;
-		text-align: center;
-		padding: 2rem;
-		gap: 1rem;
+		padding: 1rem;
 	}
 
-	.welcome-icon {
-		width: 80px;
-		height: 80px;
-		background: var(--color-field-depth);
-		border-radius: 50%;
+	.welcome-spacer {
+		flex: 1;
+	}
+
+	.welcome-greeting {
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		color: var(--color-primary-500);
-		margin-bottom: 0.5rem;
+		gap: 0.75rem;
+		margin-bottom: 2rem;
 	}
 
-	.welcome-screen h2 {
+	.welcome-logo {
+		width: 40px;
+		height: 40px;
+		flex-shrink: 0;
+	}
+
+	@media (min-width: 768px) {
+		.welcome-logo {
+			width: 48px;
+			height: 48px;
+		}
+	}
+
+	.welcome-greeting h1 {
 		font-size: 1.5rem;
 		font-weight: 700;
-		color: var(--color-text-source);
+		color: var(--color-primary-700);
 	}
 
-	.welcome-screen p {
-		color: var(--color-text-whisper);
-		max-width: 400px;
+	[data-theme='dark'] .welcome-greeting h1 {
+		color: var(--color-primary-300);
 	}
 
-	.starter-prompts {
+	@media (min-width: 768px) {
+		.welcome-greeting h1 {
+			font-size: 2rem;
+		}
+	}
+
+	.welcome-input-container {
+		width: 100%;
+		max-width: 48rem;
+	}
+
+	.welcome-attached-files {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 0.75rem;
-		justify-content: center;
-		max-width: 600px;
-		margin-top: 1rem;
+		gap: 0.5rem;
+		margin-bottom: 0.5rem;
+		padding: 0 0.25rem;
 	}
 
-	.starter-prompt {
-		padding: 0.75rem 1rem;
-		background: var(--color-field-surface);
-		border: 1px solid var(--color-veil-thin);
-		border-radius: 0.75rem;
-		color: var(--color-text-manifest);
-		font-size: 0.875rem;
+	.welcome-input {
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+	}
+
+	.welcome-input textarea {
+		width: 100%;
+		min-height: 72px;
+		max-height: 200px;
+		padding: 0.875rem 1rem;
+		border: none;
+		background: transparent;
+		color: var(--color-text-source);
+		font-size: 0.9375rem;
+		line-height: 1.5;
+		resize: none;
+		font-family: inherit;
+	}
+
+	.welcome-input textarea:focus {
+		outline: none;
+	}
+
+	.welcome-input textarea::placeholder {
+		color: var(--color-text-hint);
+		transition: opacity 0.3s ease;
+	}
+
+	.welcome-input textarea:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	.welcome-input-controls {
+		display: flex;
+		align-items: center;
+		padding: 0.5rem 0.75rem;
+		border-top: 1px solid var(--color-veil-thin);
+		background: var(--color-field-depth);
+	}
+
+	.flex-spacer {
+		flex: 1;
+	}
+
+	.welcome-send-btn {
+		width: 36px;
+		height: 36px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border: none;
+		border-radius: 0.5rem;
 		cursor: pointer;
 		transition: all 0.15s ease;
+		flex-shrink: 0;
 	}
 
-	.starter-prompt:hover {
-		border-color: var(--color-primary-400);
-		background: var(--color-field-depth);
+	.welcome-send-btn:not(:disabled) {
+		background: var(--color-primary-500);
+		color: white;
+	}
+
+	.welcome-send-btn:not(:disabled):hover {
+		background: var(--color-primary-600);
+	}
+
+	.welcome-send-btn:disabled {
+		background: var(--color-primary-200);
+		color: var(--color-primary-400);
+		cursor: not-allowed;
+	}
+
+	[data-theme='dark'] .welcome-send-btn:disabled {
+		background: var(--color-primary-800);
+		color: var(--color-primary-600);
+	}
+
+	.welcome-hint {
+		margin-top: 0.75rem;
+		text-align: center;
+		font-size: 0.6875rem;
+		color: var(--color-text-hint);
+	}
+
+	.welcome-hint .mobile-hint {
+		display: block;
+	}
+
+	.welcome-hint .desktop-hint {
+		display: none;
+	}
+
+	@media (min-width: 768px) {
+		.welcome-hint .mobile-hint {
+			display: none;
+		}
+
+		.welcome-hint .desktop-hint {
+			display: block;
+		}
 	}
 
 	/* Messages */
