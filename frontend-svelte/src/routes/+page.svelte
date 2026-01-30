@@ -3,12 +3,21 @@
 	import { goto } from '$app/navigation';
 	import { auth, credits, creditBalance } from '$lib/stores';
 
+	// Super admin bypasses credit check
+	const SUPER_ADMIN_EMAIL = 'raghavan.vinod@gmail.com';
+
 	onMount(async () => {
 		// Try to load user, redirect based on auth status
 		const user = await auth.loadUser();
 
 		if (!user) {
 			goto('/login');
+			return;
+		}
+
+		// Super admin bypasses credit check
+		if (user.email === SUPER_ADMIN_EMAIL) {
+			goto('/chat');
 			return;
 		}
 
