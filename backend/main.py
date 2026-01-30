@@ -138,6 +138,7 @@ from routers import (
     credits_router,
     admin_router,
     health_router,
+    matrix_router,
 )
 
 app.include_router(auth_router)
@@ -149,6 +150,7 @@ app.include_router(documents_router)
 app.include_router(credits_router)
 app.include_router(admin_router)
 app.include_router(health_router)
+app.include_router(matrix_router)
 
 api_logger.info("All routers registered")
 
@@ -434,6 +436,43 @@ progress_tracker = ProgressTracker()
 coherence_validator = CoherenceValidator()
 mvt_calculator = MVTCalculator()
 api_logger.info("Reverse Causality Mapping initialized: 10 components loaded")
+
+
+def extract_structured_data(content: str) -> Optional[dict]:
+    """
+    Extract structured JSON data from LLM response.
+    Looks for data between ===STRUCTURED_DATA_START=== and ===STRUCTURED_DATA_END=== markers.
+    Returns parsed JSON or None if not found/invalid.
+    """
+    import re
+
+    # Look for the structured data markers
+    pattern = r'===STRUCTURED_DATA_START===\s*([\s\S]*?)\s*===STRUCTURED_DATA_END==='
+    match = re.search(pattern, content)
+
+    if not match:
+        api_logger.debug("[STRUCTURED DATA] No structured data markers found in response")
+        return None
+
+    json_str = match.group(1).strip()
+
+    # Remove markdown code block markers if present
+    if json_str.startswith('```json'):
+        json_str = json_str[7:]
+    elif json_str.startswith('```'):
+        json_str = json_str[3:]
+    if json_str.endswith('```'):
+        json_str = json_str[:-3]
+    json_str = json_str.strip()
+
+    try:
+        data = json.loads(json_str)
+        api_logger.info(f"[STRUCTURED DATA] Successfully parsed structured data")
+        return data
+    except json.JSONDecodeError as e:
+        api_logger.error(f"[STRUCTURED DATA] Failed to parse JSON: {e}")
+        api_logger.debug(f"[STRUCTURED DATA] Raw content: {json_str[:500]}...")
+        return None
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -1252,6 +1291,7 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
         }
 
         token_count = 0
+        full_content = ""  # Collect full response for structured data extraction
         call2_token_usage = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
         async for token in format_results_streaming_bridge(
             prompt, evidence, posteriors, consciousness_state, reverse_mapping_data, model_config, web_search_insights
@@ -1269,12 +1309,22 @@ async def inference_stream(prompt: str, model_config: dict, web_search_data: boo
                 api_logger.info(f"[CALL 2 TOKENS] Input: {input_tokens}, Output: {output_tokens}, Total: {total_tokens}")
             else:
                 token_count += 1
+                full_content += token  # Collect for parsing
                 yield {
                     "event": "token",
                     "data": json.dumps({"text": token})
                 }
 
         api_logger.info(f"[ARTICULATION] Streamed {token_count} tokens")
+
+        # Extract and emit structured data if present
+        structured_data = extract_structured_data(full_content)
+        if structured_data:
+            api_logger.info(f"[STRUCTURED DATA] Extracted: matrix={bool(structured_data.get('matrix_data'))}, paths={len(structured_data.get('paths', []))}, docs={len(structured_data.get('documents', []))}")
+            yield {
+                "event": "structured_data",
+                "data": json.dumps(structured_data)
+            }
         pipeline_logger.log_step("Articulation", {"tokens": token_count})
 
         # Log comprehensive evidence-grounding metrics

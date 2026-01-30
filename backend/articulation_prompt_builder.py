@@ -57,6 +57,7 @@ class ArticulationPromptBuilder:
             self._build_leverage_section(context.consciousness_state.leverage_points),
             self._build_search_guidance_section(context.search_guidance),
             self._build_generation_instructions(context.instructions),
+            self._build_structured_output_section(),
             self._build_user_query(context.user_context)
         ]
 
@@ -827,6 +828,87 @@ When consciousness values are calculated, ground them in observable reality:
 - Integrate evidence into narrative flow naturally
 - Let evidence strengthen insights, not replace them"""
 
+    def _build_structured_output_section(self) -> str:
+        """Build instructions for generating structured matrix/paths/documents data."""
+        return """## STRUCTURED OUTPUT GENERATION
+
+After your main articulation, you MUST generate structured data in the following JSON format.
+This data will be stored and used for the interactive matrix interface.
+
+Output this EXACT marker followed by valid JSON:
+
+```json
+===STRUCTURED_DATA_START===
+{
+  "matrix_data": {
+    "row_options": [
+      {"id": "r0", "label": "...", "description": "..."},
+      ... (20 total row options - causation factors)
+    ],
+    "column_options": [
+      {"id": "c0", "label": "...", "description": "..."},
+      ... (20 total column options - effect factors)
+    ],
+    "cells": {
+      "r0_c0": {
+        "impact_score": 0.75,
+        "relationship": "...",
+        "dimensions": [
+          {"name": "Probability", "value": 3, "min": 1, "max": 5, "description": "..."},
+          {"name": "Magnitude", "value": 4, "min": 1, "max": 5, "description": "..."},
+          {"name": "Timeframe", "value": 2, "min": 1, "max": 5, "description": "..."},
+          {"name": "Reversibility", "value": 3, "min": 1, "max": 5, "description": "..."},
+          {"name": "Leverage", "value": 5, "min": 1, "max": 5, "description": "..."}
+        ]
+      },
+      ... (400 total cells for 20x20 matrix)
+    }
+  },
+  "paths": [
+    {
+      "id": "p0",
+      "name": "...",
+      "description": "...",
+      "risk_level": "low|medium|high",
+      "time_horizon": "...",
+      "steps": [
+        {"order": 1, "action": "...", "rationale": "..."},
+        ...
+      ]
+    },
+    ... (5 total strategic paths)
+  ],
+  "documents": [
+    {
+      "id": "d0",
+      "type": "strategy|analysis|action_plan|risk_assessment|opportunity_map|stakeholder_brief|timeline|metrics|executive_summary",
+      "title": "...",
+      "summary": "...",
+      "sections": {
+        "key_insights": "...",
+        "recommendations": "...",
+        "next_steps": "..."
+      }
+    },
+    ... (9 total documents)
+  ]
+}
+===STRUCTURED_DATA_END===
+```
+
+### GENERATION RULES:
+
+1. **Row Options (20)**: Causation factors - what DRIVES change in this context
+2. **Column Options (20)**: Effect factors - what is AFFECTED by changes
+3. **Cells (400)**: Cross-impact for each row-column pair
+   - Each cell has 5 dimensions with slider values 1-5
+   - impact_score: 0-1 representing overall relationship strength
+4. **Paths (5)**: Strategic approaches from conservative to aggressive
+5. **Documents (9)**: One of each type, tailored to the user's query
+
+Base all generated data on the consciousness values and user context provided.
+Make labels and descriptions domain-appropriate (concealed framework terminology)."""
+
     def _build_user_query(self, user_context: UserContext) -> str:
         """Build the user query section"""
         query_text = user_context.goal or user_context.current_situation or 'Transform my situation'
@@ -837,7 +919,11 @@ When consciousness values are calculated, ground them in observable reality:
 
 ---
 
-Now generate your response, following all articulation instructions above.
+Now generate your response in TWO parts:
+
+1. **FIRST**: Your main articulation - insights, analysis, and guidance
+2. **THEN**: The structured JSON data block (===STRUCTURED_DATA_START=== ... ===STRUCTURED_DATA_END===)
+
 Express insights with wisdom and warmth. Speak truth without judgment.
 Guide without controlling. Illuminate without overwhelming."""
 

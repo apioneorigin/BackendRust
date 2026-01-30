@@ -46,6 +46,33 @@ export interface Question {
 	selectedOption?: string;
 }
 
+export interface StructuredData {
+	matrix_data?: {
+		row_options: { id: string; label: string; description?: string }[];
+		column_options: { id: string; label: string; description?: string }[];
+		cells: Record<string, {
+			impact_score: number;
+			relationship?: string;
+			dimensions: { name: string; value: number; min: number; max: number; description?: string }[];
+		}>;
+	};
+	paths?: {
+		id: string;
+		name: string;
+		description?: string;
+		risk_level?: string;
+		time_horizon?: string;
+		steps: { order: number; action: string; rationale?: string }[];
+	}[];
+	documents?: {
+		id: string;
+		type: string;
+		title: string;
+		summary?: string;
+		sections?: Record<string, string>;
+	}[];
+}
+
 interface ChatState {
 	conversations: Conversation[];
 	currentConversation: Conversation | null;
@@ -53,6 +80,7 @@ interface ChatState {
 	goals: Goal[];
 	insights: Insight[];
 	questions: Question[];
+	structuredData: StructuredData | null;
 	isLoading: boolean;
 	isStreaming: boolean;
 	streamingContent: string;
@@ -66,6 +94,7 @@ const initialState: ChatState = {
 	goals: [],
 	insights: [],
 	questions: [],
+	structuredData: null,
 	isLoading: false,
 	isStreaming: false,
 	streamingContent: '',
@@ -254,6 +283,14 @@ function createChatStore() {
 									update(state => ({
 										...state,
 										questions: [...state.questions, parsed],
+									}));
+									break;
+
+								case 'structured_data':
+									// Store structured matrix/paths/documents data
+									update(state => ({
+										...state,
+										structuredData: parsed,
 									}));
 									break;
 

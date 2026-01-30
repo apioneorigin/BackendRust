@@ -39,6 +39,18 @@ class ChatConversation(Base):
     goal_ratings: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     insight_ratings: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 
+    # Generated matrix data (from LLM Call 2)
+    # Structure: { row_options: [...], column_options: [...], cells: { "r0_c0": {...}, ... } }
+    matrix_data: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+
+    # Generated strategic paths (5 paths from LLM Call 2)
+    # Structure: [{ id, name, description, steps: [...] }, ...]
+    generated_paths: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+
+    # Generated documents (9 documents from LLM Call 2)
+    # Structure: [{ id, type, title, content, sections: {...} }, ...]
+    generated_documents: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
