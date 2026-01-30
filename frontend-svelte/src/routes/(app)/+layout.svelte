@@ -8,6 +8,7 @@
 	let isLoading = true;
 	let mobileMenuOpen = false;
 	let userMenuOpen = false;
+	let sidebarCollapsed = false;
 
 	onMount(async () => {
 		const currentUser = await auth.loadUser();
@@ -18,7 +19,7 @@
 		isLoading = false;
 	});
 
-	// Close mobile menu on navigation
+	// Close menus on navigation
 	$: if ($page.url.pathname) {
 		mobileMenuOpen = false;
 		userMenuOpen = false;
@@ -44,6 +45,10 @@
 
 	function toggleUserMenu() {
 		userMenuOpen = !userMenuOpen;
+	}
+
+	function toggleSidebar() {
+		sidebarCollapsed = !sidebarCollapsed;
 	}
 </script>
 
@@ -101,182 +106,104 @@
 			<div class="mobile-overlay" on:click={closeMobileMenu} role="presentation"></div>
 		{/if}
 
-		<!-- Sidebar -->
-		<aside class="sidebar" class:open={mobileMenuOpen}>
+		<!-- Collapsible Sidebar (consistent across all pages) -->
+		<aside class="sidebar" class:collapsed={sidebarCollapsed} class:open={mobileMenuOpen}>
+			<!-- Sidebar header with logo and collapse toggle -->
 			<div class="sidebar-header">
-				<h2 class="logo">Reality Transformer</h2>
+				{#if !sidebarCollapsed}
+					<h2 class="logo">Reality Transformer</h2>
+				{/if}
+				<button class="collapse-btn" on:click={toggleSidebar} title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
+					<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class:rotated={sidebarCollapsed}>
+						<path d="m15 18-6-6 6-6"/>
+					</svg>
+				</button>
 			</div>
 
+			<!-- Navigation -->
 			<nav class="sidebar-nav">
-				<a href="/chat" class="nav-item">
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						width="20"
-						height="20"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-					>
+				<a href="/chat" class="nav-item" class:active={$page.url.pathname === '/chat' || $page.url.pathname.startsWith('/chat/')} title="Chat">
+					<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 						<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
 					</svg>
-					<span>Chat</span>
+					{#if !sidebarCollapsed}<span>Chat</span>{/if}
+				</a>
+				<a href="/documents" class="nav-item" class:active={$page.url.pathname === '/documents' || $page.url.pathname.startsWith('/documents/')} title="Documents">
+					<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+						<polyline points="14 2 14 8 20 8" />
+					</svg>
+					{#if !sidebarCollapsed}<span>Documents</span>{/if}
+				</a>
+				<a href="/settings" class="nav-item" class:active={$page.url.pathname === '/settings'} title="Settings">
+					<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+						<circle cx="12" cy="12" r="3" />
+					</svg>
+					{#if !sidebarCollapsed}<span>Settings</span>{/if}
 				</a>
 				{#if $user?.isGlobalAdmin}
-					<a href="/admin" class="nav-item">
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							width="20"
-							height="20"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-						>
+					<a href="/admin" class="nav-item" class:active={$page.url.pathname.startsWith('/admin')} title="Admin">
+						<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 							<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
 						</svg>
-						<span>Admin</span>
+						{#if !sidebarCollapsed}<span>Admin</span>{/if}
 					</a>
 				{/if}
 			</nav>
 
-			<!-- User menu section -->
+			<!-- User menu section at bottom -->
 			<div class="sidebar-footer">
-				<!-- User avatar button -->
-				<button class="user-avatar-btn" on:click={toggleUserMenu} class:active={userMenuOpen}>
+				<button class="user-avatar-btn" on:click={toggleUserMenu} class:active={userMenuOpen} title={$user?.name || 'User menu'}>
 					<div class="user-avatar">
 						{$user?.name?.[0] || $user?.email?.[0] || 'U'}
 					</div>
-					<div class="user-details">
-						<span class="user-name">{$user?.name || 'User'}</span>
-						<span class="user-email">{$user?.email}</span>
-					</div>
-					<svg
-						class="chevron"
-						class:rotated={userMenuOpen}
-						xmlns="http://www.w3.org/2000/svg"
-						width="16"
-						height="16"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-					>
-						<path d="m6 9 6 6 6-6" />
-					</svg>
+					{#if !sidebarCollapsed}
+						<div class="user-details">
+							<span class="user-name">{$user?.name || 'User'}</span>
+							<span class="user-email">{$user?.email}</span>
+						</div>
+						<svg class="chevron" class:rotated={userMenuOpen} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<path d="m6 9 6 6 6-6" />
+						</svg>
+					{/if}
 				</button>
 
-				<!-- Collapsible user menu -->
+				<!-- User menu dropdown -->
 				{#if userMenuOpen}
-					<div class="user-menu">
-						<a href="/documents" class="user-menu-item">
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								width="18"
-								height="18"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="2"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-							>
-								<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
-								<polyline points="14 2 14 8 20 8" />
-							</svg>
-							<span>Documents</span>
-						</a>
-						<a href="/settings" class="user-menu-item">
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								width="18"
-								height="18"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="2"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-							>
-								<path
-									d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"
-								/>
-								<circle cx="12" cy="12" r="3" />
-							</svg>
-							<span>Settings</span>
-						</a>
+					<div class="user-menu" class:collapsed-menu={sidebarCollapsed}>
 						<button class="user-menu-item" on:click={toggleTheme}>
 							{#if $theme.isDark}
-								<svg
-									xmlns="http://www.w3.org/2000/svg"
-									width="18"
-									height="18"
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-								>
+								<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 									<circle cx="12" cy="12" r="4" />
-									<path d="M12 2v2" />
-									<path d="M12 20v2" />
-									<path d="m4.93 4.93 1.41 1.41" />
-									<path d="m17.66 17.66 1.41 1.41" />
-									<path d="M2 12h2" />
-									<path d="M20 12h2" />
-									<path d="m6.34 17.66-1.41 1.41" />
-									<path d="m19.07 4.93-1.41 1.41" />
+									<path d="M12 2v2" /><path d="M12 20v2" />
+									<path d="m4.93 4.93 1.41 1.41" /><path d="m17.66 17.66 1.41 1.41" />
+									<path d="M2 12h2" /><path d="M20 12h2" />
+									<path d="m6.34 17.66-1.41 1.41" /><path d="m19.07 4.93-1.41 1.41" />
 								</svg>
-								<span>Light Mode</span>
+								{#if !sidebarCollapsed}<span>Light Mode</span>{/if}
 							{:else}
-								<svg
-									xmlns="http://www.w3.org/2000/svg"
-									width="18"
-									height="18"
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-								>
+								<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 									<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
 								</svg>
-								<span>Dark Mode</span>
+								{#if !sidebarCollapsed}<span>Dark Mode</span>{/if}
 							{/if}
 						</button>
 						<div class="user-menu-divider"></div>
 						<button class="user-menu-item logout" on:click={handleLogout}>
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								width="18"
-								height="18"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="2"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-							>
+							<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 								<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
 								<polyline points="16 17 21 12 16 7" />
 								<line x1="21" x2="9" y1="12" y2="12" />
 							</svg>
-							<span>Sign Out</span>
+							{#if !sidebarCollapsed}<span>Sign Out</span>{/if}
 						</button>
 					</div>
 				{/if}
 			</div>
 		</aside>
 
-		<!-- Main content -->
+		<!-- Main content (shifts with sidebar) -->
 		<main class="main-content">
 			<slot />
 		</main>
@@ -297,43 +224,89 @@
 		min-height: 100dvh;
 	}
 
+	/* Collapsible Sidebar */
 	.sidebar {
 		width: 260px;
+		min-width: 260px;
 		background: var(--color-field-surface);
 		border-right: 1px solid var(--color-veil-thin);
 		display: flex;
 		flex-direction: column;
 		flex-shrink: 0;
+		transition: width 0.2s ease, min-width 0.2s ease;
+		overflow: hidden;
+	}
+
+	.sidebar.collapsed {
+		width: 60px;
+		min-width: 60px;
 	}
 
 	.sidebar-header {
-		padding: 1.25rem;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 1rem;
 		border-bottom: 1px solid var(--color-veil-thin);
+		gap: 0.5rem;
+	}
+
+	.sidebar.collapsed .sidebar-header {
+		justify-content: center;
+		padding: 1rem 0.5rem;
 	}
 
 	.logo {
-		font-size: 1.125rem;
+		font-size: 1rem;
 		font-weight: 700;
 		background: var(--gradient-primary);
 		-webkit-background-clip: text;
 		-webkit-text-fill-color: transparent;
 		background-clip: text;
+		white-space: nowrap;
+		overflow: hidden;
 	}
 
+	.collapse-btn {
+		width: 32px;
+		height: 32px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: none;
+		border: none;
+		color: var(--color-text-whisper);
+		cursor: pointer;
+		border-radius: 0.375rem;
+		transition: all 0.15s ease;
+		flex-shrink: 0;
+	}
+
+	.collapse-btn:hover {
+		background: var(--color-field-depth);
+		color: var(--color-text-source);
+	}
+
+	.collapse-btn svg.rotated {
+		transform: rotate(180deg);
+	}
+
+	/* Navigation */
 	.sidebar-nav {
 		flex: 1;
-		padding: 1rem;
+		padding: 0.5rem;
 		display: flex;
 		flex-direction: column;
 		gap: 0.25rem;
+		overflow-y: auto;
 	}
 
 	.nav-item {
 		display: flex;
 		align-items: center;
 		gap: 0.75rem;
-		padding: 0.75rem 1rem;
-		border-radius: 0.625rem;
+		padding: 0.75rem;
+		border-radius: 0.5rem;
 		color: var(--color-text-manifest);
 		text-decoration: none;
 		transition: all 0.15s ease;
@@ -341,15 +314,35 @@
 		font-size: 0.875rem;
 	}
 
+	.sidebar.collapsed .nav-item {
+		justify-content: center;
+		padding: 0.75rem 0.5rem;
+	}
+
 	.nav-item:hover {
 		background: var(--color-field-depth);
 		color: var(--color-text-source);
 	}
 
+	.nav-item.active {
+		background: var(--color-primary-100);
+		color: var(--color-primary-600);
+	}
+
+	[data-theme='dark'] .nav-item.active {
+		background: rgba(15, 76, 117, 0.3);
+		color: var(--color-primary-400);
+	}
+
+	.nav-item svg {
+		flex-shrink: 0;
+	}
+
 	/* Sidebar footer / User menu */
 	.sidebar-footer {
-		padding: 0.75rem;
+		padding: 0.5rem;
 		border-top: 1px solid var(--color-veil-thin);
+		position: relative;
 	}
 
 	.user-avatar-btn {
@@ -357,13 +350,17 @@
 		display: flex;
 		align-items: center;
 		gap: 0.75rem;
-		padding: 0.625rem;
+		padding: 0.5rem;
 		background: none;
 		border: none;
-		border-radius: 0.625rem;
+		border-radius: 0.5rem;
 		cursor: pointer;
 		transition: all 0.15s ease;
 		text-align: left;
+	}
+
+	.sidebar.collapsed .user-avatar-btn {
+		justify-content: center;
 	}
 
 	.user-avatar-btn:hover,
@@ -372,8 +369,8 @@
 	}
 
 	.user-avatar {
-		width: 36px;
-		height: 36px;
+		width: 32px;
+		height: 32px;
 		background: var(--gradient-primary);
 		border-radius: 50%;
 		display: flex;
@@ -381,7 +378,7 @@
 		justify-content: center;
 		color: white;
 		font-weight: 600;
-		font-size: 0.875rem;
+		font-size: 0.8125rem;
 		flex-shrink: 0;
 	}
 
@@ -393,13 +390,13 @@
 	.user-name {
 		display: block;
 		font-weight: 500;
-		font-size: 0.875rem;
+		font-size: 0.8125rem;
 		color: var(--color-text-source);
 	}
 
 	.user-email {
 		display: block;
-		font-size: 0.75rem;
+		font-size: 0.6875rem;
 		color: var(--color-text-whisper);
 		overflow: hidden;
 		text-overflow: ellipsis;
@@ -421,14 +418,24 @@
 		margin-top: 0.5rem;
 		padding: 0.375rem;
 		background: var(--color-field-depth);
-		border-radius: 0.625rem;
-		animation: slideDown 0.15s ease;
+		border-radius: 0.5rem;
+		animation: slideUp 0.15s ease;
 	}
 
-	@keyframes slideDown {
+	.user-menu.collapsed-menu {
+		position: absolute;
+		bottom: 60px;
+		left: 60px;
+		width: 180px;
+		box-shadow: var(--shadow-elevated);
+		z-index: 50;
+		background: var(--color-field-surface);
+	}
+
+	@keyframes slideUp {
 		from {
 			opacity: 0;
-			transform: translateY(-8px);
+			transform: translateY(8px);
 		}
 		to {
 			opacity: 1;
@@ -441,10 +448,10 @@
 		align-items: center;
 		gap: 0.625rem;
 		width: 100%;
-		padding: 0.625rem 0.75rem;
+		padding: 0.5rem 0.625rem;
 		background: none;
 		border: none;
-		border-radius: 0.5rem;
+		border-radius: 0.375rem;
 		color: var(--color-text-manifest);
 		text-decoration: none;
 		font-size: 0.8125rem;
@@ -457,6 +464,10 @@
 	.user-menu-item:hover {
 		background: var(--color-field-surface);
 		color: var(--color-text-source);
+	}
+
+	.collapsed-menu .user-menu-item:hover {
+		background: var(--color-field-depth);
 	}
 
 	.user-menu-item.logout {
@@ -478,6 +489,7 @@
 		margin: 0.375rem 0.5rem;
 	}
 
+	/* Main content */
 	.main-content {
 		flex: 1;
 		overflow: hidden;
@@ -585,6 +597,13 @@
 			transform: translateX(-100%);
 			transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 			box-shadow: none;
+			width: 260px;
+			min-width: 260px;
+		}
+
+		.sidebar.collapsed {
+			width: 260px;
+			min-width: 260px;
 		}
 
 		.sidebar.open {
@@ -594,6 +613,15 @@
 
 		.sidebar-header {
 			padding-top: 1.5rem;
+		}
+
+		.collapse-btn {
+			display: none;
+		}
+
+		.sidebar.collapsed .sidebar-header {
+			justify-content: flex-start;
+			padding: 1.5rem 1rem 1rem;
 		}
 
 		.main-content {
