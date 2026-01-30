@@ -318,6 +318,98 @@ async def delete_conversation(
     return {"status": "success"}
 
 
+class GenerateTitleResponse(BaseModel):
+    title: str
+    conversation_id: str
+
+
+@router.post("/conversations/{conversation_id}/generate-title", response_model=GenerateTitleResponse)
+async def generate_title(
+    conversation_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Auto-generate a title for a conversation using LLM.
+    Uses first few messages as context with priority weighting.
+    """
+    # Verify access and load conversation + messages in parallel
+    conversation_task = get_or_404(
+        db, ChatConversation, conversation_id, user_id=current_user.id
+    )
+    messages_task = db.execute(
+        select(ChatMessage)
+        .where(ChatMessage.conversation_id == conversation_id)
+        .order_by(ChatMessage.created_at)
+        .limit(6)  # First 6 messages for context
+    )
+
+    conversation, messages_result = await asyncio.gather(conversation_task, messages_task)
+    messages = messages_result.scalars().all()
+
+    if not messages:
+        raise HTTPException(status_code=400, detail="No messages to generate title from")
+
+    # Build context with priority: first user message > first assistant > rest
+    context_parts = []
+    for i, msg in enumerate(messages):
+        if msg.role == "user":
+            # User messages get full weight
+            context_parts.append(f"User: {msg.content[:500]}")
+        elif msg.role == "assistant":
+            # Assistant responses - shorter context
+            context_parts.append(f"Assistant: {msg.content[:200]}")
+
+    context_text = "\n".join(context_parts)
+
+    # Generate title using LLM
+    from ..main import get_model_config
+    import openai
+
+    model_config = get_model_config("claude-haiku")  # Use fast model for title generation
+
+    try:
+        client = openai.AsyncOpenAI(
+            api_key=model_config.get("api_key"),
+            base_url=model_config.get("base_url")
+        )
+
+        response = await client.chat.completions.create(
+            model=model_config.get("model", "claude-3-5-haiku-20241022"),
+            messages=[
+                {
+                    "role": "system",
+                    "content": "Generate a concise, descriptive title (4-8 words) for this conversation. Return ONLY the title, no quotes or punctuation at the end."
+                },
+                {
+                    "role": "user",
+                    "content": f"Conversation:\n{context_text}"
+                }
+            ],
+            max_tokens=30,
+            temperature=0.3
+        )
+
+        title = response.choices[0].message.content.strip()
+        # Clean up title - remove quotes if present
+        title = title.strip('"\'')
+
+    except Exception as e:
+        # Fallback: use first user message truncated
+        first_user = next((m for m in messages if m.role == "user"), None)
+        if first_user:
+            title = first_user.content[:50] + ("..." if len(first_user.content) > 50 else "")
+        else:
+            title = "New Conversation"
+
+    # Update conversation title
+    conversation.title = title
+    conversation.updated_at = datetime.utcnow()
+    await db.commit()
+
+    return GenerateTitleResponse(title=title, conversation_id=conversation_id)
+
+
 class FileUploadRequest(BaseModel):
     """Request to upload files to a conversation."""
     files: List[dict]  # [{"name": "file.pdf", "content": "base64...", "type": "pdf"}]

@@ -34,10 +34,7 @@ class ChatConversation(Base):
     current_phase: Mapped[int] = mapped_column(Integer, default=1)
 
     # Persistent state
-    tabs: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     question_answers: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
-    goal_ratings: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
-    insight_ratings: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 
     # Generated matrix data (from LLM Call 2)
     # Structure: { row_options: [...], column_options: [...], cells: { "r0_c0": {...}, ... } }
