@@ -2,19 +2,18 @@
 	/**
 	 * Unified Chat Page - 4-Box Desktop Layout
 	 *
-	 * Layout:
-	 * ┌─────────┬────────────────────────────────────────────┐
-	 * │         │  Response Container (80%)  │  Matrix 5x5   │
-	 * │ Sidebar │                            │    (50%)      │
-	 * │ (conv)  │                            │               │
-	 * │         ├────────────────────────────┼───────────────┤
-	 * │         │  Input Panel (20%)         │  Live Preview │
-	 * │         │  [📎][Causation][Effect]→  │    (50%)      │
-	 * └─────────┴────────────────────────────┴───────────────┘
+	 * Layout (within the app layout's main content area):
+	 * ┌────────────────────────────────────────────┐
+	 * │  Response Container (80%)  │  Matrix 5x5   │
+	 * │                            │    (50%)      │
+	 * │                            │               │
+	 * ├────────────────────────────┼───────────────┤
+	 * │  Input Panel (20%)         │  Live Preview │
+	 * │  [📎][Causation][Effect]→  │    (50%)      │
+	 * └────────────────────────────┴───────────────┘
 	 */
 
 	import { onMount, onDestroy, tick } from 'svelte';
-	import { goto } from '$app/navigation';
 	import {
 		chat,
 		messages,
@@ -24,8 +23,6 @@
 		streamingContent,
 		addToast,
 		user,
-		auth,
-		theme,
 		matrix,
 		matrixData as matrixDataStore,
 		rowHeaders as rowHeadersStore,
@@ -54,10 +51,6 @@
 	let isDragging = false;
 	let placeholderIndex = 0;
 	let placeholderInterval: ReturnType<typeof setInterval>;
-
-	// Sidebar state
-	let sidebarCollapsed = false;
-	let userMenuOpen = false;
 
 	// Popup state
 	let showCausationPopup = false;
@@ -276,211 +269,42 @@
 	function handleEffectSubmit() {
 		showEffectPopup = false;
 	}
-
-	// Sidebar functions
-	function toggleSidebar() {
-		sidebarCollapsed = !sidebarCollapsed;
-	}
-
-	function toggleUserMenu() {
-		userMenuOpen = !userMenuOpen;
-	}
-
-	function toggleTheme() {
-		theme.toggle();
-	}
-
-	async function handleLogout() {
-		await auth.logout();
-		addToast('info', 'Signed out', 'You have been logged out');
-		goto('/login');
-	}
 </script>
 
 <svelte:head>
 	<title>Chat | Reality Transformer</title>
 </svelte:head>
 
-<div class="unified-layout">
-	<!-- Collapsible Conversation Sidebar -->
-	<aside class="sidebar" class:collapsed={sidebarCollapsed}>
-		<!-- Sidebar header with logo and collapse toggle -->
-		<div class="sidebar-header">
-			{#if !sidebarCollapsed}
-				<h2 class="sidebar-logo">Reality Transformer</h2>
-			{/if}
-			<button class="collapse-btn" on:click={toggleSidebar} title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
-				<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class:rotated={sidebarCollapsed}>
-					<path d="m15 18-6-6 6-6"/>
-				</svg>
-			</button>
-		</div>
-
-		<!-- New chat button -->
-		<div class="new-chat-section">
-			<button class="new-chat-btn" on:click={handleNewChat} title="New conversation">
-				<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-					<path d="M12 5v14" />
-					<path d="M5 12h14" />
-				</svg>
-				{#if !sidebarCollapsed}
-					<span>New Chat</span>
-				{/if}
-			</button>
-		</div>
-
-		<!-- Conversations list -->
-		<div class="conversations-list">
-			{#each $conversations as conversation (conversation.id)}
-				<button
-					class="conversation-item"
-					class:active={$currentConversation?.id === conversation.id}
-					on:click={() => handleSelectConversation(conversation.id)}
-					title={conversation.title || 'New Conversation'}
-				>
-					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="conversation-icon">
-						<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-					</svg>
-					{#if !sidebarCollapsed}
-						<div class="conversation-info">
-							<span class="conversation-title">{conversation.title || 'New Conversation'}</span>
-							<span class="conversation-time">{formatTimestamp(conversation.createdAt)}</span>
-						</div>
-					{/if}
-				</button>
-			{/each}
-
-			{#if $conversations.length === 0 && !sidebarCollapsed}
-				<div class="empty-conversations">
-					<p>No conversations yet</p>
-					<p class="hint">Start a new chat to begin</p>
-				</div>
-			{/if}
-		</div>
-
-		<!-- User menu at bottom -->
-		<div class="sidebar-footer">
-			<button class="user-avatar-btn" on:click={toggleUserMenu} class:active={userMenuOpen} title={$user?.name || 'User menu'}>
-				<div class="user-avatar">
-					{$user?.name?.[0] || $user?.email?.[0] || 'U'}
-				</div>
-				{#if !sidebarCollapsed}
-					<div class="user-details">
-						<span class="user-name">{$user?.name || 'User'}</span>
-						<span class="user-email">{$user?.email}</span>
+<div class="chat-layout">
+	<!-- Left column: Chat (Response + Input) -->
+	<div class="chat-column">
+		<!-- Response container (80%) -->
+		<div class="response-container" bind:this={messagesContainer}>
+			{#if $messages.length === 0}
+				<!-- Welcome screen -->
+				<div class="welcome-screen">
+					<div class="welcome-spacer"></div>
+					<div class="welcome-greeting">
+						<svg class="welcome-logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+							<circle cx="50" cy="50" r="45" fill="#0f4c75" stroke="#3d93ce" stroke-width="4"/>
+							<text x="50" y="72" font-family="'Product Sans', 'Roboto', sans-serif" font-size="55" font-weight="500" font-style="italic" fill="#FFFFFF" text-anchor="middle">G</text>
+						</svg>
+						<h1>{greeting}</h1>
 					</div>
-					<svg class="chevron" class:rotated={userMenuOpen} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						<path d="m6 9 6 6 6-6" />
-					</svg>
-				{/if}
-			</button>
-
-			{#if userMenuOpen}
-				<div class="user-menu" class:collapsed-menu={sidebarCollapsed}>
-					<a href="/documents" class="user-menu-item">
-						<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-							<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
-							<polyline points="14 2 14 8 20 8" />
-						</svg>
-						{#if !sidebarCollapsed}<span>Documents</span>{/if}
-					</a>
-					<a href="/settings" class="user-menu-item">
-						<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-							<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
-							<circle cx="12" cy="12" r="3" />
-						</svg>
-						{#if !sidebarCollapsed}<span>Settings</span>{/if}
-					</a>
-					<button class="user-menu-item" on:click={toggleTheme}>
-						{#if $theme.isDark}
-							<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-								<circle cx="12" cy="12" r="4" />
-								<path d="M12 2v2" /><path d="M12 20v2" />
-								<path d="m4.93 4.93 1.41 1.41" /><path d="m17.66 17.66 1.41 1.41" />
-								<path d="M2 12h2" /><path d="M20 12h2" />
-								<path d="m6.34 17.66-1.41 1.41" /><path d="m19.07 4.93-1.41 1.41" />
-							</svg>
-							{#if !sidebarCollapsed}<span>Light Mode</span>{/if}
-						{:else}
-							<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-								<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
-							</svg>
-							{#if !sidebarCollapsed}<span>Dark Mode</span>{/if}
-						{/if}
-					</button>
-					<div class="user-menu-divider"></div>
-					<button class="user-menu-item logout" on:click={handleLogout}>
-						<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-							<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-							<polyline points="16 17 21 12 16 7" />
-							<line x1="21" x2="9" y1="12" y2="12" />
-						</svg>
-						{#if !sidebarCollapsed}<span>Sign Out</span>{/if}
-					</button>
+					<p class="welcome-subtitle">Your transformation map awaits on the right</p>
+					<div class="welcome-spacer"></div>
 				</div>
-			{/if}
-		</div>
-	</aside>
-
-	<!-- Main content area (4 boxes) -->
-	<main class="main-content">
-		<!-- Left column: Chat (Response + Input) -->
-		<div class="chat-column">
-			<!-- Response container (80%) -->
-			<div class="response-container" bind:this={messagesContainer}>
-				{#if $messages.length === 0}
-					<!-- Welcome screen -->
-					<div class="welcome-screen">
-						<div class="welcome-spacer"></div>
-						<div class="welcome-greeting">
-							<svg class="welcome-logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-								<circle cx="50" cy="50" r="45" fill="#0f4c75" stroke="#3d93ce" stroke-width="4"/>
-								<text x="50" y="72" font-family="'Product Sans', 'Roboto', sans-serif" font-size="55" font-weight="500" font-style="italic" fill="#FFFFFF" text-anchor="middle">G</text>
-							</svg>
-							<h1>{greeting}</h1>
-						</div>
-						<p class="welcome-subtitle">Your transformation map awaits on the right</p>
-						<div class="welcome-spacer"></div>
-					</div>
-				{:else}
-					<!-- Messages -->
-					{#each $messages as message (message.id)}
-						<div class="message" class:user={message.role === 'user'}>
-							<div class="message-avatar" class:user-avatar={message.role === 'user'}>
-								{#if message.role === 'user'}
-									<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-										<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-										<circle cx="12" cy="7" r="4" />
-									</svg>
-								{:else}
-									<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-										<path d="M12 8V4H8" />
-										<rect width="16" height="12" x="4" y="8" rx="2" />
-										<path d="M2 14h2" />
-										<path d="M20 14h2" />
-										<path d="M15 13v2" />
-										<path d="M9 13v2" />
-									</svg>
-								{/if}
-							</div>
-							<div class="message-content">
-								<div class="message-header">
-									<span class="message-role">{message.role === 'user' ? 'You' : 'Assistant'}</span>
-									<span class="message-time">{formatTimestamp(message.createdAt)}</span>
-								</div>
-								<div class="message-bubble" class:bubble-user={message.role === 'user'} class:bubble-assistant={message.role === 'assistant'}>
-									<div class="message-text">
-										{@html message.content.replace(/\n/g, '<br>')}
-									</div>
-								</div>
-							</div>
-						</div>
-					{/each}
-
-					<!-- Streaming message -->
-					{#if $isStreaming}
-						<div class="message">
-							<div class="message-avatar">
+			{:else}
+				<!-- Messages -->
+				{#each $messages as message (message.id)}
+					<div class="message" class:user={message.role === 'user'}>
+						<div class="message-avatar" class:user-avatar={message.role === 'user'}>
+							{#if message.role === 'user'}
+								<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+									<circle cx="12" cy="7" r="4" />
+								</svg>
+							{:else}
 								<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 									<path d="M12 8V4H8" />
 									<rect width="16" height="12" x="4" y="8" rx="2" />
@@ -489,172 +313,199 @@
 									<path d="M15 13v2" />
 									<path d="M9 13v2" />
 								</svg>
+							{/if}
+						</div>
+						<div class="message-content">
+							<div class="message-header">
+								<span class="message-role">{message.role === 'user' ? 'You' : 'Assistant'}</span>
+								<span class="message-time">{formatTimestamp(message.createdAt)}</span>
 							</div>
-							<div class="message-content">
-								<div class="message-header">
-									<span class="message-role">Assistant</span>
-								</div>
-								<div class="message-bubble bubble-assistant">
-									{#if $streamingContent}
-										<div class="message-text">
-											{@html $streamingContent.replace(/\n/g, '<br>')}
-										</div>
-									{:else}
-										<TypingIndicator />
-									{/if}
+							<div class="message-bubble" class:bubble-user={message.role === 'user'} class:bubble-assistant={message.role === 'assistant'}>
+								<div class="message-text">
+									{@html message.content.replace(/\n/g, '<br>')}
 								</div>
 							</div>
 						</div>
-					{/if}
-				{/if}
-			</div>
-
-			<!-- Input panel (20%) -->
-			<div
-				class="input-panel"
-				on:dragover={handleDragOver}
-				on:dragleave={handleDragLeave}
-				on:drop={handleDrop}
-				class:drag-over={isDragging}
-				role="region"
-			>
-				<!-- Hidden file input -->
-				<input
-					type="file"
-					bind:this={fileInputElement}
-					on:change={handleFileSelect}
-					multiple
-					accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.json,.xml,.zip,.rar"
-					class="hidden-input"
-				/>
-
-				<!-- Attached files -->
-				{#if attachedFiles.length > 0}
-					<div class="attached-files">
-						{#each attachedFiles as file, index}
-							<div class="file-chip">
-								<span class="file-icon">{getFileIcon(file)}</span>
-								<span class="file-name">{file.name}</span>
-								<span class="file-size">{formatFileSize(file.size)}</span>
-								<button class="remove-file" on:click={() => removeFile(index)} title="Remove file">
-									<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-										<path d="M18 6 6 18" />
-										<path d="m6 6 12 12" />
-									</svg>
-								</button>
-							</div>
-						{/each}
 					</div>
-				{/if}
+				{/each}
 
-				<!-- Input row -->
-				<div class="input-row">
-					<textarea
-						bind:this={inputElement}
-						bind:value={messageInput}
-						on:keydown={handleKeyDown}
-						on:input={handleInput}
-						placeholder={PLACEHOLDERS[placeholderIndex]}
-						rows="1"
-						disabled={$isStreaming}
-					></textarea>
-				</div>
-
-				<!-- Controls row -->
-				<div class="controls-row">
-					<div class="controls-left">
-						<button class="control-btn" on:click={triggerFileInput} disabled={$isStreaming} title="Attach files">
-							<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-								<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+				<!-- Streaming message -->
+				{#if $isStreaming}
+					<div class="message">
+						<div class="message-avatar">
+							<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M12 8V4H8" />
+								<rect width="16" height="12" x="4" y="8" rx="2" />
+								<path d="M2 14h2" />
+								<path d="M20 14h2" />
+								<path d="M15 13v2" />
+								<path d="M9 13v2" />
 							</svg>
-						</button>
-
-						{#if $isMatrixGenerated}
-							<button class="control-btn causation-btn" on:click={() => (showCausationPopup = true)} title="Select row dimensions">
-								<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-									<path d="M12 3v18"/>
-									<path d="M5 9h14"/>
-									<path d="M5 15h14"/>
-								</svg>
-								<span>Causation</span>
-							</button>
-
-							<button class="control-btn effect-btn" on:click={() => (showEffectPopup = true)} title="Select column dimensions">
-								<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-									<path d="M3 12h18"/>
-									<path d="M9 5v14"/>
-									<path d="M15 5v14"/>
-								</svg>
-								<span>Effect</span>
-							</button>
-						{/if}
+						</div>
+						<div class="message-content">
+							<div class="message-header">
+								<span class="message-role">Assistant</span>
+							</div>
+							<div class="message-bubble bubble-assistant">
+								{#if $streamingContent}
+									<div class="message-text">
+										{@html $streamingContent.replace(/\n/g, '<br>')}
+									</div>
+								{:else}
+									<TypingIndicator />
+								{/if}
+							</div>
+						</div>
 					</div>
-
-					<div class="controls-right">
-						<select bind:value={selectedModel} class="model-select">
-							{#each models as model}
-								<option value={model.id}>{model.name}</option>
-							{/each}
-						</select>
-
-						{#if $isStreaming}
-							<button class="send-btn stop-btn" on:click={stopGeneration}>
-								<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-									<rect x="6" y="6" width="12" height="12" rx="2" />
-								</svg>
-							</button>
-						{:else}
-							<button
-								class="send-btn"
-								on:click={handleSendMessage}
-								disabled={(!messageInput.trim() && attachedFiles.length === 0)}
-							>
-								<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-									<path d="M22 2L11 13" />
-									<path d="M22 2L15 22L11 13L2 9L22 2Z" />
-								</svg>
-							</button>
-						{/if}
-					</div>
-				</div>
-			</div>
+				{/if}
+			{/if}
 		</div>
 
-		<!-- Right column: Matrix + Preview -->
-		<div class="matrix-column">
-			<!-- Matrix (50%) -->
-			<div class="matrix-box">
-				<MatrixPanel
-					matrixData={$matrixDataStore}
-					rowHeaders={$rowHeadersStore}
-					columnHeaders={$columnHeadersStore}
-					showRiskHeatmap={$showRiskHeatmapStore}
-					compact={true}
-					on:cellClick={handleCellClick}
-					on:cellChange={handleCellChange}
-				/>
-			</div>
-
-			<!-- Toolbar between matrix and preview -->
-			<MatrixToolbar
-				showRiskHeatmap={$showRiskHeatmapStore}
-				on:openPopup={handleToolbarPopup}
-				on:toggleRisk={handleToggleRisk}
+		<!-- Input panel (20%) -->
+		<div
+			class="input-panel"
+			on:dragover={handleDragOver}
+			on:dragleave={handleDragLeave}
+			on:drop={handleDrop}
+			class:drag-over={isDragging}
+			role="region"
+		>
+			<!-- Hidden file input -->
+			<input
+				type="file"
+				bind:this={fileInputElement}
+				on:change={handleFileSelect}
+				multiple
+				accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.json,.xml,.zip,.rar"
+				class="hidden-input"
 			/>
 
-			<!-- Live Preview (50%) -->
-			<div class="preview-box">
-				<LivePreviewBox
-					coherence={$coherenceStore}
-					balance={Math.round(($coherenceStore + $populationStore) / 2)}
-					population={$populationStore}
-					avgScore={$avgScoreStore}
-					powerSpots={$powerSpotsStore}
-					pendingChanges={0}
-				/>
+			<!-- Attached files -->
+			{#if attachedFiles.length > 0}
+				<div class="attached-files">
+					{#each attachedFiles as file, index}
+						<div class="file-chip">
+							<span class="file-icon">{getFileIcon(file)}</span>
+							<span class="file-name">{file.name}</span>
+							<span class="file-size">{formatFileSize(file.size)}</span>
+							<button class="remove-file" on:click={() => removeFile(index)} title="Remove file">
+								<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<path d="M18 6 6 18" />
+									<path d="m6 6 12 12" />
+								</svg>
+							</button>
+						</div>
+					{/each}
+				</div>
+			{/if}
+
+			<!-- Input row -->
+			<div class="input-row">
+				<textarea
+					bind:this={inputElement}
+					bind:value={messageInput}
+					on:keydown={handleKeyDown}
+					on:input={handleInput}
+					placeholder={PLACEHOLDERS[placeholderIndex]}
+					rows="1"
+					disabled={$isStreaming}
+				></textarea>
+			</div>
+
+			<!-- Controls row -->
+			<div class="controls-row">
+				<div class="controls-left">
+					<button class="control-btn" on:click={triggerFileInput} disabled={$isStreaming} title="Attach files">
+						<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+						</svg>
+					</button>
+
+					{#if $isMatrixGenerated}
+						<button class="control-btn causation-btn" on:click={() => (showCausationPopup = true)} title="Select row dimensions">
+							<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M12 3v18"/>
+								<path d="M5 9h14"/>
+								<path d="M5 15h14"/>
+							</svg>
+							<span>Causation</span>
+						</button>
+
+						<button class="control-btn effect-btn" on:click={() => (showEffectPopup = true)} title="Select column dimensions">
+							<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M3 12h18"/>
+								<path d="M9 5v14"/>
+								<path d="M15 5v14"/>
+							</svg>
+							<span>Effect</span>
+						</button>
+					{/if}
+				</div>
+
+				<div class="controls-right">
+					<select bind:value={selectedModel} class="model-select">
+						{#each models as model}
+							<option value={model.id}>{model.name}</option>
+						{/each}
+					</select>
+
+					{#if $isStreaming}
+						<button class="send-btn stop-btn" on:click={stopGeneration}>
+							<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+								<rect x="6" y="6" width="12" height="12" rx="2" />
+							</svg>
+						</button>
+					{:else}
+						<button
+							class="send-btn"
+							on:click={handleSendMessage}
+							disabled={(!messageInput.trim() && attachedFiles.length === 0)}
+						>
+							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+								<path d="M22 2L11 13" />
+								<path d="M22 2L15 22L11 13L2 9L22 2Z" />
+							</svg>
+						</button>
+					{/if}
+				</div>
 			</div>
 		</div>
-	</main>
+	</div>
+
+	<!-- Right column: Matrix + Preview -->
+	<div class="matrix-column">
+		<!-- Matrix (50%) -->
+		<div class="matrix-box">
+			<MatrixPanel
+				matrixData={$matrixDataStore}
+				rowHeaders={$rowHeadersStore}
+				columnHeaders={$columnHeadersStore}
+				showRiskHeatmap={$showRiskHeatmapStore}
+				compact={true}
+				on:cellClick={handleCellClick}
+				on:cellChange={handleCellChange}
+			/>
+		</div>
+
+		<!-- Toolbar between matrix and preview -->
+		<MatrixToolbar
+			showRiskHeatmap={$showRiskHeatmapStore}
+			on:openPopup={handleToolbarPopup}
+			on:toggleRisk={handleToggleRisk}
+		/>
+
+		<!-- Live Preview (50%) -->
+		<div class="preview-box">
+			<LivePreviewBox
+				coherence={$coherenceStore}
+				balance={Math.round(($coherenceStore + $populationStore) / 2)}
+				population={$populationStore}
+				avgScore={$avgScoreStore}
+				powerSpots={$powerSpotsStore}
+				pendingChanges={0}
+			/>
+		</div>
+	</div>
 </div>
 
 <!-- Toolbar Popups -->
@@ -739,353 +590,14 @@
 />
 
 <style>
-	/* Main unified layout */
-	.unified-layout {
-		display: flex;
-		height: 100%;
-		overflow: hidden;
-	}
-
-	/* Sidebar - Collapsible */
-	.sidebar {
-		width: 260px;
-		min-width: 260px;
-		background: var(--color-field-surface);
-		border-right: 1px solid var(--color-veil-thin);
-		display: flex;
-		flex-direction: column;
-		overflow: hidden;
-		transition: width 0.2s ease, min-width 0.2s ease;
-	}
-
-	.sidebar.collapsed {
-		width: 60px;
-		min-width: 60px;
-	}
-
-	.sidebar-header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		padding: 1rem;
-		border-bottom: 1px solid var(--color-veil-thin);
-		gap: 0.5rem;
-	}
-
-	.sidebar.collapsed .sidebar-header {
-		justify-content: center;
-		padding: 1rem 0.5rem;
-	}
-
-	.sidebar-logo {
-		font-size: 1rem;
-		font-weight: 700;
-		background: var(--gradient-primary);
-		-webkit-background-clip: text;
-		-webkit-text-fill-color: transparent;
-		background-clip: text;
-		white-space: nowrap;
-		overflow: hidden;
-	}
-
-	.collapse-btn {
-		width: 32px;
-		height: 32px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		background: none;
-		border: none;
-		color: var(--color-text-whisper);
-		cursor: pointer;
-		border-radius: 0.375rem;
-		transition: all 0.15s ease;
-		flex-shrink: 0;
-	}
-
-	.collapse-btn:hover {
-		background: var(--color-field-depth);
-		color: var(--color-text-source);
-	}
-
-	.collapse-btn svg.rotated {
-		transform: rotate(180deg);
-	}
-
-	/* New chat section */
-	.new-chat-section {
-		padding: 0.5rem;
-		border-bottom: 1px solid var(--color-veil-thin);
-	}
-
-	.new-chat-btn {
-		width: 100%;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.5rem;
-		padding: 0.625rem;
-		background: var(--color-primary-500);
-		border: none;
-		border-radius: 0.5rem;
-		color: white;
-		font-size: 0.875rem;
-		font-weight: 500;
-		cursor: pointer;
-		transition: background-color 0.15s ease;
-	}
-
-	.new-chat-btn:hover {
-		background: var(--color-primary-600);
-	}
-
-	.sidebar.collapsed .new-chat-btn {
-		padding: 0.625rem;
-	}
-
-	.sidebar.collapsed .new-chat-btn span {
-		display: none;
-	}
-
-	/* Conversations list */
-	.conversations-list {
-		flex: 1;
-		overflow-y: auto;
-		padding: 0.5rem;
-	}
-
-	.conversation-item {
-		width: 100%;
-		display: flex;
-		align-items: center;
-		gap: 0.625rem;
-		padding: 0.625rem;
-		background: none;
-		border: none;
-		border-radius: 0.5rem;
-		cursor: pointer;
-		transition: background-color 0.15s ease;
-		text-align: left;
-	}
-
-	.sidebar.collapsed .conversation-item {
-		justify-content: center;
-		padding: 0.625rem 0.5rem;
-	}
-
-	.conversation-item:hover {
-		background: var(--color-field-depth);
-	}
-
-	.conversation-item.active {
-		background: var(--color-primary-100);
-	}
-
-	[data-theme='dark'] .conversation-item.active {
-		background: rgba(15, 76, 117, 0.3);
-	}
-
-	.conversation-icon {
-		flex-shrink: 0;
-		color: var(--color-text-whisper);
-	}
-
-	.conversation-item.active .conversation-icon {
-		color: var(--color-primary-500);
-	}
-
-	.conversation-info {
-		flex: 1;
-		min-width: 0;
-		display: flex;
-		flex-direction: column;
-		gap: 0.125rem;
-	}
-
-	.conversation-title {
-		font-size: 0.8125rem;
-		font-weight: 500;
-		color: var(--color-text-source);
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-
-	.conversation-time {
-		font-size: 0.6875rem;
-		color: var(--color-text-whisper);
-	}
-
-	.empty-conversations {
-		text-align: center;
-		padding: 2rem 1rem;
-	}
-
-	.empty-conversations p {
-		font-size: 0.875rem;
-		color: var(--color-text-whisper);
-	}
-
-	.empty-conversations .hint {
-		font-size: 0.75rem;
-		color: var(--color-text-hint);
-		margin-top: 0.25rem;
-	}
-
-	/* Sidebar footer / User menu */
-	.sidebar-footer {
-		padding: 0.5rem;
-		border-top: 1px solid var(--color-veil-thin);
-	}
-
-	.user-avatar-btn {
-		width: 100%;
-		display: flex;
-		align-items: center;
-		gap: 0.625rem;
-		padding: 0.5rem;
-		background: none;
-		border: none;
-		border-radius: 0.5rem;
-		cursor: pointer;
-		transition: all 0.15s ease;
-		text-align: left;
-	}
-
-	.sidebar.collapsed .user-avatar-btn {
-		justify-content: center;
-	}
-
-	.user-avatar-btn:hover,
-	.user-avatar-btn.active {
-		background: var(--color-field-depth);
-	}
-
-	.user-avatar {
-		width: 32px;
-		height: 32px;
-		background: var(--gradient-primary);
-		border-radius: 50%;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		color: white;
-		font-weight: 600;
-		font-size: 0.8125rem;
-		flex-shrink: 0;
-	}
-
-	.user-details {
-		flex: 1;
-		min-width: 0;
-	}
-
-	.user-name {
-		display: block;
-		font-weight: 500;
-		font-size: 0.8125rem;
-		color: var(--color-text-source);
-	}
-
-	.user-email {
-		display: block;
-		font-size: 0.6875rem;
-		color: var(--color-text-whisper);
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-
-	.chevron {
-		color: var(--color-text-whisper);
-		transition: transform 0.2s ease;
-		flex-shrink: 0;
-	}
-
-	.chevron.rotated {
-		transform: rotate(180deg);
-	}
-
-	/* User menu dropdown */
-	.user-menu {
-		margin-top: 0.5rem;
-		padding: 0.375rem;
-		background: var(--color-field-depth);
-		border-radius: 0.5rem;
-		animation: slideUp 0.15s ease;
-	}
-
-	.user-menu.collapsed-menu {
-		position: absolute;
-		bottom: 60px;
-		left: 60px;
-		width: 200px;
-		box-shadow: var(--shadow-elevated);
-		z-index: 50;
-	}
-
-	@keyframes slideUp {
-		from {
-			opacity: 0;
-			transform: translateY(8px);
-		}
-		to {
-			opacity: 1;
-			transform: translateY(0);
-		}
-	}
-
-	.user-menu-item {
-		display: flex;
-		align-items: center;
-		gap: 0.625rem;
-		width: 100%;
-		padding: 0.5rem 0.625rem;
-		background: none;
-		border: none;
-		border-radius: 0.375rem;
-		color: var(--color-text-manifest);
-		text-decoration: none;
-		font-size: 0.8125rem;
-		font-weight: 500;
-		cursor: pointer;
-		transition: all 0.15s ease;
-		text-align: left;
-	}
-
-	.user-menu-item:hover {
-		background: var(--color-field-surface);
-		color: var(--color-text-source);
-	}
-
-	.user-menu-item.logout {
-		color: var(--color-error-500);
-	}
-
-	.user-menu-item.logout:hover {
-		background: var(--color-error-50);
-		color: var(--color-error-600);
-	}
-
-	[data-theme='dark'] .user-menu-item.logout:hover {
-		background: rgba(239, 68, 68, 0.1);
-	}
-
-	.user-menu-divider {
-		height: 1px;
-		background: var(--color-veil-thin);
-		margin: 0.375rem 0.5rem;
-	}
-
-	/* Main content */
-	.main-content {
-		flex: 1;
+	/* Chat layout - fills the main content area from app layout */
+	.chat-layout {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		gap: 1rem;
 		padding: 1rem;
+		height: 100%;
 		overflow: hidden;
-		min-width: 0;
 	}
 
 	/* Chat column */
@@ -1458,9 +970,7 @@
 		padding: 1rem;
 	}
 
-	.toolbar-popup,
-	.causation-popup,
-	.effect-popup {
+	.toolbar-popup {
 		width: 100%;
 		max-width: 450px;
 		max-height: 80vh;
@@ -1508,14 +1018,6 @@
 		font-size: 0.875rem;
 		color: var(--color-text-whisper);
 		margin-bottom: 1rem;
-	}
-
-	.popup-footer {
-		display: flex;
-		justify-content: flex-end;
-		gap: 0.75rem;
-		padding: 1rem;
-		border-top: 1px solid var(--color-veil-thin);
 	}
 
 	/* Power spots list */
@@ -1638,73 +1140,18 @@
 		background: var(--color-primary-600);
 	}
 
-	/* Dimension options */
-	.dimension-options {
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
-		margin-bottom: 1rem;
+	/* Responsive */
+	@media (max-width: 1024px) {
+		.chat-layout {
+			grid-template-columns: 1fr;
+			grid-template-rows: 1fr 1fr;
+		}
 	}
 
-	.dimension-option {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		padding: 0.75rem;
-		background: var(--color-field-depth);
-		border-radius: 0.5rem;
-		cursor: pointer;
-		transition: background-color 0.15s ease;
-	}
-
-	.dimension-option:hover {
-		background: var(--color-field-elevated);
-	}
-
-	.dimension-option.selected {
-		background: var(--color-primary-50);
-		border: 1px solid var(--color-primary-400);
-	}
-
-	[data-theme='dark'] .dimension-option.selected {
-		background: rgba(15, 76, 117, 0.2);
-	}
-
-	.dimension-option input {
-		accent-color: var(--color-primary-500);
-	}
-
-	.dimension-option span {
-		font-size: 0.875rem;
-		color: var(--color-text-source);
-	}
-
-	.generate-more-btn {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.5rem;
-		width: 100%;
-		padding: 0.75rem;
-		background: var(--color-field-depth);
-		border: 1px dashed var(--color-veil-thin);
-		border-radius: 0.5rem;
-		font-size: 0.875rem;
-		color: var(--color-primary-600);
-		cursor: pointer;
-		transition: all 0.15s ease;
-	}
-
-	.generate-more-btn:hover {
-		background: var(--color-primary-50);
-		border-color: var(--color-primary-400);
-	}
-
-	[data-theme='dark'] .generate-more-btn {
-		color: var(--color-primary-400);
-	}
-
-	[data-theme='dark'] .generate-more-btn:hover {
-		background: rgba(15, 76, 117, 0.2);
+	@media (max-width: 767px) {
+		.chat-layout {
+			padding: 0.5rem;
+			gap: 0.5rem;
+		}
 	}
 </style>
