@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Optional, List
 from sqlalchemy import String, Boolean, Integer, Float, DateTime, ForeignKey, Text, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.dialects.postgresql import JSON
+from sqlalchemy import JSON  # Use generic JSON for SQLite/PostgreSQL compatibility
 
 from ..config import Base
 from .enums import UserRole, InvitationStatus, SubscriptionStatus, SubscriptionTier

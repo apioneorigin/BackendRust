@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Optional, List, TYPE_CHECKING
 from sqlalchemy import String, Boolean, Integer, Float, DateTime, ForeignKey, Text, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.dialects.postgresql import JSON, ARRAY
+from sqlalchemy import JSON  # Use generic JSON for SQLite/PostgreSQL compatibility
 
 from ..config import Base
 from .enums import UsageType
@@ -190,7 +190,7 @@ class OOFCOSAnalytics(Base):
     confusion_before_clarity: Mapped[bool] = mapped_column(Boolean, default=False)
 
     # Operator analysis
-    core_seven_activated: Mapped[list] = mapped_column(ARRAY(String), nullable=False)
+    core_seven_activated: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
     core_seven_complete: Mapped[bool] = mapped_column(Boolean, default=False)
     operator_coverage: Mapped[float] = mapped_column(Float, default=0.0)
     dominant_operator: Mapped[Optional[str]] = mapped_column(String, nullable=True)
@@ -202,15 +202,15 @@ class OOFCOSAnalytics(Base):
     discovery_feel: Mapped[bool] = mapped_column(Boolean, default=False)
     framework_feel: Mapped[bool] = mapped_column(Boolean, default=False)
     concealment_verified: Mapped[bool] = mapped_column(Boolean, default=False)
-    framework_terms_found: Mapped[list] = mapped_column(ARRAY(String), nullable=False)
+    framework_terms_found: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
 
     # Overall
     overall_quality_score: Mapped[int] = mapped_column(Integer, default=0)
     validation_passed: Mapped[bool] = mapped_column(Boolean, default=False)
 
     # Issues
-    critical_issues: Mapped[list] = mapped_column(ARRAY(String), nullable=False)
-    warning_issues: Mapped[list] = mapped_column(ARRAY(String), nullable=False)
+    critical_issues: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    warning_issues: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
 
     # Timestamp
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
@@ -234,7 +234,7 @@ class InteractionPsychology(Base):
     turn_number: Mapped[int] = mapped_column(Integer, nullable=False)
 
     # User message analysis
-    claimed_topics: Mapped[list] = mapped_column(ARRAY(String), nullable=False)
+    claimed_topics: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
     should_count: Mapped[int] = mapped_column(Integer, default=0)
     want_count: Mapped[int] = mapped_column(Integer, default=0)
     need_count: Mapped[int] = mapped_column(Integer, default=0)
@@ -246,7 +246,7 @@ class InteractionPsychology(Base):
     response_latency: Mapped[int] = mapped_column(Integer, nullable=False)
 
     # Response content analysis
-    content_categories: Mapped[list] = mapped_column(ARRAY(String), nullable=False)
+    content_categories: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
     primary_category: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     content_depth: Mapped[str] = mapped_column(String, nullable=False)
     shadow_proximity: Mapped[int] = mapped_column(Integer, default=0)
@@ -279,7 +279,7 @@ class ElementAction(Base):
     # Element info
     element_type: Mapped[str] = mapped_column(String, nullable=False)
     element_id: Mapped[str] = mapped_column(String, nullable=False)
-    element_categories: Mapped[list] = mapped_column(ARRAY(String), nullable=False)
+    element_categories: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
     element_depth: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     element_shadow_proximity: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
@@ -317,17 +317,17 @@ class SessionPsychology(Base):
     turn_count: Mapped[int] = mapped_column(Integer, default=0)
 
     # Depth
-    depth_progression: Mapped[list] = mapped_column(ARRAY(String), nullable=False)
+    depth_progression: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
     max_depth_reached: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
     # Categories
-    categories_engaged: Mapped[list] = mapped_column(ARRAY(String), nullable=False)
-    categories_avoided: Mapped[list] = mapped_column(ARRAY(String), nullable=False)
-    categories_presented: Mapped[list] = mapped_column(ARRAY(String), nullable=False)
+    categories_engaged: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    categories_avoided: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    categories_presented: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
 
     # Exit
     exit_trigger: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    last_content_categories: Mapped[list] = mapped_column(ARRAY(String), nullable=False)
+    last_content_categories: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
     last_content_depth: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     last_shadow_proximity: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     last_intensity_level: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
@@ -405,9 +405,9 @@ class UserPsychologyProfile(Base):
 
     # Predictive scores
     churn_risk: Mapped[float] = mapped_column(Float, default=0.0)
-    churn_risk_factors: Mapped[list] = mapped_column(ARRAY(String), nullable=False)
+    churn_risk_factors: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
     upgrade_likelihood: Mapped[float] = mapped_column(Float, default=0.0)
-    upgrade_factors: Mapped[list] = mapped_column(ARRAY(String), nullable=False)
+    upgrade_factors: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
 
     # Session patterns
     total_sessions: Mapped[int] = mapped_column(Integer, default=0)

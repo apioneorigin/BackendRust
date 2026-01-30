@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Optional, List
 from sqlalchemy import String, Boolean, Integer, Float, DateTime, ForeignKey, Text, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.dialects.postgresql import JSON, ARRAY
+from sqlalchemy import JSON  # Use generic JSON for SQLite/PostgreSQL compatibility
 
 from ..config import Base
 
@@ -89,13 +89,13 @@ class MilestoneConcept(Base):
     subdimensions: Mapped[dict] = mapped_column(JSON, nullable=False)
 
     # Pattern detection
-    keywords: Mapped[list] = mapped_column(ARRAY(String), nullable=False)
+    keywords: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
 
     # Operator mapping
     metric_mapping: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 
     # Prerequisites
-    prerequisites: Mapped[list] = mapped_column(ARRAY(String), default=list)
+    prerequisites: Mapped[list] = mapped_column(JSON, default=list)
 
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
@@ -244,7 +244,7 @@ class DocumentAssumption(Base):
     text: Mapped[str] = mapped_column(Text, nullable=False)
     impact: Mapped[str] = mapped_column(String, nullable=False)  # high | medium | low
     category: Mapped[str] = mapped_column(String, nullable=False)  # market | internal | financial | competitive | regulatory
-    affected_cells: Mapped[list] = mapped_column(ARRAY(String), nullable=False)
+    affected_cells: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
     confidence: Mapped[int] = mapped_column(Integer, default=50)
     source: Mapped[str] = mapped_column(String, default="user")  # user | ai | imported
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
@@ -267,7 +267,7 @@ class DocumentGoalConnection(Base):
     goal_text: Mapped[str] = mapped_column(Text, nullable=False)
     contribution_type: Mapped[str] = mapped_column(String, nullable=False)  # direct | enabling | supporting
     strength: Mapped[float] = mapped_column(Float, default=0.5)
-    supporting_cells: Mapped[list] = mapped_column(ARRAY(String), nullable=False)
+    supporting_cells: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
     timeline: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
