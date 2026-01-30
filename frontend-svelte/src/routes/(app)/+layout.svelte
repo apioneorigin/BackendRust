@@ -149,7 +149,7 @@
 					{/if}
 				</button>
 
-				<!-- User menu dropdown -->
+				<!-- User menu dropdown (always shows labels - it's a popup when collapsed) -->
 				{#if userMenuOpen}
 					<div class="user-menu" class:collapsed-menu={sidebarCollapsed}>
 						<a href="/documents" class="user-menu-item">
@@ -157,14 +157,14 @@
 								<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
 								<polyline points="14 2 14 8 20 8" />
 							</svg>
-							{#if !sidebarCollapsed}<span>Documents</span>{/if}
+							<span>Documents</span>
 						</a>
 						<a href="/settings" class="user-menu-item">
 							<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 								<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
 								<circle cx="12" cy="12" r="3" />
 							</svg>
-							{#if !sidebarCollapsed}<span>Settings</span>{/if}
+							<span>Settings</span>
 						</a>
 						<div class="user-menu-divider"></div>
 						<button class="user-menu-item" on:click={toggleTheme}>
@@ -176,12 +176,12 @@
 									<path d="M2 12h2" /><path d="M20 12h2" />
 									<path d="m6.34 17.66-1.41 1.41" /><path d="m19.07 4.93-1.41 1.41" />
 								</svg>
-								{#if !sidebarCollapsed}<span>Light Mode</span>{/if}
+								<span>Light Mode</span>
 							{:else}
 								<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 									<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
 								</svg>
-								{#if !sidebarCollapsed}<span>Dark Mode</span>{/if}
+								<span>Dark Mode</span>
 							{/if}
 						</button>
 						<div class="user-menu-divider"></div>
@@ -191,7 +191,7 @@
 								<polyline points="16 17 21 12 16 7" />
 								<line x1="21" x2="9" y1="12" y2="12" />
 							</svg>
-							{#if !sidebarCollapsed}<span>Sign Out</span>{/if}
+							<span>Sign Out</span>
 						</button>
 					</div>
 				{/if}
@@ -419,12 +419,14 @@
 
 	.user-menu.collapsed-menu {
 		position: absolute;
-		bottom: 60px;
-		left: 60px;
+		bottom: 100%;
+		left: 0;
+		margin-bottom: 0.5rem;
 		width: 180px;
 		box-shadow: var(--shadow-elevated);
-		z-index: 50;
+		z-index: 100;
 		background: var(--color-field-surface);
+		border: 1px solid var(--color-veil-thin);
 	}
 
 	@keyframes slideUp {

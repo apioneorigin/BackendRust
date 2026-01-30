@@ -1,15 +1,26 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { auth, isAuthenticated } from '$lib/stores';
+	import { auth, credits, creditBalance } from '$lib/stores';
 
 	onMount(async () => {
 		// Try to load user, redirect based on auth status
 		const user = await auth.loadUser();
-		if (user) {
-			goto('/chat');
-		} else {
+
+		if (!user) {
 			goto('/login');
+			return;
+		}
+
+		// User is authenticated - check credits
+		await credits.loadBalance();
+
+		// If user has no credits, redirect to add-credits page
+		if (!$creditBalance?.creditQuota || $creditBalance.creditQuota < 1) {
+			goto('/add-credits');
+		} else {
+			// User has credits, go to chat
+			goto('/chat');
 		}
 	});
 </script>

@@ -29,7 +29,7 @@
 			const success = await auth.register(email, password, name || undefined);
 			if (success) {
 				addToast('success', 'Your account has been created');
-				goto('/chat');
+				goto('/add-credits');  // New users need to add credits first
 			} else {
 				error = 'Registration failed';
 			}
