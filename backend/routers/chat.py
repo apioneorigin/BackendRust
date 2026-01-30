@@ -15,7 +15,7 @@ from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 from sse_starlette.sse import EventSourceResponse
 
-from database import get_db, User, ChatConversation, ChatMessage, ChatSummary, Session
+from database import get_db, User, ChatConversation, ChatMessage, ChatSummary, Session, AsyncSessionLocal
 from routers.auth import get_current_user, generate_id
 from utils import get_or_404, paginate, to_response, to_response_list, safe_json_loads
 
@@ -273,7 +273,7 @@ async def send_message(
                 yield f"event: {event_type}\ndata: {json.dumps(data) if isinstance(data, dict) else data}\n\n"
 
         # Save assistant message after streaming completes
-        async with AsyncSession(db.get_bind()) as save_db:
+        async with AsyncSessionLocal() as save_db:
             assistant_message = ChatMessage(
                 id=generate_id(),
                 conversation_id=conversation_id,
