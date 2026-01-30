@@ -16,6 +16,7 @@ from sse_starlette.sse import EventSourceResponse
 
 from database import get_db, User, ChatConversation, ChatMessage, ChatSummary, Session
 from routers.auth import get_current_user, generate_id
+from utils import get_or_404, paginate, to_response, to_response_list, safe_json_loads
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
@@ -102,19 +103,7 @@ async def create_conversation(
     await db.commit()
     await db.refresh(conversation)
 
-    return ConversationResponse(
-        id=conversation.id,
-        user_id=conversation.user_id,
-        organization_id=conversation.organization_id,
-        session_id=conversation.session_id,
-        title=conversation.title,
-        context=conversation.context,
-        is_active=conversation.is_active,
-        total_tokens=conversation.total_tokens,
-        current_phase=conversation.current_phase,
-        created_at=conversation.created_at,
-        updated_at=conversation.updated_at,
-    )
+    return to_response(conversation, ConversationResponse)
 
 
 @router.get("/conversations", response_model=ConversationListResponse)
@@ -134,35 +123,12 @@ async def list_conversations(
     if session_id:
         query = query.where(ChatConversation.session_id == session_id)
 
-    # Count
-    count_result = await db.execute(query)
-    total = len(count_result.scalars().all())
-
-    # Paginate
-    result = await db.execute(
-        query.order_by(desc(ChatConversation.updated_at))
-        .offset(offset)
-        .limit(limit)
+    conversations, total = await paginate(
+        db, query, offset, limit, ChatConversation.updated_at
     )
-    conversations = result.scalars().all()
 
     return ConversationListResponse(
-        conversations=[
-            ConversationResponse(
-                id=c.id,
-                user_id=c.user_id,
-                organization_id=c.organization_id,
-                session_id=c.session_id,
-                title=c.title,
-                context=c.context,
-                is_active=c.is_active,
-                total_tokens=c.total_tokens,
-                current_phase=c.current_phase,
-                created_at=c.created_at,
-                updated_at=c.updated_at,
-            )
-            for c in conversations
-        ],
+        conversations=to_response_list(conversations, ConversationResponse),
         total=total,
     )
 
@@ -174,30 +140,10 @@ async def get_conversation(
     db: AsyncSession = Depends(get_db)
 ):
     """Get a specific conversation."""
-    result = await db.execute(
-        select(ChatConversation).where(
-            ChatConversation.id == conversation_id,
-            ChatConversation.user_id == current_user.id
-        )
+    conversation = await get_or_404(
+        db, ChatConversation, conversation_id, user_id=current_user.id
     )
-    conversation = result.scalar_one_or_none()
-
-    if not conversation:
-        raise HTTPException(status_code=404, detail="Conversation not found")
-
-    return ConversationResponse(
-        id=conversation.id,
-        user_id=conversation.user_id,
-        organization_id=conversation.organization_id,
-        session_id=conversation.session_id,
-        title=conversation.title,
-        context=conversation.context,
-        is_active=conversation.is_active,
-        total_tokens=conversation.total_tokens,
-        current_phase=conversation.current_phase,
-        created_at=conversation.created_at,
-        updated_at=conversation.updated_at,
-    )
+    return to_response(conversation, ConversationResponse)
 
 
 @router.get("/conversations/{conversation_id}/messages", response_model=List[MessageResponse])
@@ -209,14 +155,7 @@ async def get_conversation_messages(
 ):
     """Get messages for a conversation."""
     # Verify access
-    result = await db.execute(
-        select(ChatConversation).where(
-            ChatConversation.id == conversation_id,
-            ChatConversation.user_id == current_user.id
-        )
-    )
-    if not result.scalar_one_or_none():
-        raise HTTPException(status_code=404, detail="Conversation not found")
+    await get_or_404(db, ChatConversation, conversation_id, user_id=current_user.id)
 
     # Get messages
     result = await db.execute(
@@ -227,20 +166,7 @@ async def get_conversation_messages(
     )
     messages = result.scalars().all()
 
-    return [
-        MessageResponse(
-            id=m.id,
-            conversation_id=m.conversation_id,
-            role=m.role,
-            content=m.content,
-            cos_data=m.cos_data,
-            input_tokens=m.input_tokens,
-            output_tokens=m.output_tokens,
-            total_tokens=m.total_tokens,
-            created_at=m.created_at,
-        )
-        for m in messages
-    ]
+    return to_response_list(messages, MessageResponse)
 
 
 @router.post("/conversations/{conversation_id}/messages")
@@ -255,15 +181,9 @@ async def send_message(
     This integrates with the consciousness inference engine.
     """
     # Verify access
-    result = await db.execute(
-        select(ChatConversation).where(
-            ChatConversation.id == conversation_id,
-            ChatConversation.user_id == current_user.id
-        )
+    conversation = await get_or_404(
+        db, ChatConversation, conversation_id, user_id=current_user.id
     )
-    conversation = result.scalar_one_or_none()
-    if not conversation:
-        raise HTTPException(status_code=404, detail="Conversation not found")
 
     # Load conversation history for context
     history_result = await db.execute(
@@ -342,10 +262,10 @@ async def send_message(
                 data = event.get("data", "")
 
                 if event_type == "token":
-                    token_data = json.loads(data) if isinstance(data, str) else data
+                    token_data = safe_json_loads(data)
                     full_response += token_data.get("text", "")
                 elif event_type == "usage":
-                    usage_data = json.loads(data) if isinstance(data, str) else data
+                    usage_data = safe_json_loads(data)
                     input_tokens = usage_data.get("input_tokens", 0)
                     output_tokens = usage_data.get("output_tokens", 0)
 
@@ -386,16 +306,9 @@ async def delete_conversation(
     db: AsyncSession = Depends(get_db)
 ):
     """Soft delete a conversation (set inactive)."""
-    result = await db.execute(
-        select(ChatConversation).where(
-            ChatConversation.id == conversation_id,
-            ChatConversation.user_id == current_user.id
-        )
+    conversation = await get_or_404(
+        db, ChatConversation, conversation_id, user_id=current_user.id
     )
-    conversation = result.scalar_one_or_none()
-
-    if not conversation:
-        raise HTTPException(status_code=404, detail="Conversation not found")
 
     conversation.is_active = False
     conversation.updated_at = datetime.utcnow()
@@ -429,15 +342,9 @@ async def upload_files(
     is used to inform subsequent LLM calls.
     """
     # Verify access
-    result = await db.execute(
-        select(ChatConversation).where(
-            ChatConversation.id == conversation_id,
-            ChatConversation.user_id == current_user.id
-        )
+    conversation = await get_or_404(
+        db, ChatConversation, conversation_id, user_id=current_user.id
     )
-    conversation = result.scalar_one_or_none()
-    if not conversation:
-        raise HTTPException(status_code=404, detail="Conversation not found")
 
     # Process files and create summaries
     file_summaries = []

@@ -15,6 +15,7 @@ from database import (
     DocumentGoalConnection, DocumentProgress
 )
 from routers.auth import get_current_user, generate_id
+from utils import get_or_404, paginate, to_response, to_response_list
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
 
@@ -85,25 +86,7 @@ async def create_document(
     await db.commit()
     await db.refresh(document)
 
-    return DocumentResponse(
-        id=document.id,
-        user_id=document.user_id,
-        organization_id=document.organization_id,
-        title=document.title,
-        sections=document.sections,
-        format=document.format,
-        domain=document.domain,
-        version=document.version,
-        is_active=document.is_active,
-        conversation_id=document.conversation_id,
-        goal_title=document.goal_title,
-        goal_id=document.goal_id,
-        name=document.name,
-        cells=document.cells,
-        cascade_rules=document.cascade_rules,
-        created_at=document.created_at,
-        last_updated_at=document.last_updated_at,
-    )
+    return to_response(document, DocumentResponse)
 
 
 @router.get("/", response_model=DocumentListResponse)
@@ -123,39 +106,10 @@ async def list_documents(
     if domain:
         query = query.where(Document.domain == domain)
 
-    count_result = await db.execute(query)
-    total = len(count_result.scalars().all())
-
-    result = await db.execute(
-        query.order_by(desc(Document.last_updated_at))
-        .offset(offset)
-        .limit(limit)
-    )
-    documents = result.scalars().all()
+    documents, total = await paginate(db, query, offset, limit, Document.last_updated_at)
 
     return DocumentListResponse(
-        documents=[
-            DocumentResponse(
-                id=d.id,
-                user_id=d.user_id,
-                organization_id=d.organization_id,
-                title=d.title,
-                sections=d.sections,
-                format=d.format,
-                domain=d.domain,
-                version=d.version,
-                is_active=d.is_active,
-                conversation_id=d.conversation_id,
-                goal_title=d.goal_title,
-                goal_id=d.goal_id,
-                name=d.name,
-                cells=d.cells,
-                cascade_rules=d.cascade_rules,
-                created_at=d.created_at,
-                last_updated_at=d.last_updated_at,
-            )
-            for d in documents
-        ],
+        documents=to_response_list(documents, DocumentResponse),
         total=total,
     )
 
@@ -167,36 +121,8 @@ async def get_document(
     db: AsyncSession = Depends(get_db)
 ):
     """Get a specific document."""
-    result = await db.execute(
-        select(Document).where(
-            Document.id == document_id,
-            Document.user_id == current_user.id
-        )
-    )
-    document = result.scalar_one_or_none()
-
-    if not document:
-        raise HTTPException(status_code=404, detail="Document not found")
-
-    return DocumentResponse(
-        id=document.id,
-        user_id=document.user_id,
-        organization_id=document.organization_id,
-        title=document.title,
-        sections=document.sections,
-        format=document.format,
-        domain=document.domain,
-        version=document.version,
-        is_active=document.is_active,
-        conversation_id=document.conversation_id,
-        goal_title=document.goal_title,
-        goal_id=document.goal_id,
-        name=document.name,
-        cells=document.cells,
-        cascade_rules=document.cascade_rules,
-        created_at=document.created_at,
-        last_updated_at=document.last_updated_at,
-    )
+    document = await get_or_404(db, Document, document_id, user_id=current_user.id)
+    return to_response(document, DocumentResponse)
 
 
 @router.patch("/{document_id}", response_model=DocumentResponse)
@@ -207,16 +133,7 @@ async def update_document(
     db: AsyncSession = Depends(get_db)
 ):
     """Update a document."""
-    result = await db.execute(
-        select(Document).where(
-            Document.id == document_id,
-            Document.user_id == current_user.id
-        )
-    )
-    document = result.scalar_one_or_none()
-
-    if not document:
-        raise HTTPException(status_code=404, detail="Document not found")
+    document = await get_or_404(db, Document, document_id, user_id=current_user.id)
 
     if request.title is not None:
         document.title = request.title
@@ -233,25 +150,7 @@ async def update_document(
     await db.commit()
     await db.refresh(document)
 
-    return DocumentResponse(
-        id=document.id,
-        user_id=document.user_id,
-        organization_id=document.organization_id,
-        title=document.title,
-        sections=document.sections,
-        format=document.format,
-        domain=document.domain,
-        version=document.version,
-        is_active=document.is_active,
-        conversation_id=document.conversation_id,
-        goal_title=document.goal_title,
-        goal_id=document.goal_id,
-        name=document.name,
-        cells=document.cells,
-        cascade_rules=document.cascade_rules,
-        created_at=document.created_at,
-        last_updated_at=document.last_updated_at,
-    )
+    return to_response(document, DocumentResponse)
 
 
 @router.delete("/{document_id}")
@@ -261,16 +160,7 @@ async def delete_document(
     db: AsyncSession = Depends(get_db)
 ):
     """Soft delete a document."""
-    result = await db.execute(
-        select(Document).where(
-            Document.id == document_id,
-            Document.user_id == current_user.id
-        )
-    )
-    document = result.scalar_one_or_none()
-
-    if not document:
-        raise HTTPException(status_code=404, detail="Document not found")
+    document = await get_or_404(db, Document, document_id, user_id=current_user.id)
 
     document.is_active = False
     document.last_updated_at = datetime.utcnow()

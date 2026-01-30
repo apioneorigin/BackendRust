@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db, User, Goal, MatrixValue, DiscoveredGoal, UserGoalInventory
 from routers.auth import get_current_user, generate_id
+from utils import get_or_404, paginate, to_response, to_response_list
 
 router = APIRouter(prefix="/api", tags=["goals"])
 
@@ -92,22 +93,7 @@ async def create_goal(
     await db.commit()
     await db.refresh(goal)
 
-    return GoalResponse(
-        id=goal.id,
-        user_id=goal.user_id,
-        organization_id=goal.organization_id,
-        goal_text=goal.goal_text,
-        session_id=goal.session_id,
-        locked=goal.locked,
-        locked_at=goal.locked_at,
-        metric_targets=goal.metric_targets,
-        matrix_rows=goal.matrix_rows,
-        matrix_columns=goal.matrix_columns,
-        intent=goal.intent,
-        domain=goal.domain,
-        created_at=goal.created_at,
-        updated_at=goal.updated_at,
-    )
+    return to_response(goal, GoalResponse)
 
 
 @router.get("/goals", response_model=GoalListResponse)
@@ -124,36 +110,10 @@ async def list_goals(
     if locked is not None:
         query = query.where(Goal.locked == locked)
 
-    count_result = await db.execute(query)
-    total = len(count_result.scalars().all())
-
-    result = await db.execute(
-        query.order_by(desc(Goal.updated_at))
-        .offset(offset)
-        .limit(limit)
-    )
-    goals = result.scalars().all()
+    goals, total = await paginate(db, query, offset, limit, Goal.updated_at)
 
     return GoalListResponse(
-        goals=[
-            GoalResponse(
-                id=g.id,
-                user_id=g.user_id,
-                organization_id=g.organization_id,
-                goal_text=g.goal_text,
-                session_id=g.session_id,
-                locked=g.locked,
-                locked_at=g.locked_at,
-                metric_targets=g.metric_targets,
-                matrix_rows=g.matrix_rows,
-                matrix_columns=g.matrix_columns,
-                intent=g.intent,
-                domain=g.domain,
-                created_at=g.created_at,
-                updated_at=g.updated_at,
-            )
-            for g in goals
-        ],
+        goals=to_response_list(goals, GoalResponse),
         total=total,
     )
 
@@ -165,33 +125,8 @@ async def get_goal(
     db: AsyncSession = Depends(get_db)
 ):
     """Get a specific goal."""
-    result = await db.execute(
-        select(Goal).where(
-            Goal.id == goal_id,
-            Goal.user_id == current_user.id
-        )
-    )
-    goal = result.scalar_one_or_none()
-
-    if not goal:
-        raise HTTPException(status_code=404, detail="Goal not found")
-
-    return GoalResponse(
-        id=goal.id,
-        user_id=goal.user_id,
-        organization_id=goal.organization_id,
-        goal_text=goal.goal_text,
-        session_id=goal.session_id,
-        locked=goal.locked,
-        locked_at=goal.locked_at,
-        metric_targets=goal.metric_targets,
-        matrix_rows=goal.matrix_rows,
-        matrix_columns=goal.matrix_columns,
-        intent=goal.intent,
-        domain=goal.domain,
-        created_at=goal.created_at,
-        updated_at=goal.updated_at,
-    )
+    goal = await get_or_404(db, Goal, goal_id, user_id=current_user.id)
+    return to_response(goal, GoalResponse)
 
 
 @router.patch("/goals/{goal_id}", response_model=GoalResponse)
@@ -202,16 +137,7 @@ async def update_goal(
     db: AsyncSession = Depends(get_db)
 ):
     """Update a goal."""
-    result = await db.execute(
-        select(Goal).where(
-            Goal.id == goal_id,
-            Goal.user_id == current_user.id
-        )
-    )
-    goal = result.scalar_one_or_none()
-
-    if not goal:
-        raise HTTPException(status_code=404, detail="Goal not found")
+    goal = await get_or_404(db, Goal, goal_id, user_id=current_user.id)
 
     if request.goal_text is not None:
         goal.goal_text = request.goal_text
@@ -235,22 +161,7 @@ async def update_goal(
     await db.commit()
     await db.refresh(goal)
 
-    return GoalResponse(
-        id=goal.id,
-        user_id=goal.user_id,
-        organization_id=goal.organization_id,
-        goal_text=goal.goal_text,
-        session_id=goal.session_id,
-        locked=goal.locked,
-        locked_at=goal.locked_at,
-        metric_targets=goal.metric_targets,
-        matrix_rows=goal.matrix_rows,
-        matrix_columns=goal.matrix_columns,
-        intent=goal.intent,
-        domain=goal.domain,
-        created_at=goal.created_at,
-        updated_at=goal.updated_at,
-    )
+    return to_response(goal, GoalResponse)
 
 
 @router.get("/goals/{goal_id}/matrix", response_model=List[MatrixValueResponse])
@@ -261,14 +172,7 @@ async def get_goal_matrix(
 ):
     """Get matrix values for a goal."""
     # Verify goal access
-    result = await db.execute(
-        select(Goal).where(
-            Goal.id == goal_id,
-            Goal.user_id == current_user.id
-        )
-    )
-    if not result.scalar_one_or_none():
-        raise HTTPException(status_code=404, detail="Goal not found")
+    await get_or_404(db, Goal, goal_id, user_id=current_user.id)
 
     result = await db.execute(
         select(MatrixValue).where(MatrixValue.goal_id == goal_id)
@@ -299,16 +203,7 @@ async def delete_goal(
     db: AsyncSession = Depends(get_db)
 ):
     """Delete a goal."""
-    result = await db.execute(
-        select(Goal).where(
-            Goal.id == goal_id,
-            Goal.user_id == current_user.id
-        )
-    )
-    goal = result.scalar_one_or_none()
-
-    if not goal:
-        raise HTTPException(status_code=404, detail="Goal not found")
+    goal = await get_or_404(db, Goal, goal_id, user_id=current_user.id)
 
     await db.delete(goal)
     await db.commit()
