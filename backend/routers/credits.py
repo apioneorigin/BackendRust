@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database import (
     get_db, User, Organization, PromoCode, PromoCodeRedemption, UsageRecord
 )
+from database.models.enums import is_super_admin
 from routers.auth import get_current_user, generate_id
 from utils import to_response, to_response_list
 
@@ -52,6 +53,16 @@ async def get_credit_balance(
     db: AsyncSession = Depends(get_db)
 ):
     """Get current user's credit balance."""
+    # Super admin bypass - unlimited credits
+    if is_super_admin(current_user):
+        return CreditBalanceResponse(
+            credits_enabled=False,  # Credits system disabled for super admin
+            credit_quota=999999,
+            organization_used=0,
+            organization_max=999999,
+            percentage_used=0.0,
+        )
+
     result = await db.execute(
         select(Organization).where(Organization.id == current_user.organization_id)
     )

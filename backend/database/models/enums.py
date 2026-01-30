@@ -38,8 +38,21 @@ class UsageType(str, enum.Enum):
 
 
 class UserRole(str, enum.Enum):
+    SUPER_ADMIN = "SUPER_ADMIN"  # Platform super admin - bypasses all credits checks
     ADMIN = "ADMIN"
     ORG_OWNER = "ORG_OWNER"
     ORG_ADMIN = "ORG_ADMIN"
     USER = "USER"
     VIEWER = "VIEWER"
+
+
+# Super admin emails that bypass credits checks
+SUPER_ADMIN_EMAILS = {"raghavan.vinod@gmail.com"}
+
+
+def is_super_admin(user) -> bool:
+    """Check if user is a super admin (bypasses credits checks)."""
+    return (
+        user.role == UserRole.SUPER_ADMIN or
+        user.email in SUPER_ADMIN_EMAILS
+    )
