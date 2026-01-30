@@ -28,7 +28,7 @@ class CreateConversationRequest(BaseModel):
 
 class SendMessageRequest(BaseModel):
     content: str
-    model: str = "gpt-5.2"
+    model: str = "claude-opus-4-5-20251101"
     web_search_data: bool = True
     web_search_insights: bool = True
 

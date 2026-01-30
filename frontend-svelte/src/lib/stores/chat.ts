@@ -148,7 +148,7 @@ function createChatStore() {
 			}
 		},
 
-		async sendMessage(content: string, model: string = 'gpt-5.2') {
+		async sendMessage(content: string, model: string = 'claude-opus-4-5-20251101') {
 			const state = get({ subscribe });
 			if (!state.currentConversation) {
 				// Create new conversation first

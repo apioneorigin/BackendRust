@@ -46,7 +46,7 @@
 	let messagesContainer: HTMLElement;
 	let inputElement: HTMLTextAreaElement;
 	let fileInputElement: HTMLInputElement;
-	let selectedModel = 'gpt-4.1';
+	let selectedModel = 'claude-opus-4-5-20251101';
 	let attachedFiles: File[] = [];
 	let isDragging = false;
 	let placeholderIndex = 0;
@@ -70,13 +70,10 @@
 	];
 
 	const models = [
-		{ id: 'gpt-4.1', name: 'GPT-4.1' },
-		{ id: 'gpt-4.1-mini', name: 'GPT-4.1 Mini' },
-		{ id: 'gpt-4.5-preview', name: 'GPT-4.5 Preview' },
-		{ id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4' },
-		{ id: 'claude-opus-4-20250514', name: 'Claude Opus 4' },
-		{ id: 'o3', name: 'o3' },
-		{ id: 'o4-mini', name: 'o4 Mini' }
+		{ id: 'claude-opus-4-5-20251101', name: 'Claude Opus 4.5' },
+		{ id: 'claude-sonnet-4-5-20250929', name: 'Claude Sonnet 4.5' },
+		{ id: 'gpt-5.2', name: 'GPT-5.2' },
+		{ id: 'gpt-4.1-mini', name: 'GPT-4.1 Mini' }
 	];
 
 	// Get time-based greeting
