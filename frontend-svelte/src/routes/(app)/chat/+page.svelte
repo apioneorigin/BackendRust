@@ -6,11 +6,14 @@
 		currentConversation,
 		conversations,
 		isStreaming,
+		streamingContent,
 		addToast
 	} from '$lib/stores';
+	import { Button, Spinner, TypingIndicator } from '$lib/components/ui';
 
 	let messageInput = '';
 	let messagesContainer: HTMLElement;
+	let inputElement: HTMLTextAreaElement;
 	let selectedModel = 'gpt-4.1';
 
 	const models = [
@@ -20,15 +23,15 @@
 		{ id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4' },
 		{ id: 'claude-opus-4-20250514', name: 'Claude Opus 4' },
 		{ id: 'o3', name: 'o3' },
-		{ id: 'o4-mini', name: 'o4 Mini' },
+		{ id: 'o4-mini', name: 'o4 Mini' }
 	];
 
 	onMount(async () => {
 		await chat.loadConversations();
 	});
 
-	// Auto-scroll to bottom when new messages arrive
-	$: if ($messages.length > 0 && messagesContainer) {
+	// Auto-scroll when new messages or streaming
+	$: if (($messages.length > 0 || $streamingContent) && messagesContainer) {
 		tick().then(() => {
 			messagesContainer.scrollTop = messagesContainer.scrollHeight;
 		});
@@ -40,15 +43,20 @@
 		const content = messageInput.trim();
 		messageInput = '';
 
+		// Reset textarea height
+		if (inputElement) {
+			inputElement.style.height = 'auto';
+		}
+
 		try {
 			await chat.sendMessage(content, selectedModel);
 		} catch (error: any) {
-			addToast('error', 'Error', error.message || 'Failed to send message');
+			addToast('error', error.message || 'Failed to send message');
 		}
 	}
 
 	async function handleNewChat() {
-		chat.clearCurrentConversation();
+		await chat.createConversation();
 	}
 
 	async function handleSelectConversation(conversationId: string) {
@@ -62,12 +70,23 @@
 		}
 	}
 
-	function formatTimestamp(date: Date) {
+	function handleInput(e: Event) {
+		const target = e.target as HTMLTextAreaElement;
+		target.style.height = 'auto';
+		target.style.height = Math.min(target.scrollHeight, 200) + 'px';
+	}
+
+	function stopGeneration() {
+		chat.stopStreaming();
+	}
+
+	function formatTimestamp(date: Date | string) {
+		const d = typeof date === 'string' ? new Date(date) : date;
 		return new Intl.DateTimeFormat('en-US', {
 			hour: 'numeric',
 			minute: '2-digit',
-			hour12: true,
-		}).format(date);
+			hour12: true
+		}).format(d);
 	}
 </script>
 
@@ -77,16 +96,26 @@
 
 <div class="chat-layout">
 	<!-- Conversation sidebar -->
-	<div class="conversations-panel">
+	<aside class="conversations-panel">
 		<div class="panel-header">
 			<h3>Conversations</h3>
-			<button class="new-chat-btn" on:click={handleNewChat}>
-				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-					<path d="M12 5v14"/>
-					<path d="M5 12h14"/>
+			<Button variant="primary" size="sm" on:click={handleNewChat}>
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					width="14"
+					height="14"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				>
+					<path d="M12 5v14" />
+					<path d="M5 12h14" />
 				</svg>
-				New Chat
-			</button>
+				New
+			</Button>
 		</div>
 
 		<div class="conversations-list">
@@ -108,14 +137,29 @@
 				</div>
 			{/if}
 		</div>
-	</div>
+	</aside>
 
 	<!-- Main chat area -->
 	<div class="chat-main">
 		<!-- Messages -->
-		<div class="messages-container" bind:this={messagesContainer}>
+		<div class="messages-container chat-scroll" bind:this={messagesContainer}>
 			{#if $messages.length === 0}
 				<div class="welcome-screen">
+					<div class="welcome-icon">
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							width="48"
+							height="48"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.5"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+						>
+							<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+						</svg>
+					</div>
 					<h2>Welcome to Reality Transformer</h2>
 					<p>Start a conversation to transform your goals into reality</p>
 
@@ -151,21 +195,41 @@
 				</div>
 			{:else}
 				{#each $messages as message (message.id)}
-					<div class="message" class:user={message.role === 'user'} class:assistant={message.role === 'assistant'}>
-						<div class="message-avatar">
+					<div class="message" class:user={message.role === 'user'}>
+						<div class="message-avatar" class:user-avatar={message.role === 'user'}>
 							{#if message.role === 'user'}
-								<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-									<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
-									<circle cx="12" cy="7" r="4"/>
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									width="18"
+									height="18"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+								>
+									<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+									<circle cx="12" cy="7" r="4" />
 								</svg>
 							{:else}
-								<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-									<path d="M12 8V4H8"/>
-									<rect width="16" height="12" x="4" y="8" rx="2"/>
-									<path d="M2 14h2"/>
-									<path d="M20 14h2"/>
-									<path d="M15 13v2"/>
-									<path d="M9 13v2"/>
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									width="18"
+									height="18"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+								>
+									<path d="M12 8V4H8" />
+									<rect width="16" height="12" x="4" y="8" rx="2" />
+									<path d="M2 14h2" />
+									<path d="M20 14h2" />
+									<path d="M15 13v2" />
+									<path d="M9 13v2" />
 								</svg>
 							{/if}
 						</div>
@@ -174,30 +238,54 @@
 								<span class="message-role">{message.role === 'user' ? 'You' : 'Assistant'}</span>
 								<span class="message-time">{formatTimestamp(message.createdAt)}</span>
 							</div>
-							<div class="message-text">
-								{message.content}
+							<div
+								class="message-bubble"
+								class:bubble-user={message.role === 'user'}
+								class:bubble-assistant={message.role === 'assistant'}
+							>
+								<div class="message-text">
+									{@html message.content.replace(/\n/g, '<br>')}
+								</div>
 							</div>
 						</div>
 					</div>
 				{/each}
 
+				<!-- Streaming message -->
 				{#if $isStreaming}
-					<div class="message assistant">
+					<div class="message">
 						<div class="message-avatar">
-							<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-								<path d="M12 8V4H8"/>
-								<rect width="16" height="12" x="4" y="8" rx="2"/>
-								<path d="M2 14h2"/>
-								<path d="M20 14h2"/>
-								<path d="M15 13v2"/>
-								<path d="M9 13v2"/>
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								width="18"
+								height="18"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							>
+								<path d="M12 8V4H8" />
+								<rect width="16" height="12" x="4" y="8" rx="2" />
+								<path d="M2 14h2" />
+								<path d="M20 14h2" />
+								<path d="M15 13v2" />
+								<path d="M9 13v2" />
 							</svg>
 						</div>
 						<div class="message-content">
-							<div class="typing-indicator">
-								<span></span>
-								<span></span>
-								<span></span>
+							<div class="message-header">
+								<span class="message-role">Assistant</span>
+							</div>
+							<div class="message-bubble bubble-assistant">
+								{#if $streamingContent}
+									<div class="message-text">
+										{@html $streamingContent.replace(/\n/g, '<br>')}
+									</div>
+								{:else}
+									<TypingIndicator />
+								{/if}
 							</div>
 						</div>
 					</div>
@@ -215,28 +303,55 @@
 				</select>
 			</div>
 
-			<div class="input-wrapper">
+			<div class="input-container input-premium">
 				<textarea
+					bind:this={inputElement}
 					bind:value={messageInput}
 					on:keydown={handleKeyDown}
+					on:input={handleInput}
 					placeholder="Type your message..."
 					rows="1"
 					disabled={$isStreaming}
 				></textarea>
-				<button
-					class="send-btn"
-					on:click={handleSendMessage}
-					disabled={!messageInput.trim() || $isStreaming}
-				>
+				<div class="input-actions">
 					{#if $isStreaming}
-						<div class="spinner-small"></div>
+						<Button variant="outline" size="sm" on:click={stopGeneration}>
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								width="14"
+								height="14"
+								viewBox="0 0 24 24"
+								fill="currentColor"
+							>
+								<rect x="6" y="6" width="12" height="12" rx="2" />
+							</svg>
+							Stop
+						</Button>
 					{:else}
-						<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-							<path d="m22 2-7 20-4-9-9-4Z"/>
-							<path d="M22 2 11 13"/>
-						</svg>
+						<Button
+							variant="primary"
+							size="sm"
+							on:click={handleSendMessage}
+							disabled={!messageInput.trim()}
+						>
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								width="14"
+								height="14"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							>
+								<path d="m22 2-7 20-4-9-9-4Z" />
+								<path d="M22 2 11 13" />
+							</svg>
+							Send
+						</Button>
 					{/if}
-				</button>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -246,20 +361,22 @@
 	.chat-layout {
 		display: flex;
 		height: 100%;
+		overflow: hidden;
 	}
 
 	/* Conversations panel */
 	.conversations-panel {
 		width: 280px;
-		background: hsl(var(--card));
-		border-right: 1px solid hsl(var(--border));
+		background: var(--color-field-surface);
+		border-right: 1px solid var(--color-veil-thin);
 		display: flex;
 		flex-direction: column;
+		flex-shrink: 0;
 	}
 
 	.panel-header {
 		padding: 1rem;
-		border-bottom: 1px solid hsl(var(--border));
+		border-bottom: 1px solid var(--color-veil-thin);
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
@@ -268,26 +385,7 @@
 	.panel-header h3 {
 		font-size: 0.875rem;
 		font-weight: 600;
-		color: hsl(var(--muted-foreground));
-	}
-
-	.new-chat-btn {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		padding: 0.5rem 0.75rem;
-		background: hsl(var(--primary));
-		color: hsl(var(--primary-foreground));
-		border: none;
-		border-radius: 0.375rem;
-		font-size: 0.75rem;
-		font-weight: 500;
-		cursor: pointer;
-		transition: opacity 0.2s;
-	}
-
-	.new-chat-btn:hover {
-		opacity: 0.9;
+		color: var(--color-text-whisper);
 	}
 
 	.conversations-list {
@@ -298,28 +396,32 @@
 
 	.conversation-item {
 		width: 100%;
-		padding: 0.75rem;
+		padding: 0.75rem 1rem;
 		background: none;
 		border: none;
-		border-radius: 0.5rem;
+		border-radius: 0.625rem;
 		text-align: left;
 		cursor: pointer;
-		transition: background-color 0.2s;
+		transition: background-color 0.15s ease;
 	}
 
 	.conversation-item:hover {
-		background: hsl(var(--accent));
+		background: var(--color-field-depth);
 	}
 
 	.conversation-item.active {
-		background: hsl(var(--accent));
+		background: var(--color-primary-50);
+	}
+
+	[data-theme='dark'] .conversation-item.active {
+		background: var(--color-primary-900);
 	}
 
 	.conversation-title {
 		display: block;
 		font-size: 0.875rem;
 		font-weight: 500;
-		color: hsl(var(--foreground));
+		color: var(--color-text-source);
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
@@ -328,7 +430,7 @@
 	.conversation-time {
 		display: block;
 		font-size: 0.75rem;
-		color: hsl(var(--muted-foreground));
+		color: var(--color-text-whisper);
 		margin-top: 0.25rem;
 	}
 
@@ -339,7 +441,7 @@
 
 	.empty-conversations p {
 		font-size: 0.875rem;
-		color: hsl(var(--muted-foreground));
+		color: var(--color-text-whisper);
 	}
 
 	.empty-conversations .hint {
@@ -370,17 +472,30 @@
 		justify-content: center;
 		text-align: center;
 		padding: 2rem;
+		gap: 1rem;
+	}
+
+	.welcome-icon {
+		width: 80px;
+		height: 80px;
+		background: var(--color-field-depth);
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: var(--color-primary-500);
+		margin-bottom: 0.5rem;
 	}
 
 	.welcome-screen h2 {
 		font-size: 1.5rem;
 		font-weight: 700;
-		margin-bottom: 0.5rem;
+		color: var(--color-text-source);
 	}
 
 	.welcome-screen p {
-		color: hsl(var(--muted-foreground));
-		margin-bottom: 2rem;
+		color: var(--color-text-whisper);
+		max-width: 400px;
 	}
 
 	.starter-prompts {
@@ -389,116 +504,106 @@
 		gap: 0.75rem;
 		justify-content: center;
 		max-width: 600px;
+		margin-top: 1rem;
 	}
 
 	.starter-prompt {
 		padding: 0.75rem 1rem;
-		background: hsl(var(--card));
-		border: 1px solid hsl(var(--border));
-		border-radius: 0.5rem;
-		color: hsl(var(--foreground));
+		background: var(--color-field-surface);
+		border: 1px solid var(--color-veil-thin);
+		border-radius: 0.75rem;
+		color: var(--color-text-manifest);
 		font-size: 0.875rem;
 		cursor: pointer;
-		transition: border-color 0.2s, background-color 0.2s;
+		transition: all 0.15s ease;
 	}
 
 	.starter-prompt:hover {
-		border-color: hsl(var(--primary));
-		background: hsl(var(--accent));
+		border-color: var(--color-primary-400);
+		background: var(--color-field-depth);
 	}
 
 	/* Messages */
 	.message {
 		display: flex;
-		gap: 1rem;
+		gap: 0.875rem;
 		margin-bottom: 1.5rem;
+	}
+
+	.message.user {
+		flex-direction: row-reverse;
 	}
 
 	.message-avatar {
 		width: 36px;
 		height: 36px;
-		border-radius: 0.5rem;
+		border-radius: 0.625rem;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		flex-shrink: 0;
-	}
-
-	.message.user .message-avatar {
-		background: hsl(var(--primary));
-		color: hsl(var(--primary-foreground));
-	}
-
-	.message.assistant .message-avatar {
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		background: var(--gradient-primary);
 		color: white;
+	}
+
+	.message-avatar.user-avatar {
+		background: var(--color-primary-100);
+		color: var(--color-primary-700);
+	}
+
+	[data-theme='dark'] .message-avatar.user-avatar {
+		background: var(--color-primary-800);
+		color: var(--color-primary-200);
 	}
 
 	.message-content {
 		flex: 1;
 		min-width: 0;
+		max-width: 70%;
+	}
+
+	.message.user .message-content {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
 	}
 
 	.message-header {
 		display: flex;
 		align-items: baseline;
 		gap: 0.5rem;
-		margin-bottom: 0.25rem;
+		margin-bottom: 0.375rem;
+	}
+
+	.message.user .message-header {
+		flex-direction: row-reverse;
 	}
 
 	.message-role {
 		font-weight: 600;
-		font-size: 0.875rem;
+		font-size: 0.8125rem;
+		color: var(--color-text-source);
 	}
 
 	.message-time {
 		font-size: 0.75rem;
-		color: hsl(var(--muted-foreground));
+		color: var(--color-text-hint);
+	}
+
+	.message-bubble {
+		padding: 0.875rem 1rem;
 	}
 
 	.message-text {
 		font-size: 0.9375rem;
 		line-height: 1.6;
-		white-space: pre-wrap;
-	}
-
-	/* Typing indicator */
-	.typing-indicator {
-		display: flex;
-		gap: 0.25rem;
-		padding: 0.5rem 0;
-	}
-
-	.typing-indicator span {
-		width: 8px;
-		height: 8px;
-		background: hsl(var(--muted-foreground));
-		border-radius: 50%;
-		animation: bounce 1.4s infinite ease-in-out both;
-	}
-
-	.typing-indicator span:nth-child(1) {
-		animation-delay: -0.32s;
-	}
-
-	.typing-indicator span:nth-child(2) {
-		animation-delay: -0.16s;
-	}
-
-	@keyframes bounce {
-		0%, 80%, 100% {
-			transform: scale(0);
-		}
-		40% {
-			transform: scale(1);
-		}
+		color: var(--color-text-manifest);
 	}
 
 	/* Input area */
 	.input-area {
-		padding: 1rem 1.5rem;
-		border-top: 1px solid hsl(var(--border));
-		background: hsl(var(--card));
+		padding: 0.75rem 1.5rem 1.5rem;
+		background: var(--color-field-void);
 	}
 
 	.input-controls {
@@ -507,74 +612,81 @@
 
 	.model-select {
 		padding: 0.5rem 0.75rem;
-		background: hsl(var(--background));
-		border: 1px solid hsl(var(--border));
-		border-radius: 0.375rem;
-		color: hsl(var(--foreground));
+		background: var(--color-field-surface);
+		border: 1px solid var(--color-veil-thin);
+		border-radius: 0.5rem;
+		color: var(--color-text-manifest);
 		font-size: 0.75rem;
 		cursor: pointer;
 	}
 
-	.input-wrapper {
-		display: flex;
-		gap: 0.75rem;
-		align-items: flex-end;
-	}
-
-	.input-wrapper textarea {
-		flex: 1;
-		padding: 0.75rem 1rem;
-		background: hsl(var(--background));
-		border: 1px solid hsl(var(--border));
-		border-radius: 0.5rem;
-		color: hsl(var(--foreground));
-		font-size: 0.9375rem;
-		resize: none;
-		min-height: 44px;
-		max-height: 200px;
-		line-height: 1.5;
-	}
-
-	.input-wrapper textarea:focus {
+	.model-select:focus {
 		outline: none;
-		border-color: hsl(var(--ring));
+		border-color: var(--color-primary-400);
 	}
 
-	.input-wrapper textarea:disabled {
+	.input-container {
+		display: flex;
+		align-items: flex-end;
+		gap: 0.75rem;
+		padding: 0.75rem 1rem;
+	}
+
+	.input-container textarea {
+		flex: 1;
+		border: none;
+		background: transparent;
+		resize: none;
+		font-size: 0.9375rem;
+		line-height: 1.5;
+		color: var(--color-text-source);
+		min-height: 24px;
+		max-height: 200px;
+		font-family: inherit;
+	}
+
+	.input-container textarea:focus {
+		outline: none;
+	}
+
+	.input-container textarea::placeholder {
+		color: var(--color-text-hint);
+	}
+
+	.input-container textarea:disabled {
 		opacity: 0.6;
 	}
 
-	.send-btn {
-		padding: 0.75rem;
-		background: hsl(var(--primary));
-		color: hsl(var(--primary-foreground));
-		border: none;
-		border-radius: 0.5rem;
-		cursor: pointer;
-		transition: opacity 0.2s;
+	.input-actions {
+		display: flex;
+		gap: 0.5rem;
+		flex-shrink: 0;
 	}
 
-	.send-btn:hover:not(:disabled) {
-		opacity: 0.9;
-	}
+	/* Mobile responsive */
+	@media (max-width: 767px) {
+		.conversations-panel {
+			display: none;
+		}
 
-	.send-btn:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-	}
+		.messages-container {
+			padding: 1rem;
+		}
 
-	.spinner-small {
-		width: 20px;
-		height: 20px;
-		border: 2px solid transparent;
-		border-top-color: currentColor;
-		border-radius: 50%;
-		animation: spin 0.6s linear infinite;
-	}
+		.message-content {
+			max-width: 85%;
+		}
 
-	@keyframes spin {
-		to {
-			transform: rotate(360deg);
+		.input-area {
+			padding: 0.75rem 1rem 1rem;
+		}
+
+		.starter-prompts {
+			flex-direction: column;
+		}
+
+		.starter-prompt {
+			width: 100%;
 		}
 	}
 </style>
