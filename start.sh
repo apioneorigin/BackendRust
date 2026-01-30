@@ -7,6 +7,8 @@
 # - SvelteKit frontend on port 5173 (unified 4-box layout with embedded matrix)
 #
 # Features:
+# - Auto-creates Python venv if missing
+# - Installs dependencies automatically
 # - Kills all existing servers and old terminal windows
 # - Starts fresh instances in new terminal windows
 #
@@ -23,12 +25,12 @@ echo "============================================"
 echo ""
 
 # Kill existing processes on ports
-echo "[1/4] Stopping existing services on ports..."
+echo "[1/5] Stopping existing services on ports..."
 lsof -ti :$BACKEND_PORT | xargs -r kill -9 2>/dev/null
 lsof -ti :$FRONTEND_PORT | xargs -r kill -9 2>/dev/null
 
 # Kill any existing node/python dev processes (but not this script)
-echo "[2/4] Cleaning up old processes..."
+echo "[2/5] Cleaning up old processes..."
 pkill -f "uvicorn main:app" 2>/dev/null
 pkill -f "vite.*--port $FRONTEND_PORT" 2>/dev/null
 pkill -f "npm run dev.*$FRONTEND_PORT" 2>/dev/null
@@ -50,15 +52,56 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     ' 2>/dev/null
 fi
 
-sleep 2
+sleep 1
 
-echo "[3/4] Starting backend server..."
+# Check and setup backend venv
+echo "[3/5] Checking backend environment..."
+if [ ! -d "backend/venv" ]; then
+    echo "    Creating Python virtual environment..."
+    cd backend
+    python3 -m venv venv || python -m venv venv
+    if [ $? -ne 0 ]; then
+        echo "ERROR: Failed to create venv. Make sure Python is installed."
+        exit 1
+    fi
+    echo "    Installing dependencies..."
+    source venv/bin/activate
+    pip install -r requirements.txt
+    if [ $? -ne 0 ]; then
+        echo "ERROR: Failed to install dependencies."
+        exit 1
+    fi
+    cd ..
+    echo "    Backend environment ready!"
+else
+    echo "    Backend venv found."
+fi
+
+# Check frontend node_modules
+echo "[4/5] Checking frontend environment..."
+if [ ! -d "frontend-svelte/node_modules" ]; then
+    echo "    Installing npm dependencies..."
+    cd frontend-svelte
+    npm install
+    if [ $? -ne 0 ]; then
+        echo "ERROR: Failed to install npm dependencies."
+        exit 1
+    fi
+    cd ..
+    echo "    Frontend dependencies ready!"
+else
+    echo "    Frontend node_modules found."
+fi
+
+sleep 1
+
+echo "[5/5] Starting servers..."
 if [[ "$OSTYPE" == "darwin"* ]]; then
     # macOS - use osascript
-    osascript -e "tell app \"Terminal\" to do script \"cd '$(pwd)/backend' && source venv/bin/activate && echo 'Starting Backend API...' && python -m uvicorn main:app --host 0.0.0.0 --port $BACKEND_PORT --reload\"" 2>/dev/null
+    osascript -e "tell app \"Terminal\" to do script \"cd '$(pwd)/backend' && source venv/bin/activate && echo 'Starting Backend API on port $BACKEND_PORT...' && python -m uvicorn main:app --host 0.0.0.0 --port $BACKEND_PORT --reload\"" 2>/dev/null
 elif command -v gnome-terminal &> /dev/null; then
     # Linux with GNOME
-    gnome-terminal --title="Backend API" -- bash -c "cd '$(pwd)/backend' && source venv/bin/activate && echo 'Starting Backend API...' && python -m uvicorn main:app --host 0.0.0.0 --port $BACKEND_PORT --reload; exec bash"
+    gnome-terminal --title="Backend API" -- bash -c "cd '$(pwd)/backend' && source venv/bin/activate && echo 'Starting Backend API on port $BACKEND_PORT...' && python -m uvicorn main:app --host 0.0.0.0 --port $BACKEND_PORT --reload; exec bash"
 elif command -v xterm &> /dev/null; then
     # Fallback to xterm
     xterm -title "Backend API" -e "cd '$(pwd)/backend' && source venv/bin/activate && python -m uvicorn main:app --host 0.0.0.0 --port $BACKEND_PORT --reload" &
@@ -69,13 +112,12 @@ else
     cd ..
 fi
 
-sleep 2
+sleep 3
 
-echo "[4/4] Starting frontend server..."
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    osascript -e "tell app \"Terminal\" to do script \"cd '$(pwd)/frontend-svelte' && echo 'Starting SvelteKit Frontend...' && npm run dev -- --host 0.0.0.0 --port $FRONTEND_PORT\"" 2>/dev/null
+    osascript -e "tell app \"Terminal\" to do script \"cd '$(pwd)/frontend-svelte' && echo 'Starting SvelteKit Frontend on port $FRONTEND_PORT...' && npm run dev -- --host 0.0.0.0 --port $FRONTEND_PORT\"" 2>/dev/null
 elif command -v gnome-terminal &> /dev/null; then
-    gnome-terminal --title="Frontend SvelteKit" -- bash -c "cd '$(pwd)/frontend-svelte' && echo 'Starting SvelteKit Frontend...' && npm run dev -- --host 0.0.0.0 --port $FRONTEND_PORT; exec bash"
+    gnome-terminal --title="Frontend SvelteKit" -- bash -c "cd '$(pwd)/frontend-svelte' && echo 'Starting SvelteKit Frontend on port $FRONTEND_PORT...' && npm run dev -- --host 0.0.0.0 --port $FRONTEND_PORT; exec bash"
 elif command -v xterm &> /dev/null; then
     xterm -title "Frontend SvelteKit" -e "cd '$(pwd)/frontend-svelte' && npm run dev -- --host 0.0.0.0 --port $FRONTEND_PORT" &
 else
