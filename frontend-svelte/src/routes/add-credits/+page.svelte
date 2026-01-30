@@ -193,11 +193,6 @@
 				</div>
 			</div>
 		</div>
-
-		<!-- Footer -->
-		<div class="page-footer">
-			<a href="/settings" class="settings-link">View settings</a>
-		</div>
 	{/if}
 </div>
 
@@ -397,21 +392,5 @@
 
 	.info-text {
 		color: var(--color-text-whisper);
-	}
-
-	.page-footer {
-		margin-top: 1.5rem;
-		text-align: center;
-	}
-
-	.settings-link {
-		font-size: 0.875rem;
-		color: var(--color-text-whisper);
-		text-decoration: none;
-		transition: color 0.15s ease;
-	}
-
-	.settings-link:hover {
-		color: var(--color-primary-500);
 	}
 </style>
