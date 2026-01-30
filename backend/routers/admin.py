@@ -287,20 +287,7 @@ async def list_all_users(
     )
     users = result.scalars().all()
 
-    return [
-        UserAdminResponse(
-            id=u.id,
-            email=u.email,
-            name=u.name,
-            role=u.role.value,
-            organization_id=u.organization_id,
-            credits_enabled=u.credits_enabled,
-            credit_quota=u.credit_quota,
-            created_at=u.created_at,
-            last_login_at=u.last_login_at,
-        )
-        for u in users
-    ]
+    return to_response_list(users, UserAdminResponse)
 
 
 @router.patch("/users/{user_id}/credits")

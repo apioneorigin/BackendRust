@@ -166,13 +166,4 @@ async def get_usage_history(
     )
     records = result.scalars().all()
 
-    return [
-        UsageRecordResponse(
-            id=r.id,
-            usage_type=r.usage_type.value,
-            quantity=r.quantity,
-            metadata=r.usage_metadata,
-            created_at=r.created_at,
-        )
-        for r in records
-    ]
+    return to_response_list(records, UsageRecordResponse, {"metadata": "usage_metadata"})

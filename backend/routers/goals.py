@@ -179,21 +179,7 @@ async def get_goal_matrix(
     )
     values = result.scalars().all()
 
-    return [
-        MatrixValueResponse(
-            id=v.id,
-            goal_id=v.goal_id,
-            value_id=v.value_id,
-            cell_row=v.cell_row,
-            cell_column=v.cell_column,
-            dimension_name=v.dimension_name,
-            dimension_index=v.dimension_index,
-            current_value=v.current_value,
-            target_value=v.target_value,
-            gap=v.gap,
-        )
-        for v in values
-    ]
+    return to_response_list(values, MatrixValueResponse)
 
 
 @router.delete("/goals/{goal_id}")
