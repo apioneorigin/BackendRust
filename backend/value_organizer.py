@@ -222,22 +222,38 @@ class ValueOrganizer:
             O_openness=self._get_value(obs_dict, 'O', 'Openness', default=None)
         )
 
-        # Parse S-level — ZERO-FALLBACK: None if not provided
-        s_level_str = values.get('s_level')
+        # Parse S-level — handles LLM response format: {"current": 3.0, "confidence": 0.8, ...}
+        s_level_raw = values.get('s_level')
         s_level_num = None
-        if isinstance(s_level_str, str):
+        transition_rate = None
+
+        if isinstance(s_level_raw, dict):
+            # LLM returns s_level as object: {"current": 3.0, "confidence": 0.8, "in_transition": false, ...}
+            s_level_num = s_level_raw.get('current')
+            if s_level_num is not None:
+                s_level_num = float(s_level_num)
+            # Extract transition rate from LLM response if available
+            if s_level_raw.get('in_transition') and s_level_raw.get('transition_direction') == 'up':
+                transition_rate = 0.1  # Positive transition
+            elif s_level_raw.get('in_transition') and s_level_raw.get('transition_direction') == 'down':
+                transition_rate = -0.1  # Negative transition
+        elif isinstance(s_level_raw, str):
             # Extract number from strings like "S3", "S4: Service", etc.
             import re
-            match = re.search(r'S(\d)', s_level_str)
+            match = re.search(r'S(\d)', s_level_raw)
             if match:
                 s_level_num = float(match.group(1))
-        elif isinstance(s_level_str, (int, float)):
-            s_level_num = float(s_level_str)
+        elif isinstance(s_level_raw, (int, float)):
+            s_level_num = float(s_level_raw)
+
+        # Also check for dS_dt in values if transition_rate not set from s_level object
+        if transition_rate is None:
+            transition_rate = self._get_value(values, 'dS_dt', 'evolution_rate', default=None)
 
         s_level = SLevel(
             current=s_level_num,
             label=get_s_level_label(s_level_num) if s_level_num is not None else None,
-            transition_rate=self._get_value(values, 'dS_dt', 'evolution_rate', default=None)
+            transition_rate=transition_rate
         )
 
         # Parse drives
