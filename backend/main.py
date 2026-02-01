@@ -1934,7 +1934,21 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
                                     "properties": {
                                         "user_identity": {"type": "string"},
                                         "goal": {"type": "string"},
-                                        "s_level": {"type": "string"},
+                                        "s_level": {
+                                            "type": "object",
+                                            "properties": {
+                                                "current": {"type": "number"},
+                                                "confidence": {"type": "number"},
+                                                "in_transition": {"type": "boolean"},
+                                                "transition_direction": {
+                                                    "type": "string",
+                                                    "enum": ["up", "down", "stable"]
+                                                },
+                                                "reasoning": {"type": "string"}
+                                            },
+                                            "required": ["current", "confidence"],
+                                            "additionalProperties": False
+                                        },
                                         "query_pattern": {"type": "string"},
                                         "goal_category": {
                                             "type": "string",

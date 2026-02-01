@@ -298,12 +298,20 @@ class ValueOrganizer:
                 transition_rate = 0.1  # Positive transition
             elif s_level_raw.get('in_transition') and s_level_raw.get('transition_direction') == 'down':
                 transition_rate = -0.1  # Negative transition
-        elif isinstance(s_level_raw, str):
-            # Extract number from strings like "S3", "S4: Service", etc.
+        elif isinstance(s_level_raw, str) and s_level_raw.strip():
+            # Extract number from various string formats:
+            # "S3", "S4: Service", "3", "3.5", "level 4", etc.
             import re
-            match = re.search(r'S(\d)', s_level_raw)
+            s_level_raw = s_level_raw.strip()
+            # Try "S3" or "S3.5" format first
+            match = re.search(r'S(\d+\.?\d*)', s_level_raw, re.IGNORECASE)
             if match:
                 s_level_num = float(match.group(1))
+            else:
+                # Try to extract any number from the string
+                match = re.search(r'(\d+\.?\d*)', s_level_raw)
+                if match:
+                    s_level_num = float(match.group(1))
         elif isinstance(s_level_raw, (int, float)):
             s_level_num = float(s_level_raw)
 
