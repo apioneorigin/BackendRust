@@ -270,17 +270,23 @@ class GraceCalculator:
         Calculate how much the goal depends on grace vs effort.
         """
         logger.debug(f"[_calculate_grace_dependency] goal='{goal[:50]}'")
-        # Check required grace-related operators
+        # Get grace-related operators from required (may be absent for effort-based goals)
         grace = required.get('G_grace')
         surrender = required.get('S_surrender')
         void = required.get('V_void')
 
-        if any(v is None for v in [grace, surrender, void]):
-            logger.warning("[_calculate_grace_dependency] missing required operator (G_grace, S_surrender, or V_void)")
-            return None
+        # Calculate with available operators - missing operators indicate effort-based goal
+        available = [(grace, 0.4), (surrender, 0.35), (void, 0.25)]
+        values = [(v, w) for v, w in available if v is not None]
 
-        # Higher values indicate more grace dependency
-        base_dependency = (grace * 0.4 + surrender * 0.35 + void * 0.25)
+        if values:
+            # Weighted average of available operators
+            total_weight = sum(w for _, w in values)
+            base_dependency = sum(v * w for v, w in values) / total_weight
+        else:
+            # No grace operators required = effort-based goal, low grace dependency
+            base_dependency = 0.2
+            logger.debug("[_calculate_grace_dependency] No grace operators in requirements - effort-based goal")
 
         # Check goal keywords
         grace_keywords = ['spiritual', 'awakening', 'enlightenment', 'unity',
