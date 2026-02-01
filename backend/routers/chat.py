@@ -13,7 +13,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
-from sse_starlette.sse import EventSourceResponse, ServerSentEvent
+from sse_starlette.sse import EventSourceResponse
 
 from database import get_db, User, ChatConversation, ChatMessage, ChatSummary, Session, AsyncSessionLocal
 from routers.auth import get_current_user, generate_id
@@ -270,8 +270,8 @@ async def send_message(
                     input_tokens = usage_data.get("input_tokens", 0)
                     output_tokens = usage_data.get("output_tokens", 0)
 
-                # Yield ServerSentEvent for proper SSE formatting
-                yield ServerSentEvent(data=data, event=event_type)
+                # Yield dict directly - EventSourceResponse handles formatting
+                yield {"event": event_type, "data": data}
 
         # Save assistant message after streaming completes
         async with AsyncSessionLocal() as save_db:
