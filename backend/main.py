@@ -1946,7 +1946,7 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
                                                 },
                                                 "reasoning": {"type": "string"}
                                             },
-                                            "required": ["current", "confidence"],
+                                            "required": ["current", "confidence", "in_transition", "transition_direction", "reasoning"],
                                             "additionalProperties": False
                                         },
                                         "query_pattern": {"type": "string"},
