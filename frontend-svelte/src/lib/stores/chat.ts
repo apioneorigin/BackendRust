@@ -244,22 +244,33 @@ function createChatStore() {
 
 				while (true) {
 					const { done, value } = await reader.read();
-					if (done) break;
+					if (done) {
+						console.log('[SSE] Stream done');
+						break;
+					}
 
-					buffer += decoder.decode(value, { stream: true });
+					const chunk = decoder.decode(value, { stream: true });
+					console.log('[SSE] Received chunk:', chunk.length, 'bytes');
+					buffer += chunk;
 					// SSE uses \r\n per spec, normalize to \n for parsing
 					buffer = buffer.replace(/\r\n/g, '\n');
 					const events = buffer.split('\n\n');
 					buffer = events.pop() || '';
+
+					console.log('[SSE] Parsed events:', events.length);
 
 					for (const event of events) {
 						if (!event.trim()) continue;
 
 						// Parse SSE event format: "event: type\ndata: json"
 						const eventMatch = event.match(/^event:\s*(\w+)\ndata:\s*(.+)$/s);
-						if (!eventMatch) continue;
+						if (!eventMatch) {
+							console.log('[SSE] No match for event:', event.substring(0, 100));
+							continue;
+						}
 
 						const [, eventType, data] = eventMatch;
+						console.log('[SSE] Event:', eventType);
 
 						try {
 							const parsed = JSON.parse(data);
