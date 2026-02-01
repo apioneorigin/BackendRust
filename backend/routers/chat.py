@@ -270,7 +270,7 @@ async def send_message(
                     input_tokens = usage_data.get("input_tokens", 0)
                     output_tokens = usage_data.get("output_tokens", 0)
 
-                yield f"event: {event_type}\ndata: {json.dumps(data) if isinstance(data, dict) else data}\n\n"
+                yield event  # Pass dict directly to EventSourceResponse
 
         # Save assistant message after streaming completes
         async with AsyncSessionLocal() as save_db:
