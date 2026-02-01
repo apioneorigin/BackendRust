@@ -180,6 +180,67 @@ class ValueOrganizer:
                     return float(val)
         return default
 
+    def _compute_s_level_from_operators(self, ops: 'CoreOperators') -> Optional[float]:
+        """
+        Compute S-level from extracted operators when LLM doesn't provide it.
+
+        S-Level (Sacred Chain) represents consciousness development stages (1-8):
+        - S1-S2: Survival/Sensation - High fear, attachment, low witness
+        - S3: Achievement - Goal-oriented, moderate operators
+        - S4: Relationship - High love, coherence, connection
+        - S5: Service - High service, dharma, purpose
+        - S6: Witness - High witness, equanimity, low maya
+        - S7-S8: Unity/Transcendence - Very high consciousness indicators
+
+        Formula: S = 3 + 3 * (positive_avg - negative_avg)
+        - Positive: W, E, P, A, Se, D, L, S_surrender, G, Co
+        - Negative: At, F, R, M, K (karmic load)
+        """
+        # Collect positive operators (high values indicate higher S-level)
+        positive_ops = [
+            ops.W_witness,
+            ops.E_equanimity,
+            ops.P_presence,
+            ops.A_aware,
+            ops.Se_service,
+            ops.D_dharma,
+            ops.G_grace,
+            ops.Co_coherence,
+            ops.S_surrender,
+        ]
+
+        # Collect negative operators (high values indicate lower S-level)
+        negative_ops = [
+            ops.At_attachment,
+            ops.F_fear,
+            ops.R_resistance,
+            ops.M_maya,
+            ops.K_karma,
+        ]
+
+        # Filter out None values
+        pos_valid = [v for v in positive_ops if v is not None]
+        neg_valid = [v for v in negative_ops if v is not None]
+
+        # Need at least 3 operators to make a reasonable estimate
+        if len(pos_valid) + len(neg_valid) < 3:
+            logger.debug(f"[_compute_s_level_from_operators] Insufficient operators: pos={len(pos_valid)} neg={len(neg_valid)}")
+            return None
+
+        # Calculate averages (default to 0.5 if category empty)
+        pos_avg = sum(pos_valid) / len(pos_valid) if pos_valid else 0.5
+        neg_avg = sum(neg_valid) / len(neg_valid) if neg_valid else 0.5
+
+        # S-level formula: base of 3, scaled by difference between positive and negative
+        # Range: ~1 (all negative) to ~7 (all positive)
+        s_level = 3.0 + 4.0 * (pos_avg - neg_avg)
+
+        # Clamp to valid range [1.0, 8.0]
+        s_level = max(1.0, min(8.0, s_level))
+
+        logger.debug(f"[_compute_s_level_from_operators] pos_avg={pos_avg:.2f} neg_avg={neg_avg:.2f} -> S-level={s_level:.1f}")
+        return s_level
+
     def _organize_tier1(self, values: Dict[str, Any]) -> Tier1:
         """Organize Tier 1 values (from LLM Call 1)"""
         logger.debug("[_organize_tier1] entry")
@@ -249,6 +310,12 @@ class ValueOrganizer:
         # Also check for dS_dt in values if transition_rate not set from s_level object
         if transition_rate is None:
             transition_rate = self._get_value(values, 'dS_dt', 'evolution_rate', default=None)
+
+        # If LLM didn't provide s_level, compute from extracted operators
+        if s_level_num is None:
+            s_level_num = self._compute_s_level_from_operators(core_operators)
+            if s_level_num is not None:
+                logger.info(f"[_organize_tier1] Computed S-level from operators: {s_level_num:.1f}")
 
         s_level = SLevel(
             current=s_level_num,
