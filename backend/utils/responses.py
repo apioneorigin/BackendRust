@@ -32,13 +32,13 @@ def to_response(
     instance: Any,
     response_model: Type[T],
     field_map: Optional[Dict[str, str]] = None,
-) -> T:
+) -> dict:
     """
-    Convert a SQLAlchemy model instance to a Pydantic response model.
+    Convert a SQLAlchemy model instance to a dict for JSON response.
 
     Automatically maps fields from the instance to the response model
     based on the response model's field names. Handles enums by extracting
-    their .value automatically.
+    their .value automatically. Uses camelCase aliases if defined.
 
     Args:
         instance: SQLAlchemy model instance
@@ -48,7 +48,7 @@ def to_response(
                    to instance.usage_metadata
 
     Returns:
-        Instance of the response model
+        Dict with camelCase keys (if alias_generator is set)
 
     Example:
         conversation = await get_or_404(db, ChatConversation, id, user_id)
@@ -64,16 +64,17 @@ def to_response(
         value = _get_value(instance, field, field_map)
         data[field] = value
 
-    return response_model(**data)
+    model = response_model(**data)
+    return model.model_dump(by_alias=True, mode='json')
 
 
 def to_response_list(
     instances: list,
     response_model: Type[T],
     field_map: Optional[Dict[str, str]] = None,
-) -> list[T]:
+) -> list[dict]:
     """
-    Convert a list of SQLAlchemy model instances to Pydantic response models.
+    Convert a list of SQLAlchemy model instances to dicts for JSON response.
 
     Args:
         instances: List of SQLAlchemy model instances
@@ -81,6 +82,6 @@ def to_response_list(
         field_map: Optional dict mapping response fields to instance fields
 
     Returns:
-        List of response model instances
+        List of dicts with camelCase keys (if alias_generator is set)
     """
     return [to_response(i, response_model, field_map) for i in instances]

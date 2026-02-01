@@ -10,7 +10,7 @@ import json
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 from sse_starlette.sse import EventSourceResponse
@@ -18,6 +18,22 @@ from sse_starlette.sse import EventSourceResponse
 from database import get_db, User, ChatConversation, ChatMessage, ChatSummary, Session, AsyncSessionLocal
 from routers.auth import get_current_user, generate_id
 from utils import get_or_404, paginate, to_response, to_response_list, safe_json_loads
+
+
+def to_camel(string: str) -> str:
+    """Convert snake_case to camelCase."""
+    components = string.split('_')
+    return components[0] + ''.join(x.title() for x in components[1:])
+
+
+class CamelModel(BaseModel):
+    """Base model that outputs camelCase JSON."""
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        populate_by_name=True,
+        from_attributes=True,
+    )
+
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
@@ -43,7 +59,7 @@ class ConversationContext(BaseModel):
     conversation_summary: Optional[str] = None  # Summary of older messages if conversation is long
 
 
-class ConversationResponse(BaseModel):
+class ConversationResponse(CamelModel):
     id: str
     user_id: str
     organization_id: str
@@ -57,7 +73,7 @@ class ConversationResponse(BaseModel):
     updated_at: datetime
 
 
-class MessageResponse(BaseModel):
+class MessageResponse(CamelModel):
     id: str
     conversation_id: str
     role: str
@@ -69,7 +85,7 @@ class MessageResponse(BaseModel):
     created_at: datetime
 
 
-class ConversationListResponse(BaseModel):
+class ConversationListResponse(CamelModel):
     conversations: List[ConversationResponse]
     total: int
 
@@ -128,10 +144,10 @@ async def list_conversations(
         db, query, offset, limit, ChatConversation.updated_at
     )
 
-    return ConversationListResponse(
-        conversations=to_response_list(conversations, ConversationResponse),
-        total=total,
-    )
+    return {
+        "conversations": to_response_list(conversations, ConversationResponse),
+        "total": total,
+    }
 
 
 @router.get("/conversations/{conversation_id}", response_model=ConversationResponse)
@@ -319,7 +335,7 @@ async def delete_conversation(
     return {"status": "success"}
 
 
-class GenerateTitleResponse(BaseModel):
+class GenerateTitleResponse(CamelModel):
     title: str
     conversation_id: str
 
@@ -408,7 +424,7 @@ async def generate_title(
     conversation.updated_at = datetime.utcnow()
     await db.commit()
 
-    return GenerateTitleResponse(title=title, conversation_id=conversation_id)
+    return {"title": title, "conversationId": conversation_id}
 
 
 class FileUploadRequest(BaseModel):
@@ -416,7 +432,7 @@ class FileUploadRequest(BaseModel):
     files: List[dict]  # [{"name": "file.pdf", "content": "base64...", "type": "pdf"}]
 
 
-class FileUploadResponse(BaseModel):
+class FileUploadResponse(CamelModel):
     """Response after file upload."""
     message_id: str
     files_processed: int
@@ -470,8 +486,8 @@ async def upload_files(
     conversation.updated_at = datetime.utcnow()
     await db.commit()
 
-    return FileUploadResponse(
-        message_id=file_message.id,
-        files_processed=len(file_summaries),
-        summaries=file_summaries
-    )
+    return {
+        "messageId": file_message.id,
+        "filesProcessed": len(file_summaries),
+        "summaries": file_summaries,
+    }
