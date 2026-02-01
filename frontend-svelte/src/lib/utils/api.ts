@@ -13,6 +13,7 @@ import { browser } from '$app/environment';
 import { goto } from '$app/navigation';
 
 const API_BASE_URL = '';  // Uses Vite proxy in dev, same origin in prod
+const SSE_BASE_URL = import.meta.env.DEV ? 'http://localhost:8000' : '';  // Direct backend for SSE (bypasses proxy buffering)
 const TOKEN_KEY = 'auth_token';
 
 interface RequestOptions {
@@ -176,76 +177,30 @@ export const api = {
 	getToken,
 
 	/**
-	 * Async generator for SSE streaming responses
-	 * Yields parsed data from each SSE event
+	 * Get SSE base URL for direct backend connection
 	 */
-	async *streamGenerator(
-		endpoint: string,
-		data?: any,
-		options?: RequestOptions
-	): AsyncGenerator<string, void, unknown> {
+	getSSEBaseURL(): string {
+		return SSE_BASE_URL;
+	},
+
+	/**
+	 * SSE stream that connects directly to backend (bypasses Vite proxy)
+	 */
+	async sseStream(endpoint: string, data?: any, signal?: AbortSignal): Promise<Response> {
 		const token = getToken();
-		const authHeaders: Record<string, string> = {};
+		const headers: Record<string, string> = {
+			'Content-Type': 'application/json',
+		};
 		if (token) {
-			authHeaders['Authorization'] = `Bearer ${token}`;
+			headers['Authorization'] = `Bearer ${token}`;
 		}
 
-		const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+		return fetch(`${SSE_BASE_URL}${endpoint}`, {
 			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				'Accept': 'text/event-stream',
-				...authHeaders,
-				...options?.headers,
-			},
+			headers,
 			body: data ? JSON.stringify(data) : undefined,
+			signal,
 		});
-
-		if (!response.ok) {
-			throw new ApiError(
-				`Stream request failed: ${response.status}`,
-				response.status
-			);
-		}
-
-		const reader = response.body?.getReader();
-		if (!reader) {
-			throw new Error('No response body');
-		}
-
-		const decoder = new TextDecoder();
-		let buffer = '';
-
-		try {
-			while (true) {
-				const { done, value } = await reader.read();
-				if (done) break;
-
-				buffer += decoder.decode(value, { stream: true });
-				const lines = buffer.split('\n');
-				buffer = lines.pop() || '';
-
-				for (const line of lines) {
-					if (line.startsWith('data: ')) {
-						const eventData = line.slice(6);
-						if (eventData === '[DONE]') {
-							return;
-						}
-						yield eventData;
-					}
-				}
-			}
-
-			// Process any remaining data in buffer
-			if (buffer.startsWith('data: ')) {
-				const eventData = buffer.slice(6);
-				if (eventData !== '[DONE]') {
-					yield eventData;
-				}
-			}
-		} finally {
-			reader.releaseLock();
-		}
 	},
 };
 

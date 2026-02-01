@@ -183,6 +183,8 @@ function createChatStore() {
 
 		async sendMessage(content: string, model: string = 'claude-opus-4-5-20251101', files: File[] = [], webSearch: boolean = true) {
 			const state = get({ subscribe });
+			const isFirstMessage = state.messages.length === 0;
+
 			if (!state.currentConversation) {
 				// Create new conversation first
 				const conv = await this.createConversation();
@@ -214,26 +216,17 @@ function createChatStore() {
 			abortController = new AbortController();
 
 			try {
-				// Get auth token for the request
-				const token = api.getToken();
-				const headers: Record<string, string> = {
-					'Content-Type': 'application/json',
-				};
-				if (token) {
-					headers['Authorization'] = `Bearer ${token}`;
-				}
-
-				const response = await fetch(`/api/chat/conversations/${conversationId}/messages`, {
-					method: 'POST',
-					headers,
-					body: JSON.stringify({
+				// Use direct backend connection for SSE (bypasses Vite proxy buffering)
+				const response = await api.sseStream(
+					`/api/chat/conversations/${conversationId}/messages`,
+					{
 						content,
 						model,
 						web_search_data: webSearch,
 						web_search_insights: webSearch,
-					}),
-					signal: abortController.signal,
-				});
+					},
+					abortController.signal
+				);
 
 				if (!response.ok) {
 					throw new Error('Failed to send message');
@@ -331,6 +324,11 @@ function createChatStore() {
 					streamingContent: '',
 				}));
 
+				// Generate contextual title after first message
+				if (isFirstMessage) {
+					this.generateTitle(conversationId);
+				}
+
 			} catch (error: any) {
 				if (error.name === 'AbortError') {
 					update(state => ({
@@ -360,6 +358,27 @@ function createChatStore() {
 				isStreaming: false,
 				streamingContent: '',
 			}));
+		},
+
+		async generateTitle(conversationId: string) {
+			try {
+				const result = await api.post<{ title: string; conversation_id: string }>(
+					`/api/chat/conversations/${conversationId}/generate-title`
+				);
+				// Update conversation title in state
+				update(state => ({
+					...state,
+					currentConversation: state.currentConversation
+						? { ...state.currentConversation, title: result.title }
+						: null,
+					conversations: state.conversations.map(c =>
+						c.id === conversationId ? { ...c, title: result.title } : c
+					),
+				}));
+			} catch (error) {
+				// Title generation is non-critical, don't show error to user
+				console.error('Failed to generate title:', error);
+			}
 		},
 
 		rateGoal(goalId: string, rating: 'accept' | 'reject') {
