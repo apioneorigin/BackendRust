@@ -232,11 +232,6 @@ class ValueOrganizer:
             s_level_num = s_level_raw.get('current')
             if s_level_num is not None:
                 s_level_num = float(s_level_num)
-            # Extract transition rate from LLM response if available
-            if s_level_raw.get('in_transition') and s_level_raw.get('transition_direction') == 'up':
-                transition_rate = 0.1  # Positive transition
-            elif s_level_raw.get('in_transition') and s_level_raw.get('transition_direction') == 'down':
-                transition_rate = -0.1  # Negative transition
         elif isinstance(s_level_raw, str) and s_level_raw.strip():
             # Extract number from various string formats:
             # "S3", "S4: Service", "3", "3.5", "level 4", etc.
