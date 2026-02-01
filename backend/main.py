@@ -1466,17 +1466,11 @@ Articulation Tokens: {token_count}
                 api_logger.info(f"[QUESTION_LLM] Question sent: {question.question_id}")
                 api_logger.info(f"[QUESTION_LLM] Missing operators: {len(missing_operators)}")
 
-                yield sse_event("awaiting_answer", {
-                    "message": "Waiting for selection...",
-                    "session_id": session_id,
-                    "continue_after_answer": f"/api/run/continue?session_id={session_id}"
-                })
-                return
         # =====================================================================
         # END LLM-DRIVEN QUESTION FLOW
         # =====================================================================
 
-        # Done - no question needed
+        # Done
         elapsed = time.time() - start_time
         api_logger.info(f"[PIPELINE COMPLETE] Total time: {elapsed:.2f}s | Mode: {query_mode} | Reverse mapping: {reverse_mapping_data is not None}")
         pipeline_logger.end_pipeline(success=True)
