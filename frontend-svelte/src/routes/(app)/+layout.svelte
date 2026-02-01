@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { auth, isAuthenticated, user, theme, addToast, chat } from '$lib/stores';
+	import { auth, isAuthenticated, user, theme, addToast, chat, conversations, currentConversation } from '$lib/stores';
 	import { Spinner } from '$lib/components/ui';
 
 	let isLoading = true;
@@ -17,6 +17,8 @@
 			return;
 		}
 		isLoading = false;
+		// Load conversations for sidebar
+		await chat.loadConversations();
 	});
 
 	// Close menus on navigation
@@ -34,6 +36,23 @@
 	async function handleNewChat() {
 		await chat.createConversation();
 		goto('/chat');
+	}
+
+	async function handleSelectConversation(conversationId: string) {
+		await chat.selectConversation(conversationId);
+		goto('/chat');
+	}
+
+	function formatConversationDate(date: Date | string): string {
+		const d = typeof date === 'string' ? new Date(date) : date;
+		const now = new Date();
+		const diff = now.getTime() - d.getTime();
+		const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+		if (days === 0) return 'Today';
+		if (days === 1) return 'Yesterday';
+		if (days < 7) return `${days} days ago`;
+		return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 	}
 
 	function toggleTheme() {
@@ -134,6 +153,41 @@
 					</svg>
 					{#if !sidebarCollapsed}<span>New Chat</span>{/if}
 				</button>
+			</div>
+
+			<!-- Conversation list -->
+			<div class="conversations-section">
+				{#if !sidebarCollapsed}
+					<div class="conversations-header">
+						<span>Conversations</span>
+					</div>
+				{/if}
+				<div class="conversations-list">
+					{#each $conversations as conversation (conversation.id)}
+						<button
+							class="conversation-item"
+							class:active={$currentConversation?.id === conversation.id}
+							on:click={() => handleSelectConversation(conversation.id)}
+							title={conversation.title || 'New Chat'}
+						>
+							<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+							</svg>
+							{#if !sidebarCollapsed}
+								<div class="conversation-info">
+									<span class="conversation-title">{conversation.title || 'New Chat'}</span>
+									<span class="conversation-date">{formatConversationDate(conversation.updatedAt)}</span>
+								</div>
+							{/if}
+						</button>
+					{:else}
+						{#if !sidebarCollapsed}
+							<div class="no-conversations">
+								<p>No conversations yet</p>
+							</div>
+						{/if}
+					{/each}
+				</div>
 			</div>
 
 			<!-- Navigation (Admin only - other links in user menu) -->
@@ -339,12 +393,10 @@
 
 	/* Navigation */
 	.sidebar-nav {
-		flex: 1;
 		padding: 0.5rem;
 		display: flex;
 		flex-direction: column;
 		gap: 0.25rem;
-		overflow-y: auto;
 	}
 
 	.nav-item {
@@ -382,6 +434,108 @@
 
 	.nav-item svg {
 		flex-shrink: 0;
+	}
+
+	/* Conversations section */
+	.conversations-section {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+		padding: 0 0.5rem;
+	}
+
+	.conversations-header {
+		padding: 0.5rem 0.5rem 0.25rem;
+		font-size: 0.6875rem;
+		font-weight: 600;
+		color: var(--color-text-hint);
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+
+	.conversations-list {
+		flex: 1;
+		overflow-y: auto;
+		display: flex;
+		flex-direction: column;
+		gap: 0.125rem;
+	}
+
+	.conversation-item {
+		display: flex;
+		align-items: center;
+		gap: 0.625rem;
+		width: 100%;
+		padding: 0.5rem 0.625rem;
+		background: none;
+		border: none;
+		border-radius: 0.375rem;
+		cursor: pointer;
+		text-align: left;
+		transition: all 0.15s ease;
+		color: var(--color-text-manifest);
+	}
+
+	.sidebar.collapsed .conversation-item {
+		justify-content: center;
+		padding: 0.5rem;
+	}
+
+	.conversation-item:hover {
+		background: var(--color-field-depth);
+		color: var(--color-text-source);
+	}
+
+	.conversation-item.active {
+		background: var(--color-primary-100);
+		color: var(--color-primary-600);
+	}
+
+	[data-theme='dark'] .conversation-item.active {
+		background: rgba(15, 76, 117, 0.3);
+		color: var(--color-primary-400);
+	}
+
+	.conversation-item svg {
+		flex-shrink: 0;
+		color: var(--color-text-whisper);
+	}
+
+	.conversation-item:hover svg,
+	.conversation-item.active svg {
+		color: inherit;
+	}
+
+	.conversation-info {
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 0.125rem;
+	}
+
+	.conversation-title {
+		font-size: 0.8125rem;
+		font-weight: 500;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.conversation-date {
+		font-size: 0.6875rem;
+		color: var(--color-text-hint);
+	}
+
+	.no-conversations {
+		padding: 1rem 0.5rem;
+		text-align: center;
+	}
+
+	.no-conversations p {
+		font-size: 0.75rem;
+		color: var(--color-text-hint);
 	}
 
 	/* Sidebar footer / User menu */
