@@ -420,6 +420,77 @@ function createMatrixStore() {
 			return false;
 		},
 
+		// Populate matrix from structured data received from backend
+		populateFromStructuredData(matrixData: {
+			row_options: { id: string; label: string; description?: string }[];
+			column_options: { id: string; label: string; description?: string }[];
+			cells: Record<string, {
+				impact_score: number;
+				relationship?: string;
+				dimensions: {
+					name: string;
+					value: number;
+					step_labels: string[];
+				}[];
+			}>;
+		}) {
+			if (!matrixData) return;
+
+			const rowCount = Math.min(matrixData.row_options.length, 5);
+			const colCount = Math.min(matrixData.column_options.length, 5);
+
+			// Extract row and column headers
+			const rowHeaders = matrixData.row_options.slice(0, 5).map(opt => opt.label);
+			const columnHeaders = matrixData.column_options.slice(0, 5).map(opt => opt.label);
+
+			// Build the matrix data from cells
+			const cellData: CellData[][] = Array.from({ length: rowCount }, (_, rowIdx) =>
+				Array.from({ length: colCount }, (_, colIdx) => {
+					const cellKey = `${rowIdx}-${colIdx}`;
+					const cell = matrixData.cells[cellKey];
+
+					if (cell) {
+						// Determine risk level based on impact score
+						let riskLevel: 'low' | 'medium' | 'high' = 'low';
+						if (cell.impact_score >= 70) riskLevel = 'high';
+						else if (cell.impact_score >= 40) riskLevel = 'medium';
+
+						// Check if this is a leverage point (high impact with certain characteristics)
+						const isLeveragePoint = cell.impact_score >= 75 &&
+							cell.dimensions.some(d => d.value >= 75);
+
+						return {
+							value: cell.impact_score,
+							dimensions: cell.dimensions.map(d => d.value),
+							confidence: cell.impact_score / 100,
+							description: cell.relationship || `Cell R${rowIdx}C${colIdx}`,
+							isLeveragePoint,
+							riskLevel
+						};
+					}
+
+					// Default cell if not found in structured data
+					return {
+						value: 50,
+						dimensions: [50, 50, 50, 50, 50],
+						confidence: 0.5,
+						description: `Cell R${rowIdx}C${colIdx}`,
+						isLeveragePoint: false,
+						riskLevel: 'low' as const
+					};
+				})
+			);
+
+			update((state) => ({
+				...state,
+				matrixData: cellData,
+				rowHeaders,
+				columnHeaders,
+				isGenerated: true,
+				isGenerating: false
+			}));
+		},
+
 		// Reset matrix
 		reset() {
 			set(initialState);
