@@ -2924,7 +2924,7 @@ SECTION 5: FIRST STEPS
 
                     request_body = {
                         "model": model,
-                        "max_tokens": 4096,
+                        "max_tokens": 16384,  # Increased for full 20x20 matrix generation
                         "system": system_content,
                         "messages": [{
                             "role": "user",
@@ -3012,6 +3012,7 @@ SECTION 5: FIRST STEPS
                             "content": [{"type": "input_text", "text": articulation_prompt}]
                         }],
                         "temperature": 0.85,
+                        "max_output_tokens": 16384,  # Maximum output for full 20x20 matrix
                         "stream": True
                     }
 
