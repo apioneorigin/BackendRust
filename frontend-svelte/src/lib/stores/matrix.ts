@@ -45,12 +45,21 @@ export interface DocumentTab {
 }
 
 interface MatrixState {
-	// Matrix data
+	// Full 20x20 matrix data (all options and cells)
+	allRowOptions: { id: string; label: string; insight: string }[];
+	allColumnOptions: { id: string; label: string; insight: string }[];
+	allCells: Record<string, CellData>;  // Key: "row-col" format
+
+	// Currently selected indices for 5x5 display
+	selectedRowIndices: number[];
+	selectedColumnIndices: number[];
+
+	// Displayed 5x5 matrix (derived from selections)
 	matrixData: CellData[][];
 	rowHeaders: string[];
 	columnHeaders: string[];
 
-	// Context insights - explains why each row/column was generated
+	// Context insights for displayed rows/columns
 	rowInsights: string[];
 	columnInsights: string[];
 
@@ -101,6 +110,14 @@ const DEFAULT_DOCUMENTS: DocumentTab[] = [
 ];
 
 const initialState: MatrixState = {
+	// Full data (empty until populated)
+	allRowOptions: [],
+	allColumnOptions: [],
+	allCells: {},
+	selectedRowIndices: [0, 1, 2, 3, 4],
+	selectedColumnIndices: [0, 1, 2, 3, 4],
+
+	// Displayed 5x5 (placeholders until populated)
 	matrixData: [],
 	rowHeaders: ['Row 1', 'Row 2', 'Row 3', 'Row 4', 'Row 5'],
 	columnHeaders: ['Column 1', 'Column 2', 'Column 3', 'Column 4', 'Column 5'],
@@ -441,6 +458,8 @@ function createMatrixStore() {
 		populateFromStructuredData(matrixData: {
 			row_options: { id: string; label: string; description?: string; insight?: string }[];
 			column_options: { id: string; label: string; description?: string; insight?: string }[];
+			selected_rows?: number[];
+			selected_columns?: number[];
 			cells: Record<string, {
 				impact_score: number;
 				relationship?: string;
@@ -453,62 +472,72 @@ function createMatrixStore() {
 		}) {
 			if (!matrixData) return;
 
-			const rowCount = Math.min(matrixData.row_options.length, 5);
-			const colCount = Math.min(matrixData.column_options.length, 5);
-
-			// Extract row and column headers with insights
-			const rowHeaders = matrixData.row_options.slice(0, 5).map(opt => opt.label);
-			const columnHeaders = matrixData.column_options.slice(0, 5).map(opt => opt.label);
-			const rowInsights = matrixData.row_options.slice(0, 5).map(opt => opt.insight || opt.description || '');
-			const columnInsights = matrixData.column_options.slice(0, 5).map(opt => opt.insight || opt.description || '');
-
-			// Placeholder dimensions - only used if LLM data is missing (should not happen)
+			// Placeholder dimensions - only used if LLM data is missing
 			const placeholderDimensions: CellDimension[] = Array.from({ length: 5 }, (_, i) => ({
 				name: `Dimension ${i + 1}`,
 				value: 50,
 				stepLabels: ['Step 1', 'Step 2', 'Step 3', 'Step 4', 'Step 5']
 			}));
 
-			// Build the matrix data from cells
-			const cellData: CellData[][] = Array.from({ length: rowCount }, (_, rowIdx) =>
-				Array.from({ length: colCount }, (_, colIdx) => {
+			// Convert all cells to CellData format
+			const allCells: Record<string, CellData> = {};
+			for (const [cellKey, cell] of Object.entries(matrixData.cells)) {
+				let riskLevel: 'low' | 'medium' | 'high' = 'low';
+				if (cell.impact_score >= 70) riskLevel = 'high';
+				else if (cell.impact_score >= 40) riskLevel = 'medium';
+
+				const isLeveragePoint = cell.impact_score >= 75 &&
+					cell.dimensions?.some(d => d.value >= 75);
+
+				const dimensions: CellDimension[] = cell.dimensions?.map(d => ({
+					name: d.name,
+					value: d.value,
+					stepLabels: d.step_labels || ['Step 1', 'Step 2', 'Step 3', 'Step 4', 'Step 5']
+				})) || placeholderDimensions;
+
+				allCells[cellKey] = {
+					value: cell.impact_score,
+					dimensions: dimensions.length === 5 ? dimensions : placeholderDimensions,
+					confidence: cell.impact_score / 100,
+					description: cell.relationship || '',
+					isLeveragePoint,
+					riskLevel
+				};
+			}
+
+			// Store all row/column options
+			const allRowOptions = matrixData.row_options.map(opt => ({
+				id: opt.id,
+				label: opt.label,
+				insight: opt.insight || opt.description || ''
+			}));
+			const allColumnOptions = matrixData.column_options.map(opt => ({
+				id: opt.id,
+				label: opt.label,
+				insight: opt.insight || opt.description || ''
+			}));
+
+			// Get selected indices (default to first 5 if not provided)
+			const selectedRowIndices = matrixData.selected_rows?.slice(0, 5) ||
+				Array.from({ length: Math.min(5, allRowOptions.length) }, (_, i) => i);
+			const selectedColumnIndices = matrixData.selected_columns?.slice(0, 5) ||
+				Array.from({ length: Math.min(5, allColumnOptions.length) }, (_, i) => i);
+
+			// Build displayed 5x5 from selections
+			const rowHeaders = selectedRowIndices.map(i => allRowOptions[i]?.label || `Row ${i + 1}`);
+			const columnHeaders = selectedColumnIndices.map(i => allColumnOptions[i]?.label || `Column ${i + 1}`);
+			const rowInsights = selectedRowIndices.map(i => allRowOptions[i]?.insight || '');
+			const columnInsights = selectedColumnIndices.map(i => allColumnOptions[i]?.insight || '');
+
+			// Build displayed matrixData using selected row/column indices
+			const displayedMatrixData: CellData[][] = selectedRowIndices.map(rowIdx =>
+				selectedColumnIndices.map(colIdx => {
 					const cellKey = `${rowIdx}-${colIdx}`;
-					const cell = matrixData.cells[cellKey];
-
-					if (cell) {
-						// Determine risk level based on impact score
-						let riskLevel: 'low' | 'medium' | 'high' = 'low';
-						if (cell.impact_score >= 70) riskLevel = 'high';
-						else if (cell.impact_score >= 40) riskLevel = 'medium';
-
-						// Check if this is a leverage point (high impact with certain characteristics)
-						const isLeveragePoint = cell.impact_score >= 75 &&
-							cell.dimensions.some(d => d.value >= 75);
-
-						// Convert backend dimension format to frontend format
-						// LLM must provide contextual names and step labels - no fallbacks
-						const dimensions: CellDimension[] = cell.dimensions.map(d => ({
-							name: d.name,
-							value: d.value,
-							stepLabels: d.step_labels
-						}));
-
-						return {
-							value: cell.impact_score,
-							dimensions: dimensions.length === 5 ? dimensions : placeholderDimensions,
-							confidence: cell.impact_score / 100,
-							description: cell.relationship || `Cell R${rowIdx}C${colIdx}`,
-							isLeveragePoint,
-							riskLevel
-						};
-					}
-
-					// Default cell if not found in structured data
-					return {
+					return allCells[cellKey] || {
 						value: 50,
 						dimensions: placeholderDimensions.map(d => ({ ...d })),
 						confidence: 0.5,
-						description: `Cell R${rowIdx}C${colIdx}`,
+						description: '',
 						isLeveragePoint: false,
 						riskLevel: 'low' as const
 					};
@@ -517,7 +546,12 @@ function createMatrixStore() {
 
 			update((state) => ({
 				...state,
-				matrixData: cellData,
+				allRowOptions,
+				allColumnOptions,
+				allCells,
+				selectedRowIndices,
+				selectedColumnIndices,
+				matrixData: displayedMatrixData,
 				rowHeaders,
 				columnHeaders,
 				rowInsights,
@@ -525,6 +559,47 @@ function createMatrixStore() {
 				isGenerated: true,
 				isGenerating: false
 			}));
+		},
+
+		// Update which rows/columns are displayed (called from Context Control popup)
+		updateDisplayedSelection(selectedRowIndices: number[], selectedColumnIndices: number[]) {
+			update((state) => {
+				const placeholderDimensions: CellDimension[] = Array.from({ length: 5 }, (_, i) => ({
+					name: `Dimension ${i + 1}`,
+					value: 50,
+					stepLabels: ['Step 1', 'Step 2', 'Step 3', 'Step 4', 'Step 5']
+				}));
+
+				const rowHeaders = selectedRowIndices.map(i => state.allRowOptions[i]?.label || `Row ${i + 1}`);
+				const columnHeaders = selectedColumnIndices.map(i => state.allColumnOptions[i]?.label || `Column ${i + 1}`);
+				const rowInsights = selectedRowIndices.map(i => state.allRowOptions[i]?.insight || '');
+				const columnInsights = selectedColumnIndices.map(i => state.allColumnOptions[i]?.insight || '');
+
+				const displayedMatrixData: CellData[][] = selectedRowIndices.map(rowIdx =>
+					selectedColumnIndices.map(colIdx => {
+						const cellKey = `${rowIdx}-${colIdx}`;
+						return state.allCells[cellKey] || {
+							value: 50,
+							dimensions: placeholderDimensions.map(d => ({ ...d })),
+							confidence: 0.5,
+							description: '',
+							isLeveragePoint: false,
+							riskLevel: 'low' as const
+						};
+					})
+				);
+
+				return {
+					...state,
+					selectedRowIndices,
+					selectedColumnIndices,
+					matrixData: displayedMatrixData,
+					rowHeaders,
+					columnHeaders,
+					rowInsights,
+					columnInsights
+				};
+			});
 		},
 
 		// Reset matrix

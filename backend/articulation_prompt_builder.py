@@ -168,6 +168,44 @@ Each major insight should connect: Consciousness Pattern → Observable Reality 
                 content = msg.get('content', '')[:800]  # Truncate long messages
                 sections.append(f"[{role}]: {content}\n")
 
+        # Add answered questions context (user's choices inform analysis)
+        if conversation_context.question_answers:
+            has_content = True
+            sections.append("**User's Answered Questions:**")
+            sections.append("The user has answered these clarifying questions. Use their choices to refine your analysis:\n")
+            for qa in conversation_context.question_answers:
+                question = qa.get('question', '')
+                answer = qa.get('selected_answer', '')
+                sections.append(f"Q: {question}")
+                sections.append(f"A: {answer}\n")
+
+        # Add matrix state context (user's selected dimensions for analysis focus)
+        if conversation_context.matrix_state:
+            has_content = True
+            ms = conversation_context.matrix_state
+            row_labels = ms.get('selected_row_labels', [])
+            col_labels = ms.get('selected_column_labels', [])
+            total_rows = ms.get('total_rows_available', 0)
+            total_cols = ms.get('total_columns_available', 0)
+            cell_values = ms.get('cell_values', [])
+
+            sections.append("**User's Matrix Focus Selection:**")
+            sections.append(f"The user has chosen to focus on specific dimensions from the transformation matrix.")
+            sections.append(f"Selected Row Dimensions ({len(row_labels)} of {total_rows} available): {', '.join(row_labels)}")
+            sections.append(f"Selected Column Dimensions ({len(col_labels)} of {total_cols} available): {', '.join(col_labels)}")
+
+            # Include cell values and dimensions if available
+            if cell_values:
+                sections.append("\n**Current Matrix Cell Values (user's focus area):**")
+                for cv in cell_values[:10]:  # Limit to first 10 cells to avoid prompt bloat
+                    row = cv.get('row', '')
+                    col = cv.get('column', '')
+                    impact = cv.get('impact_score', 50)
+                    dims = cv.get('dimensions', '')
+                    sections.append(f"• {row} × {col}: Impact {impact}% | {dims}")
+
+            sections.append("\nPrioritize insights related to these selected dimensions and their current values in your analysis.\n")
+
         if not has_content:
             return ""
 
@@ -176,6 +214,8 @@ Each major insight should connect: Consciousness Pattern → Observable Reality 
 - Build on insights from previous messages rather than starting fresh
 - Maintain consistency with any analysis or recommendations from earlier in the conversation
 - Use domain-specific terminology found in the uploaded documents
+- IMPORTANT: Incorporate the user's answered questions into your analysis - their choices reveal priorities and preferences
+- IMPORTANT: Focus analysis on the user's selected matrix dimensions - they indicate areas of priority
 """)
 
         logger.debug(
@@ -906,17 +946,15 @@ Output this EXACT marker followed by valid JSON:
     "row_options": [
       {"id": "r0", "label": "Strategic Resource Flow", "insight": "Core driver identified from pattern analysis"},
       {"id": "r1", "label": "...", "insight": "..."},
-      {"id": "r2", "label": "...", "insight": "..."},
-      {"id": "r3", "label": "...", "insight": "..."},
-      {"id": "r4", "label": "...", "insight": "..."}
+      ... (20 total row options - context titles, max 3 words each)
     ],
     "column_options": [
-      {"id": "c0", "label": "Growth Momentum Shift", "insight": "Effect factor derived from transformation indicators"},
+      {"id": "c0", "label": "Growth Momentum", "insight": "Effect factor derived from transformation indicators"},
       {"id": "c1", "label": "...", "insight": "..."},
-      {"id": "c2", "label": "...", "insight": "..."},
-      {"id": "c3", "label": "...", "insight": "..."},
-      {"id": "c4", "label": "...", "insight": "..."}
+      ... (20 total column options - context titles, max 3 words each)
     ],
+    "selected_rows": [0, 3, 7, 12, 18],
+    "selected_columns": [1, 4, 9, 14, 19],
     "cells": {
       "0-0": {
         "impact_score": 75,
@@ -925,33 +963,32 @@ Output this EXACT marker followed by valid JSON:
           {
             "name": "Income Path Vision",
             "value": 50,
-            "step_labels": ["Completely unclear direction", "Vague sense of path", "Partially defined goals", "Clear vision with gaps", "Crystal clear purpose"]
+            "step_labels": ["Completely unclear", "Vague sense", "Partially defined", "Clear with gaps", "Crystal clear"]
           },
           {
             "name": "Earning Bandwidth",
             "value": 75,
-            "step_labels": ["No capacity available", "Minimal bandwidth", "Some room to grow", "Strong capacity", "Full capability unlocked"]
+            "step_labels": ["No capacity", "Minimal", "Some room", "Strong", "Full capability"]
           },
           {
-            "name": "Financial Leap Preparedness",
+            "name": "Financial Readiness",
             "value": 25,
-            "step_labels": ["Not ready at all", "Early preparation", "Moderately prepared", "Well prepared", "Fully primed"]
+            "step_labels": ["Not ready", "Early prep", "Moderate", "Well prepared", "Fully primed"]
           },
           {
-            "name": "Career Capital Available",
+            "name": "Career Capital",
             "value": 50,
-            "step_labels": ["No resources", "Limited assets", "Adequate support", "Strong foundation", "Abundant resources"]
+            "step_labels": ["No resources", "Limited", "Adequate", "Strong", "Abundant"]
           },
           {
-            "name": "Work-Wealth Alignment",
+            "name": "Work-Wealth Sync",
             "value": 100,
-            "step_labels": ["Completely fragmented", "Poorly connected", "Partially integrated", "Well harmonized", "Seamlessly unified"]
+            "step_labels": ["Fragmented", "Poorly connected", "Partial", "Harmonized", "Unified"]
           }
         ]
       },
       "0-1": { ... },
-      "0-2": { ... },
-      ... (25 total cells for 5x5 matrix, keys are "row-col" format: "0-0", "0-1", ..., "4-4")
+      ... (400 total cells for 20x20 matrix, keys are "row-col" format: "0-0" to "19-19")
     }
   },
   "paths": [
@@ -986,7 +1023,11 @@ Output this EXACT marker followed by valid JSON:
 ===STRUCTURED_DATA_END===
 ```
 
-CRITICAL CELL KEY FORMAT: Use "row-col" format like "0-0", "0-1", "1-0", etc. NOT "r0_c0" format.
+CRITICAL REQUIREMENTS:
+1. CELL KEY FORMAT: Use "row-col" format like "0-0", "0-1", "1-0", etc. NOT "r0_c0" format.
+2. FULL 20x20 MATRIX: Generate ALL 400 cells (from "0-0" to "19-19") with 5 dimensions each.
+3. SELECTED ROWS/COLUMNS: The "selected_rows" and "selected_columns" arrays indicate which 5 rows and 5 columns are MOST RELEVANT to the current chat context for initial display. The app displays a 5x5 view using these selections.
+4. ROW/COLUMN LABELS: Max 3 words per label (displayed vertically for columns, horizontally for rows).
 
 ### 5-DIMENSION FRAMEWORK (CRITICAL - FOLLOW THIS EXACTLY):
 
@@ -1134,11 +1175,15 @@ def build_articulation_context(
         conv_history_context = ConversationHistoryContext(
             messages=conversation_context.get('messages', []),
             file_summaries=conversation_context.get('file_summaries', []),
-            conversation_summary=conversation_context.get('conversation_summary')
+            conversation_summary=conversation_context.get('conversation_summary'),
+            question_answers=conversation_context.get('question_answers', []),
+            matrix_state=conversation_context.get('matrix_state')
         )
         msg_count = len(conv_history_context.messages)
         file_count = len(conv_history_context.file_summaries)
-        logger.info(f"[ARTICULATION_CONTEXT] Conversation context: {msg_count} messages, {file_count} files")
+        qa_count = len(conv_history_context.question_answers)
+        has_matrix = conv_history_context.matrix_state is not None
+        logger.info(f"[ARTICULATION_CONTEXT] Conversation context: {msg_count} messages, {file_count} files, {qa_count} answered questions, matrix={'yes' if has_matrix else 'no'}")
 
     logger.info(
         f"[ARTICULATION_CONTEXT] Building context: domain={domain} "

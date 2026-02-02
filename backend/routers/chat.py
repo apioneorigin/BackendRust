@@ -57,6 +57,8 @@ class ConversationContext(BaseModel):
     messages: List[dict]  # Previous messages: [{"role": "user"|"assistant", "content": "..."}]
     file_summaries: List[dict] = []  # Summarized files: [{"name": "...", "summary": "...", "entities": [...]}]
     conversation_summary: Optional[str] = None  # Summary of older messages if conversation is long
+    question_answers: List[dict] = []  # Answered questions: [{"question": "...", "selected_answer": "..."}]
+    matrix_state: Optional[dict] = None  # Current matrix state: selected rows/columns and their labels
 
 
 class ConversationResponse(CamelModel):
@@ -223,6 +225,75 @@ async def send_message(
                         "type": att.get("type", "unknown")
                     })
 
+    # Extract answered questions for context
+    answered_questions = []
+    if conversation.question_answers:
+        questions_data = conversation.question_answers.get("questions", [])
+        for q in questions_data:
+            if q.get("selectedOption"):
+                # Find the selected option text
+                selected_text = q.get("selectedOption")
+                for opt in q.get("options", []):
+                    if opt.get("id") == q.get("selectedOption"):
+                        selected_text = opt.get("text", selected_text)
+                        break
+                answered_questions.append({
+                    "question": q.get("text", ""),
+                    "selected_answer": selected_text
+                })
+
+    # Extract matrix state for context (user's selected rows/columns + cell values)
+    matrix_state = None
+    if conversation.matrix_data:
+        md = conversation.matrix_data
+        # Get selected indices (default to first 5 if not specified)
+        selected_rows = md.get("selected_rows", [0, 1, 2, 3, 4])
+        selected_cols = md.get("selected_columns", [0, 1, 2, 3, 4])
+        row_options = md.get("row_options", [])
+        col_options = md.get("column_options", [])
+        cells = md.get("cells", {})
+
+        # Build readable labels for selected dimensions
+        selected_row_labels = [
+            row_options[i].get("label", f"Row {i}") if i < len(row_options) else f"Row {i}"
+            for i in selected_rows[:5]
+        ]
+        selected_col_labels = [
+            col_options[i].get("label", f"Col {i}") if i < len(col_options) else f"Col {i}"
+            for i in selected_cols[:5]
+        ]
+
+        # Extract cell values and dimensions for selected 5x5 grid
+        cell_summary = []
+        for ri, row_idx in enumerate(selected_rows[:5]):
+            row_label = selected_row_labels[ri]
+            for ci, col_idx in enumerate(selected_cols[:5]):
+                col_label = selected_col_labels[ci]
+                cell_key = f"{row_idx}-{col_idx}"
+                cell = cells.get(cell_key, {})
+                if cell:
+                    impact = cell.get("impact_score", 50)
+                    dims = cell.get("dimensions", [])
+                    # Summarize dimensions (name: value)
+                    dim_summary = ", ".join([
+                        f"{d.get('name', 'Dim')}: {d.get('value', 50)}%"
+                        for d in dims[:5]
+                    ]) if dims else "no dimensions"
+                    cell_summary.append({
+                        "row": row_label,
+                        "column": col_label,
+                        "impact_score": impact,
+                        "dimensions": dim_summary
+                    })
+
+        matrix_state = {
+            "selected_row_labels": selected_row_labels,
+            "selected_column_labels": selected_col_labels,
+            "total_rows_available": len(row_options),
+            "total_columns_available": len(col_options),
+            "cell_values": cell_summary  # Includes impact scores and dimension values
+        }
+
     # Build conversation context
     conversation_context = ConversationContext(
         messages=[
@@ -231,7 +302,9 @@ async def send_message(
             if m.role in ("user", "assistant")  # Only include user/assistant messages in history
         ],
         file_summaries=existing_file_summaries,  # Start with existing file summaries
-        conversation_summary=conversation.context  # Use stored conversation context/summary
+        conversation_summary=conversation.context,  # Use stored conversation context/summary
+        question_answers=answered_questions,  # Include answered questions for context
+        matrix_state=matrix_state  # Include matrix selection state
     )
 
     # Add any new file attachments from this request
@@ -267,6 +340,7 @@ async def send_message(
         output_tokens = 0
         structured_data = None  # Capture matrix_data, paths, documents
         pending_questions = []  # Capture questions for persistence
+        conversation_title = None  # Capture title from LLM Call 1
 
         async for event in inference_stream(
             request.content,
@@ -290,6 +364,11 @@ async def send_message(
                 elif event_type == "structured_data":
                     # Capture structured data for saving to conversation
                     structured_data = safe_json_loads(data)
+                elif event_type == "title":
+                    # Capture title for saving to conversation
+                    title_data = safe_json_loads(data)
+                    if title_data:
+                        conversation_title = title_data.get("title")
                 elif event_type in ("question", "validation_question"):
                     # Capture questions for persistence
                     question_data = safe_json_loads(data)
@@ -327,6 +406,10 @@ async def send_message(
             conv.total_output_tokens += output_tokens
             conv.total_tokens += input_tokens + output_tokens
             conv.updated_at = datetime.utcnow()
+
+            # Save conversation title if generated (only on first message)
+            if conversation_title and not conv.title:
+                conv.title = conversation_title
 
             # Save structured data (matrix, paths, documents) to conversation
             if structured_data:
