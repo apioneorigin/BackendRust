@@ -392,18 +392,18 @@
 		justify-content: center;
 		gap: 0.5rem;
 		padding: 0.5rem 0.75rem;
-		background: var(--color-text-source);
+		background: var(--color-primary-500);
 		border: none;
 		border-radius: 0.375rem;
-		color: var(--color-field-void);
+		color: #ffffff;
 		font-size: 14px;
 		font-weight: 500;
 		cursor: pointer;
-		transition: opacity 0.1s ease;
+		transition: all 0.15s ease;
 	}
 
 	.new-chat-btn:hover {
-		opacity: 0.85;
+		background: var(--color-primary-600);
 	}
 
 	.sidebar.collapsed .new-chat-btn {

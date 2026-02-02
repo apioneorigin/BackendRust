@@ -117,8 +117,8 @@
 	}
 
 	.toolbar-btn.active {
-		background: var(--color-text-source);
-		color: var(--color-field-void);
+		background: var(--color-primary-500);
+		color: #ffffff;
 	}
 
 	.toolbar-btn svg {

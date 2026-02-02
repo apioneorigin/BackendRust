@@ -989,16 +989,16 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		background: var(--color-text-source);
+		background: var(--color-primary-500);
 		border: none;
 		border-radius: 0.375rem;
-		color: var(--color-field-void);
+		color: #ffffff;
 		cursor: pointer;
-		transition: opacity 0.1s ease;
+		transition: all 0.15s ease;
 	}
 
 	.send-btn:hover:not(:disabled) {
-		opacity: 0.8;
+		background: var(--color-primary-600);
 	}
 
 	.send-btn:disabled {
@@ -1284,18 +1284,18 @@
 	.toggle-risk-btn {
 		width: 100%;
 		padding: 0.625rem;
-		background: var(--color-text-source);
-		color: var(--color-field-void);
+		background: var(--color-primary-500);
+		color: #ffffff;
 		border: none;
 		border-radius: 0.375rem;
 		font-size: 14px;
 		font-weight: 500;
 		cursor: pointer;
-		transition: opacity 0.1s ease;
+		transition: all 0.15s ease;
 	}
 
 	.toggle-risk-btn:hover {
-		opacity: 0.8;
+		background: var(--color-primary-600);
 	}
 
 	/* Responsive */

@@ -28,24 +28,24 @@
 	--touch-target-comfortable: 48px;
 
 	/* ─────────────────────────────────────────────────────────────────────────────
-	   ACCENT - Single color, used sparingly
+	   ACCENT - Modern indigo, used for interactive elements
 	   ───────────────────────────────────────────────────────────────────────────── */
-	--color-accent: #000000;
-	--color-accent-subtle: rgba(0, 0, 0, 0.05);
-	--color-accent-hover: rgba(0, 0, 0, 0.08);
+	--color-accent: #4F46E5;
+	--color-accent-subtle: rgba(79, 70, 229, 0.08);
+	--color-accent-hover: rgba(79, 70, 229, 0.12);
 
-	/* For primary buttons only */
-	--color-primary-500: #171717;
-	--color-primary-600: #000000;
-	--color-primary-50: rgba(0, 0, 0, 0.03);
-	--color-primary-100: rgba(0, 0, 0, 0.05);
+	/* For primary buttons and key actions */
+	--color-primary-500: #4F46E5;
+	--color-primary-600: #4338CA;
+	--color-primary-50: rgba(79, 70, 229, 0.05);
+	--color-primary-100: rgba(79, 70, 229, 0.1);
 
-	/* Legacy compatibility */
-	--color-primary-400: #404040;
-	--color-primary-700: #000000;
-	--color-primary-900: #000000;
-	--color-primary-300: #737373;
-	--color-primary-200: #a3a3a3;
+	/* Extended palette */
+	--color-primary-400: #6366F1;
+	--color-primary-700: #3730A3;
+	--color-primary-900: #1E1B4B;
+	--color-primary-300: #A5B4FC;
+	--color-primary-200: #C7D2FE;
 
 	/* ─────────────────────────────────────────────────────────────────────────────
 	   SURFACES - Pure white, no layering
@@ -99,10 +99,10 @@
 	--ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 
 	/* ─────────────────────────────────────────────────────────────────────────────
-	   GRADIENTS - Subtle, almost invisible
+	   GRADIENTS - Subtle, modern
 	   ───────────────────────────────────────────────────────────────────────────── */
-	--gradient-primary: linear-gradient(135deg, #171717 0%, #000000 100%);
-	--gradient-subtle: linear-gradient(180deg, rgba(0,0,0,0.02) 0%, transparent 100%);
+	--gradient-primary: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
+	--gradient-subtle: linear-gradient(180deg, rgba(79, 70, 229, 0.03) 0%, transparent 100%);
 
 	/* Semantic colors */
 	--color-error-500: #dc2626;
@@ -126,20 +126,22 @@
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 [data-theme='dark'] {
-	--color-accent: #ffffff;
-	--color-accent-subtle: rgba(255, 255, 255, 0.05);
-	--color-accent-hover: rgba(255, 255, 255, 0.08);
+	--color-accent: #818CF8;
+	--color-accent-subtle: rgba(129, 140, 248, 0.12);
+	--color-accent-hover: rgba(129, 140, 248, 0.18);
 
-	--color-primary-500: #e5e5e5;
-	--color-primary-600: #ffffff;
-	--color-primary-50: rgba(255, 255, 255, 0.03);
-	--color-primary-100: rgba(255, 255, 255, 0.05);
-	--color-primary-400: #a3a3a3;
+	--color-primary-500: #818CF8;
+	--color-primary-600: #6366F1;
+	--color-primary-50: rgba(129, 140, 248, 0.08);
+	--color-primary-100: rgba(129, 140, 248, 0.12);
+	--color-primary-400: #A5B4FC;
 
-	--color-field-void: #000000;
-	--color-field-depth: #0a0a0a;
+	--gradient-primary: linear-gradient(135deg, #6366F1 0%, #818CF8 100%);
+
+	--color-field-void: #0a0a0a;
+	--color-field-depth: #111111;
 	--color-field-surface: #0a0a0a;
-	--color-field-elevated: #141414;
+	--color-field-elevated: #1a1a1a;
 
 	--color-text-source: #fafafa;
 	--color-text-manifest: #a3a3a3;
@@ -152,7 +154,7 @@
 	--color-veil-clear: rgba(255, 255, 255, 0.12);
 
 	--shadow-panel: 0 0 0 1px rgba(255, 255, 255, 0.06);
-	--shadow-elevated: 0 4px 24px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.06);
+	--shadow-elevated: 0 4px 24px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -337,18 +339,18 @@ button:disabled,
 
 /* Primary - solid, used sparingly */
 .btn-primary {
-	background: var(--color-text-source);
-	color: var(--color-field-void);
+	background: var(--color-primary-500);
+	color: #ffffff;
 	border: none;
 	border-radius: 6px;
 	padding: 8px 16px;
 	font-weight: 500;
 	font-size: 14px;
-	transition: opacity var(--duration-fast) ease;
+	transition: all var(--duration-fast) ease;
 }
 
 .btn-primary:hover:not(:disabled) {
-	opacity: 0.85;
+	background: var(--color-primary-600);
 }
 
 /* Ghost - default for most controls */
