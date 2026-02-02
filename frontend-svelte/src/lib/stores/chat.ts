@@ -335,10 +335,31 @@ function createChatStore() {
 									break;
 
 								case 'question':
+									// Map backend field names to frontend interface
+									const question = {
+										id: parsed.question_id,
+										text: parsed.question_text,
+										options: parsed.options || [],
+									};
 									update(state => ({
 										...state,
-										questions: [...state.questions, parsed],
+										questions: [...state.questions, question],
 									}));
+									break;
+
+								case 'title':
+									// Update conversation title (generated in Call 1)
+									if (parsed.title && conversationId) {
+										update(state => ({
+											...state,
+											currentConversation: state.currentConversation
+												? { ...state.currentConversation, title: parsed.title }
+												: null,
+											conversations: state.conversations.map(c =>
+												c.id === conversationId ? { ...c, title: parsed.title } : c
+											),
+										}));
+									}
 									break;
 
 								case 'structured_data':
@@ -378,10 +399,7 @@ function createChatStore() {
 					streamingContent: '',
 				}));
 
-				// Generate contextual title after first message
-				if (isFirstMessage) {
-					this.generateTitle(conversationId);
-				}
+				// Title is now generated in Call 1 and sent via SSE 'title' event
 
 			} catch (error: any) {
 				if (error.name === 'AbortError') {
