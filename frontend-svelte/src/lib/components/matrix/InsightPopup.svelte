@@ -61,7 +61,7 @@
 					<span class="option-type-badge" class:driver={optionType === 'row'} class:outcome={optionType === 'column'}>
 						{displayType}
 					</span>
-					<h3 id="insight-title">{optionLabel}</h3>
+					<h3 id="insight-title">{insight.title || optionLabel}</h3>
 				</div>
 				<button class="close-btn" on:click={handleClose} aria-label="Close">
 					<svg

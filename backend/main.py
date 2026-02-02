@@ -458,6 +458,46 @@ mvt_calculator = MVTCalculator()
 api_logger.info("Reverse Causality Mapping initialized: 10 components loaded")
 
 
+def normalize_dimension_values(data: dict) -> dict:
+    """
+    Normalize dimension values to valid 3-step values (0, 50, 100).
+    LLMs sometimes return continuous percentages; this snaps them to nearest step.
+
+    Mapping:
+    - 0-25 → 0 (Low)
+    - 26-75 → 50 (Medium)
+    - 76-100 → 100 (High)
+    """
+    def snap_to_step(value: int) -> int:
+        if value <= 25:
+            return 0
+        elif value <= 75:
+            return 50
+        else:
+            return 100
+
+    normalized_count = 0
+
+    # Process documents
+    for doc in data.get("documents", []):
+        matrix_data = doc.get("matrix_data", {})
+        cells = matrix_data.get("cells", {})
+
+        for cell_key, cell in cells.items():
+            dimensions = cell.get("dimensions", [])
+            for dim in dimensions:
+                if "value" in dim:
+                    original = dim["value"]
+                    if isinstance(original, (int, float)) and original not in [0, 50, 100]:
+                        dim["value"] = snap_to_step(int(original))
+                        normalized_count += 1
+
+    if normalized_count > 0:
+        api_logger.info(f"[STRUCTURED DATA] Normalized {normalized_count} dimension values to 0/50/100")
+
+    return data
+
+
 def extract_structured_data(content: str, provider: str = "LLM") -> Optional[dict]:
     """
     Extract structured JSON data from LLM response.
@@ -492,6 +532,9 @@ def extract_structured_data(content: str, provider: str = "LLM") -> Optional[dic
     try:
         data = json.loads(json_str)
         api_logger.info(f"[STRUCTURED DATA] Successfully parsed structured data")
+
+        # Normalize dimension values to valid 3-step slider positions (0/50/100)
+        data = normalize_dimension_values(data)
 
         # Post-hoc schema validation (logs warnings but doesn't fail)
         validate_and_log_call2(data, provider)
@@ -2319,7 +2362,10 @@ Each cell needs:
 5. INTEGRATION - How well row and column harmonize
 
 === ARTICULATED INSIGHT REQUIREMENTS ===
-Each row_option and column_option must have an articulated_insight with 7 fields:
+Each row_option and column_option must have an articulated_insight with 8 fields:
+
+**TITLE (max 10 words)**
+- title: A compelling phrase that captures the essence of this insight. NOT the same as the row/column label.
 
 **THE TRUTH (80-120 words)**
 - the_truth: Analogy from OUTSIDE user's domain (if business → use biology, music, architecture, cooking). Immersive present tense, sensory details. Captures the micro-moment where truth reveals.
@@ -2356,6 +2402,7 @@ Return ONLY valid JSON:
       "id": "r0",
       "label": "{row_labels[0] if row_labels else 'Row 0'}",
       "articulated_insight": {{
+        "title": "Reading the Hidden Lanes of Resource Flow",
         "the_truth": "A river guide stands at dawn...",
         "the_truth_law": "**The pattern that looks like chaos to newcomers is infrastructure to those who've learned to read it.**",
         "your_truth": "I see you navigating what others call turbulent...",
@@ -2372,6 +2419,7 @@ Return ONLY valid JSON:
       "id": "c0",
       "label": "{col_labels[0] if col_labels else 'Column 0'}",
       "articulated_insight": {{
+        "title": "...",
         "the_truth": "...",
         "the_truth_law": "**...**",
         "your_truth": "...",
@@ -2389,8 +2437,9 @@ REQUIREMENTS:
 - Generate ALL 100 cells (0-0 through 9-9)
 - Dimension values MUST be 0, 50, or 100 only
 - Dimension names must be contextual to each specific cell
-- ALL 20 row/column options MUST have articulated_insight
-- Each insight should be 160-250 words total across all 7 fields
+- ALL 20 row/column options MUST have articulated_insight with all 8 fields including title
+- Each insight title should be max 10 words and different from the row/column label
+- Each insight should be 160-250 words total across all fields
 - User should think: "I can't unsee this now" """
 
     try:
