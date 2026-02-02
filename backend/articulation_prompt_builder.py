@@ -60,7 +60,7 @@ class ArticulationPromptBuilder:
             self._build_leverage_section(context.consciousness_state.leverage_points),
             self._build_search_guidance_section(context.search_guidance),
             self._build_generation_instructions(context.instructions),
-            self._build_structured_output_section(),
+            self._build_structured_output_section(include_question=context.include_question),
             self._build_user_query(context.user_context)
         ]
 
@@ -930,9 +930,25 @@ When consciousness values are calculated, ground them in observable reality:
 - Integrate evidence into narrative flow naturally
 - Let evidence strengthen insights, not replace them"""
 
-    def _build_structured_output_section(self) -> str:
+    def _build_structured_output_section(self, include_question: bool = True) -> str:
         """Build instructions for generating structured multi-document matrix data."""
-        return """## STRUCTURED OUTPUT GENERATION
+        # Conditionally include follow_up_question based on validation logic
+        question_schema = ""
+        question_requirement = ""
+        if include_question:
+            question_schema = """,
+  "follow_up_question": {
+    "question_text": "A natural, conversational follow-up question to understand the user better",
+    "options": {
+      "option_1": "First option representing one way they might experience their situation",
+      "option_2": "Second option representing a different experience",
+      "option_3": "Third option with another perspective",
+      "option_4": "Fourth option completing the spectrum of possibilities"
+    }
+  }"""
+            question_requirement = "\n7. **FOLLOW-UP QUESTION**: ALWAYS include a follow_up_question to deepen understanding of the user's situation"
+
+        return f"""## STRUCTURED OUTPUT GENERATION
 
 After your main articulation, you MUST generate structured data in the following JSON format.
 This data will be stored and used for the interactive matrix interface.
@@ -1027,17 +1043,8 @@ Output this EXACT marker followed by valid JSON:
       ]
     },
     ... (5 total strategic paths)
-  ],
-  "follow_up_question": {
-    "question_text": "A natural, conversational follow-up question to understand the user better",
-    "options": {
-      "option_1": "First option representing one way they might experience their situation",
-      "option_2": "Second option representing a different experience",
-      "option_3": "Third option with another perspective",
-      "option_4": "Fourth option completing the spectrum of possibilities"
-    }
-  }
-}
+  ]{question_schema}
+}}
 ===STRUCTURED_DATA_END===
 ```
 
@@ -1047,8 +1054,7 @@ CRITICAL REQUIREMENTS:
 3. **20-WORD DESCRIPTIONS**: Each document must have exactly ~20 words explaining its purpose
 4. **10x10 MATRICES**: Each document has 10 row options, 10 column options, and 100 cells
 5. **CELL KEY FORMAT**: Use "row-col" format like "0-0", "0-1", etc. (NOT "r0_c0")
-6. **SELECTED**: selected_rows and selected_columns indicate which 5 are shown initially
-7. **FOLLOW-UP QUESTION**: ALWAYS include a follow_up_question to deepen understanding of the user's situation
+6. **SELECTED**: selected_rows and selected_columns indicate which 5 are shown initially{question_requirement}
 
 ### DOCUMENT DIFFERENTIATION:
 Each document should offer a DIFFERENT LENS on the user's situation:
@@ -1093,7 +1099,7 @@ Each cell MUST have exactly 5 dimensions following this semantic framework:
    - impact_score: 0-100 representing overall relationship strength
 
 4. **Paths (5 total)**: Strategic approaches from conservative to aggressive
-
+{f'''
 5. **Follow-up Question**: ONE question with exactly 4 options
    - Question must feel natural and conversational, not clinical
    - Options should span a spectrum of inner experiences
@@ -1101,7 +1107,7 @@ Each cell MUST have exactly 5 dimensions following this semantic framework:
    - Each option 1-2 sentences representing genuinely different experiences
    - Focus on understanding aspects that would deepen the analysis
 
-**CONTEXT AWARENESS**: If follow-up message with unchanged context, you MAY return "documents": [] but ALWAYS include follow_up_question"""
+**CONTEXT AWARENESS**: If follow-up message with unchanged context, you MAY return "documents": [] but ALWAYS include follow_up_question''' if include_question else ''}"""
 
     def _build_user_query(self, user_context: UserContext) -> str:
         """Build the user query section"""
@@ -1133,7 +1139,8 @@ def build_articulation_context(
     framework_concealment: bool = True,
     domain_language: bool = True,
     search_guidance_data: Optional[dict] = None,
-    conversation_context: Optional[dict] = None
+    conversation_context: Optional[dict] = None,
+    include_question: bool = True
 ) -> ArticulationContext:
     """
     Helper function to build ArticulationContext from components.
@@ -1237,5 +1244,6 @@ def build_articulation_context(
             ]
         ),
         search_guidance=search_guidance,
-        conversation_context=conv_history_context
+        conversation_context=conv_history_context,
+        include_question=include_question
     )

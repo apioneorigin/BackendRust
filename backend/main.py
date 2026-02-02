@@ -785,6 +785,24 @@ especially operators that were uncertain (low confidence) in the initial extract
 
         yield sse_status(f"Analysis complete: {len(bottlenecks)} bottlenecks, {len(leverage_points)} leverage points")
 
+        # Determine if question should be generated (validation logic - BEFORE Call 2)
+        session_data = api_session_store.get(session_id)
+        already_asked_question = session_data.get('_validation_asked') if session_data else False
+
+        extracted_operators = {}
+        for obs in evidence.get('observations', []):
+            if isinstance(obs, dict) and 'var' in obs and 'value' in obs:
+                canonical = SHORT_TO_CANONICAL.get(obs['var'])
+                if canonical in CANONICAL_OPERATOR_NAMES:
+                    extracted_operators[canonical] = obs['value']
+
+        remaining_missing = CANONICAL_OPERATOR_NAMES - set(extracted_operators.keys())
+        should_include_question = (
+            not already_asked_question
+            and _should_ask_response_validation(missing_operators=remaining_missing)
+        )
+        api_logger.info(f"[QUESTION DECISION] Missing operators: {len(remaining_missing)}, Already asked: {already_asked_question}, Include question: {should_include_question}")
+
         # Step 4: LLM Call 2 - Articulation via streaming bridge
         api_logger.info("[STEP 4] LLM Call 2 - Articulation (streaming bridge)")
         yield sse_status("Generating insights (streaming)...")
@@ -793,7 +811,8 @@ especially operators that were uncertain (low confidence) in the initial extract
         token_count = 0
         call2_token_usage = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
         async for token in format_results_streaming_bridge(
-            prompt, evidence, posteriors, consciousness_state, None, model_config, web_search_insights
+            prompt, evidence, posteriors, consciousness_state, None, model_config, web_search_insights,
+            include_question=should_include_question
         ):
             if isinstance(token, dict) and token.get("__token_usage__"):
                 input_tokens = token.get("input_tokens")
@@ -832,118 +851,14 @@ especially operators that were uncertain (low confidence) in the initial extract
             "cost": round(cost, 6),
         })
 
-        # Check if response validation question should be asked (only once per session)
-        session_data = api_session_store.get(session_id)
-        already_validated = session_data.get('_validation_asked') if session_data else False
+        # Mark question as asked if it was included in Call 2
+        if should_include_question:
+            session_data = api_session_store.get(session_id)
+            if session_data:
+                session_data['_validation_asked'] = True
+                await api_session_store.update(session_id, session_data)
 
-        extracted_operators = {}
-        for obs in evidence.get('observations', []):
-            if isinstance(obs, dict) and 'var' in obs and 'value' in obs:
-                canonical = SHORT_TO_CANONICAL.get(obs['var'])
-                if canonical in CANONICAL_OPERATOR_NAMES:
-                    extracted_operators[canonical] = obs['value']
-
-        remaining_missing = CANONICAL_OPERATOR_NAMES - set(extracted_operators.keys())
-
-        should_ask_validation = (
-            not already_validated
-            and _should_ask_response_validation(missing_operators=remaining_missing)
-        )
-
-        if should_ask_validation:
-            # LLM-driven validation question
-            question_gen = ConstellationQuestionGenerator()
-            missing_operator_priority = evidence.get('missing_operator_priority', [])
-
-            # Build goal context from evidence (validated in parse_query_with_web_research)
-            goal_ctx_data = evidence.get('goal_context', {})
-            from consciousness_state import GoalContext
-            val_goal_context = GoalContext(
-                goal_text=goal_ctx_data.get('goal_text', ''),
-                goal_category=goal_ctx_data.get('goal_category', ''),
-                emotional_undertone=goal_ctx_data.get('emotional_undertone', ''),
-                domain=goal_ctx_data.get('domain', '')
-            )
-
-            question_context = question_gen.get_question_context(
-                goal_context=val_goal_context,
-                missing_operators=remaining_missing,
-                known_operators=extracted_operators,
-                missing_operator_priority=missing_operator_priority,
-                question_type='response_validation'
-            )
-
-            if question_context:
-                llm_question = await generate_question_via_llm(
-                    model_config=model_config,
-                    query=prompt,
-                    goal_context=goal_ctx_data,
-                    question_context=question_context
-                )
-
-                if llm_question:
-                    # Extract Call 3 token usage and emit updated totals
-                    call3_token_usage = llm_question.pop('_call3_token_usage', None)
-                    if call3_token_usage:
-                        c3_in = call3_token_usage["input_tokens"]
-                        c3_out = call3_token_usage["output_tokens"]
-                        updated_in = c1_in + c2_in + c3_in
-                        updated_out = c1_out + c2_out + c3_out
-                        updated_all = updated_in + updated_out
-                        updated_cost = (updated_in * pricing["input"] + updated_out * pricing["output"]) / 1_000_000
-                        api_logger.info(f"[TOKEN USAGE] Call 1: {c1_in}+{c1_out}={c1_in+c1_out} | Call 2: {c2_in}+{c2_out}={c2_in+c2_out} | Call 3: {c3_in}+{c3_out}={c3_in+c3_out} | Total: {updated_in}+{updated_out}={updated_all} | Cost: ${updated_cost:.6f}")
-                        yield sse_event("usage", {
-                            "call1": {"input_tokens": c1_in, "output_tokens": c1_out, "total_tokens": c1_in + c1_out},
-                            "call2": {"input_tokens": c2_in, "output_tokens": c2_out, "total_tokens": c2_in + c2_out},
-                            "call3": {"input_tokens": c3_in, "output_tokens": c3_out, "total_tokens": c3_in + c3_out},
-                            "input_tokens": updated_in,
-                            "output_tokens": updated_out,
-                            "total_tokens": updated_all,
-                            "cost": round(updated_cost, 6),
-                        })
-
-                    from constellation_question_generator import MultiDimensionalQuestion
-                    validation_question = MultiDimensionalQuestion(
-                        question_id=question_context['question_id'],
-                        question_text=llm_question['question_text'],
-                        answer_options=llm_question.get('options', {}),
-                        diagnostic_power=question_context['diagnostic_power'],
-                        target_operators=question_context['target_operators'],
-                        purposes_served=question_context['purposes_served'],
-                        goal_context=val_goal_context
-                    )
-
-                    session_data = api_session_store.get(session_id)
-                    session_data['_validation_question'] = validation_question
-                    session_data['_pending_question'] = validation_question
-                    session_data['_validation_asked'] = True
-                    session_data['evidence'] = evidence
-                    await api_session_store.update(session_id, session_data)
-
-                    yield sse_event("validation_question", {
-                        "session_id": session_id,
-                        "question_id": validation_question.question_id,
-                        "question_text": validation_question.question_text,
-                        "options": [{"id": opt_id, "text": opt_text} for opt_id, opt_text in validation_question.answer_options.items()],
-                        "diagnostic_power": validation_question.diagnostic_power,
-                        "purposes_served": validation_question.purposes_served,
-                        "continue_after_answer": f"/api/run/continue?session_id={session_id}"
-                    })
-
-                    api_logger.info(f"[VALIDATION] Question sent: {validation_question.question_id}")
-                    api_logger.info(f"[VALIDATION] Missing operators: {len(remaining_missing)}")
-
-                    elapsed = time.time() - start_time
-                    api_logger.info(f"[PIPELINE PARTIAL] Time before validation: {elapsed:.2f}s")
-
-                    yield sse_event("awaiting_answer", {
-                        "message": "Waiting for response validation selection...",
-                        "session_id": session_id,
-                        "continue_after_answer": f"/api/run/continue?session_id={session_id}"
-                    })
-                    return
-
-        # Normal cleanup - no validation needed
+        # Cleanup
         await api_session_store.delete(session_id)
 
         elapsed = time.time() - start_time
@@ -2293,169 +2208,6 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
     raise RuntimeError(f"parse_query_with_web_research failed after {STREAMING_MAX_RETRIES + 1} attempts: {last_error}")
 
 
-async def generate_question_via_llm(
-    model_config: dict,
-    query: str,
-    goal_context: dict,
-    question_context: dict
-) -> Optional[dict]:
-    """
-    Generate a follow-up question via LLM call.
-
-    The backend has already decided IF to ask and WHICH operators to target.
-    This function asks the LLM to generate contextual question text and 4 options
-    that would help understand the user's inner experience for those operators.
-
-    Args:
-        model_config: LLM provider configuration
-        query: User's original query text
-        goal_context: Goal context dict (category, undertone, domain)
-        question_context: Context from get_question_context() with target_operators and descriptions
-
-    Returns:
-        Dict with 'question_text' and 'options' (option_1..option_4 -> text), or None on failure
-    """
-    provider = model_config.get("provider")
-    api_key = model_config.get("api_key")
-    model = model_config.get("model")
-
-    target_descriptions = question_context.get('target_descriptions', [])
-    question_type = question_context.get('question_type', 'gap_filling')
-
-    type_instruction = ""
-    if question_type == 'response_validation':
-        type_instruction = """This is a RESPONSE VALIDATION question. The user has already received an analysis.
-Ask how well the analysis resonated — each option should represent a genuinely different
-relationship to the insights they received (from full recognition to complete disagreement)."""
-    else:
-        type_instruction = """This is a GAP-FILLING question. We need to understand the user's inner experience
-to assess dimensions we couldn't extract from their query alone.
-Each option should represent a genuinely different way the user might experience their situation."""
-
-    prompt_text = f"""Generate ONE follow-up question with exactly 4 options for this user.
-
-USER'S QUERY: {query}
-USER'S GOAL CATEGORY: {goal_context.get('goal_category', 'unknown')}
-EMOTIONAL UNDERTONE: {goal_context.get('emotional_undertone', 'neutral')}
-
-{type_instruction}
-
-DIMENSIONS WE NEED TO UNDERSTAND (do NOT mention these terms — ask about the lived experience):
-{chr(10).join(f'- {desc}' for desc in target_descriptions)}
-
-REQUIREMENTS:
-- Question must feel natural and conversational — never clinical or framework-like
-- Each option must represent a genuinely different inner experience
-- Options should span a spectrum from separation-oriented to unity-oriented
-- Use the user's own language/domain — speak to their actual situation
-- Keep each option to 1-2 sentences
-
-Return ONLY valid JSON:
-{{
-  "question_text": "your contextual question here",
-  "options": {{
-    "option_1": "first option text",
-    "option_2": "second option text",
-    "option_3": "third option text",
-    "option_4": "fourth option text"
-  }}
-}}"""
-
-    try:
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            if provider == "anthropic":
-                headers = {
-                    "x-api-key": api_key,
-                    "anthropic-version": "2023-06-01",
-                    "Content-Type": "application/json"
-                }
-                request_body = {
-                    "model": model,
-                    "max_tokens": 1024,
-                    "messages": [{"role": "user", "content": prompt_text}]
-                }
-                endpoint = model_config.get("endpoint")
-                response = await client.post(endpoint, headers=headers, json=request_body)
-
-                if response.status_code != 200:
-                    api_logger.error(f"[QUESTION_LLM] Anthropic error: {response.status_code}")
-                    return None
-
-                data = response.json()
-                response_text = ""
-                for block in data.get("content", []):
-                    if block.get("type") == "text":
-                        response_text += block.get("text", "")
-
-                # Extract token usage from Anthropic response
-                usage = data.get("usage", {})
-                call3_input = usage.get("input_tokens", 0)
-                call3_output = usage.get("output_tokens", 0)
-
-            else:
-                # OpenAI
-                headers = {
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json"
-                }
-                request_body = {
-                    "model": model,
-                    "input": [{"role": "user", "content": prompt_text}],
-                    "text": {"format": {"type": "text"}}
-                }
-                endpoint = model_config.get("endpoint")
-                response = await client.post(endpoint, headers=headers, json=request_body)
-
-                if response.status_code != 200:
-                    api_logger.error(f"[QUESTION_LLM] OpenAI error: {response.status_code}")
-                    return None
-
-                data = response.json()
-                response_text = ""
-                for item in data.get("output", []):
-                    if item.get("type") == "message":
-                        for content in item.get("content", []):
-                            if content.get("type") == "output_text":
-                                response_text += content.get("text", "")
-
-                # Extract token usage from OpenAI response
-                openai_usage = data.get("usage", {})
-                call3_input = openai_usage.get("input_tokens", 0)
-                call3_output = openai_usage.get("output_tokens", 0)
-
-        if not response_text:
-            api_logger.error("[QUESTION_LLM] Empty response from LLM")
-            return None
-
-        # Parse JSON from response (handle markdown code blocks)
-        text = response_text.strip()
-        if text.startswith("```"):
-            text = text.split("\n", 1)[1] if "\n" in text else text[3:]
-            if text.endswith("```"):
-                text = text[:-3]
-            text = text.strip()
-
-        result = json.loads(text)
-
-        if "question_text" not in result or "options" not in result:
-            api_logger.error("[QUESTION_LLM] Missing required fields in response")
-            return None
-
-        call3_total = (call3_input or 0) + (call3_output or 0)
-        result['_call3_token_usage'] = {
-            "input_tokens": call3_input or 0,
-            "output_tokens": call3_output or 0,
-            "total_tokens": call3_total,
-        }
-        api_logger.info(f"[CALL 3 TOKENS] Input: {call3_input}, Output: {call3_output}, Total: {call3_total}")
-        api_logger.info(f"[QUESTION_LLM] Generated question: '{result['question_text'][:80]}...'")
-        return result
-
-    except Exception as e:
-        api_logger.error(f"[QUESTION_LLM] Failed: {type(e).__name__}: {e}")
-        return None
-
-
 # Hardcoded model for additional document generation
 DOCUMENT_GENERATION_MODEL = "gpt-5.2"
 DOCUMENT_GENERATION_ENDPOINT = "https://api.openai.com/v1/chat/completions"
@@ -2645,7 +2397,8 @@ async def format_results_streaming_bridge(
     reverse_mapping: Optional[Dict[str, Any]] = None,
     model_config: Optional[dict] = None,
     use_web_search: bool = True,
-    conversation_context: Optional[dict] = None
+    conversation_context: Optional[dict] = None,
+    include_question: bool = True
 ) -> AsyncGenerator[str, None]:
     """
     Unified articulation with evidence enrichment and optional reverse mapping.
@@ -2714,7 +2467,8 @@ async def format_results_streaming_bridge(
         framework_concealment=True,  # Hide OOF terminology in output
         domain_language=True,  # Use natural domain language
         search_guidance_data=search_guidance_data,  # Pass search guidance for evidence grounding
-        conversation_context=conversation_context  # Pass conversation history and files
+        conversation_context=conversation_context,  # Pass conversation history and files
+        include_question=include_question  # Conditional question generation based on validation logic
     )
 
     # Build the structured articulation prompt
