@@ -477,7 +477,7 @@
 							</svg>
 						</div>
 						<h3>Cross-Impact Matrix</h3>
-						<p>See how factors influence each other.<br/>Click any cell to explore.</p>
+						<p>Visualize how factors influence each other.<br/>Click cells to explore relationships.</p>
 					</div>
 				</div>
 			{/if}
