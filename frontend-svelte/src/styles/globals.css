@@ -48,15 +48,15 @@
 	--color-primary-100: rgba(201, 169, 98, 0.12);
 	--color-primary-50: rgba(201, 169, 98, 0.06);
 
-	/* Ambient glow - gold radiance through silver */
-	--gradient-ambient: radial-gradient(ellipse at 50% 30%, rgba(201, 169, 98, 0.04) 0%, transparent 60%);
+	/* Ambient glow - gold radiance through warm ivory */
+	--gradient-ambient: radial-gradient(ellipse at 50% 30%, rgba(201, 169, 98, 0.05) 0%, transparent 60%);
 
 	/* ─────────────────────────────────────────────────────────────────────────────
-	   SURFACES - Premium Corporate Silver
+	   SURFACES - Warm Ivory (harmonizes with gold)
 	   ───────────────────────────────────────────────────────────────────────────── */
-	--color-field-void: #f8f9fb;      /* Slight cool silver tint */
-	--color-field-depth: #f1f3f6;     /* Subtle silver depth */
-	--color-field-surface: #ffffff;   /* Clean white for cards */
+	--color-field-void: #FAFAF8;      /* Warm white base */
+	--color-field-depth: #F5F4F1;     /* Warm cream depth */
+	--color-field-surface: #FEFEFE;   /* Near-white for cards */
 	--color-field-elevated: #ffffff;  /* Pure white elevated */
 
 	/* ─────────────────────────────────────────────────────────────────────────────
@@ -69,27 +69,27 @@
 	--color-text-hint: #d1d5db;       /* Subtle hint */
 
 	/* ─────────────────────────────────────────────────────────────────────────────
-	   BORDERS - Silver structural lines
+	   BORDERS - Warm neutral structural lines
 	   ───────────────────────────────────────────────────────────────────────────── */
-	--color-veil-thin: rgba(100, 116, 139, 0.08);
-	--color-veil-present: rgba(100, 116, 139, 0.12);
-	--color-veil-clear: rgba(100, 116, 139, 0.18);
+	--color-veil-thin: rgba(120, 110, 100, 0.08);
+	--color-veil-present: rgba(120, 110, 100, 0.12);
+	--color-veil-clear: rgba(120, 110, 100, 0.18);
 
 	/* ─────────────────────────────────────────────────────────────────────────────
-	   SHADOWS - Refined corporate depth
+	   SHADOWS - Warm corporate depth
 	   ───────────────────────────────────────────────────────────────────────────── */
-	--shadow-xs: 0 1px 2px rgba(100, 116, 139, 0.06);
-	--shadow-sm: 0 1px 3px rgba(100, 116, 139, 0.08);
-	--shadow-md: 0 4px 12px rgba(100, 116, 139, 0.10);
-	--shadow-lg: 0 8px 24px rgba(100, 116, 139, 0.14);
-	--shadow-xl: 0 16px 48px rgba(100, 116, 139, 0.18);
+	--shadow-xs: 0 1px 2px rgba(120, 110, 100, 0.06);
+	--shadow-sm: 0 1px 3px rgba(120, 110, 100, 0.08);
+	--shadow-md: 0 4px 12px rgba(120, 110, 100, 0.10);
+	--shadow-lg: 0 8px 24px rgba(120, 110, 100, 0.14);
+	--shadow-xl: 0 16px 48px rgba(120, 110, 100, 0.18);
 
-	/* Panel - subtle silver definition */
-	--shadow-panel: 0 0 0 1px rgba(100, 116, 139, 0.08);
-	--shadow-panel-hover: 0 0 0 1px rgba(100, 116, 139, 0.15);
+	/* Panel - subtle warm definition */
+	--shadow-panel: 0 0 0 1px rgba(120, 110, 100, 0.08);
+	--shadow-panel-hover: 0 0 0 1px rgba(120, 110, 100, 0.15);
 
 	/* Elevated - for modals/dropdowns */
-	--shadow-elevated: 0 4px 24px rgba(100, 116, 139, 0.14), 0 0 0 1px rgba(100, 116, 139, 0.08);
+	--shadow-elevated: 0 4px 24px rgba(120, 110, 100, 0.14), 0 0 0 1px rgba(120, 110, 100, 0.08);
 
 	/* ─────────────────────────────────────────────────────────────────────────────
 	   TIMING
