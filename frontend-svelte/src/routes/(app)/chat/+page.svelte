@@ -763,27 +763,22 @@
 		text-align: justify;
 	}
 
-	/* Question card */
+	/* Question - inline with response text */
 	.question-card {
-		margin: 1.5rem 0;
-		padding: 1.25rem;
-		background: var(--color-field-surface);
-		border: 1px solid var(--color-primary-200);
-		border-radius: 0.75rem;
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-	}
-
-	[data-theme='dark'] .question-card {
-		border-color: var(--color-primary-700);
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+		padding: 1rem 0;
+		background: transparent;
+		border: none;
+		border-radius: 0;
+		box-shadow: none;
 	}
 
 	.question-text {
 		font-size: var(--font-size-md);
-		font-weight: 500;
+		font-weight: 400;
 		color: var(--color-text-source);
 		margin-bottom: 1rem;
-		line-height: 1.5;
+		line-height: 1.6;
+		text-align: justify;
 	}
 
 	.question-options {
