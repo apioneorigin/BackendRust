@@ -101,7 +101,7 @@
 		gap: 0.25rem;
 		padding: 0.375rem 0.5rem;
 		background: transparent;
-		border: none;
+		border: 1px solid var(--color-accent);
 		border-radius: 0.25rem;
 		font-size: 14px;
 		font-weight: 400;

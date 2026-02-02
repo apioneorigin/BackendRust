@@ -883,6 +883,7 @@
 	.causation-btn,
 	.effect-btn {
 		color: var(--color-text-manifest);
+		border: 1px solid var(--color-accent);
 	}
 
 	.model-select {
