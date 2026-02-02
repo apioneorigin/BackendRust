@@ -738,13 +738,16 @@
 		background: transparent;
 		color: var(--color-text-source);
 		border-radius: 1rem;
-		padding-left: 0;
 	}
 
 	.message-text {
 		font-size: var(--font-size-md);
 		line-height: 1.6;
 		word-break: break-word;
+	}
+
+	.bubble-assistant .message-text {
+		text-align: justify;
 	}
 
 	/* Input panel - minimal */
