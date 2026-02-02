@@ -2,10 +2,15 @@
  * Theme store - replaces ThemeContext from React
  */
 
-import { writable, get } from 'svelte/store';
+import { writable, derived, get } from 'svelte/store';
 import { browser } from '$app/environment';
 
 type Theme = 'light' | 'dark' | 'system';
+
+interface ThemeState {
+	theme: Theme;
+	isDark: boolean;
+}
 
 function getInitialTheme(): Theme {
 	if (!browser) return 'system';
@@ -26,7 +31,11 @@ function getEffectiveTheme(theme: Theme): 'light' | 'dark' {
 }
 
 function createThemeStore() {
-	const { subscribe, set, update } = writable<Theme>(getInitialTheme());
+	const initialTheme = getInitialTheme();
+	const { subscribe, set, update } = writable<ThemeState>({
+		theme: initialTheme,
+		isDark: getEffectiveTheme(initialTheme) === 'dark'
+	});
 
 	function applyTheme(theme: Theme) {
 		if (!browser) return;
@@ -38,23 +47,26 @@ function createThemeStore() {
 
 	// Apply initial theme
 	if (browser) {
-		applyTheme(get({ subscribe }));
+		applyTheme(initialTheme);
 
 		// Listen for system theme changes
 		window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-			const current = get({ subscribe });
-			if (current === 'system') {
-				applyTheme('system');
-			}
+			update(state => {
+				if (state.theme === 'system') {
+					applyTheme('system');
+					return { ...state, isDark: getEffectiveTheme('system') === 'dark' };
+				}
+				return state;
+			});
 		});
 	}
 
 	return {
 		subscribe,
 
-		setTheme(theme: Theme) {
-			set(theme);
-			applyTheme(theme);
+		setTheme(newTheme: Theme) {
+			applyTheme(newTheme);
+			set({ theme: newTheme, isDark: getEffectiveTheme(newTheme) === 'dark' });
 		},
 
 		setLight() {
@@ -66,16 +78,11 @@ function createThemeStore() {
 		},
 
 		toggle() {
-			update(current => {
-				const newTheme = getEffectiveTheme(current) === 'dark' ? 'light' : 'dark';
+			update(state => {
+				const newTheme = state.isDark ? 'light' : 'dark';
 				applyTheme(newTheme);
-				return newTheme;
+				return { theme: newTheme, isDark: newTheme === 'dark' };
 			});
-		},
-
-		// Getter for isDark - used in templates
-		get isDark() {
-			return getEffectiveTheme(get({ subscribe })) === 'dark';
 		},
 	};
 }
