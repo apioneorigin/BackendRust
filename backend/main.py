@@ -458,6 +458,46 @@ mvt_calculator = MVTCalculator()
 api_logger.info("Reverse Causality Mapping initialized: 10 components loaded")
 
 
+def normalize_dimension_values(data: dict) -> dict:
+    """
+    Normalize dimension values to valid 3-step values (0, 50, 100).
+    LLMs sometimes return continuous percentages; this snaps them to nearest step.
+
+    Mapping:
+    - 0-25 → 0 (Low)
+    - 26-75 → 50 (Medium)
+    - 76-100 → 100 (High)
+    """
+    def snap_to_step(value: int) -> int:
+        if value <= 25:
+            return 0
+        elif value <= 75:
+            return 50
+        else:
+            return 100
+
+    normalized_count = 0
+
+    # Process documents
+    for doc in data.get("documents", []):
+        matrix_data = doc.get("matrix_data", {})
+        cells = matrix_data.get("cells", {})
+
+        for cell_key, cell in cells.items():
+            dimensions = cell.get("dimensions", [])
+            for dim in dimensions:
+                if "value" in dim:
+                    original = dim["value"]
+                    if isinstance(original, (int, float)) and original not in [0, 50, 100]:
+                        dim["value"] = snap_to_step(int(original))
+                        normalized_count += 1
+
+    if normalized_count > 0:
+        api_logger.info(f"[STRUCTURED DATA] Normalized {normalized_count} dimension values to 0/50/100")
+
+    return data
+
+
 def extract_structured_data(content: str, provider: str = "LLM") -> Optional[dict]:
     """
     Extract structured JSON data from LLM response.
@@ -492,6 +532,9 @@ def extract_structured_data(content: str, provider: str = "LLM") -> Optional[dic
     try:
         data = json.loads(json_str)
         api_logger.info(f"[STRUCTURED DATA] Successfully parsed structured data")
+
+        # Normalize dimension values to valid 3-step slider positions (0/50/100)
+        data = normalize_dimension_values(data)
 
         # Post-hoc schema validation (logs warnings but doesn't fail)
         validate_and_log_call2(data, provider)
