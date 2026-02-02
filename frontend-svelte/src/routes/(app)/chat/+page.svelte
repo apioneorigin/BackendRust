@@ -39,8 +39,7 @@
 	import MatrixPanel from '$lib/components/matrix/MatrixPanel.svelte';
 	import LivePreviewBox from '$lib/components/matrix/LivePreviewBox.svelte';
 	import MatrixToolbar from '$lib/components/matrix/MatrixToolbar.svelte';
-	import CausationPopup from '$lib/components/matrix/CausationPopup.svelte';
-	import EffectPopup from '$lib/components/matrix/EffectPopup.svelte';
+	import ContextControlPopup from '$lib/components/matrix/ContextControlPopup.svelte';
 
 	// Chat state
 	let messageInput = '';
@@ -58,8 +57,7 @@
 	$: isWelcomeState = $messages.length === 0 && !$isStreaming;
 
 	// Popup state
-	let showCausationPopup = false;
-	let showEffectPopup = false;
+	let showContextPopup = false;
 	let activeToolbarPopup: 'powerSpots' | 'plays' | 'scenarios' | 'sensitivity' | 'risk' | null = null;
 
 	// Rotating placeholder prompts
@@ -262,12 +260,8 @@
 		activeToolbarPopup = null;
 	}
 
-	function handleCausationSubmit() {
-		showCausationPopup = false;
-	}
-
-	function handleEffectSubmit() {
-		showEffectPopup = false;
+	function handleContextSubmit() {
+		showContextPopup = false;
 	}
 </script>
 
@@ -414,22 +408,19 @@
 					</button>
 
 					{#if $isMatrixGenerated}
-						<button class="control-btn causation-btn" on:click={() => (showCausationPopup = true)} title="Select row dimensions">
+						<button class="control-btn context-btn" on:click={() => (showContextPopup = true)} title="Control matrix context">
 							<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-								<path d="M12 3v18"/>
-								<path d="M5 9h14"/>
-								<path d="M5 15h14"/>
+								<circle cx="12" cy="12" r="3"/>
+								<path d="M12 1v6"/>
+								<path d="M12 17v6"/>
+								<path d="M4.22 4.22l4.24 4.24"/>
+								<path d="M15.54 15.54l4.24 4.24"/>
+								<path d="M1 12h6"/>
+								<path d="M17 12h6"/>
+								<path d="M4.22 19.78l4.24-4.24"/>
+								<path d="M15.54 8.46l4.24-4.24"/>
 							</svg>
-							<span>Causation</span>
-						</button>
-
-						<button class="control-btn effect-btn" on:click={() => (showEffectPopup = true)} title="Select column dimensions">
-							<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-								<path d="M3 12h18"/>
-								<path d="M9 5v14"/>
-								<path d="M15 5v14"/>
-							</svg>
-							<span>Effect</span>
+							<span>Context Control</span>
 						</button>
 					{/if}
 				</div>
@@ -613,18 +604,11 @@
 	</div>
 {/if}
 
-<!-- Causation Popup -->
-<CausationPopup
-	bind:open={showCausationPopup}
-	on:close={() => (showCausationPopup = false)}
-	on:submit={handleCausationSubmit}
-/>
-
-<!-- Effect Popup -->
-<EffectPopup
-	bind:open={showEffectPopup}
-	on:close={() => (showEffectPopup = false)}
-	on:submit={handleEffectSubmit}
+<!-- Context Control Popup -->
+<ContextControlPopup
+	bind:open={showContextPopup}
+	on:close={() => (showContextPopup = false)}
+	on:submit={handleContextSubmit}
 />
 
 <style>
@@ -964,12 +948,11 @@
 		cursor: not-allowed;
 	}
 
-	.causation-btn,
-	.effect-btn {
+	.context-btn {
 		color: var(--color-accent);
 		border: 1px solid var(--color-accent);
 		border-radius: 1rem;
-		min-width: 100px;
+		min-width: 120px;
 		justify-content: center;
 	}
 

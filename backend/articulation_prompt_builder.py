@@ -904,12 +904,12 @@ Output this EXACT marker followed by valid JSON:
 {
   "matrix_data": {
     "row_options": [
-      {"id": "r0", "label": "...", "description": "..."},
-      ... (20 total row options - causation factors)
+      {"id": "r0", "label": "Strategic Resource Flow", "insight": "Core driver identified from pattern analysis of resource allocation variables"},
+      ... (20 total row options - context titles, max 10 words each)
     ],
     "column_options": [
-      {"id": "c0", "label": "...", "description": "..."},
-      ... (20 total column options - effect factors)
+      {"id": "c0", "label": "Growth Momentum Shift", "insight": "Effect factor derived from transformation velocity indicators"},
+      ... (20 total column options - context titles, max 10 words each)
     ],
     "cells": {
       "r0_c0": {
@@ -1009,8 +1009,16 @@ Each cell MUST have exactly 5 dimensions following this semantic framework:
 
 ### GENERATION RULES:
 
-1. **Row Options (20)**: Causation factors - what DRIVES change in this context
-2. **Column Options (20)**: Effect factors - what is AFFECTED by changes
+1. **Row Options (20)**: Context titles representing CAUSATION factors
+   - `label`: Max 10-word phrase describing what DRIVES change
+   - `insight`: Explanation of why this factor was identified, referencing the variables/patterns used
+   - Example: {"label": "Strategic Resource Allocation", "insight": "Identified from capital flow patterns and investment leverage indicators"}
+
+2. **Column Options (20)**: Context titles representing EFFECT factors
+   - `label`: Max 10-word phrase describing what is AFFECTED
+   - `insight`: Explanation of why this effect was identified, referencing the transformation vectors used
+   - Example: {"label": "Market Position Momentum", "insight": "Derived from competitive positioning analysis and growth trajectory variables"}
+
 3. **Cells (400)**: Cross-impact for each row-column pair
    - Each cell has exactly 5 dimensions following the framework above
    - Each dimension has:
@@ -1018,8 +1026,16 @@ Each cell MUST have exactly 5 dimensions following this semantic framework:
      - `value`: One of [0, 25, 50, 75, 100] representing the 5 discrete steps
      - `step_labels`: Array of 5 contextual labels for this dimension IN THIS CELL
    - impact_score: 0-1 representing overall relationship strength
+
 4. **Paths (5)**: Strategic approaches from conservative to aggressive
+
 5. **Documents (9)**: One of each type, tailored to the user's query
+
+**CONTEXT TITLE RULES:**
+- User sees row_options and column_options as unified "context titles" (no row/column distinction shown)
+- Each title must be meaningful, domain-specific, max 10 words
+- Each insight must explain WHY this context was generated (what formula/variable/pattern led to it)
+- Never use generic titles like "Factor 1" or "Dimension A"
 
 **CRITICAL**: Both dimension names AND step labels must be domain-appropriate and contextual.
 The 5-parameter framework (Clarity, Capacity, Readiness, Resources, Integration) guides the MEANING,
