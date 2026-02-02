@@ -50,6 +50,10 @@ interface MatrixState {
 	rowHeaders: string[];
 	columnHeaders: string[];
 
+	// Context insights - explains why each row/column was generated
+	rowInsights: string[];
+	columnInsights: string[];
+
 	// Generation state
 	isGenerated: boolean;
 	isGenerating: boolean;
@@ -98,8 +102,10 @@ const DEFAULT_DOCUMENTS: DocumentTab[] = [
 
 const initialState: MatrixState = {
 	matrixData: [],
-	rowHeaders: ['Dimension 1', 'Dimension 2', 'Dimension 3', 'Dimension 4', 'Dimension 5'],
-	columnHeaders: ['Stage 1', 'Stage 2', 'Stage 3', 'Stage 4', 'Stage 5'],
+	rowHeaders: ['Context 1', 'Context 2', 'Context 3', 'Context 4', 'Context 5'],
+	columnHeaders: ['Context 6', 'Context 7', 'Context 8', 'Context 9', 'Context 10'],
+	rowInsights: ['', '', '', '', ''],
+	columnInsights: ['', '', '', '', ''],
 	isGenerated: false,
 	isGenerating: false,
 	documentTabs: DEFAULT_DOCUMENTS,
@@ -433,8 +439,8 @@ function createMatrixStore() {
 
 		// Populate matrix from structured data received from backend
 		populateFromStructuredData(matrixData: {
-			row_options: { id: string; label: string; description?: string }[];
-			column_options: { id: string; label: string; description?: string }[];
+			row_options: { id: string; label: string; description?: string; insight?: string }[];
+			column_options: { id: string; label: string; description?: string; insight?: string }[];
 			cells: Record<string, {
 				impact_score: number;
 				relationship?: string;
@@ -450,9 +456,11 @@ function createMatrixStore() {
 			const rowCount = Math.min(matrixData.row_options.length, 5);
 			const colCount = Math.min(matrixData.column_options.length, 5);
 
-			// Extract row and column headers
+			// Extract row and column headers with insights
 			const rowHeaders = matrixData.row_options.slice(0, 5).map(opt => opt.label);
 			const columnHeaders = matrixData.column_options.slice(0, 5).map(opt => opt.label);
+			const rowInsights = matrixData.row_options.slice(0, 5).map(opt => opt.insight || opt.description || '');
+			const columnInsights = matrixData.column_options.slice(0, 5).map(opt => opt.insight || opt.description || '');
 
 			// Placeholder dimensions - only used if LLM data is missing (should not happen)
 			const placeholderDimensions: CellDimension[] = Array.from({ length: 5 }, (_, i) => ({
@@ -512,6 +520,8 @@ function createMatrixStore() {
 				matrixData: cellData,
 				rowHeaders,
 				columnHeaders,
+				rowInsights,
+				columnInsights,
 				isGenerated: true,
 				isGenerating: false
 			}));
@@ -520,6 +530,60 @@ function createMatrixStore() {
 		// Reset matrix
 		reset() {
 			set(initialState);
+		},
+
+		// Generate more context titles (for unified Context Control popup)
+		async generateMoreContextTitles(type: 'row' | 'column') {
+			update((state) => ({ ...state, isLoadingOptions: true }));
+
+			try {
+				// TODO: Call backend API to generate more context titles
+				// For now, generate placeholder titles
+				const newTitles = type === 'row'
+					? ['New Context A', 'New Context B', 'New Context C', 'New Context D', 'New Context E']
+					: ['New Context F', 'New Context G', 'New Context H', 'New Context I', 'New Context J'];
+
+				const newInsights = [
+					'Generated based on matrix analysis',
+					'Derived from pattern recognition',
+					'Identified through correlation',
+					'Suggested by leverage analysis',
+					'Recommended for completeness'
+				];
+
+				update((state) => {
+					if (type === 'row') {
+						return {
+							...state,
+							rowHeaders: [...state.rowHeaders, ...newTitles.slice(0, 5 - state.rowHeaders.length % 5)],
+							rowInsights: [...state.rowInsights, ...newInsights.slice(0, 5 - state.rowInsights.length % 5)],
+							isLoadingOptions: false
+						};
+					} else {
+						return {
+							...state,
+							columnHeaders: [...state.columnHeaders, ...newTitles.slice(0, 5 - state.columnHeaders.length % 5)],
+							columnInsights: [...state.columnInsights, ...newInsights.slice(0, 5 - state.columnInsights.length % 5)],
+							isLoadingOptions: false
+						};
+					}
+				});
+			} catch (error) {
+				update((state) => ({
+					...state,
+					isLoadingOptions: false,
+					error: 'Failed to generate more context titles'
+				}));
+			}
+		},
+
+		// Update context selection (from unified Context Control popup)
+		updateContextSelection(selectedRows: string[], selectedCols: string[]) {
+			update((state) => ({
+				...state,
+				rowHeaders: selectedRows.slice(0, 5),
+				columnHeaders: selectedCols.slice(0, 5)
+			}));
 		}
 	};
 }
