@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { addToast, auth, chat } from '$lib/stores';
 	import { Button, Spinner } from '$lib/components/ui';
+	import { api } from '$lib/utils/api';
 
 	interface DiscoveredGoal {
 		id: string;
@@ -53,13 +54,8 @@
 
 	async function loadSavedGoals() {
 		try {
-			const response = await fetch('/api/goal-inventory/list', {
-				credentials: 'include'
-			});
-			if (response.ok) {
-				const data = await response.json();
-				savedGoals = data.goals || [];
-			}
+			const data = await api.get<{ goals: SavedGoal[] }>('/api/goal-inventory/list');
+			savedGoals = data.goals || [];
 		} catch (error) {
 			console.error('Failed to load saved goals:', error);
 		} finally {
@@ -133,22 +129,10 @@
 
 		isDiscovering = true;
 		try {
-			const response = await fetch('/api/goal-inventory/generate', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				credentials: 'include',
-				body: JSON.stringify({
-					files: uploadedFiles,
-					existing_goals: discoveredGoals
-				})
+			const data = await api.post<{ goals: DiscoveredGoal[] }>('/api/goal-inventory/generate', {
+				files: uploadedFiles,
+				existing_goals: discoveredGoals
 			});
-
-			if (!response.ok) {
-				const error = await response.json();
-				throw new Error(error.detail || 'Failed to discover goals');
-			}
-
-			const data = await response.json();
 			discoveredGoals = [...discoveredGoals, ...data.goals];
 			addToast('success', `Discovered ${data.goals.length} goals`);
 		} catch (error: any) {
@@ -174,12 +158,7 @@
 
 		// Persist to backend
 		try {
-			await fetch('/api/goal-inventory/save', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				credentials: 'include',
-				body: JSON.stringify({ goals: savedGoals })
-			});
+			await api.post('/api/goal-inventory/save', { goals: savedGoals });
 			addToast('success', 'Goal saved to library');
 		} catch (error) {
 			addToast('error', 'Failed to save goal');
@@ -188,17 +167,9 @@
 
 	async function removeFromInventory(goalId: string) {
 		try {
-			const response = await fetch('/api/goal-inventory/remove', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				credentials: 'include',
-				body: JSON.stringify({ goal_id: goalId })
-			});
-
-			if (response.ok) {
-				savedGoals = savedGoals.filter((g) => g.id !== goalId);
-				addToast('success', 'Goal removed from library');
-			}
+			await api.post('/api/goal-inventory/remove', { goal_id: goalId });
+			savedGoals = savedGoals.filter((g) => g.id !== goalId);
+			addToast('success', 'Goal removed from library');
 		} catch (error) {
 			addToast('error', 'Failed to remove goal');
 		}
@@ -207,22 +178,13 @@
 	async function startChatWithGoal(goal: DiscoveredGoal | SavedGoal) {
 		// Create a new conversation with this goal as context
 		try {
-			const response = await fetch('/api/chat/conversations', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				credentials: 'include',
-				body: JSON.stringify({
-					title: goal.identity,
-					context: `Goal: ${goal.identity}\n\nFirst Move: ${goal.firstMove}\n\nType: ${goal.type}\nConfidence: ${goal.confidence}%`
-				})
+			const conversation = await api.post<{ id: string }>('/api/chat/conversations', {
+				title: goal.identity,
+				context: `Goal: ${goal.identity}\n\nFirst Move: ${goal.firstMove}\n\nType: ${goal.type}\nConfidence: ${goal.confidence}%`
 			});
-
-			if (response.ok) {
-				const conversation = await response.json();
-				await chat.loadConversations();
-				goto(`/chat`);
-				await chat.selectConversation(conversation.id);
-			}
+			await chat.loadConversations();
+			goto(`/chat`);
+			await chat.selectConversation(conversation.id);
 		} catch (error) {
 			addToast('error', 'Failed to create chat');
 		}
@@ -508,8 +470,10 @@
 
 <style>
 	.goals-page {
-		padding: 1.5rem;
-		max-width: 1200px;
+		padding: 2rem 3rem;
+		width: 1400px;
+		min-width: 1400px;
+		max-width: 1400px;
 		margin: 0 auto;
 		animation: fadeIn 0.2s ease;
 	}
@@ -609,6 +573,7 @@
 	/* Upload section */
 	.upload-section {
 		margin-bottom: 2rem;
+		min-height: 200px;
 	}
 
 	.drop-zone {
@@ -618,6 +583,7 @@
 		text-align: center;
 		transition: all 0.2s ease;
 		cursor: pointer;
+		min-height: 180px;
 	}
 
 	.drop-zone:hover,
@@ -780,15 +746,16 @@
 
 	.goals-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-		gap: 1rem;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 1.25rem;
 	}
 
 	.goal-card {
-		padding: 1.25rem;
+		padding: 1.5rem;
 		display: flex;
 		flex-direction: column;
 		gap: 0.75rem;
+		min-height: 220px;
 	}
 
 	.goal-header {
@@ -945,8 +912,22 @@
 		margin-bottom: 1.5rem;
 	}
 
+	/* Tablet responsive */
+	@media (max-width: 1500px) {
+		.goals-page {
+			width: 100%;
+			min-width: auto;
+			max-width: 100%;
+			padding: 1.5rem 2rem;
+		}
+
+		.goals-grid {
+			grid-template-columns: repeat(2, 1fr);
+		}
+	}
+
 	/* Mobile responsive */
-	@media (max-width: 767px) {
+	@media (max-width: 900px) {
 		.goals-page {
 			padding: 1rem;
 		}

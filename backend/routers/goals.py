@@ -3,6 +3,7 @@ Goal and matrix management endpoints.
 """
 
 import json
+import re
 import uuid
 from datetime import datetime
 from typing import Optional, List
@@ -16,8 +17,159 @@ import openai
 from database import get_db, User, Goal, MatrixValue, DiscoveredGoal, UserGoalInventory
 from routers.auth import get_current_user, generate_id
 from utils import get_or_404, paginate, to_response, to_response_list
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["goals"])
+
+
+def repair_truncated_json(text: str) -> str:
+    """
+    Repair truncated JSON from LLM responses.
+    Closes any unclosed strings, arrays, or objects.
+    """
+    in_string = False
+    escape = False
+    stack = []
+
+    for ch in text:
+        if escape:
+            escape = False
+            continue
+        if in_string:
+            if ch == '\\':
+                escape = True
+            elif ch == '"':
+                in_string = False
+            continue
+        if ch == '"':
+            in_string = True
+        elif ch == '{':
+            stack.append('}')
+        elif ch == '[':
+            stack.append(']')
+        elif ch in ('}', ']') and stack and stack[-1] == ch:
+            stack.pop()
+
+    if not stack and not in_string:
+        return text
+
+    repaired = text
+
+    # Close truncated string
+    if in_string:
+        if repaired.endswith('\\'):
+            repaired = repaired[:-1]
+        repaired += '"'
+
+    # Strip trailing comma/colon left from truncation
+    repaired = repaired.rstrip()
+    while repaired and repaired[-1] in (',', ':'):
+        repaired = repaired[:-1].rstrip()
+
+    # Close all open structures
+    for closer in reversed(stack):
+        repaired += closer
+
+    return repaired
+
+
+def parse_llm_json_response(text: str) -> dict:
+    """
+    Robustly parse JSON from LLM response with multiple fallback strategies.
+
+    1. Try direct parsing
+    2. Strip markdown code blocks if present
+    3. Find JSON object boundaries
+    4. Repair truncated JSON
+    5. Return empty goals array as fallback
+    """
+    if not text or not text.strip():
+        logger.warning("[JSON_PARSE] Empty response, returning empty goals")
+        return {"goals": []}
+
+    original_text = text
+
+    # Strategy 1: Direct parse
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+
+    # Strategy 2: Strip markdown code blocks
+    if "```" in text:
+        # Extract content between code blocks
+        code_block_match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', text)
+        if code_block_match:
+            text = code_block_match.group(1)
+            try:
+                return json.loads(text)
+            except json.JSONDecodeError:
+                pass
+
+    # Strategy 3: Find JSON object boundaries
+    start_idx = text.find('{')
+    if start_idx != -1:
+        text = text[start_idx:]
+        # Find matching closing brace
+        depth = 0
+        end_idx = -1
+        in_string = False
+        escape = False
+        for i, ch in enumerate(text):
+            if escape:
+                escape = False
+                continue
+            if ch == '\\' and in_string:
+                escape = True
+                continue
+            if ch == '"' and not escape:
+                in_string = not in_string
+                continue
+            if not in_string:
+                if ch == '{':
+                    depth += 1
+                elif ch == '}':
+                    depth -= 1
+                    if depth == 0:
+                        end_idx = i
+                        break
+
+        if end_idx != -1:
+            text = text[:end_idx + 1]
+            try:
+                return json.loads(text)
+            except json.JSONDecodeError:
+                pass
+
+    # Strategy 4: Repair truncated JSON
+    try:
+        repaired = repair_truncated_json(text)
+        result = json.loads(repaired)
+        logger.info("[JSON_PARSE] Repair successful")
+        return result
+    except json.JSONDecodeError as e:
+        logger.warning(f"[JSON_PARSE] Repair failed: {e}")
+
+    # Strategy 5: Try to extract partial goals array
+    try:
+        # Look for goals array pattern
+        goals_match = re.search(r'"goals"\s*:\s*\[([\s\S]*)', text)
+        if goals_match:
+            goals_content = '[' + goals_match.group(1)
+            # Try to repair just the array
+            repaired_goals = repair_truncated_json(goals_content)
+            goals_array = json.loads(repaired_goals)
+            if isinstance(goals_array, list):
+                logger.info(f"[JSON_PARSE] Extracted {len(goals_array)} goals from partial response")
+                return {"goals": goals_array}
+    except Exception as e:
+        logger.warning(f"[JSON_PARSE] Partial extraction failed: {e}")
+
+    # Final fallback: return empty goals
+    logger.error(f"[JSON_PARSE] All strategies failed. Original text (first 500 chars): {original_text[:500]}")
+    return {"goals": []}
 
 
 class CreateGoalRequest(BaseModel):
@@ -405,7 +557,9 @@ async def discover_goals_from_files(
         )
 
         result_text = response.choices[0].message.content
-        result = json.loads(result_text)
+
+        # Robust JSON parsing with repair
+        result = parse_llm_json_response(result_text)
 
         # Add UUIDs and timestamps to goals
         goals = result.get("goals", [])

@@ -111,10 +111,11 @@
 		}
 	});
 
-	// Auto-scroll when new messages or streaming - only if user is near bottom
+	// Auto-scroll when new messages arrive - only if user hasn't scrolled up
 	let lastMessageCount = 0;
 	let userScrolledUp = false;
-	const SCROLL_THRESHOLD = 100; // pixels from bottom to consider "at bottom"
+	let wasStreamingBefore = false;
+	const SCROLL_THRESHOLD = 150; // pixels from bottom to consider "at bottom"
 
 	function isNearBottom(): boolean {
 		if (!messagesContainer) return true;
@@ -123,22 +124,37 @@
 	}
 
 	function handleScroll() {
-		userScrolledUp = !isNearBottom();
+		// If user scrolls up during streaming, respect their choice
+		if ($isStreaming) {
+			userScrolledUp = !isNearBottom();
+		} else {
+			userScrolledUp = !isNearBottom();
+		}
 	}
 
+	// Only auto-scroll on message count changes, NOT on every streaming token
 	$: {
 		const currentCount = $messages.length;
-		const hasStreaming = !!$streamingContent;
-		// Only scroll when messages actually change or streaming starts AND user hasn't scrolled up
-		if ((currentCount > lastMessageCount || hasStreaming) && messagesContainer) {
+		const isCurrentlyStreaming = $isStreaming;
+
+		// Auto-scroll when: new message added OR streaming just started
+		const streamingJustStarted = isCurrentlyStreaming && !wasStreamingBefore;
+		const messageAdded = currentCount > lastMessageCount;
+
+		if ((messageAdded || streamingJustStarted) && messagesContainer) {
 			lastMessageCount = currentCount;
-			// Use setTimeout to break out of reactive cycle and avoid potential hang
+			// Reset userScrolledUp when a NEW message is added (user sent message)
+			if (messageAdded) {
+				userScrolledUp = false;
+			}
 			setTimeout(() => {
 				if (messagesContainer && !userScrolledUp) {
 					messagesContainer.scrollTop = messagesContainer.scrollHeight;
 				}
 			}, 0);
 		}
+
+		wasStreamingBefore = isCurrentlyStreaming;
 	}
 
 	async function handleSendMessage() {
