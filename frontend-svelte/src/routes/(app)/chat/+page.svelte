@@ -514,8 +514,8 @@
 								<line x1="12" y1="22.08" x2="12" y2="12"/>
 							</svg>
 						</div>
-						<h3>Live Metrics</h3>
-						<p>Watch Reality Unfold Live.<br/>This is your Output Box</p>
+						<h3>Live Preview</h3>
+						<p>Watch Reality Unfold Live.<br/>This is your Output Box.</p>
 					</div>
 				</div>
 			{/if}
