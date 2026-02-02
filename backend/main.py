@@ -2319,7 +2319,10 @@ Each cell needs:
 5. INTEGRATION - How well row and column harmonize
 
 === ARTICULATED INSIGHT REQUIREMENTS ===
-Each row_option and column_option must have an articulated_insight with 7 fields:
+Each row_option and column_option must have an articulated_insight with 8 fields:
+
+**TITLE (max 10 words)**
+- title: A compelling phrase that captures the essence of this insight. NOT the same as the row/column label.
 
 **THE TRUTH (80-120 words)**
 - the_truth: Analogy from OUTSIDE user's domain (if business → use biology, music, architecture, cooking). Immersive present tense, sensory details. Captures the micro-moment where truth reveals.
@@ -2356,6 +2359,7 @@ Return ONLY valid JSON:
       "id": "r0",
       "label": "{row_labels[0] if row_labels else 'Row 0'}",
       "articulated_insight": {{
+        "title": "Reading the Hidden Lanes of Resource Flow",
         "the_truth": "A river guide stands at dawn...",
         "the_truth_law": "**The pattern that looks like chaos to newcomers is infrastructure to those who've learned to read it.**",
         "your_truth": "I see you navigating what others call turbulent...",
@@ -2372,6 +2376,7 @@ Return ONLY valid JSON:
       "id": "c0",
       "label": "{col_labels[0] if col_labels else 'Column 0'}",
       "articulated_insight": {{
+        "title": "...",
         "the_truth": "...",
         "the_truth_law": "**...**",
         "your_truth": "...",
@@ -2389,8 +2394,9 @@ REQUIREMENTS:
 - Generate ALL 100 cells (0-0 through 9-9)
 - Dimension values MUST be 0, 50, or 100 only
 - Dimension names must be contextual to each specific cell
-- ALL 20 row/column options MUST have articulated_insight
-- Each insight should be 160-250 words total across all 7 fields
+- ALL 20 row/column options MUST have articulated_insight with all 8 fields including title
+- Each insight title should be max 10 words and different from the row/column label
+- Each insight should be 160-250 words total across all fields
 - User should think: "I can't unsee this now" """
 
     try:

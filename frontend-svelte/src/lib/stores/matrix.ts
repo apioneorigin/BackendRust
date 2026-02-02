@@ -28,6 +28,9 @@ export interface CellData {
 // Articulated Insight structure based on insight-articulation-final.pdf
 // 3-component structure: THE TRUTH → YOUR TRUTH → THE MARK (160-250 words total)
 export interface ArticulatedInsight {
+	// Insight title (max 10 words) - displayed in popup header
+	title: string;               // Max 10-word title phrase for this insight
+
 	// THE TRUTH (80-120 words): Analogy from outside user's domain
 	the_truth: string;           // Italicized analogy, present tense, sensory
 	the_truth_law: string;       // Bold one-line universal law (15-25 words)

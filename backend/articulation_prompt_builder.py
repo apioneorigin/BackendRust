@@ -975,6 +975,7 @@ After your main articulation, generate structured data in JSON format.
             "id": "r0",
             "label": "Resource Flow",
             "articulated_insight": {{
+              "title": "Reading the Hidden Lanes of Resource Flow",
               "the_truth": "A river guide stands at dawn, watching tourists photograph the rapids. They see chaos—white foam, unpredictable currents. She sees lanes. Twenty years of reading water taught her that turbulence follows rules invisible to observers. The dangerous spots aren't the loud ones. They're the quiet pools where undertow hides beneath stillness.",
               "the_truth_law": "**The pattern that looks like chaos to newcomers is infrastructure to those who've learned to read it.**",
               "your_truth": "I see you navigating what others call turbulent—resource constraints, competing demands, shifting priorities. You've been reading these currents longer than you realize. You'll never miss this again—whenever resources feel chaotic, you'll recognize you're seeing lanes others can't.",
@@ -992,6 +993,7 @@ After your main articulation, generate structured data in JSON format.
             "id": "c0",
             "label": "Growth Impact",
             "articulated_insight": {{
+              "title": "...",
               "the_truth": "...",
               "the_truth_law": "**...**",
               "your_truth": "...",
@@ -1059,7 +1061,12 @@ Do NOT use literal names like "Clarity" or "Capacity".
 
 ### ARTICULATED INSIGHT FRAMEWORK (for each of 20 row/column options):
 
-Each insight has 3 components (~160-250 words total):
+Each insight has a TITLE + 3 components (~160-250 words total):
+
+**TITLE (max 10 words)**
+- A compelling phrase that captures the essence of this insight
+- NOT the same as the row/column label—a unique insight title
+- Example: "Reading the Hidden Lanes of Resource Flow"
 
 **1. THE TRUTH (80-120 words)**
 - Analogy from OUTSIDE user's domain (if business → use biology, music, architecture, cooking)
