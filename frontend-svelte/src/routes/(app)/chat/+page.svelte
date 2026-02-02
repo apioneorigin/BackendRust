@@ -111,17 +111,30 @@
 		}
 	});
 
-	// Auto-scroll when new messages or streaming - use setTimeout to break reactive cycle
+	// Auto-scroll when new messages or streaming - only if user is near bottom
 	let lastMessageCount = 0;
+	let userScrolledUp = false;
+	const SCROLL_THRESHOLD = 100; // pixels from bottom to consider "at bottom"
+
+	function isNearBottom(): boolean {
+		if (!messagesContainer) return true;
+		const { scrollTop, scrollHeight, clientHeight } = messagesContainer;
+		return scrollHeight - scrollTop - clientHeight < SCROLL_THRESHOLD;
+	}
+
+	function handleScroll() {
+		userScrolledUp = !isNearBottom();
+	}
+
 	$: {
 		const currentCount = $messages.length;
 		const hasStreaming = !!$streamingContent;
-		// Only scroll when messages actually change or streaming starts
+		// Only scroll when messages actually change or streaming starts AND user hasn't scrolled up
 		if ((currentCount > lastMessageCount || hasStreaming) && messagesContainer) {
 			lastMessageCount = currentCount;
 			// Use setTimeout to break out of reactive cycle and avoid potential hang
 			setTimeout(() => {
-				if (messagesContainer) {
+				if (messagesContainer && !userScrolledUp) {
 					messagesContainer.scrollTop = messagesContainer.scrollHeight;
 				}
 			}, 0);
@@ -273,7 +286,7 @@
 	<!-- Left column: Chat (Response + Input) -->
 	<div class="chat-column">
 		<!-- Response container (80%) -->
-		<div class="response-container" bind:this={messagesContainer}>
+		<div class="response-container" bind:this={messagesContainer} on:scroll={handleScroll}>
 			{#if $messages.length === 0}
 				<!-- Welcome screen -->
 				<div class="welcome-screen">
