@@ -160,6 +160,12 @@ function createChatStore() {
 		},
 
 		async selectConversation(conversationId: string) {
+			// Guard against invalid ID or re-selecting same conversation
+			const currentState = get({ subscribe });
+			if (!conversationId || currentState.currentConversation?.id === conversationId) {
+				return;
+			}
+
 			update(state => ({ ...state, isLoading: true }));
 			try {
 				const [conversation, messagesResponse] = await Promise.all([
@@ -169,7 +175,7 @@ function createChatStore() {
 				update(state => ({
 					...state,
 					currentConversation: conversation,
-					messages: messagesResponse,
+					messages: Array.isArray(messagesResponse) ? messagesResponse : [],
 					isLoading: false,
 				}));
 			} catch (error: any) {
