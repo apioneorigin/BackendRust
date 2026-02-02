@@ -293,12 +293,9 @@
 						{$user?.name?.[0] || $user?.email?.[0] || 'U'}
 					</div>
 					{#if !sidebarCollapsed}
-						<div class="user-details">
-							<span class="user-name">{$user?.name || 'User'}</span>
-							<span class="user-email">{$user?.email}</span>
-						</div>
+						<span class="user-first-name">{$user?.name?.trim().split(/\s+/)[0] || 'User'}</span>
 						<svg class="chevron" class:rotated={userMenuOpen} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-							<path d="m6 9 6 6 6-6" />
+							<path d="m6 15 6-6 6 6" />
 						</svg>
 					{/if}
 				</button>
@@ -749,31 +746,21 @@
 		flex-shrink: 0;
 	}
 
-	.user-details {
+	.user-first-name {
 		flex: 1;
-		min-width: 0;
-	}
-
-	.user-name {
-		display: block;
 		font-weight: 500;
 		font-size: 15px;
 		color: var(--color-text-source);
-	}
-
-	.user-email {
-		display: block;
-		font-size: 13px;
-		color: var(--color-text-whisper);
+		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
-		white-space: nowrap;
 	}
 
 	.chevron {
 		color: var(--color-text-whisper);
 		transition: transform 0.2s ease;
 		flex-shrink: 0;
+		margin-left: auto;
 	}
 
 	.chevron.rotated {
