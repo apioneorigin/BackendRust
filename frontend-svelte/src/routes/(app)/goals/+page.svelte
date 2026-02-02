@@ -471,11 +471,16 @@
 <style>
 	.goals-page {
 		padding: 2rem 3rem;
-		width: 1400px;
-		min-width: 1400px;
-		max-width: 1400px;
-		margin: 0 auto;
+		width: 100%;
+		height: 100%;
+		overflow-y: auto;
+		overflow-x: hidden;
+		box-sizing: border-box;
 		animation: fadeIn 0.2s ease;
+	}
+
+	.goals-page > * {
+		max-width: 1400px;
 	}
 
 	/* Page header */
@@ -913,11 +918,8 @@
 	}
 
 	/* Tablet responsive */
-	@media (max-width: 1500px) {
+	@media (max-width: 1200px) {
 		.goals-page {
-			width: 100%;
-			min-width: auto;
-			max-width: 100%;
 			padding: 1.5rem 2rem;
 		}
 
