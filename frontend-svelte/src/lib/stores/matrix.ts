@@ -119,7 +119,7 @@ function createMatrixStore() {
 	return {
 		subscribe,
 
-		// Initialize matrix with sample data
+		// Initialize matrix with placeholder data (awaiting LLM response)
 		initializeMatrix() {
 			const leveragePoints = [
 				{ row: 1, col: 2 },
@@ -127,17 +127,14 @@ function createMatrixStore() {
 				{ row: 3, col: 1 }
 			];
 
-			// Default dimension names following the 5-parameter framework
-			const defaultDimensionNames = ['Clarity', 'Capacity', 'Readiness', 'Resources', 'Integration'];
-			const defaultStepLabels = ['Very Low', 'Low', 'Medium', 'High', 'Very High'];
-
+			// Placeholder dimensions - will be replaced by LLM-generated contextual data
 			const matrixData: CellData[][] = Array.from({ length: 5 }, (_, rowIdx) =>
 				Array.from({ length: 5 }, (_, colIdx) => ({
 					value: Math.floor(Math.random() * 50) + 25,
-					dimensions: defaultDimensionNames.map((name, i) => ({
-						name: `${name} ${rowIdx}-${colIdx}`,
+					dimensions: Array.from({ length: 5 }, (_, dimIdx) => ({
+						name: `Dimension ${dimIdx + 1}`,
 						value: [0, 25, 50, 75, 100][Math.floor(Math.random() * 5)],
-						stepLabels: defaultStepLabels
+						stepLabels: ['Step 1', 'Step 2', 'Step 3', 'Step 4', 'Step 5']
 					})),
 					confidence: Math.random() * 0.5 + 0.5,
 					description: `Cell R${rowIdx}C${colIdx}`,
@@ -457,14 +454,12 @@ function createMatrixStore() {
 			const rowHeaders = matrixData.row_options.slice(0, 5).map(opt => opt.label);
 			const columnHeaders = matrixData.column_options.slice(0, 5).map(opt => opt.label);
 
-			// Default dimension structure following the 5-parameter framework
-			const defaultDimensions: CellDimension[] = [
-				{ name: 'Clarity', value: 50, stepLabels: ['Very Low', 'Low', 'Medium', 'High', 'Very High'] },
-				{ name: 'Capacity', value: 50, stepLabels: ['Very Low', 'Low', 'Medium', 'High', 'Very High'] },
-				{ name: 'Readiness', value: 50, stepLabels: ['Very Low', 'Low', 'Medium', 'High', 'Very High'] },
-				{ name: 'Resources', value: 50, stepLabels: ['Very Low', 'Low', 'Medium', 'High', 'Very High'] },
-				{ name: 'Integration', value: 50, stepLabels: ['Very Low', 'Low', 'Medium', 'High', 'Very High'] }
-			];
+			// Placeholder dimensions - only used if LLM data is missing (should not happen)
+			const placeholderDimensions: CellDimension[] = Array.from({ length: 5 }, (_, i) => ({
+				name: `Dimension ${i + 1}`,
+				value: 50,
+				stepLabels: ['Step 1', 'Step 2', 'Step 3', 'Step 4', 'Step 5']
+			}));
 
 			// Build the matrix data from cells
 			const cellData: CellData[][] = Array.from({ length: rowCount }, (_, rowIdx) =>
@@ -483,15 +478,16 @@ function createMatrixStore() {
 							cell.dimensions.some(d => d.value >= 75);
 
 						// Convert backend dimension format to frontend format
+						// LLM must provide contextual names and step labels - no fallbacks
 						const dimensions: CellDimension[] = cell.dimensions.map(d => ({
 							name: d.name,
 							value: d.value,
-							stepLabels: d.step_labels || ['Very Low', 'Low', 'Medium', 'High', 'Very High']
+							stepLabels: d.step_labels
 						}));
 
 						return {
 							value: cell.impact_score,
-							dimensions: dimensions.length === 5 ? dimensions : defaultDimensions,
+							dimensions: dimensions.length === 5 ? dimensions : placeholderDimensions,
 							confidence: cell.impact_score / 100,
 							description: cell.relationship || `Cell R${rowIdx}C${colIdx}`,
 							isLeveragePoint,
@@ -502,7 +498,7 @@ function createMatrixStore() {
 					// Default cell if not found in structured data
 					return {
 						value: 50,
-						dimensions: defaultDimensions.map(d => ({ ...d })),
+						dimensions: placeholderDimensions.map(d => ({ ...d })),
 						confidence: 0.5,
 						description: `Cell R${rowIdx}C${colIdx}`,
 						isLeveragePoint: false,
