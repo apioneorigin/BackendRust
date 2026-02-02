@@ -327,21 +327,22 @@
 				<!-- Questions -->
 				{#if $questions.length > 0}
 					{#each $questions as q (q.id)}
-						{#if !q.selectedOption}
-							<div class="question-card">
-								<div class="question-text">{q.text}</div>
-								<div class="question-options">
-									{#each q.options as option}
-										<button
-											class="question-option"
-											on:click={() => chat.answerQuestion(q.id, option.id)}
-										>
-											{option.text}
-										</button>
-									{/each}
-								</div>
+						<div class="question-card" class:answered={q.selectedOption}>
+							<div class="question-text">{q.text}</div>
+							<div class="question-options">
+								{#each q.options as option}
+									<button
+										class="question-option"
+										class:selected={q.selectedOption === option.id}
+										class:not-selected={q.selectedOption && q.selectedOption !== option.id}
+										on:click={() => !q.selectedOption && chat.answerQuestion(q.id, option.id)}
+										disabled={!!q.selectedOption}
+									>
+										{option.text}
+									</button>
+								{/each}
 							</div>
-						{/if}
+						</div>
 					{/each}
 				{/if}
 			{/if}
@@ -799,14 +800,30 @@
 		transition: all 0.15s ease;
 	}
 
-	.question-option:hover {
+	.question-option:hover:not(:disabled) {
 		background: var(--color-accent-subtle);
 		border-color: var(--color-primary-300);
 		color: var(--color-text-source);
 	}
 
-	[data-theme='dark'] .question-option:hover {
+	[data-theme='dark'] .question-option:hover:not(:disabled) {
 		border-color: var(--color-primary-600);
+	}
+
+	.question-option.selected {
+		background: var(--color-primary-500);
+		border-color: var(--color-primary-500);
+		color: white;
+		cursor: default;
+	}
+
+	.question-option.not-selected {
+		opacity: 0.5;
+		cursor: default;
+	}
+
+	.question-card.answered {
+		opacity: 0.85;
 	}
 
 	/* Input panel - minimal */
