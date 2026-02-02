@@ -311,7 +311,8 @@
 
 	.app-layout {
 		display: flex;
-		min-height: 100dvh;
+		height: 100dvh;
+		overflow: hidden;
 	}
 
 	/* Collapsible Sidebar */
@@ -724,6 +725,8 @@
 	/* Main content */
 	.main-content {
 		flex: 1;
+		min-width: 0;
+		min-height: 0;
 		overflow: hidden;
 		display: flex;
 		flex-direction: column;
