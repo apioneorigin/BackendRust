@@ -238,15 +238,6 @@
 		return '📎';
 	}
 
-	function formatTimestamp(date: Date | string) {
-		const d = typeof date === 'string' ? new Date(date) : date;
-		return new Intl.DateTimeFormat('en-US', {
-			hour: 'numeric',
-			minute: '2-digit',
-			hour12: true
-		}).format(d);
-	}
-
 	// Matrix handlers
 	function handleCellClick(e: CustomEvent<{ row: number; col: number }>) {
 		// Cell click handled by MatrixPanel internally
@@ -328,10 +319,6 @@
 							{/if}
 						</div>
 						<div class="message-content">
-							<div class="message-header">
-								<span class="message-role">{message.role === 'user' ? 'You' : 'Assistant'}</span>
-								<span class="message-time">{formatTimestamp(message.createdAt)}</span>
-							</div>
 							<div class="message-bubble" class:bubble-user={message.role === 'user'} class:bubble-assistant={message.role === 'assistant'}>
 								<div class="message-text">
 									{@html message.content.replace(/\n/g, '<br>')}
@@ -355,9 +342,6 @@
 							</svg>
 						</div>
 						<div class="message-content">
-							<div class="message-header">
-								<span class="message-role">Assistant</span>
-							</div>
 							<div class="message-bubble bubble-assistant">
 								{#if $streamingContent}
 									<div class="message-text">
@@ -769,8 +753,8 @@
 	}
 
 	.message-avatar.user-avatar {
-		background: var(--color-text-source);
-		color: var(--color-field-void);
+		background: var(--color-field-depth);
+		color: var(--color-text-source);
 	}
 
 	.message-content {
@@ -785,38 +769,14 @@
 		align-items: flex-end;
 	}
 
-	.message-header {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		margin-bottom: 0.375rem;
-	}
-
-	.message.user .message-header {
-		flex-direction: row-reverse;
-	}
-
-	.message-role {
-		font-size: 0.6875rem;
-		font-weight: 500;
-		color: var(--color-text-whisper);
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-	}
-
-	.message-time {
-		font-size: 0.625rem;
-		color: var(--color-text-hint);
-	}
-
 	.message-bubble {
 		padding: 0.875rem 1rem;
 		max-width: 100%;
 	}
 
 	.bubble-user {
-		background: var(--color-text-source);
-		color: var(--color-field-void);
+		background: var(--color-field-depth);
+		color: var(--color-text-source);
 		border-radius: 1rem 1rem 0.25rem 1rem;
 	}
 
