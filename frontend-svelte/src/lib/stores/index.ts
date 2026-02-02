@@ -16,6 +16,7 @@ export {
 	rowHeaders,
 	columnHeaders,
 	isMatrixGenerated,
+	isGeneratingMoreDocuments,
 	showRiskHeatmap,
 	documentTabs,
 	activeTab,
