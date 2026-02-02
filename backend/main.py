@@ -1984,9 +1984,13 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
                                             "type": "array",
                                             "items": {"type": "string"},
                                             "description": "Operators not extractable from user input, ordered by priority for follow-up questions. Most important missing operators first."
+                                        },
+                                        "conversation_title": {
+                                            "type": "string",
+                                            "description": "Concise 4-8 word title capturing the essence of the user's query. E.g., 'NVIDIA Investment Analysis', 'Career Change Strategy'"
                                         }
                                     },
-                                    "required": ["user_identity", "goal", "s_level", "query_pattern", "goal_category", "emotional_undertone", "domain", "web_research_summary", "search_queries_used", "key_facts", "search_guidance", "observations", "targets", "relevant_oof_components", "missing_operator_priority"],
+                                    "required": ["user_identity", "goal", "s_level", "query_pattern", "goal_category", "emotional_undertone", "domain", "web_research_summary", "search_queries_used", "key_facts", "search_guidance", "observations", "targets", "relevant_oof_components", "missing_operator_priority", "conversation_title"],
                                     "additionalProperties": False
                                 },
                                 "strict": True
