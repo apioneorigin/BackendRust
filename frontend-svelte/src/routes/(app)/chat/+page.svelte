@@ -884,6 +884,7 @@
 	.effect-btn {
 		color: var(--color-text-manifest);
 		border: 1px solid var(--color-accent);
+		border-radius: 1rem;
 	}
 
 	.model-select {
