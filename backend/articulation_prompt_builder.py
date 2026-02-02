@@ -917,29 +917,29 @@ Output this EXACT marker followed by valid JSON:
         "relationship": "...",
         "dimensions": [
           {
-            "name": "Probability",
+            "name": "Income Path Vision",
             "value": 50,
-            "step_labels": ["Unlikely", "Possible", "Probable", "Likely", "Certain"]
+            "step_labels": ["Completely unclear direction", "Vague sense of path", "Partially defined goals", "Clear vision with gaps", "Crystal clear purpose"]
           },
           {
-            "name": "Magnitude",
+            "name": "Earning Bandwidth",
             "value": 75,
-            "step_labels": ["Minimal", "Minor", "Moderate", "Major", "Transformative"]
+            "step_labels": ["No capacity available", "Minimal bandwidth", "Some room to grow", "Strong capacity", "Full capability unlocked"]
           },
           {
-            "name": "Timeframe",
+            "name": "Financial Leap Preparedness",
             "value": 25,
-            "step_labels": ["Years", "Quarters", "Months", "Weeks", "Days"]
+            "step_labels": ["Not ready at all", "Early preparation", "Moderately prepared", "Well prepared", "Fully primed"]
           },
           {
-            "name": "Reversibility",
+            "name": "Career Capital Available",
             "value": 50,
-            "step_labels": ["Permanent", "Difficult", "Moderate", "Easy", "Instant"]
+            "step_labels": ["No resources", "Limited assets", "Adequate support", "Strong foundation", "Abundant resources"]
           },
           {
-            "name": "Leverage",
+            "name": "Work-Wealth Alignment",
             "value": 100,
-            "step_labels": ["None", "Low", "Medium", "High", "Maximum"]
+            "step_labels": ["Completely fragmented", "Poorly connected", "Partially integrated", "Well harmonized", "Seamlessly unified"]
           }
         ]
       },
@@ -978,25 +978,52 @@ Output this EXACT marker followed by valid JSON:
 ===STRUCTURED_DATA_END===
 ```
 
+### 5-DIMENSION FRAMEWORK (CRITICAL - FOLLOW THIS EXACTLY):
+
+Each cell MUST have exactly 5 dimensions following this semantic framework:
+
+| # | Framework Meaning | What to Generate |
+|---|-------------------|------------------|
+| 1 | **CLARITY** | Understanding, vision, awareness of THIS row-column intersection |
+| 2 | **CAPACITY** | Ability, bandwidth, capability to act on this intersection |
+| 3 | **READINESS** | Preparedness, timing, preconditions met for this change |
+| 4 | **RESOURCES** | Assets, tools, support available for this transformation |
+| 5 | **INTEGRATION** | How well row and column work together harmoniously |
+
+**DIMENSION NAME GENERATION:**
+- DO NOT use "Clarity", "Capacity", etc. as literal names
+- Generate CONTEXTUAL names that EMBODY these meanings for each specific cell
+- Example for "Career" × "Financial" cell:
+  - Clarity → "Income Path Vision" (not "Career-Clarity")
+  - Capacity → "Earning Bandwidth"
+  - Readiness → "Financial Leap Preparedness"
+  - Resources → "Career Capital Available"
+  - Integration → "Work-Wealth Alignment"
+
+**STEP LABEL GENERATION:**
+- Each dimension has 5 discrete values: [0, 25, 50, 75, 100]
+- Generate 5 CONTEXTUAL step labels describing what each level means
+- Labels must be meaningful for THAT dimension in THAT cell
+- NEVER use generic labels like ["Low", "Below", "Mid", "Above", "High"]
+- Step labels should form a progression from worst to best state
+
 ### GENERATION RULES:
 
 1. **Row Options (20)**: Causation factors - what DRIVES change in this context
 2. **Column Options (20)**: Effect factors - what is AFFECTED by changes
 3. **Cells (400)**: Cross-impact for each row-column pair
-   - Each cell has 5 dimensions (dials)
+   - Each cell has exactly 5 dimensions following the framework above
    - Each dimension has:
+     - `name`: Contextual name embodying one of the 5 framework meanings
      - `value`: One of [0, 25, 50, 75, 100] representing the 5 discrete steps
      - `step_labels`: Array of 5 contextual labels for this dimension IN THIS CELL
-   - Step labels must be contextual to the specific row-column intersection
-   - Example: For "Marketing Budget" × "Brand Awareness", the Timeframe steps might be
-     ["Campaign Cycle", "Quarter", "Month", "Sprint", "Week"] - not generic time units
    - impact_score: 0-1 representing overall relationship strength
 4. **Paths (5)**: Strategic approaches from conservative to aggressive
 5. **Documents (9)**: One of each type, tailored to the user's query
 
-**CRITICAL**: Step labels must be domain-appropriate and contextual to each cell.
-Generic labels like ["Low", "Below", "Mid", "Above", "High"] are NOT acceptable.
-Each cell's dimension labels should make sense for that specific causation-effect pair."""
+**CRITICAL**: Both dimension names AND step labels must be domain-appropriate and contextual.
+The 5-parameter framework (Clarity, Capacity, Readiness, Resources, Integration) guides the MEANING,
+but you generate CONTEXTUAL names that embody those meanings for each specific cell."""
 
     def _build_user_query(self, user_context: UserContext) -> str:
         """Build the user query section"""

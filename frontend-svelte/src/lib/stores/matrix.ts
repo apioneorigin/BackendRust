@@ -12,9 +12,15 @@
 import { writable, derived, get } from 'svelte/store';
 import { api } from '$utils/api';
 
+export interface CellDimension {
+	name: string;
+	value: number;
+	stepLabels: string[];
+}
+
 export interface CellData {
 	value: number;
-	dimensions: number[];
+	dimensions: CellDimension[];
 	confidence: number;
 	description: string;
 	isLeveragePoint: boolean;
@@ -121,10 +127,18 @@ function createMatrixStore() {
 				{ row: 3, col: 1 }
 			];
 
+			// Default dimension names following the 5-parameter framework
+			const defaultDimensionNames = ['Clarity', 'Capacity', 'Readiness', 'Resources', 'Integration'];
+			const defaultStepLabels = ['Very Low', 'Low', 'Medium', 'High', 'Very High'];
+
 			const matrixData: CellData[][] = Array.from({ length: 5 }, (_, rowIdx) =>
 				Array.from({ length: 5 }, (_, colIdx) => ({
 					value: Math.floor(Math.random() * 50) + 25,
-					dimensions: Array.from({ length: 5 }, () => Math.floor(Math.random() * 50) + 25),
+					dimensions: defaultDimensionNames.map((name, i) => ({
+						name: `${name} ${rowIdx}-${colIdx}`,
+						value: [0, 25, 50, 75, 100][Math.floor(Math.random() * 5)],
+						stepLabels: defaultStepLabels
+					})),
 					confidence: Math.random() * 0.5 + 0.5,
 					description: `Cell R${rowIdx}C${colIdx}`,
 					isLeveragePoint: leveragePoints.some(
@@ -443,6 +457,15 @@ function createMatrixStore() {
 			const rowHeaders = matrixData.row_options.slice(0, 5).map(opt => opt.label);
 			const columnHeaders = matrixData.column_options.slice(0, 5).map(opt => opt.label);
 
+			// Default dimension structure following the 5-parameter framework
+			const defaultDimensions: CellDimension[] = [
+				{ name: 'Clarity', value: 50, stepLabels: ['Very Low', 'Low', 'Medium', 'High', 'Very High'] },
+				{ name: 'Capacity', value: 50, stepLabels: ['Very Low', 'Low', 'Medium', 'High', 'Very High'] },
+				{ name: 'Readiness', value: 50, stepLabels: ['Very Low', 'Low', 'Medium', 'High', 'Very High'] },
+				{ name: 'Resources', value: 50, stepLabels: ['Very Low', 'Low', 'Medium', 'High', 'Very High'] },
+				{ name: 'Integration', value: 50, stepLabels: ['Very Low', 'Low', 'Medium', 'High', 'Very High'] }
+			];
+
 			// Build the matrix data from cells
 			const cellData: CellData[][] = Array.from({ length: rowCount }, (_, rowIdx) =>
 				Array.from({ length: colCount }, (_, colIdx) => {
@@ -459,9 +482,16 @@ function createMatrixStore() {
 						const isLeveragePoint = cell.impact_score >= 75 &&
 							cell.dimensions.some(d => d.value >= 75);
 
+						// Convert backend dimension format to frontend format
+						const dimensions: CellDimension[] = cell.dimensions.map(d => ({
+							name: d.name,
+							value: d.value,
+							stepLabels: d.step_labels || ['Very Low', 'Low', 'Medium', 'High', 'Very High']
+						}));
+
 						return {
 							value: cell.impact_score,
-							dimensions: cell.dimensions.map(d => d.value),
+							dimensions: dimensions.length === 5 ? dimensions : defaultDimensions,
 							confidence: cell.impact_score / 100,
 							description: cell.relationship || `Cell R${rowIdx}C${colIdx}`,
 							isLeveragePoint,
@@ -472,7 +502,7 @@ function createMatrixStore() {
 					// Default cell if not found in structured data
 					return {
 						value: 50,
-						dimensions: [50, 50, 50, 50, 50],
+						dimensions: defaultDimensions.map(d => ({ ...d })),
 						confidence: 0.5,
 						description: `Cell R${rowIdx}C${colIdx}`,
 						isLeveragePoint: false,
