@@ -5,6 +5,7 @@
 
 import { writable, derived } from 'svelte/store';
 import { api } from '$utils/api';
+import { matrix } from './matrix';
 
 export interface Message {
 	id: string;
@@ -346,6 +347,10 @@ function createChatStore() {
 										...state,
 										structuredData: parsed,
 									}));
+									// Apply matrix data to matrix store if present
+									if (parsed.matrix_data) {
+										matrix.populateFromStructuredData(parsed.matrix_data);
+									}
 									break;
 
 								case 'done':
