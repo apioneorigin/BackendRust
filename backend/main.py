@@ -2484,7 +2484,7 @@ Return ONLY valid JSON:
 
 
 # Hardcoded model for additional document generation
-DOCUMENT_GENERATION_MODEL = "gpt-4.5-preview"  # or "gpt-5.2" when available
+DOCUMENT_GENERATION_MODEL = "gpt-5.2"
 DOCUMENT_GENERATION_ENDPOINT = "https://api.openai.com/v1/chat/completions"
 
 
@@ -2494,7 +2494,7 @@ async def generate_additional_documents_llm(
     start_doc_id: int
 ) -> Optional[List[dict]]:
     """
-    Generate 3 additional documents using hardcoded model (gpt-4.5-preview).
+    Generate 3 additional documents using hardcoded gpt-5.2 model.
 
     Each document includes:
     - name: Creative, contextual name

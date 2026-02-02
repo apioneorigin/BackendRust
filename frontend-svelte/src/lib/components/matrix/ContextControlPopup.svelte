@@ -2,21 +2,23 @@
 	/**
 	 * ContextControlPopup - Unified context control for matrix dimensions
 	 *
-	 * Shows all available row and column options (up to 40 total: 20 rows + 20 columns).
-	 * User sees context titles without knowing which are rows vs columns.
-	 * User selects exactly 5 rows and 5 columns for display.
-	 *
-	 * Features:
-	 * - Shows all context titles from allRowOptions and allColumnOptions
-	 * - Each title has an insight explaining why it was generated
-	 * - User can select/deselect (must have exactly 5 of each type)
-	 * - Max 3-word phrase titles
+	 * NEW ARCHITECTURE:
+	 * - Shows document tabs at top (each with its own 10x10 matrix)
+	 * - "+" button at right of last tab to generate more documents via gpt-5.2
+	 * - Per-document row/column selection (10 options each, select 5)
+	 * - Each document has ~20 word description
 	 */
 
 	import { createEventDispatcher } from 'svelte';
-	import { matrix, isLoadingOptions, chat } from '$lib/stores';
+	import {
+		matrix,
+		documents,
+		activeDocumentId,
+		activeDocument,
+		isGeneratingMoreDocuments,
+		chat
+	} from '$lib/stores';
 	import { Button, Spinner } from '$lib/components/ui';
-	import { api } from '$utils/api';
 
 	export let open = false;
 
@@ -25,98 +27,70 @@
 		submit: void;
 	}>();
 
-	// Combined context titles from rows and columns
-	interface ContextTitle {
-		index: number;  // Original index in allRowOptions or allColumnOptions
-		title: string;
-		insight: string;
-		type: 'row' | 'column'; // Internal tracking, not shown to user
-		selected: boolean;
+	// Local selection state for the active document
+	let selectedRows: number[] = [];
+	let selectedColumns: number[] = [];
+
+	// Sync local selection with active document
+	$: if ($activeDocument?.matrix_data) {
+		selectedRows = [...($activeDocument.matrix_data.selected_rows || [0, 1, 2, 3, 4])];
+		selectedColumns = [...($activeDocument.matrix_data.selected_columns || [0, 1, 2, 3, 4])];
 	}
 
-	let contextTitles: ContextTitle[] = [];
+	$: rowOptions = $activeDocument?.matrix_data?.row_options || [];
+	$: columnOptions = $activeDocument?.matrix_data?.column_options || [];
 
-	// Build combined context titles from all available options
-	$: {
-		const rowTitles = ($matrix.allRowOptions || []).map((opt, idx) => ({
-			index: idx,
-			title: opt.label,
-			insight: opt.insight || '',
-			type: 'row' as const,
-			selected: $matrix.selectedRowIndices?.includes(idx) ?? idx < 5
-		}));
-
-		const colTitles = ($matrix.allColumnOptions || []).map((opt, idx) => ({
-			index: idx,
-			title: opt.label,
-			insight: opt.insight || '',
-			type: 'column' as const,
-			selected: $matrix.selectedColumnIndices?.includes(idx) ?? idx < 5
-		}));
-
-		contextTitles = [...rowTitles, ...colTitles];
-	}
-
-	$: selectedRowCount = contextTitles.filter(t => t.type === 'row' && t.selected).length;
-	$: selectedColCount = contextTitles.filter(t => t.type === 'column' && t.selected).length;
-	$: totalSelected = selectedRowCount + selectedColCount;
+	$: selectedRowCount = selectedRows.length;
+	$: selectedColCount = selectedColumns.length;
 	$: canSubmit = selectedRowCount === 5 && selectedColCount === 5;
-	$: hasOptions = contextTitles.length > 0;
+	$: hasOptions = rowOptions.length > 0 || columnOptions.length > 0;
 
 	function handleClose() {
 		open = false;
 		dispatch('close');
 	}
 
-	function handleToggleTitle(index: number, type: 'row' | 'column') {
-		const titleIdx = contextTitles.findIndex(t => t.index === index && t.type === type);
-		if (titleIdx === -1) return;
+	function handleDocumentTabClick(docId: string) {
+		matrix.setActiveDocument(docId);
+	}
 
-		const title = contextTitles[titleIdx];
-		const sameTypeSelected = contextTitles.filter(t => t.type === type && t.selected).length;
-
-		// Check if we can toggle
-		if (title.selected) {
-			// Can only deselect if more than 5 of this type selected
-			if (sameTypeSelected <= 5) return;
-		} else {
-			// Can only select if fewer than 5 of this type selected
-			if (sameTypeSelected >= 5) return;
+	async function handleGenerateMoreDocuments() {
+		try {
+			await matrix.generateMoreDocuments();
+		} catch (error) {
+			console.error('Failed to generate more documents:', error);
 		}
+	}
 
-		// Toggle selection
-		contextTitles = contextTitles.map((t, i) =>
-			i === titleIdx ? { ...t, selected: !t.selected } : t
-		);
+	function handleToggleRow(index: number) {
+		if (selectedRows.includes(index)) {
+			// Can only deselect if more than 5 selected
+			if (selectedRows.length <= 5) return;
+			selectedRows = selectedRows.filter(i => i !== index);
+		} else {
+			// Can only select if fewer than 5 selected
+			if (selectedRows.length >= 5) return;
+			selectedRows = [...selectedRows, index];
+		}
+	}
+
+	function handleToggleColumn(index: number) {
+		if (selectedColumns.includes(index)) {
+			// Can only deselect if more than 5 selected
+			if (selectedColumns.length <= 5) return;
+			selectedColumns = selectedColumns.filter(i => i !== index);
+		} else {
+			// Can only select if fewer than 5 selected
+			if (selectedColumns.length >= 5) return;
+			selectedColumns = [...selectedColumns, index];
+		}
 	}
 
 	async function handleSubmit() {
 		if (!canSubmit) return;
 
-		// Extract selected row and column indices
-		const selectedRowIndices = contextTitles
-			.filter(t => t.type === 'row' && t.selected)
-			.map(t => t.index);
-		const selectedColumnIndices = contextTitles
-			.filter(t => t.type === 'column' && t.selected)
-			.map(t => t.index);
-
-		// Update matrix display with new selection (local state)
-		matrix.updateDisplayedSelection(selectedRowIndices, selectedColumnIndices);
-
-		// Persist selection to backend
-		const conversationId = $chat.currentConversation?.id;
-		if (conversationId) {
-			try {
-				await api.patch(`/api/matrix/${conversationId}/selection`, {
-					selected_rows: selectedRowIndices,
-					selected_columns: selectedColumnIndices
-				});
-			} catch (error) {
-				console.error('Failed to persist matrix selection:', error);
-				// Non-critical - local state is already updated
-			}
-		}
+		// Update the document selection
+		await matrix.updateDocumentSelection(selectedRows, selectedColumns);
 
 		dispatch('submit');
 		handleClose();
@@ -165,6 +139,58 @@
 				</button>
 			</div>
 
+			<!-- Document Tabs -->
+			{#if $documents.length > 0}
+				<div class="document-tabs-container">
+					<div class="document-tabs">
+						{#each $documents as doc (doc.id)}
+							<button
+								class="document-tab"
+								class:active={doc.id === $activeDocumentId}
+								on:click={() => handleDocumentTabClick(doc.id)}
+								title={doc.description}
+							>
+								<span class="tab-name">{doc.name}</span>
+							</button>
+						{/each}
+
+						<!-- Generate More Documents Button -->
+						<button
+							class="add-document-btn"
+							on:click={handleGenerateMoreDocuments}
+							disabled={$isGeneratingMoreDocuments}
+							title="Generate 3 more documents"
+						>
+							{#if $isGeneratingMoreDocuments}
+								<Spinner size="sm" />
+							{:else}
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									width="16"
+									height="16"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+								>
+									<path d="M12 5v14" />
+									<path d="M5 12h14" />
+								</svg>
+							{/if}
+						</button>
+					</div>
+				</div>
+
+				<!-- Document Description -->
+				{#if $activeDocument?.description}
+					<div class="document-description">
+						{$activeDocument.description}
+					</div>
+				{/if}
+			{/if}
+
 			<div class="popup-body">
 				<div class="selection-info">
 					<span class="selection-count" class:complete={canSubmit}>
@@ -174,40 +200,86 @@
 				</div>
 
 				{#if hasOptions}
-					<div class="titles-list">
-						{#each contextTitles as ctx (`${ctx.type}-${ctx.index}`)}
-							{@const sameTypeSelected = contextTitles.filter(t => t.type === ctx.type && t.selected).length}
-							{@const canToggle = ctx.selected ? sameTypeSelected > 5 : sameTypeSelected < 5}
-							<button
-								class="title-item"
-								class:selected={ctx.selected}
-								class:disabled={!canToggle}
-								on:click={() => canToggle && handleToggleTitle(ctx.index, ctx.type)}
-								disabled={!canToggle}
-							>
-								<div class="title-checkbox" class:checked={ctx.selected}>
-									{#if ctx.selected}
-										<svg
-											xmlns="http://www.w3.org/2000/svg"
-											width="14"
-											height="14"
-											viewBox="0 0 24 24"
-											fill="none"
-											stroke="currentColor"
-											stroke-width="3"
-										>
-											<polyline points="20 6 9 17 4 12" />
-										</svg>
-									{/if}
-								</div>
-								<div class="title-content">
-									<span class="title-text">{ctx.title}</span>
-									{#if ctx.insight}
-										<span class="title-insight">{ctx.insight}</span>
-									{/if}
-								</div>
-							</button>
-						{/each}
+					<div class="options-sections">
+						<!-- Row Options -->
+						<div class="options-section">
+							<h4 class="section-title">Rows ({rowOptions.length} available)</h4>
+							<div class="titles-list">
+								{#each rowOptions as opt, idx (`row-${idx}`)}
+									{@const isSelected = selectedRows.includes(idx)}
+									{@const canToggle = isSelected ? selectedRows.length > 5 : selectedRows.length < 5}
+									<button
+										class="title-item"
+										class:selected={isSelected}
+										class:disabled={!canToggle}
+										on:click={() => canToggle && handleToggleRow(idx)}
+										disabled={!canToggle}
+									>
+										<div class="title-checkbox" class:checked={isSelected}>
+											{#if isSelected}
+												<svg
+													xmlns="http://www.w3.org/2000/svg"
+													width="14"
+													height="14"
+													viewBox="0 0 24 24"
+													fill="none"
+													stroke="currentColor"
+													stroke-width="3"
+												>
+													<polyline points="20 6 9 17 4 12" />
+												</svg>
+											{/if}
+										</div>
+										<div class="title-content">
+											<span class="title-text">{opt.label}</span>
+											{#if opt.insight}
+												<span class="title-insight">{opt.insight}</span>
+											{/if}
+										</div>
+									</button>
+								{/each}
+							</div>
+						</div>
+
+						<!-- Column Options -->
+						<div class="options-section">
+							<h4 class="section-title">Columns ({columnOptions.length} available)</h4>
+							<div class="titles-list">
+								{#each columnOptions as opt, idx (`col-${idx}`)}
+									{@const isSelected = selectedColumns.includes(idx)}
+									{@const canToggle = isSelected ? selectedColumns.length > 5 : selectedColumns.length < 5}
+									<button
+										class="title-item"
+										class:selected={isSelected}
+										class:disabled={!canToggle}
+										on:click={() => canToggle && handleToggleColumn(idx)}
+										disabled={!canToggle}
+									>
+										<div class="title-checkbox" class:checked={isSelected}>
+											{#if isSelected}
+												<svg
+													xmlns="http://www.w3.org/2000/svg"
+													width="14"
+													height="14"
+													viewBox="0 0 24 24"
+													fill="none"
+													stroke="currentColor"
+													stroke-width="3"
+												>
+													<polyline points="20 6 9 17 4 12" />
+												</svg>
+											{/if}
+										</div>
+										<div class="title-content">
+											<span class="title-text">{opt.label}</span>
+											{#if opt.insight}
+												<span class="title-insight">{opt.insight}</span>
+											{/if}
+										</div>
+									</button>
+								{/each}
+							</div>
+						</div>
 					</div>
 				{:else}
 					<div class="no-options-notice">
@@ -241,7 +313,7 @@
 
 	.context-popup {
 		width: 100%;
-		max-width: 550px;
+		max-width: 600px;
 		max-height: 85vh;
 		display: flex;
 		flex-direction: column;
@@ -282,6 +354,104 @@
 		color: var(--color-text-source);
 	}
 
+	/* Document Tabs */
+	.document-tabs-container {
+		padding: 0.75rem 1.25rem 0;
+		border-bottom: 1px solid var(--color-veil-thin);
+		flex-shrink: 0;
+	}
+
+	.document-tabs {
+		display: flex;
+		gap: 0.25rem;
+		overflow-x: auto;
+		padding-bottom: 0.75rem;
+	}
+
+	.document-tab {
+		padding: 0.5rem 1rem;
+		background: var(--color-field-depth);
+		border: 1px solid transparent;
+		border-radius: 0.5rem 0.5rem 0 0;
+		font-size: 0.8125rem;
+		font-weight: 500;
+		color: var(--color-text-manifest);
+		cursor: pointer;
+		transition: all 0.15s ease;
+		white-space: nowrap;
+		flex-shrink: 0;
+	}
+
+	.document-tab:hover {
+		background: var(--color-primary-50);
+		border-color: var(--color-primary-200);
+	}
+
+	[data-theme='dark'] .document-tab:hover {
+		background: rgba(15, 76, 117, 0.2);
+		border-color: var(--color-primary-700);
+	}
+
+	.document-tab.active {
+		background: var(--color-primary-100);
+		border-color: var(--color-primary-400);
+		color: var(--color-primary-700);
+	}
+
+	[data-theme='dark'] .document-tab.active {
+		background: rgba(15, 76, 117, 0.3);
+		color: var(--color-primary-300);
+	}
+
+	.tab-name {
+		max-width: 150px;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.add-document-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 36px;
+		height: 36px;
+		background: var(--color-field-depth);
+		border: 1px dashed var(--color-veil-thin);
+		border-radius: 0.5rem;
+		color: var(--color-primary-600);
+		cursor: pointer;
+		transition: all 0.15s ease;
+		flex-shrink: 0;
+	}
+
+	.add-document-btn:hover:not(:disabled) {
+		background: var(--color-primary-50);
+		border-color: var(--color-primary-400);
+		border-style: solid;
+	}
+
+	[data-theme='dark'] .add-document-btn {
+		color: var(--color-primary-400);
+	}
+
+	[data-theme='dark'] .add-document-btn:hover:not(:disabled) {
+		background: rgba(15, 76, 117, 0.2);
+	}
+
+	.add-document-btn:disabled {
+		opacity: 0.7;
+		cursor: wait;
+	}
+
+	.document-description {
+		padding: 0.75rem 1.25rem;
+		font-size: 0.8125rem;
+		color: var(--color-text-whisper);
+		line-height: 1.5;
+		background: var(--color-field-depth);
+		border-bottom: 1px solid var(--color-veil-thin);
+	}
+
 	.popup-body {
 		flex: 1;
 		padding: 1rem 1.25rem;
@@ -312,6 +482,26 @@
 	.selection-hint {
 		font-size: 0.75rem;
 		color: var(--color-text-whisper);
+	}
+
+	.options-sections {
+		display: flex;
+		flex-direction: column;
+		gap: 1.5rem;
+	}
+
+	.options-section {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.section-title {
+		font-size: 0.8125rem;
+		font-weight: 600;
+		color: var(--color-text-manifest);
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
 	}
 
 	.titles-list {
@@ -388,51 +578,6 @@
 		color: var(--color-text-whisper);
 		margin-top: 0.25rem;
 		line-height: 1.4;
-	}
-
-	.generate-more-btn {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.5rem;
-		width: 100%;
-		padding: 0.75rem;
-		margin-top: 1rem;
-		background: var(--color-field-depth);
-		border: 1px dashed var(--color-veil-thin);
-		border-radius: 0.5rem;
-		font-size: 0.875rem;
-		color: var(--color-primary-600);
-		cursor: pointer;
-		transition: all 0.15s ease;
-	}
-
-	.generate-more-btn:hover:not(:disabled) {
-		background: var(--color-primary-50);
-		border-color: var(--color-primary-400);
-	}
-
-	.generate-more-btn:disabled {
-		opacity: 0.7;
-		cursor: wait;
-	}
-
-	[data-theme='dark'] .generate-more-btn {
-		color: var(--color-primary-400);
-	}
-
-	[data-theme='dark'] .generate-more-btn:hover:not(:disabled) {
-		background: rgba(15, 76, 117, 0.2);
-	}
-
-	.options-limit-notice {
-		text-align: center;
-		padding: 0.75rem;
-		margin-top: 1rem;
-		font-size: 0.75rem;
-		color: var(--color-text-whisper);
-		background: var(--color-field-depth);
-		border-radius: 0.5rem;
 	}
 
 	.no-options-notice {
