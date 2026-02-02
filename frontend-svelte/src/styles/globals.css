@@ -48,49 +48,49 @@
 	--color-primary-100: rgba(201, 169, 98, 0.12);
 	--color-primary-50: rgba(201, 169, 98, 0.06);
 
-	/* Ambient glow - gold radiance through mint */
-	--gradient-ambient: linear-gradient(135deg, #F7FDFB 0%, #F0FAF7 50%, #E6F7F3 100%);
+	/* Ambient glow - subtle gold radiance on neutral */
+	--gradient-ambient: radial-gradient(ellipse at 50% 30%, rgba(201, 169, 98, 0.04) 0%, transparent 70%);
 
 	/* ─────────────────────────────────────────────────────────────────────────────
-	   SURFACES - Mint/Teal Tint (fresh, modern, distinct)
+	   SURFACES - Neutral with Glassmorphism (gold is the only color)
 	   ───────────────────────────────────────────────────────────────────────────── */
-	--color-field-void: #F7FDFB;      /* Barely mint white */
-	--color-field-depth: #F0FAF7;     /* Soft teal depth */
-	--color-field-surface: rgba(255, 255, 255, 0.6);  /* Glassmorphism cards */
-	--color-field-elevated: rgba(255, 255, 255, 0.8); /* Elevated glass */
-	--color-field-solid: #FAFDFB;     /* Solid mint white for inputs */
+	--color-field-void: #FAFAFA;      /* Clean neutral white */
+	--color-field-depth: #F5F5F5;     /* Subtle gray depth */
+	--color-field-surface: rgba(255, 255, 255, 0.7);  /* Glassmorphism cards */
+	--color-field-elevated: rgba(255, 255, 255, 0.85); /* Elevated glass */
+	--color-field-solid: #FFFFFF;     /* Solid white for inputs */
 
 	/* ─────────────────────────────────────────────────────────────────────────────
-	   TEXT - Teal-tinted hierarchy
+	   TEXT - Pure neutral grays (no tint, gold stands alone)
 	   ───────────────────────────────────────────────────────────────────────────── */
-	--color-text-source: #134e4a;     /* Deep teal - primary */
-	--color-text-manifest: #2d6a5f;   /* Teal gray - secondary */
-	--color-text-flow: #1a5c52;       /* Medium teal - body */
-	--color-text-whisper: #5eaa9a;    /* Light teal - tertiary */
-	--color-text-hint: #a7d4c9;       /* Subtle teal hint */
+	--color-text-source: #111827;     /* Near-black - primary */
+	--color-text-manifest: #4b5563;   /* Gray 600 - secondary */
+	--color-text-flow: #1f2937;       /* Gray 800 - body */
+	--color-text-whisper: #9ca3af;    /* Gray 400 - tertiary */
+	--color-text-hint: #d1d5db;       /* Gray 300 - hint */
 
 	/* ─────────────────────────────────────────────────────────────────────────────
-	   BORDERS - Teal glassmorphism lines (minimal)
+	   BORDERS - Neutral minimal (glassmorphism)
 	   ───────────────────────────────────────────────────────────────────────────── */
-	--color-veil-thin: rgba(80, 160, 140, 0.08);
-	--color-veil-present: rgba(80, 160, 140, 0.12);
-	--color-veil-clear: rgba(255, 255, 255, 0.25);  /* Glass border */
+	--color-veil-thin: rgba(0, 0, 0, 0.04);
+	--color-veil-present: rgba(0, 0, 0, 0.06);
+	--color-veil-clear: rgba(255, 255, 255, 0.3);  /* Glass border */
 
 	/* ─────────────────────────────────────────────────────────────────────────────
-	   SHADOWS - Soft teal depth (minimal for glassmorphism)
+	   SHADOWS - Neutral depth (minimal for glassmorphism)
 	   ───────────────────────────────────────────────────────────────────────────── */
-	--shadow-xs: 0 1px 2px rgba(80, 160, 140, 0.04);
-	--shadow-sm: 0 1px 3px rgba(80, 160, 140, 0.06);
-	--shadow-md: 0 4px 12px rgba(80, 160, 140, 0.08);
-	--shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.06);
-	--shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.08);
+	--shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.03);
+	--shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
+	--shadow-md: 0 4px 12px rgba(0, 0, 0, 0.05);
+	--shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.08);
+	--shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.10);
 
 	/* Panel - glass definition */
-	--shadow-panel: 0 0 0 1px rgba(255, 255, 255, 0.2);
-	--shadow-panel-hover: 0 0 0 1px rgba(255, 255, 255, 0.3);
+	--shadow-panel: 0 0 0 1px rgba(255, 255, 255, 0.3);
+	--shadow-panel-hover: 0 0 0 1px rgba(255, 255, 255, 0.4);
 
 	/* Elevated - glassmorphism for modals/dropdowns */
-	--shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(255, 255, 255, 0.2);
+	--shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(255, 255, 255, 0.2);
 
 	/* Glassmorphism tokens */
 	--glass-blur: 20px;
@@ -520,7 +520,7 @@ button:disabled,
 	background: var(--color-field-surface);
 	backdrop-filter: blur(var(--glass-blur-subtle));
 	-webkit-backdrop-filter: blur(var(--glass-blur-subtle));
-	border-right: 1px solid rgba(80, 160, 140, 0.1);
+	border-right: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 [data-theme='dark'] .glass {
