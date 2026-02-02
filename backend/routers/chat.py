@@ -265,6 +265,7 @@ async def send_message(
         full_response = ""
         input_tokens = 0
         output_tokens = 0
+        structured_data = None  # Capture matrix_data, paths, documents
 
         async for event in inference_stream(
             request.content,
@@ -285,11 +286,14 @@ async def send_message(
                     usage_data = safe_json_loads(data)
                     input_tokens = usage_data.get("input_tokens", 0)
                     output_tokens = usage_data.get("output_tokens", 0)
+                elif event_type == "structured_data":
+                    # Capture structured data for saving to conversation
+                    structured_data = safe_json_loads(data)
 
                 # Yield dict directly - EventSourceResponse handles formatting
                 yield {"event": event_type, "data": data}
 
-        # Save assistant message after streaming completes
+        # Save assistant message and structured data after streaming completes
         async with AsyncSessionLocal() as save_db:
             assistant_message = ChatMessage(
                 id=generate_id(),
@@ -302,7 +306,7 @@ async def send_message(
             )
             save_db.add(assistant_message)
 
-            # Update conversation totals
+            # Update conversation totals and save structured data
             conv_result = await save_db.execute(
                 select(ChatConversation).where(ChatConversation.id == conversation_id)
             )
@@ -311,6 +315,15 @@ async def send_message(
             conv.total_output_tokens += output_tokens
             conv.total_tokens += input_tokens + output_tokens
             conv.updated_at = datetime.utcnow()
+
+            # Save structured data (matrix, paths, documents) to conversation
+            if structured_data:
+                if structured_data.get("matrix_data"):
+                    conv.matrix_data = structured_data["matrix_data"]
+                if structured_data.get("paths"):
+                    conv.generated_paths = structured_data["paths"]
+                if structured_data.get("documents"):
+                    conv.generated_documents = structured_data["documents"]
 
             await save_db.commit()
 

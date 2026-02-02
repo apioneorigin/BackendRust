@@ -188,8 +188,12 @@ function createChatStore() {
 			isSelectingConversation = true;
 
 			try {
-				const conversation = await api.get<Conversation>(`/api/chat/conversations/${conversationId}`);
-				const messagesResponse = await api.get<Message[]>(`/api/chat/conversations/${conversationId}/messages`);
+				// Load conversation, messages, and matrix data in parallel
+				const [conversation, messagesResponse, matrixData] = await Promise.all([
+					api.get<Conversation>(`/api/chat/conversations/${conversationId}`),
+					api.get<Message[]>(`/api/chat/conversations/${conversationId}/messages`),
+					api.get<StructuredData['matrix_data'] | null>(`/api/matrix/${conversationId}/data`).catch(() => null),
+				]);
 
 				update(state => ({
 					...state,
@@ -197,6 +201,14 @@ function createChatStore() {
 					messages: Array.isArray(messagesResponse) ? messagesResponse : [],
 					isLoading: false,
 				}));
+
+				// Apply matrix data to matrix store if present
+				if (matrixData) {
+					matrix.populateFromStructuredData(matrixData);
+				} else {
+					// Reset matrix to default state if no data
+					matrix.initializeMatrix();
+				}
 			} catch (error: any) {
 				update(state => ({
 					...state,
