@@ -904,17 +904,23 @@ Output this EXACT marker followed by valid JSON:
 {
   "matrix_data": {
     "row_options": [
-      {"id": "r0", "label": "Strategic Resource Flow", "insight": "Core driver identified from pattern analysis of resource allocation variables"},
-      ... (20 total row options - context titles, max 10 words each)
+      {"id": "r0", "label": "Strategic Resource Flow", "insight": "Core driver identified from pattern analysis"},
+      {"id": "r1", "label": "...", "insight": "..."},
+      {"id": "r2", "label": "...", "insight": "..."},
+      {"id": "r3", "label": "...", "insight": "..."},
+      {"id": "r4", "label": "...", "insight": "..."}
     ],
     "column_options": [
-      {"id": "c0", "label": "Growth Momentum Shift", "insight": "Effect factor derived from transformation velocity indicators"},
-      ... (20 total column options - context titles, max 10 words each)
+      {"id": "c0", "label": "Growth Momentum Shift", "insight": "Effect factor derived from transformation indicators"},
+      {"id": "c1", "label": "...", "insight": "..."},
+      {"id": "c2", "label": "...", "insight": "..."},
+      {"id": "c3", "label": "...", "insight": "..."},
+      {"id": "c4", "label": "...", "insight": "..."}
     ],
     "cells": {
-      "r0_c0": {
-        "impact_score": 0.75,
-        "relationship": "...",
+      "0-0": {
+        "impact_score": 75,
+        "relationship": "How row 0 drives column 0",
         "dimensions": [
           {
             "name": "Income Path Vision",
@@ -943,7 +949,9 @@ Output this EXACT marker followed by valid JSON:
           }
         ]
       },
-      ... (400 total cells for 20x20 matrix)
+      "0-1": { ... },
+      "0-2": { ... },
+      ... (25 total cells for 5x5 matrix, keys are "row-col" format: "0-0", "0-1", ..., "4-4")
     }
   },
   "paths": [
@@ -977,6 +985,8 @@ Output this EXACT marker followed by valid JSON:
 }
 ===STRUCTURED_DATA_END===
 ```
+
+CRITICAL CELL KEY FORMAT: Use "row-col" format like "0-0", "0-1", "1-0", etc. NOT "r0_c0" format.
 
 ### 5-DIMENSION FRAMEWORK (CRITICAL - FOLLOW THIS EXACTLY):
 
