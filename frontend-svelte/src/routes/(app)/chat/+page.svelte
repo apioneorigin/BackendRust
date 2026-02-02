@@ -519,17 +519,6 @@
 			{/if}
 		</div>
 
-		{#if isWelcomeState}
-			<div class="welcome-cta">
-				<p class="cta-text">Describe your strategic challenge to begin</p>
-				<div class="cta-arrow">
-					<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						<path d="M19 12H5"/>
-						<path d="m12 19-7-7 7-7"/>
-					</svg>
-				</div>
-			</div>
-		{/if}
 	</div>
 </div>
 
@@ -1060,40 +1049,6 @@
 		font-size: 14px;
 		line-height: 1.5;
 		color: var(--color-text-manifest);
-	}
-
-	.welcome-cta {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.5rem;
-		min-height: 44px; /* Match controls-row */
-		padding-top: 0.5rem; /* Match controls-row padding */
-		padding-left: 1rem;
-		padding-right: 1rem;
-		background: var(--color-field-depth);
-		border-radius: 0.5rem;
-		border-top: 1px solid var(--color-veil-thin);
-		flex-shrink: 0;
-	}
-
-	.cta-text {
-		font-size: 14px;
-		font-weight: 400;
-		color: var(--color-text-manifest);
-	}
-
-	.cta-arrow {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		color: var(--color-text-source);
-		animation: pulse-left 1.5s ease-in-out infinite;
-	}
-
-	@keyframes pulse-left {
-		0%, 100% { transform: translateX(0); opacity: 1; }
-		50% { transform: translateX(-4px); opacity: 0.5; }
 	}
 
 	/* Popup styles - clean */
