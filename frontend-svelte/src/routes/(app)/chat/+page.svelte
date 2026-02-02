@@ -742,7 +742,7 @@
 	}
 
 	.message-text {
-		font-size: var(--font-size-base);
+		font-size: var(--font-size-md);
 		line-height: 1.6;
 		word-break: break-word;
 	}
