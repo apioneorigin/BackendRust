@@ -498,8 +498,8 @@
 	}
 
 	.stat-icon.conversations {
-		background: #e0e7ff;
-		color: #4f46e5;
+		background: rgba(6, 182, 212, 0.1);
+		color: #0891b2;
 	}
 
 	.stat-icon.messages {

@@ -208,7 +208,7 @@
 			135deg,
 			var(--color-primary-50) 0%,
 			var(--color-primary-100) 50%,
-			#e0f2f1 100%
+			var(--color-primary-200) 100%
 		);
 	}
 
