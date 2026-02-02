@@ -243,9 +243,11 @@ async def send_message(
                 })
 
     # Extract matrix state for context (user's selected rows/columns + cell values)
+    # Use first document's matrix_data from generated_documents
     matrix_state = None
-    if conversation.matrix_data:
-        md = conversation.matrix_data
+    if conversation.generated_documents and len(conversation.generated_documents) > 0:
+        first_doc = conversation.generated_documents[0]
+        md = first_doc.get("matrix_data", {})
         # Get selected indices (default to first 5 if not specified)
         selected_rows = md.get("selected_rows", [0, 1, 2, 3, 4])
         selected_cols = md.get("selected_columns", [0, 1, 2, 3, 4])
