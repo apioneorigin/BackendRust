@@ -168,6 +168,17 @@ Each major insight should connect: Consciousness Pattern → Observable Reality 
                 content = msg.get('content', '')[:800]  # Truncate long messages
                 sections.append(f"[{role}]: {content}\n")
 
+        # Add answered questions context (user's choices inform analysis)
+        if conversation_context.question_answers:
+            has_content = True
+            sections.append("**User's Answered Questions:**")
+            sections.append("The user has answered these clarifying questions. Use their choices to refine your analysis:\n")
+            for qa in conversation_context.question_answers:
+                question = qa.get('question', '')
+                answer = qa.get('selected_answer', '')
+                sections.append(f"Q: {question}")
+                sections.append(f"A: {answer}\n")
+
         if not has_content:
             return ""
 
@@ -176,6 +187,7 @@ Each major insight should connect: Consciousness Pattern → Observable Reality 
 - Build on insights from previous messages rather than starting fresh
 - Maintain consistency with any analysis or recommendations from earlier in the conversation
 - Use domain-specific terminology found in the uploaded documents
+- IMPORTANT: Incorporate the user's answered questions into your analysis - their choices reveal priorities and preferences
 """)
 
         logger.debug(
@@ -1135,11 +1147,13 @@ def build_articulation_context(
         conv_history_context = ConversationHistoryContext(
             messages=conversation_context.get('messages', []),
             file_summaries=conversation_context.get('file_summaries', []),
-            conversation_summary=conversation_context.get('conversation_summary')
+            conversation_summary=conversation_context.get('conversation_summary'),
+            question_answers=conversation_context.get('question_answers', [])
         )
         msg_count = len(conv_history_context.messages)
         file_count = len(conv_history_context.file_summaries)
-        logger.info(f"[ARTICULATION_CONTEXT] Conversation context: {msg_count} messages, {file_count} files")
+        qa_count = len(conv_history_context.question_answers)
+        logger.info(f"[ARTICULATION_CONTEXT] Conversation context: {msg_count} messages, {file_count} files, {qa_count} answered questions")
 
     logger.info(
         f"[ARTICULATION_CONTEXT] Building context: domain={domain} "

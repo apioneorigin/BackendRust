@@ -57,6 +57,7 @@ class ConversationContext(BaseModel):
     messages: List[dict]  # Previous messages: [{"role": "user"|"assistant", "content": "..."}]
     file_summaries: List[dict] = []  # Summarized files: [{"name": "...", "summary": "...", "entities": [...]}]
     conversation_summary: Optional[str] = None  # Summary of older messages if conversation is long
+    question_answers: List[dict] = []  # Answered questions: [{"question": "...", "selected_answer": "..."}]
 
 
 class ConversationResponse(CamelModel):
@@ -223,6 +224,23 @@ async def send_message(
                         "type": att.get("type", "unknown")
                     })
 
+    # Extract answered questions for context
+    answered_questions = []
+    if conversation.question_answers:
+        questions_data = conversation.question_answers.get("questions", [])
+        for q in questions_data:
+            if q.get("selectedOption"):
+                # Find the selected option text
+                selected_text = q.get("selectedOption")
+                for opt in q.get("options", []):
+                    if opt.get("id") == q.get("selectedOption"):
+                        selected_text = opt.get("text", selected_text)
+                        break
+                answered_questions.append({
+                    "question": q.get("text", ""),
+                    "selected_answer": selected_text
+                })
+
     # Build conversation context
     conversation_context = ConversationContext(
         messages=[
@@ -231,7 +249,8 @@ async def send_message(
             if m.role in ("user", "assistant")  # Only include user/assistant messages in history
         ],
         file_summaries=existing_file_summaries,  # Start with existing file summaries
-        conversation_summary=conversation.context  # Use stored conversation context/summary
+        conversation_summary=conversation.context,  # Use stored conversation context/summary
+        question_answers=answered_questions  # Include answered questions for context
     )
 
     # Add any new file attachments from this request
@@ -267,6 +286,7 @@ async def send_message(
         output_tokens = 0
         structured_data = None  # Capture matrix_data, paths, documents
         pending_questions = []  # Capture questions for persistence
+        conversation_title = None  # Capture title from LLM Call 1
 
         async for event in inference_stream(
             request.content,
@@ -290,6 +310,11 @@ async def send_message(
                 elif event_type == "structured_data":
                     # Capture structured data for saving to conversation
                     structured_data = safe_json_loads(data)
+                elif event_type == "title":
+                    # Capture title for saving to conversation
+                    title_data = safe_json_loads(data)
+                    if title_data:
+                        conversation_title = title_data.get("title")
                 elif event_type in ("question", "validation_question"):
                     # Capture questions for persistence
                     question_data = safe_json_loads(data)
@@ -327,6 +352,10 @@ async def send_message(
             conv.total_output_tokens += output_tokens
             conv.total_tokens += input_tokens + output_tokens
             conv.updated_at = datetime.utcnow()
+
+            # Save conversation title if generated (only on first message)
+            if conversation_title and not conv.title:
+                conv.title = conversation_title
 
             # Save structured data (matrix, paths, documents) to conversation
             if structured_data:
