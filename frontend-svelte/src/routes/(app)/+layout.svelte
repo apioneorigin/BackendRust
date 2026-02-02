@@ -348,7 +348,7 @@
 	}
 
 	.logo {
-		font-size: 0.8125rem;
+		font-size: 15px;
 		font-weight: 600;
 		color: var(--color-text-source);
 		white-space: nowrap;
@@ -396,7 +396,7 @@
 		border: none;
 		border-radius: 0.375rem;
 		color: var(--color-field-void);
-		font-size: 0.8125rem;
+		font-size: 14px;
 		font-weight: 500;
 		cursor: pointer;
 		transition: opacity 0.1s ease;
@@ -428,11 +428,11 @@
 		gap: 0.625rem;
 		padding: 0.5rem 0.625rem;
 		border-radius: 0.375rem;
-		color: var(--color-text-whisper);
+		color: var(--color-text-manifest);
 		text-decoration: none;
 		transition: all 0.1s ease;
-		font-weight: 500;
-		font-size: 0.8125rem;
+		font-weight: 400;
+		font-size: 14px;
 	}
 
 	.sidebar.collapsed .nav-item {
@@ -465,11 +465,11 @@
 
 	.conversations-header {
 		padding: 0.75rem 0.5rem 0.5rem;
-		font-size: 0.625rem;
+		font-size: 12px;
 		font-weight: 500;
-		color: var(--color-text-hint);
+		color: var(--color-text-whisper);
 		text-transform: uppercase;
-		letter-spacing: 0.1em;
+		letter-spacing: 0.08em;
 	}
 
 	.conversations-list {
@@ -536,7 +536,7 @@
 	}
 
 	.conversation-title {
-		font-size: 0.8125rem;
+		font-size: 14px;
 		font-weight: 400;
 		white-space: nowrap;
 		overflow: hidden;
@@ -544,8 +544,8 @@
 	}
 
 	.conversation-date {
-		font-size: 0.625rem;
-		color: var(--color-text-hint);
+		font-size: 12px;
+		color: var(--color-text-whisper);
 	}
 
 	.no-conversations {
@@ -554,8 +554,8 @@
 	}
 
 	.no-conversations p {
-		font-size: 0.75rem;
-		color: var(--color-text-hint);
+		font-size: 13px;
+		color: var(--color-text-whisper);
 	}
 
 	/* Sidebar footer / User menu */
@@ -599,7 +599,7 @@
 		justify-content: center;
 		color: white;
 		font-weight: 600;
-		font-size: 0.8125rem;
+		font-size: 13px;
 		flex-shrink: 0;
 	}
 
@@ -611,13 +611,13 @@
 	.user-name {
 		display: block;
 		font-weight: 500;
-		font-size: 0.8125rem;
+		font-size: 14px;
 		color: var(--color-text-source);
 	}
 
 	.user-email {
 		display: block;
-		font-size: 0.6875rem;
+		font-size: 12px;
 		color: var(--color-text-whisper);
 		overflow: hidden;
 		text-overflow: ellipsis;
@@ -676,8 +676,8 @@
 		border-radius: 0.375rem;
 		color: var(--color-text-manifest);
 		text-decoration: none;
-		font-size: 0.8125rem;
-		font-weight: 500;
+		font-size: 14px;
+		font-weight: 400;
 		cursor: pointer;
 		transition: all 0.15s ease;
 		text-align: left;

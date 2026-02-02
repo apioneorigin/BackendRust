@@ -711,20 +711,20 @@
 	}
 
 	.welcome-tagline {
-		font-size: 0.75rem;
+		font-size: 13px;
 		font-weight: 500;
 		color: var(--color-text-whisper);
 		text-transform: uppercase;
-		letter-spacing: 0.1em;
+		letter-spacing: 0.08em;
 	}
 
 	.welcome-description {
 		margin-top: 2rem;
-		max-width: 320px;
+		max-width: 360px;
 	}
 
 	.welcome-description p {
-		font-size: 0.875rem;
+		font-size: 15px;
 		line-height: 1.6;
 		color: var(--color-text-manifest);
 	}
@@ -788,7 +788,7 @@
 	}
 
 	.message-text {
-		font-size: 0.875rem;
+		font-size: 15px;
 		line-height: 1.6;
 		word-break: break-word;
 	}
@@ -832,11 +832,11 @@
 		padding: 0.25rem 0.5rem;
 		background: var(--color-field-depth);
 		border-radius: 0.25rem;
-		font-size: 0.6875rem;
+		font-size: 12px;
 	}
 
 	.file-icon {
-		font-size: 0.75rem;
+		font-size: 14px;
 	}
 
 	.file-name {
@@ -871,7 +871,7 @@
 		border-radius: 0;
 		background: transparent;
 		color: var(--color-text-source);
-		font-size: 0.875rem;
+		font-size: 15px;
 		resize: none;
 		font-family: inherit;
 		line-height: 1.5;
@@ -911,8 +911,8 @@
 		border-radius: 0.375rem;
 		color: var(--color-text-whisper);
 		cursor: pointer;
-		font-size: 0.6875rem;
-		font-weight: 500;
+		font-size: 13px;
+		font-weight: 400;
 		transition: all 0.1s ease;
 	}
 
@@ -937,7 +937,7 @@
 		border-radius: 0.375rem;
 		background: transparent;
 		color: var(--color-text-whisper);
-		font-size: 0.6875rem;
+		font-size: 13px;
 		cursor: pointer;
 		transition: all 0.1s ease;
 	}
@@ -960,7 +960,7 @@
 		border-radius: 0.375rem;
 		background: transparent;
 		color: var(--color-text-whisper);
-		font-size: 0.6875rem;
+		font-size: 13px;
 		cursor: pointer;
 		transition: all 0.1s ease;
 	}
@@ -1086,14 +1086,14 @@
 	}
 
 	.overlay-content h3 {
-		font-size: 0.875rem;
+		font-size: 15px;
 		font-weight: 500;
 		color: var(--color-text-source);
 		margin-bottom: 0.375rem;
 	}
 
 	.overlay-content p {
-		font-size: 0.75rem;
+		font-size: 13px;
 		line-height: 1.5;
 		color: var(--color-text-manifest);
 	}
@@ -1109,7 +1109,7 @@
 	}
 
 	.cta-text {
-		font-size: 0.75rem;
+		font-size: 13px;
 		font-weight: 500;
 		color: var(--color-text-manifest);
 	}
@@ -1163,7 +1163,7 @@
 	}
 
 	.popup-header h3 {
-		font-size: 0.875rem;
+		font-size: 15px;
 		font-weight: 500;
 		color: var(--color-text-source);
 	}
@@ -1188,7 +1188,7 @@
 	}
 
 	.popup-description {
-		font-size: 0.75rem;
+		font-size: 13px;
 		color: var(--color-text-whisper);
 		margin-bottom: 1rem;
 	}
@@ -1220,13 +1220,13 @@
 	}
 
 	.spot-title {
-		font-size: 0.8125rem;
+		font-size: 14px;
 		font-weight: 500;
 		color: var(--color-text-source);
 	}
 
 	.spot-desc {
-		font-size: 0.6875rem;
+		font-size: 12px;
 		color: var(--color-text-whisper);
 	}
 
@@ -1247,13 +1247,13 @@
 	}
 
 	.play-name {
-		font-size: 0.8125rem;
+		font-size: 14px;
 		font-weight: 500;
 		color: var(--color-text-source);
 	}
 
 	.play-risk {
-		font-size: 0.625rem;
+		font-size: 11px;
 		font-weight: 500;
 		padding: 0.25rem 0.5rem;
 		border-radius: 9999px;
@@ -1278,7 +1278,7 @@
 		padding: 2rem;
 		text-align: center;
 		color: var(--color-text-whisper);
-		font-size: 0.75rem;
+		font-size: 13px;
 	}
 
 	.toggle-risk-btn {
@@ -1288,7 +1288,7 @@
 		color: var(--color-field-void);
 		border: none;
 		border-radius: 0.375rem;
-		font-size: 0.8125rem;
+		font-size: 14px;
 		font-weight: 500;
 		cursor: pointer;
 		transition: opacity 0.1s ease;

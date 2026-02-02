@@ -173,11 +173,13 @@ html {
 }
 
 body {
-	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-	font-size: 0.875rem;
+	/* Apple System Fonts - SF Pro for macOS/iOS, system fonts for other platforms */
+	font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text',
+		'Helvetica Neue', 'Segoe UI', system-ui, sans-serif;
+	font-size: 15px;
 	font-weight: 400;
 	line-height: 1.5;
-	color: var(--color-text-manifest);
+	color: var(--color-text-source);
 	background-color: var(--color-field-void);
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
@@ -186,10 +188,33 @@ body {
 	letter-spacing: -0.01em;
 }
 
-h1, h2, h3, h4, h5, h6 {
-	color: var(--color-text-source);
-	font-weight: 500;
+/* Typography Scale - ChatGPT-consistent sizing */
+h1 {
+	font-size: 1.5rem;    /* 24px */
+	font-weight: 600;
 	letter-spacing: -0.02em;
+	color: var(--color-text-source);
+}
+
+h2 {
+	font-size: 1.25rem;   /* 20px */
+	font-weight: 600;
+	letter-spacing: -0.02em;
+	color: var(--color-text-source);
+}
+
+h3 {
+	font-size: 1rem;      /* 16px */
+	font-weight: 600;
+	letter-spacing: -0.01em;
+	color: var(--color-text-source);
+}
+
+h4, h5, h6 {
+	font-size: 0.9375rem; /* 15px */
+	font-weight: 600;
+	letter-spacing: -0.01em;
+	color: var(--color-text-source);
 }
 
 ::selection {
@@ -318,7 +343,7 @@ button:disabled,
 	border-radius: 6px;
 	padding: 8px 16px;
 	font-weight: 500;
-	font-size: 0.8125rem;
+	font-size: 14px;
 	transition: opacity var(--duration-fast) ease;
 }
 
@@ -333,7 +358,7 @@ button:disabled,
 	color: var(--color-text-manifest);
 	border-radius: 6px;
 	padding: 6px 10px;
-	font-size: 0.8125rem;
+	font-size: 14px;
 	transition: all var(--duration-fast) ease;
 }
 
@@ -349,7 +374,7 @@ button:disabled,
 	color: var(--color-text-manifest);
 	border-radius: 6px;
 	padding: 6px 12px;
-	font-size: 0.8125rem;
+	font-size: 14px;
 	transition: all var(--duration-fast) ease;
 }
 
