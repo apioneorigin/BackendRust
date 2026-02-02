@@ -13,8 +13,7 @@ import { api } from '$utils/api';
 
 export interface CellDimension {
 	name: string;
-	value: number;
-	stepLabels: string[];
+	value: number;  // 0 (Low), 50 (Medium), or 100 (High)
 }
 
 export interface CellData {
@@ -53,8 +52,7 @@ export interface Document {
 			relationship?: string;
 			dimensions: {
 				name: string;
-				value: number;
-				step_labels: string[];
+				value: number;  // 0 (Low), 50 (Medium), or 100 (High)
 			}[];
 		}>;
 	};
@@ -121,8 +119,7 @@ function createMatrixStore() {
 	} {
 		const placeholderDimensions: CellDimension[] = Array.from({ length: 5 }, (_, i) => ({
 			name: `Dimension ${i + 1}`,
-			value: 50,
-			stepLabels: ['Step 1', 'Step 2', 'Step 3', 'Step 4', 'Step 5']
+			value: 50  // Medium
 		}));
 
 		const { row_options, column_options, selected_rows, selected_columns, cells } = doc.matrix_data;
@@ -157,8 +154,7 @@ function createMatrixStore() {
 
 				const dimensions: CellDimension[] = cell.dimensions?.map(d => ({
 					name: d.name,
-					value: d.value,
-					stepLabels: d.step_labels || ['Step 1', 'Step 2', 'Step 3', 'Step 4', 'Step 5']
+					value: d.value
 				})) || placeholderDimensions;
 
 				return {

@@ -28,16 +28,17 @@
 		documentChange: { documentId: string };
 	}>();
 
-	// The 5 discrete step values for dimensions
-	const STEP_VALUES = [0, 25, 50, 75, 100];
+	// The 3 discrete step values for dimensions: Low, Medium, High
+	const STEP_VALUES = [0, 50, 100];
+	const STEP_LABELS = ['Low', 'Medium', 'High'];
 
 	let selectedCell: { row: number; col: number } | null = null;
 	let showCellPopup = false;
 
-	// Get the step index (0-4) from a dimension value
+	// Get the step index (0-2) from a dimension value
 	function getStepIndex(value: number): number {
 		const idx = STEP_VALUES.indexOf(value);
-		return idx >= 0 ? idx : 2; // Default to middle step if value not found
+		return idx >= 0 ? idx : 1; // Default to Medium if value not found
 	}
 
 	// Handle dimension step button click
@@ -197,9 +198,9 @@
 											class="step-btn"
 											class:active={dim.value === stepValue}
 											on:click={() => handleDimensionStepClick(dimIdx, stepValue)}
-											title={dim.stepLabels?.[stepIdx] || `Step ${stepIdx + 1}`}
+											title={STEP_LABELS[stepIdx]}
 										>
-											{dim.stepLabels?.[stepIdx] || `Step ${stepIdx + 1}`}
+											{STEP_LABELS[stepIdx]}
 										</button>
 									{/each}
 								</div>
