@@ -285,8 +285,8 @@
 					<div class="welcome-greeting">
 						<div class="welcome-logo-container">
 							<svg class="welcome-logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-								<circle cx="50" cy="50" r="45" fill="#1e6e8a" stroke="#52a8c4" stroke-width="4"/>
-								<text x="50" y="72" font-family="'Product Sans', 'Roboto', sans-serif" font-size="55" font-weight="500" font-style="italic" fill="#FFFFFF" text-anchor="middle">G</text>
+								<circle class="logo-circle" cx="50" cy="50" r="45" stroke-width="4"/>
+								<text class="logo-text" x="50" y="72" font-family="'Product Sans', 'Roboto', sans-serif" font-size="55" font-weight="500" font-style="italic" text-anchor="middle">G</text>
 							</svg>
 						</div>
 						<h1>{greeting}</h1>
@@ -674,6 +674,15 @@
 		width: 48px;
 		height: 48px;
 		opacity: 0.8;
+	}
+
+	.welcome-logo .logo-circle {
+		fill: var(--color-primary-500);
+		stroke: var(--color-primary-300);
+	}
+
+	.welcome-logo .logo-text {
+		fill: #ffffff;
 	}
 
 	.welcome-greeting h1 {
