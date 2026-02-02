@@ -470,8 +470,10 @@
 
 <style>
 	.goals-page {
-		padding: 1.5rem;
-		max-width: 1200px;
+		padding: 2rem 3rem;
+		width: 1400px;
+		min-width: 1400px;
+		max-width: 1400px;
 		margin: 0 auto;
 		animation: fadeIn 0.2s ease;
 	}
@@ -571,6 +573,7 @@
 	/* Upload section */
 	.upload-section {
 		margin-bottom: 2rem;
+		min-height: 200px;
 	}
 
 	.drop-zone {
@@ -580,6 +583,7 @@
 		text-align: center;
 		transition: all 0.2s ease;
 		cursor: pointer;
+		min-height: 180px;
 	}
 
 	.drop-zone:hover,
@@ -742,15 +746,16 @@
 
 	.goals-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-		gap: 1rem;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 1.25rem;
 	}
 
 	.goal-card {
-		padding: 1.25rem;
+		padding: 1.5rem;
 		display: flex;
 		flex-direction: column;
 		gap: 0.75rem;
+		min-height: 220px;
 	}
 
 	.goal-header {
@@ -907,8 +912,22 @@
 		margin-bottom: 1.5rem;
 	}
 
+	/* Tablet responsive */
+	@media (max-width: 1500px) {
+		.goals-page {
+			width: 100%;
+			min-width: auto;
+			max-width: 100%;
+			padding: 1.5rem 2rem;
+		}
+
+		.goals-grid {
+			grid-template-columns: repeat(2, 1fr);
+		}
+	}
+
 	/* Mobile responsive */
-	@media (max-width: 767px) {
+	@media (max-width: 900px) {
 		.goals-page {
 			padding: 1rem;
 		}
