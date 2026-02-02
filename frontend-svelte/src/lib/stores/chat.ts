@@ -3,7 +3,7 @@
  * Handles conversations, messages, streaming, goals, insights, questions
  */
 
-import { writable, derived, get } from 'svelte/store';
+import { writable, derived } from 'svelte/store';
 import { api } from '$utils/api';
 
 export interface Message {
@@ -109,11 +109,18 @@ function createChatStore() {
 	const { subscribe, set, update } = writable<ChatState>(initialState);
 
 	let abortController: AbortController | null = null;
+	// Guard flags to prevent concurrent operations that could cause reactive loops
+	let isSelectingConversation = false;
+	let isLoadingConversations = false;
 
 	return {
 		subscribe,
 
 		async loadConversations() {
+			// Prevent duplicate concurrent loads
+			if (isLoadingConversations) return;
+			isLoadingConversations = true;
+
 			update(state => ({ ...state, isLoading: true }));
 			try {
 				const response = await api.get<{ conversations: Conversation[] }>('/api/chat/conversations');
@@ -128,6 +135,8 @@ function createChatStore() {
 					error: error.message,
 					isLoading: false,
 				}));
+			} finally {
+				isLoadingConversations = false;
 			}
 		},
 
@@ -160,8 +169,8 @@ function createChatStore() {
 		},
 
 		async selectConversation(conversationId: string) {
-			// Guard against invalid ID
-			if (!conversationId) return;
+			// Guard against invalid ID or concurrent selection
+			if (!conversationId || isSelectingConversation) return;
 
 			// Check and set loading in single update to avoid get() subscription
 			let shouldProceed = false;
@@ -174,6 +183,8 @@ function createChatStore() {
 			});
 
 			if (!shouldProceed) return;
+
+			isSelectingConversation = true;
 
 			try {
 				const conversation = await api.get<Conversation>(`/api/chat/conversations/${conversationId}`);
@@ -191,21 +202,32 @@ function createChatStore() {
 					error: error.message,
 					isLoading: false,
 				}));
+			} finally {
+				isSelectingConversation = false;
 			}
 		},
 
 		async sendMessage(content: string, model: string = 'claude-opus-4-5-20251101', files: File[] = [], webSearch: boolean = true) {
-			const state = get({ subscribe });
-			const isFirstMessage = state.messages.length === 0;
+			// Use update() to safely read state without creating synchronous subscription issues
+			let isFirstMessage = false;
+			let needsNewConversation = false;
+			let conversationId: string | null = null;
 
-			if (!state.currentConversation) {
+			update(state => {
+				isFirstMessage = state.messages.length === 0;
+				needsNewConversation = !state.currentConversation;
+				conversationId = state.currentConversation?.id || null;
+				return state; // No changes, just reading
+			});
+
+			if (needsNewConversation) {
 				// Create new conversation first
 				const conv = await this.createConversation();
 				if (!conv) return;
+				conversationId = conv.id;
 			}
 
-			const currentState = get({ subscribe });
-			const conversationId = currentState.currentConversation!.id;
+			if (!conversationId) return; // Safety guard
 
 			// Add user message immediately
 			const userMessage: Message = {

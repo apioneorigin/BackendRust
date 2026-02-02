@@ -94,7 +94,8 @@
 	$: greeting = getGreeting();
 
 	onMount(async () => {
-		await chat.loadConversations();
+		// Note: loadConversations is already called in the app layout, no need to call again here
+		// This prevents duplicate API calls and reactive update loops
 
 		// Rotate placeholder every 3 seconds
 		placeholderInterval = setInterval(() => {
@@ -139,10 +140,6 @@
 
 	async function handleNewChat() {
 		await chat.createConversation();
-	}
-
-	async function handleSelectConversation(conversationId: string) {
-		await chat.selectConversation(conversationId);
 	}
 
 	function handleKeyDown(e: KeyboardEvent) {
