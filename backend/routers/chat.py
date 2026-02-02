@@ -294,6 +294,7 @@ async def send_message(
                 cell = cells.get(cell_key, {})
                 if cell:
                     impact = cell.get("impact_score", 50)
+                    relationship = cell.get("relationship", "")
                     dims = cell.get("dimensions", [])
                     # Summarize dimensions (name: value as Low/Medium/High)
                     dim_summary = ", ".join([
@@ -304,6 +305,7 @@ async def send_message(
                         "row": row_label,
                         "column": col_label,
                         "impact_score": impact,
+                        "relationship": relationship,
                         "dimensions": dim_summary
                     })
 

@@ -202,12 +202,14 @@ Each major insight should connect: Consciousness Pattern → Observable Reality 
             # Include cell values and dimensions if available
             if cell_values:
                 sections.append("\n**Current Matrix Cell Values (user's focus area):**")
-                for cv in cell_values[:10]:  # Limit to first 10 cells to avoid prompt bloat
+                for cv in cell_values[:25]:  # All 25 selected cells (5x5 grid)
                     row = cv.get('row', '')
                     col = cv.get('column', '')
                     impact = cv.get('impact_score', 50)
+                    relationship = cv.get('relationship', '')
                     dims = cv.get('dimensions', '')
-                    sections.append(f"• {row} × {col}: Impact {impact}% | {dims}")
+                    rel_str = f" - {relationship}" if relationship else ""
+                    sections.append(f"• {row} × {col}: Impact {impact}%{rel_str} | {dims}")
 
             sections.append("\nPrioritize insights related to these selected dimensions and their current values in your analysis.\n")
 
