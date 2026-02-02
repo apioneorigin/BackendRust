@@ -959,7 +959,7 @@ When consciousness values are calculated, ground them in observable reality:
 
 After your main articulation, generate structured data in JSON format.
 
-**OUTPUT**: 1 complete document with full matrix data (100 cells with dimensions).
+**OUTPUT**: 1 complete document with full matrix data (100 cells + 20 articulated insights).
 
 ```json
 ===STRUCTURED_DATA_START===
@@ -971,14 +971,37 @@ After your main articulation, generate structured data in JSON format.
       "description": "Twenty-word description of this document's perspective.",
       "matrix_data": {{
         "row_options": [
-          {{"id": "r0", "label": "Resource Flow"}},
-          {{"id": "r1", "label": "Time Investment"}},
-          ... (10 total - max 4 words each)
+          {{
+            "id": "r0",
+            "label": "Resource Flow",
+            "articulated_insight": {{
+              "the_truth": "A river guide stands at dawn, watching tourists photograph the rapids. They see chaos—white foam, unpredictable currents. She sees lanes. Twenty years of reading water taught her that turbulence follows rules invisible to observers. The dangerous spots aren't the loud ones. They're the quiet pools where undertow hides beneath stillness.",
+              "the_truth_law": "**The pattern that looks like chaos to newcomers is infrastructure to those who've learned to read it.**",
+              "your_truth": "I see you navigating what others call turbulent—resource constraints, competing demands, shifting priorities. You've been reading these currents longer than you realize. You'll never miss this again—whenever resources feel chaotic, you'll recognize you're seeing lanes others can't.",
+              "your_truth_revelation": "**Your resource scarcity trained you to see flow patterns that abundance would have hidden.**",
+              "the_mark_name": "The Current Reader",
+              "the_mark_prediction": "You'll see this now in every resource conversation where others see shortage and you see routing.",
+              "the_mark_identity": "**You read resource currents now, not just resource levels.**"
+            }}
+          }},
+          {{"id": "r1", "label": "Time Investment", "articulated_insight": {{...}}}},
+          ... (10 total rows, each with articulated_insight)
         ],
         "column_options": [
-          {{"id": "c0", "label": "Growth Impact"}},
-          {{"id": "c1", "label": "Risk Exposure"}},
-          ... (10 total - max 4 words each)
+          {{
+            "id": "c0",
+            "label": "Growth Impact",
+            "articulated_insight": {{
+              "the_truth": "...",
+              "the_truth_law": "**...**",
+              "your_truth": "...",
+              "your_truth_revelation": "**...**",
+              "the_mark_name": "...",
+              "the_mark_prediction": "...",
+              "the_mark_identity": "**...**"
+            }}
+          }},
+          ... (10 total columns, each with articulated_insight)
         ],
         "selected_rows": [0, 1, 2, 3, 4],
         "selected_columns": [0, 1, 2, 3, 4],
@@ -1016,10 +1039,11 @@ After your main articulation, generate structured data in JSON format.
 ```
 
 REQUIREMENTS:
-1. **1 DOCUMENT**: Generate exactly 1 complete document with all 100 cells
+1. **1 DOCUMENT**: Generate exactly 1 complete document with all 100 cells AND 20 articulated insights
 2. **CELL FORMAT**: Keys are "row-col" format: "0-0", "0-1", ... "9-9"
 3. **DIMENSIONS**: Each cell has exactly 5 dimensions with contextual names
-4. **VALUES**: Dimension values are 0 (Low), 50 (Medium), or 100 (High) only{question_requirement}
+4. **VALUES**: Dimension values are 0 (Low), 50 (Medium), or 100 (High) only
+5. **ARTICULATED INSIGHTS**: Every row_option and column_option MUST have an articulated_insight{question_requirement}
 
 ### 5-DIMENSION FRAMEWORK:
 | # | Meaning | Generate contextual name for |
@@ -1032,6 +1056,31 @@ REQUIREMENTS:
 
 Dimension names must be CONTEXTUAL to the specific row×column intersection.
 Do NOT use literal names like "Clarity" or "Capacity".
+
+### ARTICULATED INSIGHT FRAMEWORK (for each of 20 row/column options):
+
+Each insight has 3 components (~160-250 words total):
+
+**1. THE TRUTH (80-120 words)**
+- Analogy from OUTSIDE user's domain (if business → use biology, music, architecture, cooking)
+- Written in immersive present tense with sensory details
+- Captures the micro-moment where truth reveals itself
+- ENDS with one-line universal law in **bold**
+- Do NOT explain the connection—let it land
+
+**2. YOUR TRUTH (50-80 words)**
+- Opens with recognition ("I see you...")
+- Includes "never miss again" trigger for future pattern recognition
+- Compressed causal chain (how past created present)
+- ENDS with **bold revelation**
+- Tone: Witness, not judge. Equip, not blame.
+
+**3. THE MARK (30-50 words)**
+- THE NAME: Memorable concept name, 2-5 words (e.g., "The Permission Gap")
+- THE PREDICTION: Where they'll recognize this pattern
+- THE IDENTITY: New capability in **bold**
+
+User should think: "I can't unsee this now."
 {f'''
 ### FOLLOW-UP QUESTION:
 - Natural, conversational question

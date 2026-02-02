@@ -2252,19 +2252,20 @@ async def populate_document_cells_llm(
     context_messages: List[dict]
 ) -> Optional[dict]:
     """
-    Generate full cell data for a document stub.
+    Generate full cell data AND articulated insights for a document stub.
 
     Takes a document with rows/columns but no cells, and generates:
     - 100 cells (10x10 matrix)
     - Each cell has impact_score, relationship, and 5 dimensions
     - Dimension values are 0, 50, or 100 (Low, Medium, High)
+    - 20 articulated insights (one per row/column option)
 
     Args:
         document_stub: Document with id, name, description, row_options, column_options
         context_messages: Recent conversation messages for context
 
     Returns:
-        Dict with 'cells' containing all 100 cells, or None on failure
+        Dict with 'cells' and 'row_options'/'column_options' (with insights), or None on failure
     """
     import os
 
@@ -2282,10 +2283,12 @@ async def populate_document_cells_llm(
 
     # Extract row and column labels
     matrix_data = document_stub.get("matrix_data", {})
-    row_labels = [r.get("label", f"Row {i}") for i, r in enumerate(matrix_data.get("row_options", []))]
-    col_labels = [c.get("label", f"Col {i}") for i, c in enumerate(matrix_data.get("column_options", []))]
+    row_options = matrix_data.get("row_options", [])
+    col_options = matrix_data.get("column_options", [])
+    row_labels = [r.get("label", f"Row {i}") for i, r in enumerate(row_options)]
+    col_labels = [c.get("label", f"Col {i}") for i, c in enumerate(col_options)]
 
-    prompt_text = f"""Generate cell data for a 10x10 transformation matrix.
+    prompt_text = f"""Generate cell data AND articulated insights for a 10x10 transformation matrix.
 
 DOCUMENT: {document_stub.get("name", "Unknown")}
 DESCRIPTION: {document_stub.get("description", "")}
@@ -2296,8 +2299,11 @@ CONVERSATION CONTEXT:
 ROW LABELS (drivers/causes): {', '.join(row_labels)}
 COLUMN LABELS (outcomes/effects): {', '.join(col_labels)}
 
-Generate 100 cells for all combinations of rows (0-9) and columns (0-9).
+Generate:
+1. 100 cells for all combinations of rows (0-9) and columns (0-9)
+2. 20 articulated insights (one for each row and column option)
 
+=== CELL REQUIREMENTS ===
 Each cell needs:
 - impact_score: 0-100 (strength of row→column relationship)
 - relationship: Short description of how row drives column
@@ -2311,6 +2317,22 @@ Each cell needs:
 3. READINESS - Preparedness/timing
 4. RESOURCES - Assets/tools available
 5. INTEGRATION - How well row and column harmonize
+
+=== ARTICULATED INSIGHT REQUIREMENTS ===
+Each row_option and column_option must have an articulated_insight with 7 fields:
+
+**THE TRUTH (80-120 words)**
+- the_truth: Analogy from OUTSIDE user's domain (if business → use biology, music, architecture, cooking). Immersive present tense, sensory details. Captures the micro-moment where truth reveals.
+- the_truth_law: One-line universal law in **bold** (15-25 words)
+
+**YOUR TRUTH (50-80 words)**
+- your_truth: Opens with "I see you...", includes "never miss again" trigger, compressed causal chain
+- your_truth_revelation: Bold revelation - what's now visible
+
+**THE MARK (30-50 words)**
+- the_mark_name: Memorable concept name, 2-5 words (e.g., "The Permission Gap")
+- the_mark_prediction: Where they'll recognize this pattern
+- the_mark_identity: New capability in **bold**
 
 Return ONLY valid JSON:
 
@@ -2327,15 +2349,49 @@ Return ONLY valid JSON:
         {{"name": "Contextual Integration Name", "value": 100}}
       ]
     }},
-    "0-1": {{...}},
     ... (all 100 cells from "0-0" to "9-9")
-  }}
+  }},
+  "row_options": [
+    {{
+      "id": "r0",
+      "label": "{row_labels[0] if row_labels else 'Row 0'}",
+      "articulated_insight": {{
+        "the_truth": "A river guide stands at dawn...",
+        "the_truth_law": "**The pattern that looks like chaos to newcomers is infrastructure to those who've learned to read it.**",
+        "your_truth": "I see you navigating what others call turbulent...",
+        "your_truth_revelation": "**Your resource scarcity trained you to see flow patterns that abundance would have hidden.**",
+        "the_mark_name": "The Current Reader",
+        "the_mark_prediction": "You'll see this now in every resource conversation...",
+        "the_mark_identity": "**You read resource currents now, not just resource levels.**"
+      }}
+    }},
+    ... (all 10 row options with articulated_insight)
+  ],
+  "column_options": [
+    {{
+      "id": "c0",
+      "label": "{col_labels[0] if col_labels else 'Column 0'}",
+      "articulated_insight": {{
+        "the_truth": "...",
+        "the_truth_law": "**...**",
+        "your_truth": "...",
+        "your_truth_revelation": "**...**",
+        "the_mark_name": "...",
+        "the_mark_prediction": "...",
+        "the_mark_identity": "**...**"
+      }}
+    }},
+    ... (all 10 column options with articulated_insight)
+  ]
 }}
 
 REQUIREMENTS:
 - Generate ALL 100 cells (0-0 through 9-9)
 - Dimension values MUST be 0, 50, or 100 only
-- Dimension names must be contextual to each specific cell"""
+- Dimension names must be contextual to each specific cell
+- ALL 20 row/column options MUST have articulated_insight
+- Each insight should be 160-250 words total across all 7 fields
+- User should think: "I can't unsee this now" """
 
     try:
         async with httpx.AsyncClient(timeout=300.0) as client:
@@ -2345,7 +2401,7 @@ REQUIREMENTS:
             }
             request_body = {
                 "model": DOCUMENT_GENERATION_MODEL,
-                "max_tokens": 8192,  # ~3,700 tokens for 100 cells
+                "max_tokens": 16384,  # Increased for 100 cells + 20 articulated insights
                 "messages": [{"role": "user", "content": prompt_text}],
                 "response_format": {"type": "json_object"}
             }
@@ -2370,14 +2426,31 @@ REQUIREMENTS:
             # Parse JSON response
             result = json.loads(response_text)
             cells = result.get("cells", {})
+            new_row_options = result.get("row_options", [])
+            new_col_options = result.get("column_options", [])
 
             cell_count = len(cells)
-            api_logger.info(f"[DOC_POPULATE] Generated {cell_count} cells for document '{document_stub.get('name')}'")
+            row_insight_count = sum(1 for r in new_row_options if r.get("articulated_insight"))
+            col_insight_count = sum(1 for c in new_col_options if c.get("articulated_insight"))
+
+            api_logger.info(
+                f"[DOC_POPULATE] Generated {cell_count} cells, "
+                f"{row_insight_count} row insights, {col_insight_count} col insights "
+                f"for document '{document_stub.get('name')}'"
+            )
 
             if cell_count < 100:
                 api_logger.warning(f"[DOC_POPULATE] Only got {cell_count} cells, expected 100")
+            if row_insight_count < 10:
+                api_logger.warning(f"[DOC_POPULATE] Only got {row_insight_count} row insights, expected 10")
+            if col_insight_count < 10:
+                api_logger.warning(f"[DOC_POPULATE] Only got {col_insight_count} col insights, expected 10")
 
-            return {"cells": cells}
+            return {
+                "cells": cells,
+                "row_options": new_row_options,
+                "column_options": new_col_options
+            }
 
     except json.JSONDecodeError as e:
         api_logger.error(f"[DOC_POPULATE] JSON parse error: {e}")

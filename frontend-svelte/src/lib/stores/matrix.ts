@@ -25,16 +25,35 @@ export interface CellData {
 	riskLevel?: 'low' | 'medium' | 'high';
 }
 
+// Articulated Insight structure based on insight-articulation-final.pdf
+// 3-component structure: THE TRUTH → YOUR TRUTH → THE MARK (160-250 words total)
+export interface ArticulatedInsight {
+	// THE TRUTH (80-120 words): Analogy from outside user's domain
+	the_truth: string;           // Italicized analogy, present tense, sensory
+	the_truth_law: string;       // Bold one-line universal law (15-25 words)
+
+	// YOUR TRUTH (50-80 words): Recognition + future protection
+	your_truth: string;          // "I see you" + "never miss again" trigger
+	your_truth_revelation: string;  // Bold revelation - what's now visible
+
+	// THE MARK (30-50 words): Install the insight as permanent pattern
+	the_mark_name: string;       // Memorable name, 2-5 words (e.g., "The Permission Gap")
+	the_mark_prediction: string; // Where they'll see this pattern
+	the_mark_identity: string;   // Bold new capability/identity
+}
+
 export interface RowOption {
 	id: string;
 	label: string;
-	insight: string;
+	insight: string;  // Short summary (backward compatible)
+	articulated_insight?: ArticulatedInsight;  // Full 3-component insight (when document is fully populated)
 }
 
 export interface ColumnOption {
 	id: string;
 	label: string;
-	insight: string;
+	insight: string;  // Short summary (backward compatible)
+	articulated_insight?: ArticulatedInsight;  // Full 3-component insight (when document is fully populated)
 }
 
 // New: Document with its own matrix data

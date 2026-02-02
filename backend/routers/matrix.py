@@ -251,7 +251,7 @@ async def populate_document_cells(
             "content": msg.content[:2000] if len(msg.content) > 2000 else msg.content
         })
 
-    # Generate cells
+    # Generate cells and articulated insights
     result = await populate_document_cells_llm(
         document_stub=doc_stub,
         context_messages=context_messages
@@ -262,6 +262,13 @@ async def populate_document_cells(
 
     # Update document with cells
     documents[doc_index]["matrix_data"]["cells"] = result["cells"]
+
+    # Update row_options and column_options with articulated insights if provided
+    if result.get("row_options"):
+        documents[doc_index]["matrix_data"]["row_options"] = result["row_options"]
+    if result.get("column_options"):
+        documents[doc_index]["matrix_data"]["column_options"] = result["column_options"]
+
     conversation.generated_documents = documents
 
     await db.commit()

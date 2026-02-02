@@ -197,6 +197,45 @@ def validate_and_log_call1(data: Dict[str, Any], provider: str) -> Dict[str, Any
 # Call 2 streams natural language text and embeds structured JSON data
 # between ===STRUCTURED_DATA_START=== and ===STRUCTURED_DATA_END=== markers.
 
+# Articulated Insight schema (based on insight-articulation-final.pdf)
+# 3-component structure: THE TRUTH → YOUR TRUTH → THE MARK
+# Total: 160-250 words per insight
+ARTICULATED_INSIGHT_SCHEMA: Dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        # THE TRUTH (80-120 words): Analogy from outside user's domain
+        "the_truth": {"type": "string"},           # Italicized analogy, present tense, sensory
+        "the_truth_law": {"type": "string"},       # Bold one-line universal law (15-25 words)
+
+        # YOUR TRUTH (50-80 words): Recognition + future protection
+        "your_truth": {"type": "string"},          # "I see you" + "never miss again" trigger
+        "your_truth_revelation": {"type": "string"},  # Bold revelation - what's now visible
+
+        # THE MARK (30-50 words): Install the insight as permanent pattern
+        "the_mark_name": {"type": "string"},       # Memorable name, 2-5 words (e.g., "The Permission Gap")
+        "the_mark_prediction": {"type": "string"}, # Where they'll see this pattern
+        "the_mark_identity": {"type": "string"}    # Bold new capability/identity
+    },
+    "required": [
+        "the_truth", "the_truth_law",
+        "your_truth", "your_truth_revelation",
+        "the_mark_name", "the_mark_prediction", "the_mark_identity"
+    ],
+    "additionalProperties": False
+}
+
+# Row/Column option schema with optional articulated insight
+ROW_COLUMN_OPTION_SCHEMA: Dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "id": {"type": "string"},
+        "label": {"type": "string"},
+        "articulated_insight": ARTICULATED_INSIGHT_SCHEMA
+    },
+    "required": ["id", "label"]
+    # articulated_insight is optional - only present when document has full cell data
+}
+
 # Cell schema (used in document matrix_data)
 CELL_SCHEMA: Dict[str, Any] = {
     "type": "object",
@@ -232,25 +271,11 @@ DOCUMENT_SCHEMA: Dict[str, Any] = {
             "properties": {
                 "row_options": {
                     "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "id": {"type": "string"},
-                            "label": {"type": "string"}
-                        },
-                        "required": ["id", "label"]
-                    }
+                    "items": ROW_COLUMN_OPTION_SCHEMA  # Now includes optional articulated_insight
                 },
                 "column_options": {
                     "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "id": {"type": "string"},
-                            "label": {"type": "string"}
-                        },
-                        "required": ["id", "label"]
-                    }
+                    "items": ROW_COLUMN_OPTION_SCHEMA  # Now includes optional articulated_insight
                 },
                 "selected_rows": {"type": "array", "items": {"type": "integer"}},
                 "selected_columns": {"type": "array", "items": {"type": "integer"}},

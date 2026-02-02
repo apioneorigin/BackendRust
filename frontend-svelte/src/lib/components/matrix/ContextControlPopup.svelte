@@ -7,6 +7,7 @@
 	 * - "+" button at right of last tab to generate more documents via gpt-5.2
 	 * - Per-document row/column selection (10 options each, select 5)
 	 * - Each document has ~20 word description
+	 * - Clickable titles open InsightPopup when articulated_insight is available
 	 */
 
 	import { createEventDispatcher } from 'svelte';
@@ -18,9 +19,17 @@
 		isGeneratingMoreDocuments,
 		chat
 	} from '$lib/stores';
+	import type { ArticulatedInsight, RowOption, ColumnOption } from '$lib/stores/matrix';
 	import { Button, Spinner } from '$lib/components/ui';
+	import InsightPopup from './InsightPopup.svelte';
 
 	export let open = false;
+
+	// Insight popup state
+	let showInsightPopup = false;
+	let selectedInsight: ArticulatedInsight | null = null;
+	let selectedOptionLabel = '';
+	let selectedOptionType: 'row' | 'column' = 'row';
 
 	const dispatch = createEventDispatcher<{
 		close: void;
@@ -100,6 +109,19 @@
 		if (e.key === 'Escape') {
 			handleClose();
 		}
+	}
+
+	function handleOpenInsight(opt: RowOption | ColumnOption, type: 'row' | 'column') {
+		if (!opt.articulated_insight) return;
+		selectedInsight = opt.articulated_insight;
+		selectedOptionLabel = opt.label;
+		selectedOptionType = type;
+		showInsightPopup = true;
+	}
+
+	function handleCloseInsight() {
+		showInsightPopup = false;
+		selectedInsight = null;
 	}
 </script>
 
@@ -208,35 +230,61 @@
 								{#each rowOptions as opt, idx (`row-${idx}`)}
 									{@const isSelected = selectedRows.includes(idx)}
 									{@const canToggle = isSelected ? selectedRows.length > 5 : selectedRows.length < 5}
-									<button
-										class="title-item"
-										class:selected={isSelected}
-										class:disabled={!canToggle}
-										on:click={() => canToggle && handleToggleRow(idx)}
-										disabled={!canToggle}
-									>
-										<div class="title-checkbox" class:checked={isSelected}>
-											{#if isSelected}
+									{@const hasInsight = !!opt.articulated_insight}
+									<div class="title-item-wrapper">
+										<button
+											class="title-item"
+											class:selected={isSelected}
+											class:disabled={!canToggle}
+											on:click={() => canToggle && handleToggleRow(idx)}
+											disabled={!canToggle}
+										>
+											<div class="title-checkbox" class:checked={isSelected}>
+												{#if isSelected}
+													<svg
+														xmlns="http://www.w3.org/2000/svg"
+														width="14"
+														height="14"
+														viewBox="0 0 24 24"
+														fill="none"
+														stroke="currentColor"
+														stroke-width="3"
+													>
+														<polyline points="20 6 9 17 4 12" />
+													</svg>
+												{/if}
+											</div>
+											<div class="title-content">
+												<span class="title-text">{opt.label}</span>
+												{#if opt.insight}
+													<span class="title-insight">{opt.insight}</span>
+												{/if}
+											</div>
+										</button>
+										{#if hasInsight}
+											<button
+												class="insight-expand-btn"
+												on:click|stopPropagation={() => handleOpenInsight(opt, 'row')}
+												title="View full insight"
+											>
 												<svg
 													xmlns="http://www.w3.org/2000/svg"
-													width="14"
-													height="14"
+													width="16"
+													height="16"
 													viewBox="0 0 24 24"
 													fill="none"
 													stroke="currentColor"
-													stroke-width="3"
+													stroke-width="2"
+													stroke-linecap="round"
+													stroke-linejoin="round"
 												>
-													<polyline points="20 6 9 17 4 12" />
+													<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+													<polyline points="15 3 21 3 21 9" />
+													<line x1="10" y1="14" x2="21" y2="3" />
 												</svg>
-											{/if}
-										</div>
-										<div class="title-content">
-											<span class="title-text">{opt.label}</span>
-											{#if opt.insight}
-												<span class="title-insight">{opt.insight}</span>
-											{/if}
-										</div>
-									</button>
+											</button>
+										{/if}
+									</div>
 								{/each}
 							</div>
 						</div>
@@ -248,35 +296,61 @@
 								{#each columnOptions as opt, idx (`col-${idx}`)}
 									{@const isSelected = selectedColumns.includes(idx)}
 									{@const canToggle = isSelected ? selectedColumns.length > 5 : selectedColumns.length < 5}
-									<button
-										class="title-item"
-										class:selected={isSelected}
-										class:disabled={!canToggle}
-										on:click={() => canToggle && handleToggleColumn(idx)}
-										disabled={!canToggle}
-									>
-										<div class="title-checkbox" class:checked={isSelected}>
-											{#if isSelected}
+									{@const hasInsight = !!opt.articulated_insight}
+									<div class="title-item-wrapper">
+										<button
+											class="title-item"
+											class:selected={isSelected}
+											class:disabled={!canToggle}
+											on:click={() => canToggle && handleToggleColumn(idx)}
+											disabled={!canToggle}
+										>
+											<div class="title-checkbox" class:checked={isSelected}>
+												{#if isSelected}
+													<svg
+														xmlns="http://www.w3.org/2000/svg"
+														width="14"
+														height="14"
+														viewBox="0 0 24 24"
+														fill="none"
+														stroke="currentColor"
+														stroke-width="3"
+													>
+														<polyline points="20 6 9 17 4 12" />
+													</svg>
+												{/if}
+											</div>
+											<div class="title-content">
+												<span class="title-text">{opt.label}</span>
+												{#if opt.insight}
+													<span class="title-insight">{opt.insight}</span>
+												{/if}
+											</div>
+										</button>
+										{#if hasInsight}
+											<button
+												class="insight-expand-btn"
+												on:click|stopPropagation={() => handleOpenInsight(opt, 'column')}
+												title="View full insight"
+											>
 												<svg
 													xmlns="http://www.w3.org/2000/svg"
-													width="14"
-													height="14"
+													width="16"
+													height="16"
 													viewBox="0 0 24 24"
 													fill="none"
 													stroke="currentColor"
-													stroke-width="3"
+													stroke-width="2"
+													stroke-linecap="round"
+													stroke-linejoin="round"
 												>
-													<polyline points="20 6 9 17 4 12" />
+													<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+													<polyline points="15 3 21 3 21 9" />
+													<line x1="10" y1="14" x2="21" y2="3" />
 												</svg>
-											{/if}
-										</div>
-										<div class="title-content">
-											<span class="title-text">{opt.label}</span>
-											{#if opt.insight}
-												<span class="title-insight">{opt.insight}</span>
-											{/if}
-										</div>
-									</button>
+											</button>
+										{/if}
+									</div>
 								{/each}
 							</div>
 						</div>
@@ -297,6 +371,15 @@
 		</div>
 	</div>
 {/if}
+
+<!-- Insight Popup (nested, higher z-index) -->
+<InsightPopup
+	bind:open={showInsightPopup}
+	insight={selectedInsight}
+	optionLabel={selectedOptionLabel}
+	optionType={selectedOptionType}
+	on:close={handleCloseInsight}
+/>
 
 <style>
 	.popup-overlay {
@@ -510,6 +593,37 @@
 		gap: 0.5rem;
 	}
 
+	.title-item-wrapper {
+		display: flex;
+		align-items: stretch;
+		gap: 0.5rem;
+	}
+
+	.insight-expand-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 36px;
+		background: var(--color-field-depth);
+		border: 1px solid var(--color-veil-thin);
+		border-radius: 0.5rem;
+		color: var(--color-primary-500);
+		cursor: pointer;
+		transition: all 0.15s ease;
+		flex-shrink: 0;
+	}
+
+	.insight-expand-btn:hover {
+		background: var(--color-primary-50);
+		border-color: var(--color-primary-400);
+		color: var(--color-primary-600);
+	}
+
+	[data-theme='dark'] .insight-expand-btn:hover {
+		background: rgba(15, 76, 117, 0.2);
+		color: var(--color-primary-300);
+	}
+
 	.title-item {
 		display: flex;
 		align-items: flex-start;
@@ -521,7 +635,8 @@
 		cursor: pointer;
 		transition: all 0.15s ease;
 		text-align: left;
-		width: 100%;
+		flex: 1;
+		min-width: 0;
 	}
 
 	.title-item:hover:not(.disabled) {
