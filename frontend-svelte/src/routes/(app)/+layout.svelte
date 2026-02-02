@@ -40,7 +40,10 @@
 
 	async function handleSelectConversation(conversationId: string) {
 		await chat.selectConversation(conversationId);
-		goto('/chat');
+		// Only navigate if not already on chat page
+		if (!$page.url.pathname.startsWith('/chat')) {
+			goto('/chat');
+		}
 	}
 
 	function formatConversationDate(date: Date | string): string {
