@@ -389,9 +389,9 @@ function createChatStore() {
 										...state,
 										structuredData: parsed,
 									}));
-									// Apply matrix data to matrix store if present
-									if (parsed.matrix_data) {
-										matrix.populateFromStructuredData(parsed.matrix_data);
+									// Apply documents data to matrix store if present (new architecture)
+									if (parsed.documents && parsed.documents.length > 0) {
+										matrix.populateFromStructuredData(parsed);
 									}
 									break;
 
