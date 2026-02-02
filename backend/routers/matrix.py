@@ -21,8 +21,7 @@ router = APIRouter(prefix="/api/matrix", tags=["matrix"])
 # Response models
 class DimensionOption(BaseModel):
     name: str
-    value: int  # One of [0, 25, 50, 75, 100]
-    step_labels: List[str]  # 5 contextual labels for this dimension
+    value: int  # One of [0, 50, 100] = Low, Medium, High
 
 
 class RowOption(BaseModel):
