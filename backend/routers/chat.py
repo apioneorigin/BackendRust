@@ -430,7 +430,9 @@ async def send_message(
 
             await save_db.commit()
 
-    return EventSourceResponse(stream_response(), media_type="text/event-stream")
+    # Use ping interval to keep connection alive during long operations
+    # Without pings, proxies/browsers may close the connection during long LLM responses
+    return EventSourceResponse(stream_response(), media_type="text/event-stream", ping=15)
 
 
 @router.delete("/conversations/{conversation_id}")

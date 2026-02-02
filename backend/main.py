@@ -517,9 +517,11 @@ async def run_inference(
     model_config = get_model_config(model)
     api_logger.info(f"[MODEL] Using {model_config['model']} ({model_config['provider']})")
     api_logger.info(f"[WEB SEARCH] Get Data: {web_search_data}, Mine Insights: {web_search_insights}")
+    # Use ping interval to keep connection alive during long LLM operations
     return EventSourceResponse(
         inference_stream(prompt, model_config, web_search_data, web_search_insights),
-        media_type="text/event-stream"
+        media_type="text/event-stream",
+        ping=15
     )
 
 
@@ -595,6 +597,7 @@ async def continue_inference(
     selected_answer_text = session_data.get('_selected_answer_text', '')
     question_text = session_data.get('_question_text', '')
 
+    # Use ping interval to keep connection alive during long LLM operations
     return EventSourceResponse(
         inference_stream_continue(
             session_id=session_id,
@@ -606,7 +609,8 @@ async def continue_inference(
             answer_text=selected_answer_text,
             question_text=question_text
         ),
-        media_type="text/event-stream"
+        media_type="text/event-stream",
+        ping=15
     )
 
 
@@ -1303,6 +1307,7 @@ async def inference_stream(
         full_content = ""  # Collect full response for structured data extraction
         pending_buffer = ""  # Buffer for tokens that might be part of structured data prefix
         in_structured_block = False  # Flag to track if we're inside structured data markers
+        response_truncated = False  # Track if LLM response was truncated at max_tokens
         # Markers to detect - look for the code block that precedes structured data
         STRUCT_BLOCK_MARKERS = ["```json\n===", "```\n===", "===STRUCTURED_DATA_START"]
         call2_token_usage = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
@@ -1315,12 +1320,26 @@ async def inference_stream(
                 input_tokens = token.get("input_tokens")
                 output_tokens = token.get("output_tokens")
                 total_tokens = token.get("total_tokens")
+                # Update outer scope variable for use in done event
+                if token.get("truncated", False):
+                    response_truncated = True
+                stop_reason = token.get("stop_reason")
                 call2_token_usage = {
                     "input_tokens": input_tokens,
                     "output_tokens": output_tokens,
                     "total_tokens": total_tokens,
                 }
                 api_logger.info(f"[CALL 2 TOKENS] Input: {input_tokens}, Output: {output_tokens}, Total: {total_tokens}")
+
+                # If response was truncated, warn the frontend immediately
+                if response_truncated:
+                    api_logger.warning(f"[CALL 2] Response was TRUNCATED at max_tokens! stop_reason={stop_reason}")
+                    yield sse_event("warning", {
+                        "type": "response_truncated",
+                        "message": "Response was cut off due to length limits. Some data may be incomplete.",
+                        "stop_reason": stop_reason,
+                        "output_tokens": output_tokens
+                    })
             else:
                 token_count += 1
                 full_content += token  # Always collect for parsing
@@ -1507,10 +1526,18 @@ Articulation Tokens: {token_count}
 
         # Done
         elapsed = time.time() - start_time
-        api_logger.info(f"[PIPELINE COMPLETE] Total time: {elapsed:.2f}s | Mode: {query_mode} | Reverse mapping: {reverse_mapping_data is not None}")
+        if response_truncated:
+            api_logger.warning(f"[PIPELINE COMPLETE] Total time: {elapsed:.2f}s | Mode: {query_mode} | RESPONSE WAS TRUNCATED")
+        else:
+            api_logger.info(f"[PIPELINE COMPLETE] Total time: {elapsed:.2f}s | Mode: {query_mode} | Reverse mapping: {reverse_mapping_data is not None}")
         pipeline_logger.end_pipeline(success=True)
 
-        yield sse_done(elapsed_ms=int(elapsed * 1000), mode=query_mode, reverse_mapping_applied=reverse_mapping_data is not None)
+        yield sse_done(
+            elapsed_ms=int(elapsed * 1000),
+            mode=query_mode,
+            reverse_mapping_applied=reverse_mapping_data is not None,
+            truncated=response_truncated
+        )
 
     except Exception as e:
         api_logger.error(f"[PIPELINE ERROR] {type(e).__name__}: {e}", exc_info=True)
@@ -2952,6 +2979,7 @@ SECTION 5: FIRST STEPS
                         output_tokens = 0
                         cache_creation_tokens = 0
                         cache_read_tokens = 0
+                        stop_reason = None  # Track if response was truncated
 
                         async for line in response.aiter_lines():
                             if line.startswith("data: "):
@@ -2983,21 +3011,30 @@ SECTION 5: FIRST STEPS
                                                     tokens_streamed += 1
                                                     yield text
                                         elif event_type == "message_delta":
-                                            # Output tokens come in message_delta
+                                            # Output tokens and stop_reason come in message_delta
                                             usage = data.get("usage")
                                             output_tokens = usage.get("output_tokens")
+                                            # Capture stop_reason to detect truncation
+                                            delta = data.get("delta", {})
+                                            stop_reason = delta.get("stop_reason")
                                 except json.JSONDecodeError:
                                     continue
 
-                        # Stream completed successfully
-                        api_logger.info(f"[ARTICULATION] Streamed {tokens_streamed} tokens (cache_read={cache_read_tokens}, cache_write={cache_creation_tokens})")
+                        # Log stop reason and warn if truncated
+                        if stop_reason == "max_tokens":
+                            api_logger.warning(f"[ARTICULATION] Response TRUNCATED at max_tokens ({output_tokens} tokens) - response incomplete!")
+                        else:
+                            api_logger.info(f"[ARTICULATION] Streamed {tokens_streamed} tokens (stop_reason={stop_reason}, cache_read={cache_read_tokens}, cache_write={cache_creation_tokens})")
+
                         yield {
                             "__token_usage__": True,
                             "input_tokens": input_tokens,
                             "output_tokens": output_tokens,
                             "total_tokens": input_tokens + output_tokens,
                             "cache_creation_input_tokens": cache_creation_tokens,
-                            "cache_read_input_tokens": cache_read_tokens
+                            "cache_read_input_tokens": cache_read_tokens,
+                            "stop_reason": stop_reason,
+                            "truncated": stop_reason == "max_tokens"
                         }
                         return  # Success - exit the retry loop
 
