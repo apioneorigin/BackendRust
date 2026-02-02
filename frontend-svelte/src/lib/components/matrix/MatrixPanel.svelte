@@ -473,9 +473,7 @@
 
 	.cell-popup {
 		width: 100%;
-		max-width: 360px;
-		max-height: 90vh;
-		overflow-y: auto;
+		max-width: 560px;
 		background: var(--color-field-surface);
 		border-radius: 1rem;
 		box-shadow: var(--shadow-elevated);
@@ -485,7 +483,7 @@
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		padding: 1rem;
+		padding: 0.75rem 1rem;
 		background: var(--color-field-depth);
 		border-radius: 1rem 1rem 0 0;
 	}
@@ -512,11 +510,11 @@
 	}
 
 	.popup-body {
-		padding: 1rem;
+		padding: 0.75rem 1rem;
 	}
 
 	.value-control {
-		margin-bottom: 1.25rem;
+		margin-bottom: 0.75rem;
 	}
 
 	.value-control label {
@@ -534,15 +532,15 @@
 	}
 
 	.value-btn {
-		width: 40px;
-		height: 40px;
+		width: 32px;
+		height: 32px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		background: var(--color-field-depth);
 		border: none;
 		border-radius: 0.5rem;
-		font-size: 1.25rem;
+		font-size: 1rem;
 		font-weight: 600;
 		color: var(--color-text-source);
 		cursor: pointer;
@@ -562,10 +560,10 @@
 	.value-input-group input {
 		flex: 1;
 		text-align: center;
-		padding: 0.75rem;
+		padding: 0.5rem;
 		border: none;
 		border-radius: 0.5rem;
-		font-size: 1.25rem;
+		font-size: 1rem;
 		font-weight: 700;
 		color: var(--color-text-source);
 		background: var(--color-field-depth);
@@ -579,51 +577,52 @@
 	}
 
 	.dimensions-section h4 {
-		font-size: 0.875rem;
+		font-size: 0.8125rem;
 		font-weight: 500;
 		color: var(--color-text-manifest);
-		margin-bottom: 0.75rem;
+		margin-bottom: 0.5rem;
 	}
 
 	.dimensions-grid {
-		display: flex;
-		flex-direction: column;
-		gap: 1rem;
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 0.5rem 1rem;
 	}
 
 	.dimension-item {
 		display: flex;
-		flex-direction: column;
+		align-items: center;
 		gap: 0.5rem;
 	}
 
 	.dim-name {
-		font-size: 0.8125rem;
+		font-size: 0.75rem;
 		font-weight: 500;
 		color: var(--color-text-source);
+		flex: 1;
+		min-width: 0;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
 	.step-buttons {
 		display: flex;
-		gap: 0.25rem;
-		flex-wrap: wrap;
+		gap: 0.125rem;
+		flex-shrink: 0;
 	}
 
 	.step-btn {
-		flex: 1;
-		min-width: 0;
-		padding: 0.375rem 0.25rem;
+		padding: 0.25rem 0.5rem;
 		background: transparent;
 		border: 1px solid var(--color-accent);
-		border-radius: 0.75rem;
+		border-radius: 0.5rem;
 		font-size: 0.625rem;
 		font-weight: 400;
 		color: var(--color-accent);
 		cursor: pointer;
 		transition: all 0.1s ease;
 		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
 	}
 
 	.step-btn:hover {
@@ -641,12 +640,12 @@
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
-		padding: 0.75rem;
-		margin-top: 1rem;
+		padding: 0.5rem 0.75rem;
+		margin-top: 0.5rem;
 		background: var(--color-accent);
 		color: white;
 		border-radius: 0.5rem;
-		font-size: 0.8125rem;
+		font-size: 0.75rem;
 		font-weight: 500;
 	}
 
@@ -654,7 +653,7 @@
 		display: flex;
 		justify-content: flex-end;
 		gap: 0.75rem;
-		padding: 1rem;
+		padding: 0.75rem 1rem;
 		background: var(--color-field-depth);
 		border-radius: 0 0 1rem 1rem;
 	}
