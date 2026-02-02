@@ -37,4 +37,4 @@ export type { Session } from './session';
 export type { CreditBalance, Redemption, UsageRecord } from './credits';
 export type { Document } from './documents';
 export type { Goal, MatrixValue } from './goals';
-export type { CellData, CellDimension, DimensionOption, DocumentTab } from './matrix';
+export type { CellData, CellDimension, Document as MatrixDocument, RowOption, ColumnOption } from './matrix';

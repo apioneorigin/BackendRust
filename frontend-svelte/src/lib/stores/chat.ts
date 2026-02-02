@@ -56,8 +56,7 @@ export interface StructuredData {
 			relationship?: string;
 			dimensions: {
 				name: string;
-				value: number;  // One of [0, 25, 50, 75, 100]
-				step_labels: string[];  // 5 contextual labels for this dimension
+				value: number;  // 0 (Low), 50 (Medium), or 100 (High)
 			}[];
 		}>;
 	};
