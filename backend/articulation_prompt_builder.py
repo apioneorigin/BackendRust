@@ -179,6 +179,33 @@ Each major insight should connect: Consciousness Pattern → Observable Reality 
                 sections.append(f"Q: {question}")
                 sections.append(f"A: {answer}\n")
 
+        # Add matrix state context (user's selected dimensions for analysis focus)
+        if conversation_context.matrix_state:
+            has_content = True
+            ms = conversation_context.matrix_state
+            row_labels = ms.get('selected_row_labels', [])
+            col_labels = ms.get('selected_column_labels', [])
+            total_rows = ms.get('total_rows_available', 0)
+            total_cols = ms.get('total_columns_available', 0)
+            cell_values = ms.get('cell_values', [])
+
+            sections.append("**User's Matrix Focus Selection:**")
+            sections.append(f"The user has chosen to focus on specific dimensions from the transformation matrix.")
+            sections.append(f"Selected Row Dimensions ({len(row_labels)} of {total_rows} available): {', '.join(row_labels)}")
+            sections.append(f"Selected Column Dimensions ({len(col_labels)} of {total_cols} available): {', '.join(col_labels)}")
+
+            # Include cell values and dimensions if available
+            if cell_values:
+                sections.append("\n**Current Matrix Cell Values (user's focus area):**")
+                for cv in cell_values[:10]:  # Limit to first 10 cells to avoid prompt bloat
+                    row = cv.get('row', '')
+                    col = cv.get('column', '')
+                    impact = cv.get('impact_score', 50)
+                    dims = cv.get('dimensions', '')
+                    sections.append(f"• {row} × {col}: Impact {impact}% | {dims}")
+
+            sections.append("\nPrioritize insights related to these selected dimensions and their current values in your analysis.\n")
+
         if not has_content:
             return ""
 
@@ -188,6 +215,7 @@ Each major insight should connect: Consciousness Pattern → Observable Reality 
 - Maintain consistency with any analysis or recommendations from earlier in the conversation
 - Use domain-specific terminology found in the uploaded documents
 - IMPORTANT: Incorporate the user's answered questions into your analysis - their choices reveal priorities and preferences
+- IMPORTANT: Focus analysis on the user's selected matrix dimensions - they indicate areas of priority
 """)
 
         logger.debug(
@@ -1148,12 +1176,14 @@ def build_articulation_context(
             messages=conversation_context.get('messages', []),
             file_summaries=conversation_context.get('file_summaries', []),
             conversation_summary=conversation_context.get('conversation_summary'),
-            question_answers=conversation_context.get('question_answers', [])
+            question_answers=conversation_context.get('question_answers', []),
+            matrix_state=conversation_context.get('matrix_state')
         )
         msg_count = len(conv_history_context.messages)
         file_count = len(conv_history_context.file_summaries)
         qa_count = len(conv_history_context.question_answers)
-        logger.info(f"[ARTICULATION_CONTEXT] Conversation context: {msg_count} messages, {file_count} files, {qa_count} answered questions")
+        has_matrix = conv_history_context.matrix_state is not None
+        logger.info(f"[ARTICULATION_CONTEXT] Conversation context: {msg_count} messages, {file_count} files, {qa_count} answered questions, matrix={'yes' if has_matrix else 'no'}")
 
     logger.info(
         f"[ARTICULATION_CONTEXT] Building context: domain={domain} "

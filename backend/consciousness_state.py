@@ -826,6 +826,7 @@ class ConversationHistoryContext:
     file_summaries: List[Dict[str, str]] = field(default_factory=list)  # [{"name": "...", "summary": "...", "type": "..."}]
     conversation_summary: Optional[str] = None  # Summary of older messages
     question_answers: List[Dict[str, str]] = field(default_factory=list)  # [{"question": "...", "selected_answer": "..."}]
+    matrix_state: Optional[Dict[str, Any]] = None  # User's matrix selections: {"selected_row_labels": [...], "selected_column_labels": [...]}
 
 
 @dataclass

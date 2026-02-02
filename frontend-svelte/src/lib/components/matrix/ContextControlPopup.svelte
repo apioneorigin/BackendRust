@@ -14,8 +14,9 @@
 	 */
 
 	import { createEventDispatcher } from 'svelte';
-	import { matrix, isLoadingOptions } from '$lib/stores';
+	import { matrix, isLoadingOptions, chat } from '$lib/stores';
 	import { Button, Spinner } from '$lib/components/ui';
+	import { api } from '$utils/api';
 
 	export let open = false;
 
@@ -89,7 +90,7 @@
 		);
 	}
 
-	function handleSubmit() {
+	async function handleSubmit() {
 		if (!canSubmit) return;
 
 		// Extract selected row and column indices
@@ -100,8 +101,22 @@
 			.filter(t => t.type === 'column' && t.selected)
 			.map(t => t.index);
 
-		// Update matrix display with new selection
+		// Update matrix display with new selection (local state)
 		matrix.updateDisplayedSelection(selectedRowIndices, selectedColumnIndices);
+
+		// Persist selection to backend
+		const conversationId = $chat.currentConversation?.id;
+		if (conversationId) {
+			try {
+				await api.patch(`/api/matrix/${conversationId}/selection`, {
+					selected_rows: selectedRowIndices,
+					selected_columns: selectedColumnIndices
+				});
+			} catch (error) {
+				console.error('Failed to persist matrix selection:', error);
+				// Non-critical - local state is already updated
+			}
+		}
 
 		dispatch('submit');
 		handleClose();
