@@ -28,23 +28,23 @@
 	--touch-target-comfortable: 48px;
 
 	/* ─────────────────────────────────────────────────────────────────────────────
-	   ACCENT - Ocean palette (logo blue #0f4c75 → teal blend)
+	   ACCENT - Deep Ocean Blue (bluish with subtle teal undertones)
 	   ───────────────────────────────────────────────────────────────────────────── */
-	--color-accent: #0e8a9a;
-	--color-accent-subtle: rgba(14, 138, 154, 0.08);
-	--color-accent-hover: rgba(14, 138, 154, 0.12);
+	--color-accent: #1e6e8a;
+	--color-accent-subtle: rgba(30, 110, 138, 0.08);
+	--color-accent-hover: rgba(30, 110, 138, 0.12);
 
-	/* Primary palette - bridging logo blue and teal */
-	--color-primary-900: #0f4c75;  /* Logo color - anchor */
-	--color-primary-800: #0e6380;
-	--color-primary-700: #0d7a8b;
-	--color-primary-600: #0c8292;  /* Hover state */
-	--color-primary-500: #0e8a9a;  /* Main color */
-	--color-primary-400: #14a3b3;
-	--color-primary-300: #3dc4d2;
-	--color-primary-200: #8ee3ec;
-	--color-primary-100: rgba(14, 138, 154, 0.15);
-	--color-primary-50: rgba(14, 138, 154, 0.08);
+	/* Primary palette - Deep ocean blue family */
+	--color-primary-900: #0f4c6a;  /* Darkest - anchor */
+	--color-primary-800: #145a78;
+	--color-primary-700: #186383;
+	--color-primary-600: #1c6a88;  /* Hover state */
+	--color-primary-500: #1e6e8a;  /* Main color */
+	--color-primary-400: #3089a8;
+	--color-primary-300: #52a8c4;
+	--color-primary-200: #8cccd8;
+	--color-primary-100: rgba(30, 110, 138, 0.15);
+	--color-primary-50: rgba(30, 110, 138, 0.08);
 
 	/* ─────────────────────────────────────────────────────────────────────────────
 	   SURFACES - Pure white, no layering
@@ -98,10 +98,10 @@
 	--ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 
 	/* ─────────────────────────────────────────────────────────────────────────────
-	   GRADIENTS - Ocean theme
+	   GRADIENTS - Deep ocean blue
 	   ───────────────────────────────────────────────────────────────────────────── */
-	--gradient-primary: linear-gradient(135deg, #0f4c75 0%, #0e8a9a 100%);
-	--gradient-subtle: linear-gradient(180deg, rgba(14, 138, 154, 0.03) 0%, transparent 100%);
+	--gradient-primary: linear-gradient(135deg, #0f4c6a 0%, #1e6e8a 100%);
+	--gradient-subtle: linear-gradient(180deg, rgba(30, 110, 138, 0.03) 0%, transparent 100%);
 
 	/* Semantic colors */
 	--color-error-500: #dc2626;
@@ -111,11 +111,6 @@
 	--color-success-600: #15803d;
 	--color-warning-500: #d97706;
 	--color-warning-600: #b45309;
-	/* Secondary accent - pure teal (for special highlights) */
-	--color-accent-teal: #0d9488;
-	--color-teal-500: #14b8a6;
-	--color-teal-600: #0d9488;
-	--color-teal-700: #0f766e;
 
 	/* Legacy */
 	--color-challenger: #dc2626;
@@ -126,17 +121,17 @@
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 [data-theme='dark'] {
-	--color-accent: #3dc4d2;
-	--color-accent-subtle: rgba(61, 196, 210, 0.12);
-	--color-accent-hover: rgba(61, 196, 210, 0.18);
+	--color-accent: #52a8c4;
+	--color-accent-subtle: rgba(82, 168, 196, 0.12);
+	--color-accent-hover: rgba(82, 168, 196, 0.18);
 
-	--color-primary-500: #3dc4d2;
-	--color-primary-600: #14a3b3;
-	--color-primary-400: #6dd8e4;
-	--color-primary-50: rgba(61, 196, 210, 0.08);
-	--color-primary-100: rgba(61, 196, 210, 0.12);
+	--color-primary-500: #52a8c4;
+	--color-primary-600: #3089a8;
+	--color-primary-400: #8cccd8;
+	--color-primary-50: rgba(82, 168, 196, 0.08);
+	--color-primary-100: rgba(82, 168, 196, 0.12);
 
-	--gradient-primary: linear-gradient(135deg, #14a3b3 0%, #3dc4d2 100%);
+	--gradient-primary: linear-gradient(135deg, #3089a8 0%, #52a8c4 100%);
 
 	--color-field-void: #0a0a0a;
 	--color-field-depth: #111111;
@@ -175,9 +170,7 @@ html {
 }
 
 body {
-	/* Apple System Fonts - SF Pro for macOS/iOS, system fonts for other platforms */
-	font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text',
-		'Helvetica Neue', 'Segoe UI', system-ui, sans-serif;
+	font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 	font-size: 16px;
 	font-weight: 400;
 	line-height: 1.6;

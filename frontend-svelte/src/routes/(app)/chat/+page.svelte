@@ -47,7 +47,7 @@
 	let inputElement: HTMLTextAreaElement;
 	let fileInputElement: HTMLInputElement;
 	let selectedModel = 'claude-opus-4-5-20251101';
-	let webSearchEnabled = true;
+	let webSearchEnabled = false;
 	let attachedFiles: File[] = [];
 	let isDragging = false;
 	let placeholderIndex = 0;
@@ -285,7 +285,7 @@
 					<div class="welcome-greeting">
 						<div class="welcome-logo-container">
 							<svg class="welcome-logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-								<circle cx="50" cy="50" r="45" fill="#0f4c75" stroke="#3d93ce" stroke-width="4"/>
+								<circle cx="50" cy="50" r="45" fill="#1e6e8a" stroke="#52a8c4" stroke-width="4"/>
 								<text x="50" y="72" font-family="'Product Sans', 'Roboto', sans-serif" font-size="55" font-weight="500" font-style="italic" fill="#FFFFFF" text-anchor="middle">G</text>
 							</svg>
 						</div>
@@ -445,7 +445,7 @@
 						{/each}
 					</select>
 
-					<label class="web-search-toggle" title="Enable web research">
+					<label class="web-search-toggle" title={webSearchEnabled ? "Disable web research" : "Enable web research"}>
 						<input type="checkbox" bind:checked={webSearchEnabled} />
 						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 							<circle cx="12" cy="12" r="10"/>

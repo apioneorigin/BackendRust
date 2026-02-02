@@ -27,7 +27,7 @@ export default {
 					800: 'var(--color-primary-800)',
 					900: 'var(--color-primary-900)'
 				},
-				// Accent (Deep Teal) - for selections
+				// Accent (Deep Ocean Blue)
 				accent: 'var(--color-accent)',
 				// Challenger (Warm Orange)
 				challenger: 'var(--color-challenger)',
@@ -71,12 +71,6 @@ export default {
 					pulse: 'var(--color-glow-pulse)',
 					radiance: 'var(--color-glow-radiance)',
 					luminance: 'var(--color-glow-luminance)'
-				},
-				// Teal
-				teal: {
-					500: 'var(--color-teal-500)',
-					600: 'var(--color-teal-600)',
-					700: 'var(--color-teal-700)'
 				},
 				// Semantic colors
 				error: {
