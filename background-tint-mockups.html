@@ -1,0 +1,1682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reality Transformer - Background Tint Options</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0a0a0a;
+            padding: 32px;
+            min-height: 100vh;
+        }
+
+        h1 {
+            color: #fff;
+            text-align: center;
+            margin-bottom: 8px;
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .subtitle {
+            color: #888;
+            text-align: center;
+            margin-bottom: 32px;
+            font-size: 13px;
+        }
+
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 48px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .option {
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        }
+
+        .option-header {
+            background: #1a1a1a;
+            padding: 16px 20px;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .option-header h2 {
+            color: #fff;
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .option-header .colors {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .color-swatch {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .color-label {
+            color: #666;
+            font-size: 11px;
+            font-family: monospace;
+        }
+
+        /* App mockup structure */
+        .app-mockup {
+            display: flex;
+            height: 520px;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 240px;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid transparent;
+        }
+
+        .sidebar-header {
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #b38a3d 0%, #C9A962 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-icon svg {
+            width: 18px;
+            height: 18px;
+            fill: white;
+        }
+
+        .logo-text {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .new-chat-btn {
+            margin: 0 12px 16px;
+            padding: 10px 16px;
+            background: linear-gradient(135deg, #b38a3d 0%, #C9A962 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .conversations {
+            flex: 1;
+            padding: 0 12px;
+            overflow-y: auto;
+        }
+
+        .conv-group-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 8px;
+            opacity: 0.5;
+        }
+
+        .conv-item {
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            cursor: pointer;
+            margin-bottom: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .conv-item.active {
+            background: rgba(201, 169, 98, 0.12);
+            color: #b38a3d;
+            font-weight: 500;
+        }
+
+        .user-section {
+            padding: 12px;
+            border-top: 1px solid transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #C9A962 0%, #d4ba7e 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .user-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .user-name {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .user-email {
+            font-size: 11px;
+            opacity: 0.6;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Main content */
+        .main-content {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            padding: 16px;
+        }
+
+        /* Chat section */
+        .chat-section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .messages-area {
+            flex: 1;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow-y: auto;
+        }
+
+        .message {
+            max-width: 85%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .message.user {
+            align-self: flex-end;
+            background: #1a1d23;
+            color: white;
+        }
+
+        .message.assistant {
+            align-self: flex-start;
+        }
+
+        .input-area {
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 8px;
+            align-items: flex-end;
+        }
+
+        .text-input {
+            flex: 1;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: none;
+            font-size: 13px;
+            resize: none;
+            height: 44px;
+            font-family: inherit;
+        }
+
+        .send-btn {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, #b38a3d 0%, #C9A962 100%);
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .send-btn svg {
+            width: 18px;
+            height: 18px;
+            fill: white;
+        }
+
+        .input-controls {
+            display: flex;
+            gap: 8px;
+            padding: 0 4px;
+        }
+
+        .control-btn {
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .model-select {
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            border: none;
+            cursor: pointer;
+        }
+
+        /* Right panel */
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* Matrix panel */
+        .matrix-panel {
+            flex: 1;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .matrix-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .matrix-title {
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .matrix-grid {
+            display: grid;
+            grid-template-columns: 60px repeat(5, 1fr);
+            grid-template-rows: 24px repeat(5, 1fr);
+            gap: 4px;
+            flex: 1;
+        }
+
+        .matrix-cell {
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .matrix-cell.header {
+            font-size: 10px;
+            opacity: 0.7;
+        }
+
+        .matrix-cell.row-header {
+            font-size: 9px;
+            justify-content: flex-end;
+            padding-right: 8px;
+            opacity: 0.7;
+        }
+
+        .matrix-cell.value {
+            position: relative;
+        }
+
+        .matrix-cell.value::after {
+            content: '';
+            position: absolute;
+            bottom: 4px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60%;
+            height: 3px;
+            border-radius: 2px;
+            background: rgba(201, 169, 98, 0.4);
+        }
+
+        .matrix-cell.power::before {
+            content: '⚡';
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            font-size: 8px;
+        }
+
+        .matrix-toolbar {
+            display: flex;
+            gap: 6px;
+            margin-top: 12px;
+        }
+
+        .toolbar-btn {
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+        }
+
+        /* Live preview */
+        .live-preview {
+            padding: 16px;
+        }
+
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .preview-title {
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .preview-badge {
+            font-size: 10px;
+            padding: 3px 8px;
+            border-radius: 10px;
+            background: rgba(201, 169, 98, 0.15);
+            color: #C9A962;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .metric-item {
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .metric-label {
+            font-size: 10px;
+            opacity: 0.6;
+            margin-bottom: 4px;
+        }
+
+        .metric-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #C9A962;
+        }
+
+        .metric-bar {
+            height: 4px;
+            border-radius: 2px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        .metric-bar-fill {
+            height: 100%;
+            border-radius: 2px;
+            background: linear-gradient(90deg, #b38a3d, #C9A962);
+        }
+
+        .insights-section {
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .insights-title {
+            font-size: 11px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            opacity: 0.7;
+        }
+
+        .insight-item {
+            font-size: 12px;
+            line-height: 1.5;
+            opacity: 0.8;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           GLASSMORPHISM BASE STYLES
+           ═══════════════════════════════════════════════════════════════ */
+        .glass-card {
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+        }
+
+        .glass-subtle {
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           OPTION 1: Ice Blue / Frost
+           ═══════════════════════════════════════════════════════════════ */
+        .option-ice .app-mockup {
+            background: linear-gradient(135deg, #F8FAFF 0%, #F0F5FF 50%, #E8F1FF 100%);
+        }
+        .option-ice .sidebar {
+            background: rgba(255, 255, 255, 0.6);
+            border-right-color: rgba(100, 130, 180, 0.1);
+        }
+        .option-ice .logo-text,
+        .option-ice .matrix-title,
+        .option-ice .preview-title,
+        .option-ice .user-name {
+            color: #1e3a5f;
+        }
+        .option-ice .conv-item,
+        .option-ice .conv-group-label {
+            color: #3d5a80;
+        }
+        .option-ice .user-section {
+            border-top-color: rgba(100, 130, 180, 0.1);
+        }
+        .option-ice .messages-area {
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 16px;
+        }
+        .option-ice .message.assistant {
+            background: rgba(255, 255, 255, 0.7);
+            color: #1e3a5f;
+        }
+        .option-ice .input-area {
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 16px;
+        }
+        .option-ice .text-input {
+            background: rgba(255, 255, 255, 0.8);
+            color: #1e3a5f;
+        }
+        .option-ice .text-input::placeholder {
+            color: #7a9cc6;
+        }
+        .option-ice .control-btn,
+        .option-ice .model-select {
+            background: rgba(255, 255, 255, 0.6);
+            color: #3d5a80;
+        }
+        .option-ice .matrix-panel,
+        .option-ice .live-preview {
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 16px;
+        }
+        .option-ice .matrix-cell.header,
+        .option-ice .matrix-cell.row-header {
+            color: #3d5a80;
+        }
+        .option-ice .matrix-cell.value {
+            background: rgba(255, 255, 255, 0.7);
+            color: #1e3a5f;
+        }
+        .option-ice .toolbar-btn {
+            background: rgba(255, 255, 255, 0.6);
+            color: #3d5a80;
+        }
+        .option-ice .metric-item,
+        .option-ice .insights-section {
+            background: rgba(255, 255, 255, 0.5);
+        }
+        .option-ice .metric-label,
+        .option-ice .insights-title {
+            color: #3d5a80;
+        }
+        .option-ice .metric-bar {
+            background: rgba(100, 130, 180, 0.15);
+        }
+        .option-ice .insight-item {
+            color: #2d4a6f;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           OPTION 2: Mint / Teal Tint
+           ═══════════════════════════════════════════════════════════════ */
+        .option-mint .app-mockup {
+            background: linear-gradient(135deg, #F7FDFB 0%, #F0FAF7 50%, #E6F7F3 100%);
+        }
+        .option-mint .sidebar {
+            background: rgba(255, 255, 255, 0.6);
+            border-right-color: rgba(80, 160, 140, 0.1);
+        }
+        .option-mint .logo-text,
+        .option-mint .matrix-title,
+        .option-mint .preview-title,
+        .option-mint .user-name {
+            color: #134e4a;
+        }
+        .option-mint .conv-item,
+        .option-mint .conv-group-label {
+            color: #2d6a5f;
+        }
+        .option-mint .user-section {
+            border-top-color: rgba(80, 160, 140, 0.1);
+        }
+        .option-mint .messages-area {
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 16px;
+        }
+        .option-mint .message.assistant {
+            background: rgba(255, 255, 255, 0.7);
+            color: #134e4a;
+        }
+        .option-mint .input-area {
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 16px;
+        }
+        .option-mint .text-input {
+            background: rgba(255, 255, 255, 0.8);
+            color: #134e4a;
+        }
+        .option-mint .text-input::placeholder {
+            color: #5eaa9a;
+        }
+        .option-mint .control-btn,
+        .option-mint .model-select {
+            background: rgba(255, 255, 255, 0.6);
+            color: #2d6a5f;
+        }
+        .option-mint .matrix-panel,
+        .option-mint .live-preview {
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 16px;
+        }
+        .option-mint .matrix-cell.header,
+        .option-mint .matrix-cell.row-header {
+            color: #2d6a5f;
+        }
+        .option-mint .matrix-cell.value {
+            background: rgba(255, 255, 255, 0.7);
+            color: #134e4a;
+        }
+        .option-mint .toolbar-btn {
+            background: rgba(255, 255, 255, 0.6);
+            color: #2d6a5f;
+        }
+        .option-mint .metric-item,
+        .option-mint .insights-section {
+            background: rgba(255, 255, 255, 0.5);
+        }
+        .option-mint .metric-label,
+        .option-mint .insights-title {
+            color: #2d6a5f;
+        }
+        .option-mint .metric-bar {
+            background: rgba(80, 160, 140, 0.15);
+        }
+        .option-mint .insight-item {
+            color: #1a5c52;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           OPTION 3: Lavender / Soft Purple
+           ═══════════════════════════════════════════════════════════════ */
+        .option-lavender .app-mockup {
+            background: linear-gradient(135deg, #FAFAFF 0%, #F5F3FF 50%, #EDE9FE 100%);
+        }
+        .option-lavender .sidebar {
+            background: rgba(255, 255, 255, 0.6);
+            border-right-color: rgba(140, 100, 180, 0.1);
+        }
+        .option-lavender .logo-text,
+        .option-lavender .matrix-title,
+        .option-lavender .preview-title,
+        .option-lavender .user-name {
+            color: #3b1e5f;
+        }
+        .option-lavender .conv-item,
+        .option-lavender .conv-group-label {
+            color: #5b3d80;
+        }
+        .option-lavender .user-section {
+            border-top-color: rgba(140, 100, 180, 0.1);
+        }
+        .option-lavender .messages-area {
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 16px;
+        }
+        .option-lavender .message.assistant {
+            background: rgba(255, 255, 255, 0.7);
+            color: #3b1e5f;
+        }
+        .option-lavender .input-area {
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 16px;
+        }
+        .option-lavender .text-input {
+            background: rgba(255, 255, 255, 0.8);
+            color: #3b1e5f;
+        }
+        .option-lavender .text-input::placeholder {
+            color: #9a7cc6;
+        }
+        .option-lavender .control-btn,
+        .option-lavender .model-select {
+            background: rgba(255, 255, 255, 0.6);
+            color: #5b3d80;
+        }
+        .option-lavender .matrix-panel,
+        .option-lavender .live-preview {
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 16px;
+        }
+        .option-lavender .matrix-cell.header,
+        .option-lavender .matrix-cell.row-header {
+            color: #5b3d80;
+        }
+        .option-lavender .matrix-cell.value {
+            background: rgba(255, 255, 255, 0.7);
+            color: #3b1e5f;
+        }
+        .option-lavender .toolbar-btn {
+            background: rgba(255, 255, 255, 0.6);
+            color: #5b3d80;
+        }
+        .option-lavender .metric-item,
+        .option-lavender .insights-section {
+            background: rgba(255, 255, 255, 0.5);
+        }
+        .option-lavender .metric-label,
+        .option-lavender .insights-title {
+            color: #5b3d80;
+        }
+        .option-lavender .metric-bar {
+            background: rgba(140, 100, 180, 0.15);
+        }
+        .option-lavender .insight-item {
+            color: #4a2d6f;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           OPTION 4: Champagne Glow
+           ═══════════════════════════════════════════════════════════════ */
+        .option-champagne .app-mockup {
+            background: linear-gradient(135deg, #FFFDF8 0%, #FFF9F0 50%, #FFF5E6 100%);
+        }
+        .option-champagne .sidebar {
+            background: rgba(255, 255, 255, 0.6);
+            border-right-color: rgba(201, 169, 98, 0.15);
+        }
+        .option-champagne .logo-text,
+        .option-champagne .matrix-title,
+        .option-champagne .preview-title,
+        .option-champagne .user-name {
+            color: #5c4510;
+        }
+        .option-champagne .conv-item,
+        .option-champagne .conv-group-label {
+            color: #7a5c18;
+        }
+        .option-champagne .user-section {
+            border-top-color: rgba(201, 169, 98, 0.15);
+        }
+        .option-champagne .messages-area {
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 16px;
+        }
+        .option-champagne .message.assistant {
+            background: rgba(255, 255, 255, 0.7);
+            color: #5c4510;
+        }
+        .option-champagne .input-area {
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 16px;
+        }
+        .option-champagne .text-input {
+            background: rgba(255, 255, 255, 0.8);
+            color: #5c4510;
+        }
+        .option-champagne .text-input::placeholder {
+            color: #c9a962;
+        }
+        .option-champagne .control-btn,
+        .option-champagne .model-select {
+            background: rgba(255, 255, 255, 0.6);
+            color: #7a5c18;
+        }
+        .option-champagne .matrix-panel,
+        .option-champagne .live-preview {
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 16px;
+        }
+        .option-champagne .matrix-cell.header,
+        .option-champagne .matrix-cell.row-header {
+            color: #7a5c18;
+        }
+        .option-champagne .matrix-cell.value {
+            background: rgba(255, 255, 255, 0.7);
+            color: #5c4510;
+        }
+        .option-champagne .toolbar-btn {
+            background: rgba(255, 255, 255, 0.6);
+            color: #7a5c18;
+        }
+        .option-champagne .metric-item,
+        .option-champagne .insights-section {
+            background: rgba(255, 255, 255, 0.5);
+        }
+        .option-champagne .metric-label,
+        .option-champagne .insights-title {
+            color: #7a5c18;
+        }
+        .option-champagne .metric-bar {
+            background: rgba(201, 169, 98, 0.2);
+        }
+        .option-champagne .insight-item {
+            color: #6b5a2a;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           OPTION 5: Rose / Blush
+           ═══════════════════════════════════════════════════════════════ */
+        .option-rose .app-mockup {
+            background: linear-gradient(135deg, #FFFBFC 0%, #FFF5F6 50%, #FFEEF0 100%);
+        }
+        .option-rose .sidebar {
+            background: rgba(255, 255, 255, 0.6);
+            border-right-color: rgba(180, 100, 120, 0.1);
+        }
+        .option-rose .logo-text,
+        .option-rose .matrix-title,
+        .option-rose .preview-title,
+        .option-rose .user-name {
+            color: #5f1e3b;
+        }
+        .option-rose .conv-item,
+        .option-rose .conv-group-label {
+            color: #803d5b;
+        }
+        .option-rose .user-section {
+            border-top-color: rgba(180, 100, 120, 0.1);
+        }
+        .option-rose .messages-area {
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 16px;
+        }
+        .option-rose .message.assistant {
+            background: rgba(255, 255, 255, 0.7);
+            color: #5f1e3b;
+        }
+        .option-rose .input-area {
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 16px;
+        }
+        .option-rose .text-input {
+            background: rgba(255, 255, 255, 0.8);
+            color: #5f1e3b;
+        }
+        .option-rose .text-input::placeholder {
+            color: #c67a9a;
+        }
+        .option-rose .control-btn,
+        .option-rose .model-select {
+            background: rgba(255, 255, 255, 0.6);
+            color: #803d5b;
+        }
+        .option-rose .matrix-panel,
+        .option-rose .live-preview {
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 16px;
+        }
+        .option-rose .matrix-cell.header,
+        .option-rose .matrix-cell.row-header {
+            color: #803d5b;
+        }
+        .option-rose .matrix-cell.value {
+            background: rgba(255, 255, 255, 0.7);
+            color: #5f1e3b;
+        }
+        .option-rose .toolbar-btn {
+            background: rgba(255, 255, 255, 0.6);
+            color: #803d5b;
+        }
+        .option-rose .metric-item,
+        .option-rose .insights-section {
+            background: rgba(255, 255, 255, 0.5);
+        }
+        .option-rose .metric-label,
+        .option-rose .insights-title {
+            color: #803d5b;
+        }
+        .option-rose .metric-bar {
+            background: rgba(180, 100, 120, 0.15);
+        }
+        .option-rose .insight-item {
+            color: #6f2d4a;
+        }
+
+        /* Color reference at bottom */
+        .color-reference {
+            margin-top: 48px;
+            padding: 24px;
+            background: #1a1a1a;
+            border-radius: 16px;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .color-reference h3 {
+            color: #fff;
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 16px;
+        }
+
+        .color-option {
+            text-align: center;
+        }
+
+        .color-option h4 {
+            color: #888;
+            font-size: 11px;
+            margin-bottom: 8px;
+        }
+
+        .color-samples {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .color-sample {
+            height: 32px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            font-family: monospace;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <h1>Reality Transformer - Background Tint Options</h1>
+    <p class="subtitle">Glassmorphism + Minimal Borders + Colored Tints (distinct from Claude)</p>
+
+    <div class="options-container">
+        <!-- Option 1: Ice Blue -->
+        <div class="option option-ice">
+            <div class="option-header">
+                <h2>1. Ice Blue / Frost</h2>
+                <div class="colors">
+                    <div class="color-swatch" style="background: #F8FAFF;"></div>
+                    <div class="color-swatch" style="background: #F0F5FF;"></div>
+                    <div class="color-swatch" style="background: #E8F1FF;"></div>
+                    <span class="color-label">Cool, techy, premium</span>
+                </div>
+            </div>
+            <div class="app-mockup">
+                <div class="sidebar glass-subtle">
+                    <div class="sidebar-header">
+                        <div class="logo-icon">
+                            <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                        </div>
+                        <span class="logo-text">Reality Transformer</span>
+                    </div>
+                    <button class="new-chat-btn">+ New Chat</button>
+                    <div class="conversations">
+                        <div class="conv-group-label">Today</div>
+                        <div class="conv-item active">Market expansion strategy...</div>
+                        <div class="conv-item">Digital transformation plan</div>
+                        <div class="conv-group-label">Yesterday</div>
+                        <div class="conv-item">Q4 revenue analysis</div>
+                        <div class="conv-item">Team restructuring options</div>
+                    </div>
+                    <div class="user-section">
+                        <div class="user-avatar">JD</div>
+                        <div class="user-info">
+                            <div class="user-name">John Doe</div>
+                            <div class="user-email">john@company.com</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="main-content">
+                    <div class="chat-section">
+                        <div class="messages-area glass-card">
+                            <div class="message user">How can we expand into the Asian market while maintaining our current profit margins?</div>
+                            <div class="message assistant">Based on your transformation matrix, I'd recommend focusing on Stage 3 dimensions first. The power spots indicate strong leverage in supply chain optimization...</div>
+                        </div>
+                        <div class="input-area glass-card">
+                            <div class="input-controls">
+                                <button class="control-btn">📎 Attach</button>
+                                <select class="model-select">
+                                    <option>Claude Opus 4.5</option>
+                                </select>
+                                <button class="control-btn">🌐 Web</button>
+                            </div>
+                            <div class="input-row">
+                                <textarea class="text-input" placeholder="Ask about your transformation..."></textarea>
+                                <button class="send-btn">
+                                    <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="right-panel">
+                        <div class="matrix-panel glass-card">
+                            <div class="matrix-header">
+                                <span class="matrix-title">Transformation Matrix</span>
+                            </div>
+                            <div class="matrix-grid">
+                                <div class="matrix-cell"></div>
+                                <div class="matrix-cell header">S1</div>
+                                <div class="matrix-cell header">S2</div>
+                                <div class="matrix-cell header">S3</div>
+                                <div class="matrix-cell header">S4</div>
+                                <div class="matrix-cell header">S5</div>
+                                <div class="matrix-cell row-header">Dim 1</div>
+                                <div class="matrix-cell value">72</div>
+                                <div class="matrix-cell value">85</div>
+                                <div class="matrix-cell value power">91</div>
+                                <div class="matrix-cell value">78</div>
+                                <div class="matrix-cell value">65</div>
+                                <div class="matrix-cell row-header">Dim 2</div>
+                                <div class="matrix-cell value">68</div>
+                                <div class="matrix-cell value power">88</div>
+                                <div class="matrix-cell value">74</div>
+                                <div class="matrix-cell value">82</div>
+                                <div class="matrix-cell value">71</div>
+                                <div class="matrix-cell row-header">Dim 3</div>
+                                <div class="matrix-cell value">83</div>
+                                <div class="matrix-cell value">76</div>
+                                <div class="matrix-cell value">69</div>
+                                <div class="matrix-cell value power">94</div>
+                                <div class="matrix-cell value">77</div>
+                                <div class="matrix-cell row-header">Dim 4</div>
+                                <div class="matrix-cell value">75</div>
+                                <div class="matrix-cell value">81</div>
+                                <div class="matrix-cell value">86</div>
+                                <div class="matrix-cell value">73</div>
+                                <div class="matrix-cell value">80</div>
+                                <div class="matrix-cell row-header">Dim 5</div>
+                                <div class="matrix-cell value">79</div>
+                                <div class="matrix-cell value">67</div>
+                                <div class="matrix-cell value">84</div>
+                                <div class="matrix-cell value">70</div>
+                                <div class="matrix-cell value power">89</div>
+                            </div>
+                            <div class="matrix-toolbar">
+                                <button class="toolbar-btn">⚡ Power Spots</button>
+                                <button class="toolbar-btn">🎯 Plays</button>
+                                <button class="toolbar-btn">📊 Scenarios</button>
+                            </div>
+                        </div>
+                        <div class="live-preview glass-card">
+                            <div class="preview-header">
+                                <span class="preview-title">Live Preview</span>
+                                <span class="preview-badge">Real-time</span>
+                            </div>
+                            <div class="metrics-grid">
+                                <div class="metric-item">
+                                    <div class="metric-label">Coherence</div>
+                                    <div class="metric-value">87%</div>
+                                    <div class="metric-bar"><div class="metric-bar-fill" style="width: 87%"></div></div>
+                                </div>
+                                <div class="metric-item">
+                                    <div class="metric-label">Balance</div>
+                                    <div class="metric-value">92%</div>
+                                    <div class="metric-bar"><div class="metric-bar-fill" style="width: 92%"></div></div>
+                                </div>
+                            </div>
+                            <div class="insights-section">
+                                <div class="insights-title">Insights</div>
+                                <div class="insight-item">Strong leverage detected in S3-D1. Consider prioritizing this transformation path.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Option 2: Mint -->
+        <div class="option option-mint">
+            <div class="option-header">
+                <h2>2. Mint / Teal Tint</h2>
+                <div class="colors">
+                    <div class="color-swatch" style="background: #F7FDFB;"></div>
+                    <div class="color-swatch" style="background: #F0FAF7;"></div>
+                    <div class="color-swatch" style="background: #E6F7F3;"></div>
+                    <span class="color-label">Fresh, modern, fintech</span>
+                </div>
+            </div>
+            <div class="app-mockup">
+                <div class="sidebar glass-subtle">
+                    <div class="sidebar-header">
+                        <div class="logo-icon">
+                            <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                        </div>
+                        <span class="logo-text">Reality Transformer</span>
+                    </div>
+                    <button class="new-chat-btn">+ New Chat</button>
+                    <div class="conversations">
+                        <div class="conv-group-label">Today</div>
+                        <div class="conv-item active">Market expansion strategy...</div>
+                        <div class="conv-item">Digital transformation plan</div>
+                        <div class="conv-group-label">Yesterday</div>
+                        <div class="conv-item">Q4 revenue analysis</div>
+                        <div class="conv-item">Team restructuring options</div>
+                    </div>
+                    <div class="user-section">
+                        <div class="user-avatar">JD</div>
+                        <div class="user-info">
+                            <div class="user-name">John Doe</div>
+                            <div class="user-email">john@company.com</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="main-content">
+                    <div class="chat-section">
+                        <div class="messages-area glass-card">
+                            <div class="message user">How can we expand into the Asian market while maintaining our current profit margins?</div>
+                            <div class="message assistant">Based on your transformation matrix, I'd recommend focusing on Stage 3 dimensions first. The power spots indicate strong leverage in supply chain optimization...</div>
+                        </div>
+                        <div class="input-area glass-card">
+                            <div class="input-controls">
+                                <button class="control-btn">📎 Attach</button>
+                                <select class="model-select">
+                                    <option>Claude Opus 4.5</option>
+                                </select>
+                                <button class="control-btn">🌐 Web</button>
+                            </div>
+                            <div class="input-row">
+                                <textarea class="text-input" placeholder="Ask about your transformation..."></textarea>
+                                <button class="send-btn">
+                                    <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="right-panel">
+                        <div class="matrix-panel glass-card">
+                            <div class="matrix-header">
+                                <span class="matrix-title">Transformation Matrix</span>
+                            </div>
+                            <div class="matrix-grid">
+                                <div class="matrix-cell"></div>
+                                <div class="matrix-cell header">S1</div>
+                                <div class="matrix-cell header">S2</div>
+                                <div class="matrix-cell header">S3</div>
+                                <div class="matrix-cell header">S4</div>
+                                <div class="matrix-cell header">S5</div>
+                                <div class="matrix-cell row-header">Dim 1</div>
+                                <div class="matrix-cell value">72</div>
+                                <div class="matrix-cell value">85</div>
+                                <div class="matrix-cell value power">91</div>
+                                <div class="matrix-cell value">78</div>
+                                <div class="matrix-cell value">65</div>
+                                <div class="matrix-cell row-header">Dim 2</div>
+                                <div class="matrix-cell value">68</div>
+                                <div class="matrix-cell value power">88</div>
+                                <div class="matrix-cell value">74</div>
+                                <div class="matrix-cell value">82</div>
+                                <div class="matrix-cell value">71</div>
+                                <div class="matrix-cell row-header">Dim 3</div>
+                                <div class="matrix-cell value">83</div>
+                                <div class="matrix-cell value">76</div>
+                                <div class="matrix-cell value">69</div>
+                                <div class="matrix-cell value power">94</div>
+                                <div class="matrix-cell value">77</div>
+                                <div class="matrix-cell row-header">Dim 4</div>
+                                <div class="matrix-cell value">75</div>
+                                <div class="matrix-cell value">81</div>
+                                <div class="matrix-cell value">86</div>
+                                <div class="matrix-cell value">73</div>
+                                <div class="matrix-cell value">80</div>
+                                <div class="matrix-cell row-header">Dim 5</div>
+                                <div class="matrix-cell value">79</div>
+                                <div class="matrix-cell value">67</div>
+                                <div class="matrix-cell value">84</div>
+                                <div class="matrix-cell value">70</div>
+                                <div class="matrix-cell value power">89</div>
+                            </div>
+                            <div class="matrix-toolbar">
+                                <button class="toolbar-btn">⚡ Power Spots</button>
+                                <button class="toolbar-btn">🎯 Plays</button>
+                                <button class="toolbar-btn">📊 Scenarios</button>
+                            </div>
+                        </div>
+                        <div class="live-preview glass-card">
+                            <div class="preview-header">
+                                <span class="preview-title">Live Preview</span>
+                                <span class="preview-badge">Real-time</span>
+                            </div>
+                            <div class="metrics-grid">
+                                <div class="metric-item">
+                                    <div class="metric-label">Coherence</div>
+                                    <div class="metric-value">87%</div>
+                                    <div class="metric-bar"><div class="metric-bar-fill" style="width: 87%"></div></div>
+                                </div>
+                                <div class="metric-item">
+                                    <div class="metric-label">Balance</div>
+                                    <div class="metric-value">92%</div>
+                                    <div class="metric-bar"><div class="metric-bar-fill" style="width: 92%"></div></div>
+                                </div>
+                            </div>
+                            <div class="insights-section">
+                                <div class="insights-title">Insights</div>
+                                <div class="insight-item">Strong leverage detected in S3-D1. Consider prioritizing this transformation path.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Option 3: Lavender -->
+        <div class="option option-lavender">
+            <div class="option-header">
+                <h2>3. Lavender / Soft Purple</h2>
+                <div class="colors">
+                    <div class="color-swatch" style="background: #FAFAFF;"></div>
+                    <div class="color-swatch" style="background: #F5F3FF;"></div>
+                    <div class="color-swatch" style="background: #EDE9FE;"></div>
+                    <span class="color-label">Premium, royal, memorable</span>
+                </div>
+            </div>
+            <div class="app-mockup">
+                <div class="sidebar glass-subtle">
+                    <div class="sidebar-header">
+                        <div class="logo-icon">
+                            <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                        </div>
+                        <span class="logo-text">Reality Transformer</span>
+                    </div>
+                    <button class="new-chat-btn">+ New Chat</button>
+                    <div class="conversations">
+                        <div class="conv-group-label">Today</div>
+                        <div class="conv-item active">Market expansion strategy...</div>
+                        <div class="conv-item">Digital transformation plan</div>
+                        <div class="conv-group-label">Yesterday</div>
+                        <div class="conv-item">Q4 revenue analysis</div>
+                        <div class="conv-item">Team restructuring options</div>
+                    </div>
+                    <div class="user-section">
+                        <div class="user-avatar">JD</div>
+                        <div class="user-info">
+                            <div class="user-name">John Doe</div>
+                            <div class="user-email">john@company.com</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="main-content">
+                    <div class="chat-section">
+                        <div class="messages-area glass-card">
+                            <div class="message user">How can we expand into the Asian market while maintaining our current profit margins?</div>
+                            <div class="message assistant">Based on your transformation matrix, I'd recommend focusing on Stage 3 dimensions first. The power spots indicate strong leverage in supply chain optimization...</div>
+                        </div>
+                        <div class="input-area glass-card">
+                            <div class="input-controls">
+                                <button class="control-btn">📎 Attach</button>
+                                <select class="model-select">
+                                    <option>Claude Opus 4.5</option>
+                                </select>
+                                <button class="control-btn">🌐 Web</button>
+                            </div>
+                            <div class="input-row">
+                                <textarea class="text-input" placeholder="Ask about your transformation..."></textarea>
+                                <button class="send-btn">
+                                    <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="right-panel">
+                        <div class="matrix-panel glass-card">
+                            <div class="matrix-header">
+                                <span class="matrix-title">Transformation Matrix</span>
+                            </div>
+                            <div class="matrix-grid">
+                                <div class="matrix-cell"></div>
+                                <div class="matrix-cell header">S1</div>
+                                <div class="matrix-cell header">S2</div>
+                                <div class="matrix-cell header">S3</div>
+                                <div class="matrix-cell header">S4</div>
+                                <div class="matrix-cell header">S5</div>
+                                <div class="matrix-cell row-header">Dim 1</div>
+                                <div class="matrix-cell value">72</div>
+                                <div class="matrix-cell value">85</div>
+                                <div class="matrix-cell value power">91</div>
+                                <div class="matrix-cell value">78</div>
+                                <div class="matrix-cell value">65</div>
+                                <div class="matrix-cell row-header">Dim 2</div>
+                                <div class="matrix-cell value">68</div>
+                                <div class="matrix-cell value power">88</div>
+                                <div class="matrix-cell value">74</div>
+                                <div class="matrix-cell value">82</div>
+                                <div class="matrix-cell value">71</div>
+                                <div class="matrix-cell row-header">Dim 3</div>
+                                <div class="matrix-cell value">83</div>
+                                <div class="matrix-cell value">76</div>
+                                <div class="matrix-cell value">69</div>
+                                <div class="matrix-cell value power">94</div>
+                                <div class="matrix-cell value">77</div>
+                                <div class="matrix-cell row-header">Dim 4</div>
+                                <div class="matrix-cell value">75</div>
+                                <div class="matrix-cell value">81</div>
+                                <div class="matrix-cell value">86</div>
+                                <div class="matrix-cell value">73</div>
+                                <div class="matrix-cell value">80</div>
+                                <div class="matrix-cell row-header">Dim 5</div>
+                                <div class="matrix-cell value">79</div>
+                                <div class="matrix-cell value">67</div>
+                                <div class="matrix-cell value">84</div>
+                                <div class="matrix-cell value">70</div>
+                                <div class="matrix-cell value power">89</div>
+                            </div>
+                            <div class="matrix-toolbar">
+                                <button class="toolbar-btn">⚡ Power Spots</button>
+                                <button class="toolbar-btn">🎯 Plays</button>
+                                <button class="toolbar-btn">📊 Scenarios</button>
+                            </div>
+                        </div>
+                        <div class="live-preview glass-card">
+                            <div class="preview-header">
+                                <span class="preview-title">Live Preview</span>
+                                <span class="preview-badge">Real-time</span>
+                            </div>
+                            <div class="metrics-grid">
+                                <div class="metric-item">
+                                    <div class="metric-label">Coherence</div>
+                                    <div class="metric-value">87%</div>
+                                    <div class="metric-bar"><div class="metric-bar-fill" style="width: 87%"></div></div>
+                                </div>
+                                <div class="metric-item">
+                                    <div class="metric-label">Balance</div>
+                                    <div class="metric-value">92%</div>
+                                    <div class="metric-bar"><div class="metric-bar-fill" style="width: 92%"></div></div>
+                                </div>
+                            </div>
+                            <div class="insights-section">
+                                <div class="insights-title">Insights</div>
+                                <div class="insight-item">Strong leverage detected in S3-D1. Consider prioritizing this transformation path.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Option 4: Champagne -->
+        <div class="option option-champagne">
+            <div class="option-header">
+                <h2>4. Champagne Glow</h2>
+                <div class="colors">
+                    <div class="color-swatch" style="background: #FFFDF8;"></div>
+                    <div class="color-swatch" style="background: #FFF9F0;"></div>
+                    <div class="color-swatch" style="background: #FFF5E6;"></div>
+                    <span class="color-label">Branded, luxurious, cohesive</span>
+                </div>
+            </div>
+            <div class="app-mockup">
+                <div class="sidebar glass-subtle">
+                    <div class="sidebar-header">
+                        <div class="logo-icon">
+                            <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                        </div>
+                        <span class="logo-text">Reality Transformer</span>
+                    </div>
+                    <button class="new-chat-btn">+ New Chat</button>
+                    <div class="conversations">
+                        <div class="conv-group-label">Today</div>
+                        <div class="conv-item active">Market expansion strategy...</div>
+                        <div class="conv-item">Digital transformation plan</div>
+                        <div class="conv-group-label">Yesterday</div>
+                        <div class="conv-item">Q4 revenue analysis</div>
+                        <div class="conv-item">Team restructuring options</div>
+                    </div>
+                    <div class="user-section">
+                        <div class="user-avatar">JD</div>
+                        <div class="user-info">
+                            <div class="user-name">John Doe</div>
+                            <div class="user-email">john@company.com</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="main-content">
+                    <div class="chat-section">
+                        <div class="messages-area glass-card">
+                            <div class="message user">How can we expand into the Asian market while maintaining our current profit margins?</div>
+                            <div class="message assistant">Based on your transformation matrix, I'd recommend focusing on Stage 3 dimensions first. The power spots indicate strong leverage in supply chain optimization...</div>
+                        </div>
+                        <div class="input-area glass-card">
+                            <div class="input-controls">
+                                <button class="control-btn">📎 Attach</button>
+                                <select class="model-select">
+                                    <option>Claude Opus 4.5</option>
+                                </select>
+                                <button class="control-btn">🌐 Web</button>
+                            </div>
+                            <div class="input-row">
+                                <textarea class="text-input" placeholder="Ask about your transformation..."></textarea>
+                                <button class="send-btn">
+                                    <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="right-panel">
+                        <div class="matrix-panel glass-card">
+                            <div class="matrix-header">
+                                <span class="matrix-title">Transformation Matrix</span>
+                            </div>
+                            <div class="matrix-grid">
+                                <div class="matrix-cell"></div>
+                                <div class="matrix-cell header">S1</div>
+                                <div class="matrix-cell header">S2</div>
+                                <div class="matrix-cell header">S3</div>
+                                <div class="matrix-cell header">S4</div>
+                                <div class="matrix-cell header">S5</div>
+                                <div class="matrix-cell row-header">Dim 1</div>
+                                <div class="matrix-cell value">72</div>
+                                <div class="matrix-cell value">85</div>
+                                <div class="matrix-cell value power">91</div>
+                                <div class="matrix-cell value">78</div>
+                                <div class="matrix-cell value">65</div>
+                                <div class="matrix-cell row-header">Dim 2</div>
+                                <div class="matrix-cell value">68</div>
+                                <div class="matrix-cell value power">88</div>
+                                <div class="matrix-cell value">74</div>
+                                <div class="matrix-cell value">82</div>
+                                <div class="matrix-cell value">71</div>
+                                <div class="matrix-cell row-header">Dim 3</div>
+                                <div class="matrix-cell value">83</div>
+                                <div class="matrix-cell value">76</div>
+                                <div class="matrix-cell value">69</div>
+                                <div class="matrix-cell value power">94</div>
+                                <div class="matrix-cell value">77</div>
+                                <div class="matrix-cell row-header">Dim 4</div>
+                                <div class="matrix-cell value">75</div>
+                                <div class="matrix-cell value">81</div>
+                                <div class="matrix-cell value">86</div>
+                                <div class="matrix-cell value">73</div>
+                                <div class="matrix-cell value">80</div>
+                                <div class="matrix-cell row-header">Dim 5</div>
+                                <div class="matrix-cell value">79</div>
+                                <div class="matrix-cell value">67</div>
+                                <div class="matrix-cell value">84</div>
+                                <div class="matrix-cell value">70</div>
+                                <div class="matrix-cell value power">89</div>
+                            </div>
+                            <div class="matrix-toolbar">
+                                <button class="toolbar-btn">⚡ Power Spots</button>
+                                <button class="toolbar-btn">🎯 Plays</button>
+                                <button class="toolbar-btn">📊 Scenarios</button>
+                            </div>
+                        </div>
+                        <div class="live-preview glass-card">
+                            <div class="preview-header">
+                                <span class="preview-title">Live Preview</span>
+                                <span class="preview-badge">Real-time</span>
+                            </div>
+                            <div class="metrics-grid">
+                                <div class="metric-item">
+                                    <div class="metric-label">Coherence</div>
+                                    <div class="metric-value">87%</div>
+                                    <div class="metric-bar"><div class="metric-bar-fill" style="width: 87%"></div></div>
+                                </div>
+                                <div class="metric-item">
+                                    <div class="metric-label">Balance</div>
+                                    <div class="metric-value">92%</div>
+                                    <div class="metric-bar"><div class="metric-bar-fill" style="width: 92%"></div></div>
+                                </div>
+                            </div>
+                            <div class="insights-section">
+                                <div class="insights-title">Insights</div>
+                                <div class="insight-item">Strong leverage detected in S3-D1. Consider prioritizing this transformation path.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Option 5: Rose -->
+        <div class="option option-rose">
+            <div class="option-header">
+                <h2>5. Rose / Blush</h2>
+                <div class="colors">
+                    <div class="color-swatch" style="background: #FFFBFC;"></div>
+                    <div class="color-swatch" style="background: #FFF5F6;"></div>
+                    <div class="color-swatch" style="background: #FFEEF0;"></div>
+                    <span class="color-label">Warm, unique, distinctive</span>
+                </div>
+            </div>
+            <div class="app-mockup">
+                <div class="sidebar glass-subtle">
+                    <div class="sidebar-header">
+                        <div class="logo-icon">
+                            <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                        </div>
+                        <span class="logo-text">Reality Transformer</span>
+                    </div>
+                    <button class="new-chat-btn">+ New Chat</button>
+                    <div class="conversations">
+                        <div class="conv-group-label">Today</div>
+                        <div class="conv-item active">Market expansion strategy...</div>
+                        <div class="conv-item">Digital transformation plan</div>
+                        <div class="conv-group-label">Yesterday</div>
+                        <div class="conv-item">Q4 revenue analysis</div>
+                        <div class="conv-item">Team restructuring options</div>
+                    </div>
+                    <div class="user-section">
+                        <div class="user-avatar">JD</div>
+                        <div class="user-info">
+                            <div class="user-name">John Doe</div>
+                            <div class="user-email">john@company.com</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="main-content">
+                    <div class="chat-section">
+                        <div class="messages-area glass-card">
+                            <div class="message user">How can we expand into the Asian market while maintaining our current profit margins?</div>
+                            <div class="message assistant">Based on your transformation matrix, I'd recommend focusing on Stage 3 dimensions first. The power spots indicate strong leverage in supply chain optimization...</div>
+                        </div>
+                        <div class="input-area glass-card">
+                            <div class="input-controls">
+                                <button class="control-btn">📎 Attach</button>
+                                <select class="model-select">
+                                    <option>Claude Opus 4.5</option>
+                                </select>
+                                <button class="control-btn">🌐 Web</button>
+                            </div>
+                            <div class="input-row">
+                                <textarea class="text-input" placeholder="Ask about your transformation..."></textarea>
+                                <button class="send-btn">
+                                    <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="right-panel">
+                        <div class="matrix-panel glass-card">
+                            <div class="matrix-header">
+                                <span class="matrix-title">Transformation Matrix</span>
+                            </div>
+                            <div class="matrix-grid">
+                                <div class="matrix-cell"></div>
+                                <div class="matrix-cell header">S1</div>
+                                <div class="matrix-cell header">S2</div>
+                                <div class="matrix-cell header">S3</div>
+                                <div class="matrix-cell header">S4</div>
+                                <div class="matrix-cell header">S5</div>
+                                <div class="matrix-cell row-header">Dim 1</div>
+                                <div class="matrix-cell value">72</div>
+                                <div class="matrix-cell value">85</div>
+                                <div class="matrix-cell value power">91</div>
+                                <div class="matrix-cell value">78</div>
+                                <div class="matrix-cell value">65</div>
+                                <div class="matrix-cell row-header">Dim 2</div>
+                                <div class="matrix-cell value">68</div>
+                                <div class="matrix-cell value power">88</div>
+                                <div class="matrix-cell value">74</div>
+                                <div class="matrix-cell value">82</div>
+                                <div class="matrix-cell value">71</div>
+                                <div class="matrix-cell row-header">Dim 3</div>
+                                <div class="matrix-cell value">83</div>
+                                <div class="matrix-cell value">76</div>
+                                <div class="matrix-cell value">69</div>
+                                <div class="matrix-cell value power">94</div>
+                                <div class="matrix-cell value">77</div>
+                                <div class="matrix-cell row-header">Dim 4</div>
+                                <div class="matrix-cell value">75</div>
+                                <div class="matrix-cell value">81</div>
+                                <div class="matrix-cell value">86</div>
+                                <div class="matrix-cell value">73</div>
+                                <div class="matrix-cell value">80</div>
+                                <div class="matrix-cell row-header">Dim 5</div>
+                                <div class="matrix-cell value">79</div>
+                                <div class="matrix-cell value">67</div>
+                                <div class="matrix-cell value">84</div>
+                                <div class="matrix-cell value">70</div>
+                                <div class="matrix-cell value power">89</div>
+                            </div>
+                            <div class="matrix-toolbar">
+                                <button class="toolbar-btn">⚡ Power Spots</button>
+                                <button class="toolbar-btn">🎯 Plays</button>
+                                <button class="toolbar-btn">📊 Scenarios</button>
+                            </div>
+                        </div>
+                        <div class="live-preview glass-card">
+                            <div class="preview-header">
+                                <span class="preview-title">Live Preview</span>
+                                <span class="preview-badge">Real-time</span>
+                            </div>
+                            <div class="metrics-grid">
+                                <div class="metric-item">
+                                    <div class="metric-label">Coherence</div>
+                                    <div class="metric-value">87%</div>
+                                    <div class="metric-bar"><div class="metric-bar-fill" style="width: 87%"></div></div>
+                                </div>
+                                <div class="metric-item">
+                                    <div class="metric-label">Balance</div>
+                                    <div class="metric-value">92%</div>
+                                    <div class="metric-bar"><div class="metric-bar-fill" style="width: 92%"></div></div>
+                                </div>
+                            </div>
+                            <div class="insights-section">
+                                <div class="insights-title">Insights</div>
+                                <div class="insight-item">Strong leverage detected in S3-D1. Consider prioritizing this transformation path.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Color Reference -->
+    <div class="color-reference">
+        <h3>Color Reference - Background Gradients</h3>
+        <div class="color-grid">
+            <div class="color-option">
+                <h4>Ice Blue</h4>
+                <div class="color-samples">
+                    <div class="color-sample" style="background: #F8FAFF;">#F8FAFF</div>
+                    <div class="color-sample" style="background: #F0F5FF;">#F0F5FF</div>
+                    <div class="color-sample" style="background: #E8F1FF;">#E8F1FF</div>
+                </div>
+            </div>
+            <div class="color-option">
+                <h4>Mint</h4>
+                <div class="color-samples">
+                    <div class="color-sample" style="background: #F7FDFB;">#F7FDFB</div>
+                    <div class="color-sample" style="background: #F0FAF7;">#F0FAF7</div>
+                    <div class="color-sample" style="background: #E6F7F3;">#E6F7F3</div>
+                </div>
+            </div>
+            <div class="color-option">
+                <h4>Lavender</h4>
+                <div class="color-samples">
+                    <div class="color-sample" style="background: #FAFAFF;">#FAFAFF</div>
+                    <div class="color-sample" style="background: #F5F3FF;">#F5F3FF</div>
+                    <div class="color-sample" style="background: #EDE9FE;">#EDE9FE</div>
+                </div>
+            </div>
+            <div class="color-option">
+                <h4>Champagne</h4>
+                <div class="color-samples">
+                    <div class="color-sample" style="background: #FFFDF8;">#FFFDF8</div>
+                    <div class="color-sample" style="background: #FFF9F0;">#FFF9F0</div>
+                    <div class="color-sample" style="background: #FFF5E6;">#FFF5E6</div>
+                </div>
+            </div>
+            <div class="color-option">
+                <h4>Rose</h4>
+                <div class="color-samples">
+                    <div class="color-sample" style="background: #FFFBFC;">#FFFBFC</div>
+                    <div class="color-sample" style="background: #FFF5F6;">#FFF5F6</div>
+                    <div class="color-sample" style="background: #FFEEF0;">#FFEEF0</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
