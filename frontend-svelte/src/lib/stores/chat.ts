@@ -347,6 +347,21 @@ function createChatStore() {
 									}));
 									break;
 
+								case 'title':
+									// Update conversation title (generated in Call 1)
+									if (parsed.title && conversationId) {
+										update(state => ({
+											...state,
+											currentConversation: state.currentConversation
+												? { ...state.currentConversation, title: parsed.title }
+												: null,
+											conversations: state.conversations.map(c =>
+												c.id === conversationId ? { ...c, title: parsed.title } : c
+											),
+										}));
+									}
+									break;
+
 								case 'structured_data':
 									// Store structured matrix/paths/documents data
 									update(state => ({
@@ -384,10 +399,7 @@ function createChatStore() {
 					streamingContent: '',
 				}));
 
-				// Generate contextual title after first message
-				if (isFirstMessage) {
-					this.generateTitle(conversationId);
-				}
+				// Title is now generated in Call 1 and sent via SSE 'title' event
 
 			} catch (error: any) {
 				if (error.name === 'AbortError') {

@@ -1091,6 +1091,14 @@ async def inference_stream(
 
         evidence = await parse_query_with_web_research(context_enhanced_prompt, model_config, web_search_data)
         call1_token_usage = evidence.pop('_call1_token_usage', None)
+
+        # Extract and emit conversation title (generated in Call 1)
+        conversation_title = evidence.pop('conversation_title', None)
+        if conversation_title:
+            conversation_title = conversation_title.strip().strip('"\'')  # Clean up quotes
+            api_logger.info(f"[TITLE] Generated: {conversation_title}")
+            yield sse_event("title", {"title": conversation_title})
+
         obs_count = len(evidence.get('observations'))
         api_logger.info(f"[EVIDENCE] Extracted {obs_count} observations")
         api_logger.debug(f"[EVIDENCE] Goal: {evidence.get('goal')}")
@@ -1696,8 +1704,15 @@ JSON structure:
   ],
   "targets": ["At_attachment", "F_fear", "R_resistance", "M_maya", "breakthrough_probability", "bottleneck_primary", "leverage_highest", "matrix_truth", "matrix_power", "cascade_cleanliness", "grace_availability", "karma_burn_rate", "death_d1_identity", "transformation_vector", "pipeline_flow_rate", "network_coherence", "quantum_tunneling_prob"],
   "relevant_oof_components": ["Sacred Chain", "Cascade", "UCB", "Seven Matrices", "Death Architecture"],
-  "missing_operator_priority": ["V", "Se", "Ce", "Su"]
+  "missing_operator_priority": ["V", "Se", "Ce", "Su"],
+  "conversation_title": "4-8 word concise descriptive title for this conversation"
 }}
+
+CONVERSATION TITLE (REQUIRED):
+- Generate a concise, descriptive title (4-8 words) that captures the essence of the user's query
+- Focus on the core topic/intent, not generic phrases
+- Examples: "NVIDIA Investment Analysis", "Career Change to Tech", "Startup Growth Strategy"
+- Return ONLY the title text, no quotes or punctuation at the end
 
 MISSING OPERATOR PRIORITY (CRITICAL):
 - 'missing_operator_priority' lists operators you could NOT confidently extract from the user input
