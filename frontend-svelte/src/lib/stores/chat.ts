@@ -187,11 +187,11 @@ function createChatStore() {
 			isSelectingConversation = true;
 
 			try {
-				// Load conversation, messages, matrix data, and questions in parallel
-				const [conversation, messagesResponse, matrixData, questionsResponse] = await Promise.all([
+				// Load conversation, messages, documents, and questions in parallel
+				const [conversation, messagesResponse, documentsResponse, questionsResponse] = await Promise.all([
 					api.get<Conversation>(`/api/chat/conversations/${conversationId}`),
 					api.get<Message[]>(`/api/chat/conversations/${conversationId}/messages`),
-					api.get<StructuredData['matrix_data'] | null>(`/api/matrix/${conversationId}/data`).catch(() => null),
+					api.get<any[]>(`/api/matrix/${conversationId}/documents`).catch(() => []),
 					api.get<Question[]>(`/api/chat/conversations/${conversationId}/questions`).catch(() => []),
 				]);
 
@@ -211,13 +211,17 @@ function createChatStore() {
 					isLoading: false,
 				}));
 
-				// Apply matrix data to matrix store if present
-				if (matrixData) {
-					matrix.populateFromStructuredData(matrixData);
+				// Apply documents to matrix store if present (new architecture)
+				const documents = Array.isArray(documentsResponse) ? documentsResponse : [];
+				if (documents.length > 0) {
+					matrix.populateFromStructuredData({ documents });
 				} else {
 					// Reset matrix to default state if no data
 					matrix.initializeMatrix();
 				}
+
+				// Set conversation ID in matrix store for API calls
+				matrix.setConversationId(conversationId);
 			} catch (error: any) {
 				update(state => ({
 					...state,
@@ -250,6 +254,9 @@ function createChatStore() {
 			}
 
 			if (!conversationId) return; // Safety guard
+
+			// Set conversation ID in matrix store for API calls
+			matrix.setConversationId(conversationId);
 
 			// Add user message immediately
 			const userMessage: Message = {
