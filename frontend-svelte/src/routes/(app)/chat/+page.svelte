@@ -1067,10 +1067,13 @@
 		align-items: center;
 		justify-content: center;
 		gap: 0.5rem;
-		min-height: 44px;
-		padding: 0.5rem 1rem;
+		min-height: 44px; /* Match controls-row */
+		padding-top: 0.5rem; /* Match controls-row padding */
+		padding-left: 1rem;
+		padding-right: 1rem;
 		background: var(--color-field-depth);
 		border-radius: 0.5rem;
+		border-top: 1px solid var(--color-veil-thin);
 		flex-shrink: 0;
 	}
 
