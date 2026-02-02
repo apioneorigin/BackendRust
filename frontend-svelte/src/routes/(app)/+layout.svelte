@@ -734,12 +734,12 @@
 	.user-avatar {
 		width: 28px;
 		height: 28px;
-		background: var(--gradient-primary);
+		background: var(--color-primary-500);
 		border-radius: 50%;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		color: white;
+		color: #ffffff;
 		font-weight: 600;
 		font-size: 13px;
 		flex-shrink: 0;
@@ -891,10 +891,7 @@
 	.mobile-logo {
 		font-size: 1rem;
 		font-weight: 700;
-		background: var(--gradient-primary);
-		-webkit-background-clip: text;
-		-webkit-text-fill-color: transparent;
-		background-clip: text;
+		color: var(--color-primary-500);
 	}
 
 	.mobile-actions {

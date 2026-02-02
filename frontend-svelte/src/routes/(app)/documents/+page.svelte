@@ -265,12 +265,12 @@
 	.header-icon {
 		width: 48px;
 		height: 48px;
-		background: var(--gradient-primary);
+		background: var(--color-primary-500);
 		border-radius: 0.75rem;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		color: white;
+		color: #ffffff;
 	}
 
 	.page-header h1 {

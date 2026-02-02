@@ -577,12 +577,12 @@
 	.user-avatar {
 		width: 36px;
 		height: 36px;
-		background: var(--gradient-primary);
+		background: var(--color-primary-500);
 		border-radius: 50%;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		color: white;
+		color: #ffffff;
 		font-weight: 600;
 		font-size: 0.875rem;
 	}
