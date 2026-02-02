@@ -91,45 +91,40 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		gap: 0.375rem;
+		gap: 0.25rem;
 		padding: 0.5rem;
-		background: var(--color-field-depth);
-		border-radius: 0.5rem;
 	}
 
 	.toolbar-btn {
 		display: flex;
 		align-items: center;
-		gap: 0.375rem;
-		padding: 0.5rem 0.75rem;
-		background: var(--color-field-surface);
+		gap: 0.25rem;
+		padding: 0.375rem 0.5rem;
+		background: transparent;
 		border: none;
-		border-radius: 0.5rem;
-		font-size: 0.6875rem;
+		border-radius: 0.25rem;
+		font-size: 0.625rem;
 		font-weight: 500;
-		color: var(--color-text-manifest);
+		color: var(--color-text-whisper);
 		cursor: pointer;
-		transition: all 0.15s ease;
+		transition: all 0.1s ease;
 		white-space: nowrap;
 	}
 
 	.toolbar-btn:hover {
-		background: var(--color-primary-50);
-		color: var(--color-primary-600);
-	}
-
-	[data-theme='dark'] .toolbar-btn:hover {
-		background: rgba(15, 76, 117, 0.3);
-		color: var(--color-primary-400);
+		background: var(--color-accent-subtle);
+		color: var(--color-text-source);
 	}
 
 	.toolbar-btn.active {
-		background: var(--color-primary-500);
-		color: white;
+		background: var(--color-text-source);
+		color: var(--color-field-void);
 	}
 
 	.toolbar-btn svg {
 		flex-shrink: 0;
+		width: 14px;
+		height: 14px;
 	}
 
 	@media (max-width: 900px) {
@@ -138,7 +133,7 @@
 		}
 
 		.toolbar-btn {
-			padding: 0.5rem;
+			padding: 0.375rem;
 		}
 	}
 </style>
