@@ -14,7 +14,7 @@ export default {
 		},
 		extend: {
 			colors: {
-				// Primary (Sophisticated Indigo)
+				// Primary (Energetic Cyan - alive, fresh, flowing)
 				primary: {
 					50: 'var(--color-primary-50)',
 					100: 'var(--color-primary-100)',
@@ -28,7 +28,7 @@ export default {
 					900: 'var(--color-primary-900)',
 					950: 'var(--color-primary-950)'
 				},
-				// Accent (Sophisticated Indigo)
+				// Accent (Energetic Cyan)
 				accent: 'var(--color-accent)',
 				// Challenger (Warm Orange)
 				challenger: 'var(--color-challenger)',

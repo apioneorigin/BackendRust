@@ -28,24 +28,24 @@
 	--touch-target-comfortable: 48px;
 
 	/* ─────────────────────────────────────────────────────────────────────────────
-	   ACCENT - Sophisticated Indigo (premium, intelligent, innovative)
+	   ACCENT - Energetic Cyan (alive, fresh, flowing life force)
 	   ───────────────────────────────────────────────────────────────────────────── */
-	--color-accent: #4338ca;
-	--color-accent-subtle: rgba(67, 56, 202, 0.06);
-	--color-accent-hover: rgba(67, 56, 202, 0.10);
+	--color-accent: #06b6d4;
+	--color-accent-subtle: rgba(6, 182, 212, 0.08);
+	--color-accent-hover: rgba(6, 182, 212, 0.12);
 
-	/* Primary palette - Sophisticated Indigo family */
-	--color-primary-950: #1e1b4b;  /* Deepest */
-	--color-primary-900: #252262;  /* Very dark */
-	--color-primary-800: #312e81;
-	--color-primary-700: #3730a3;
-	--color-primary-600: #3d34b8;  /* Hover state */
-	--color-primary-500: #4338ca;  /* Main - Sophisticated Indigo */
-	--color-primary-400: #5a50d9;
-	--color-primary-300: #7c74e8;
-	--color-primary-200: #a5a1f2;
-	--color-primary-100: rgba(67, 56, 202, 0.12);
-	--color-primary-50: rgba(67, 56, 202, 0.06);
+	/* Primary palette - Energetic Cyan family */
+	--color-primary-950: #083344;  /* Deepest */
+	--color-primary-900: #164e63;  /* Very dark */
+	--color-primary-800: #155e75;
+	--color-primary-700: #0e7490;
+	--color-primary-600: #0891b2;  /* Hover state */
+	--color-primary-500: #06b6d4;  /* Main - Energetic Cyan */
+	--color-primary-400: #22d3ee;
+	--color-primary-300: #67e8f9;
+	--color-primary-200: #a5f3fc;
+	--color-primary-100: rgba(6, 182, 212, 0.12);
+	--color-primary-50: rgba(6, 182, 212, 0.06);
 
 	/* ─────────────────────────────────────────────────────────────────────────────
 	   SURFACES - Pure white, no layering
@@ -99,10 +99,10 @@
 	--ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 
 	/* ─────────────────────────────────────────────────────────────────────────────
-	   GRADIENTS - Sophisticated Indigo (kept minimal for premium feel)
+	   GRADIENTS - Energetic Cyan (minimal, let the color breathe)
 	   ───────────────────────────────────────────────────────────────────────────── */
-	--gradient-primary: linear-gradient(135deg, #312e81 0%, #4338ca 100%);
-	--gradient-subtle: linear-gradient(180deg, rgba(67, 56, 202, 0.02) 0%, transparent 100%);
+	--gradient-primary: linear-gradient(135deg, #0e7490 0%, #06b6d4 100%);
+	--gradient-subtle: linear-gradient(180deg, rgba(6, 182, 212, 0.03) 0%, transparent 100%);
 
 	/* Semantic colors */
 	--color-error-500: #dc2626;
@@ -122,23 +122,23 @@
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 [data-theme='dark'] {
-	--color-accent: #818cf8;
-	--color-accent-subtle: rgba(129, 140, 248, 0.10);
-	--color-accent-hover: rgba(129, 140, 248, 0.16);
+	--color-accent: #22d3ee;
+	--color-accent-subtle: rgba(34, 211, 238, 0.12);
+	--color-accent-hover: rgba(34, 211, 238, 0.18);
 
-	--color-primary-950: #0f0e24;
-	--color-primary-900: #1e1b4b;
-	--color-primary-800: #312e81;
-	--color-primary-700: #4338ca;
-	--color-primary-600: #5a50d9;
-	--color-primary-500: #818cf8;  /* Lighter for dark mode visibility */
-	--color-primary-400: #a5b4fc;
-	--color-primary-300: #c7d2fe;
-	--color-primary-200: #e0e7ff;
-	--color-primary-100: rgba(129, 140, 248, 0.12);
-	--color-primary-50: rgba(129, 140, 248, 0.08);
+	--color-primary-950: #042f2e;
+	--color-primary-900: #083344;
+	--color-primary-800: #164e63;
+	--color-primary-700: #0e7490;
+	--color-primary-600: #06b6d4;
+	--color-primary-500: #22d3ee;  /* Brighter for dark mode visibility */
+	--color-primary-400: #67e8f9;
+	--color-primary-300: #a5f3fc;
+	--color-primary-200: #cffafe;
+	--color-primary-100: rgba(34, 211, 238, 0.12);
+	--color-primary-50: rgba(34, 211, 238, 0.08);
 
-	--gradient-primary: linear-gradient(135deg, #4338ca 0%, #818cf8 100%);
+	--gradient-primary: linear-gradient(135deg, #06b6d4 0%, #22d3ee 100%);
 
 	--color-field-void: #0a0a0a;
 	--color-field-depth: #111111;
