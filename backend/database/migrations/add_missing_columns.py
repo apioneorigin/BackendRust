@@ -42,8 +42,8 @@ def prepare_async_url(url: str) -> tuple[str, dict]:
 
 
 # Define missing columns for chat_conversations
+# NOTE: matrix_data removed - now using generated_documents instead
 MISSING_COLUMNS = [
-    ("chat_conversations", "matrix_data", "JSONB"),
     ("chat_conversations", "generated_paths", "JSONB"),
     ("chat_conversations", "generated_documents", "JSONB"),
 ]
