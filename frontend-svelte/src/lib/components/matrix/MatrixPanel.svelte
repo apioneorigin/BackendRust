@@ -215,7 +215,7 @@
 	.matrix-grid {
 		display: grid;
 		grid-template-columns: 48px repeat(5, 1fr);
-		grid-template-rows: 40px repeat(5, 1fr);
+		grid-template-rows: 48px repeat(5, minmax(0, 1fr));
 		gap: 2px;
 		flex: 1;
 		min-height: 0;
@@ -224,7 +224,7 @@
 
 	.compact .matrix-grid {
 		grid-template-columns: 40px repeat(5, 1fr);
-		grid-template-rows: 36px repeat(5, 1fr);
+		grid-template-rows: 42px repeat(5, minmax(0, 1fr));
 		gap: 2px;
 	}
 
@@ -250,18 +250,20 @@
 		overflow: hidden;
 	}
 
-	/* Column header text: vertical, one word per line */
+	/* Column header text: vertical, one word per line (max 3 lines) */
 	.col-header .header-text {
 		font-size: 0.5rem;
 		font-weight: 500;
 		color: var(--color-text-whisper);
 		text-align: center;
-		line-height: 1.1;
+		line-height: 1.15;
 		text-transform: uppercase;
 		letter-spacing: 0.02em;
 		word-spacing: 100vw; /* Forces each word to its own line */
 		overflow: hidden;
-		max-height: 100%;
+		display: -webkit-box;
+		-webkit-line-clamp: 3;
+		-webkit-box-orient: vertical;
 	}
 
 	/* Row header text: horizontal, single line */
