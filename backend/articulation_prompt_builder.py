@@ -1027,7 +1027,16 @@ Output this EXACT marker followed by valid JSON:
       ]
     },
     ... (5 total strategic paths)
-  ]
+  ],
+  "follow_up_question": {
+    "question_text": "A natural, conversational follow-up question to understand the user better",
+    "options": {
+      "option_1": "First option representing one way they might experience their situation",
+      "option_2": "Second option representing a different experience",
+      "option_3": "Third option with another perspective",
+      "option_4": "Fourth option completing the spectrum of possibilities"
+    }
+  }
 }
 ===STRUCTURED_DATA_END===
 ```
@@ -1039,6 +1048,7 @@ CRITICAL REQUIREMENTS:
 4. **10x10 MATRICES**: Each document has 10 row options, 10 column options, and 100 cells
 5. **CELL KEY FORMAT**: Use "row-col" format like "0-0", "0-1", etc. (NOT "r0_c0")
 6. **SELECTED**: selected_rows and selected_columns indicate which 5 are shown initially
+7. **FOLLOW-UP QUESTION**: ALWAYS include a follow_up_question to deepen understanding of the user's situation
 
 ### DOCUMENT DIFFERENTIATION:
 Each document should offer a DIFFERENT LENS on the user's situation:
@@ -1084,7 +1094,14 @@ Each cell MUST have exactly 5 dimensions following this semantic framework:
 
 4. **Paths (5 total)**: Strategic approaches from conservative to aggressive
 
-**CONTEXT AWARENESS**: If follow-up message with unchanged context, return "documents": []"""
+5. **Follow-up Question**: ONE question with exactly 4 options
+   - Question must feel natural and conversational, not clinical
+   - Options should span a spectrum of inner experiences
+   - Use the user's language and domain
+   - Each option 1-2 sentences representing genuinely different experiences
+   - Focus on understanding aspects that would deepen the analysis
+
+**CONTEXT AWARENESS**: If follow-up message with unchanged context, you MAY return "documents": [] but ALWAYS include follow_up_question"""
 
     def _build_user_query(self, user_context: UserContext) -> str:
         """Build the user query section"""

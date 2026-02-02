@@ -1446,9 +1446,9 @@ Articulation Tokens: {token_count}
         })
 
         # =====================================================================
-        # LLM-DRIVEN QUESTION FLOW - After full response
-        # ONE mandatory question per response. Backend decides WHICH operators to target.
-        # LLM generates the actual question text and options.
+        # QUESTION FLOW - Combined with Call 2 (no separate Call 3)
+        # Question is now generated as part of Call 2 structured data.
+        # Fall back to separate LLM call only if Call 2 didn't include a question.
         # =====================================================================
         # Get missing_operator_priority from LLM Call 1
         missing_operator_priority = evidence.get('missing_operator_priority', [])
@@ -1462,35 +1462,49 @@ Articulation Tokens: {token_count}
         )
 
         if question_context:
-            # LLM generates the actual question content
-            llm_question = await generate_question_via_llm(
-                model_config=model_config,
-                query=prompt,
-                goal_context=evidence.get('goal_context', {}),
-                question_context=question_context
-            )
+            # First, try to get question from Call 2 structured data (no extra API call)
+            llm_question = None
+            if structured_data and structured_data.get('follow_up_question'):
+                follow_up = structured_data['follow_up_question']
+                if follow_up.get('question_text') and follow_up.get('options'):
+                    llm_question = {
+                        'question_text': follow_up['question_text'],
+                        'options': follow_up['options']
+                    }
+                    api_logger.info(f"[QUESTION] Using question from Call 2 structured data (no Call 3 needed)")
+
+            # Fall back to separate LLM call (Call 3) only if Call 2 didn't include a question
+            if not llm_question:
+                api_logger.info(f"[QUESTION] No question in Call 2 structured data, falling back to Call 3")
+                llm_question = await generate_question_via_llm(
+                    model_config=model_config,
+                    query=prompt,
+                    goal_context=evidence.get('goal_context', {}),
+                    question_context=question_context
+                )
+
+                if llm_question:
+                    # Extract Call 3 token usage and emit updated totals
+                    call3_token_usage = llm_question.pop('_call3_token_usage', None)
+                    if call3_token_usage:
+                        c3_in = call3_token_usage["input_tokens"]
+                        c3_out = call3_token_usage["output_tokens"]
+                        updated_in = c1_in + c2_in + c3_in
+                        updated_out = c1_out + c2_out + c3_out
+                        updated_all = updated_in + updated_out
+                        updated_cost = (updated_in * pricing["input"] + updated_out * pricing["output"]) / 1_000_000
+                        api_logger.info(f"[TOKEN USAGE] Call 1: {c1_in}+{c1_out}={c1_in+c1_out} | Call 2: {c2_in}+{c2_out}={c2_in+c2_out} | Call 3: {c3_in}+{c3_out}={c3_in+c3_out} | Total: {updated_in}+{updated_out}={updated_all} | Cost: ${updated_cost:.6f}")
+                        yield sse_event("usage", {
+                            "call1": {"input_tokens": c1_in, "output_tokens": c1_out, "total_tokens": c1_in + c1_out},
+                            "call2": {"input_tokens": c2_in, "output_tokens": c2_out, "total_tokens": c2_in + c2_out},
+                            "call3": {"input_tokens": c3_in, "output_tokens": c3_out, "total_tokens": c3_in + c3_out},
+                            "input_tokens": updated_in,
+                            "output_tokens": updated_out,
+                            "total_tokens": updated_all,
+                            "cost": round(updated_cost, 6),
+                        })
 
             if llm_question:
-                # Extract Call 3 token usage and emit updated totals
-                call3_token_usage = llm_question.pop('_call3_token_usage', None)
-                if call3_token_usage:
-                    c3_in = call3_token_usage["input_tokens"]
-                    c3_out = call3_token_usage["output_tokens"]
-                    updated_in = c1_in + c2_in + c3_in
-                    updated_out = c1_out + c2_out + c3_out
-                    updated_all = updated_in + updated_out
-                    updated_cost = (updated_in * pricing["input"] + updated_out * pricing["output"]) / 1_000_000
-                    api_logger.info(f"[TOKEN USAGE] Call 1: {c1_in}+{c1_out}={c1_in+c1_out} | Call 2: {c2_in}+{c2_out}={c2_in+c2_out} | Call 3: {c3_in}+{c3_out}={c3_in+c3_out} | Total: {updated_in}+{updated_out}={updated_all} | Cost: ${updated_cost:.6f}")
-                    yield sse_event("usage", {
-                        "call1": {"input_tokens": c1_in, "output_tokens": c1_out, "total_tokens": c1_in + c1_out},
-                        "call2": {"input_tokens": c2_in, "output_tokens": c2_out, "total_tokens": c2_in + c2_out},
-                        "call3": {"input_tokens": c3_in, "output_tokens": c3_out, "total_tokens": c3_in + c3_out},
-                        "input_tokens": updated_in,
-                        "output_tokens": updated_out,
-                        "total_tokens": updated_all,
-                        "cost": round(updated_cost, 6),
-                    })
-
                 from constellation_question_generator import MultiDimensionalQuestion
                 question = MultiDimensionalQuestion(
                     question_id=question_context['question_id'],
@@ -1517,11 +1531,11 @@ Articulation Tokens: {token_count}
                     "purposes_served": question.purposes_served
                 })
 
-                api_logger.info(f"[QUESTION_LLM] Question sent: {question.question_id}")
-                api_logger.info(f"[QUESTION_LLM] Missing operators: {len(missing_operators)}")
+                api_logger.info(f"[QUESTION] Question sent: {question.question_id}")
+                api_logger.info(f"[QUESTION] Missing operators: {len(missing_operators)}")
 
         # =====================================================================
-        # END LLM-DRIVEN QUESTION FLOW
+        # END QUESTION FLOW
         # =====================================================================
 
         # Done
