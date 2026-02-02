@@ -498,7 +498,65 @@ def extract_structured_data(content: str, provider: str = "LLM") -> Optional[dic
 
         return data
     except json.JSONDecodeError as e:
-        api_logger.error(f"[STRUCTURED DATA] Failed to parse JSON: {e}")
+        api_logger.warning(f"[STRUCTURED DATA] Initial parse failed at pos {e.pos}, attempting repair...")
+
+        # Strategy 1: Repair truncated JSON
+        try:
+            repaired = repair_truncated_json(json_str)
+            data = json.loads(repaired)
+            api_logger.info("[STRUCTURED DATA] JSON repair successful")
+            validate_and_log_call2(data, provider)
+            return data
+        except json.JSONDecodeError:
+            pass
+
+        # Strategy 2: Find JSON object boundaries
+        start_idx = json_str.find('{')
+        if start_idx != -1:
+            trimmed = json_str[start_idx:]
+            depth = 0
+            end_idx = -1
+            in_string = False
+            escape = False
+            for i, ch in enumerate(trimmed):
+                if escape:
+                    escape = False
+                    continue
+                if ch == '\\' and in_string:
+                    escape = True
+                    continue
+                if ch == '"' and not escape:
+                    in_string = not in_string
+                    continue
+                if not in_string:
+                    if ch == '{':
+                        depth += 1
+                    elif ch == '}':
+                        depth -= 1
+                        if depth == 0:
+                            end_idx = i
+                            break
+
+            if end_idx != -1:
+                try:
+                    data = json.loads(trimmed[:end_idx + 1])
+                    api_logger.info("[STRUCTURED DATA] Boundary extraction successful")
+                    validate_and_log_call2(data, provider)
+                    return data
+                except json.JSONDecodeError:
+                    pass
+
+            # Strategy 3: Repair the trimmed version
+            try:
+                repaired = repair_truncated_json(trimmed)
+                data = json.loads(repaired)
+                api_logger.info("[STRUCTURED DATA] Trimmed + repair successful")
+                validate_and_log_call2(data, provider)
+                return data
+            except json.JSONDecodeError:
+                pass
+
+        api_logger.error(f"[STRUCTURED DATA] All repair strategies failed")
         api_logger.debug(f"[STRUCTURED DATA] Raw content: {json_str[:500]}...")
         return None
 
