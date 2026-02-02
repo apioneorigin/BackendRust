@@ -380,36 +380,52 @@
 		transform: rotate(180deg);
 	}
 
-	/* New Chat button */
+	/* New Chat button - subtle ghost style like Claude/ChatGPT */
 	.new-chat-section {
-		padding: 0.75rem;
+		padding: 0 0.75rem 0.5rem;
 	}
 
 	.new-chat-btn {
 		width: 100%;
 		display: flex;
 		align-items: center;
-		justify-content: center;
 		gap: 0.5rem;
-		padding: 0.5rem 0.75rem;
-		background: var(--color-primary-500);
-		border: none;
+		padding: 0.5rem 0.625rem;
+		background: transparent;
+		border: 1px solid var(--color-veil-thin);
 		border-radius: 0.375rem;
-		color: #ffffff;
+		color: var(--color-text-manifest);
 		font-size: 15px;
-		font-weight: 500;
+		font-weight: 400;
 		cursor: pointer;
 		transition: all 0.15s ease;
 	}
 
 	.new-chat-btn:hover {
-		background: var(--color-primary-600);
+		background: var(--color-accent-subtle);
+		border-color: var(--color-veil-present);
+		color: var(--color-text-source);
+	}
+
+	.new-chat-btn svg {
+		color: var(--color-text-whisper);
+	}
+
+	.new-chat-btn:hover svg {
+		color: var(--color-text-source);
 	}
 
 	.sidebar.collapsed .new-chat-btn {
 		width: 40px;
 		height: 40px;
 		padding: 0;
+		justify-content: center;
+		border: none;
+		background: var(--color-accent-subtle);
+	}
+
+	.sidebar.collapsed .new-chat-btn:hover {
+		background: var(--color-accent-hover);
 	}
 
 	.sidebar.collapsed .new-chat-btn span {
@@ -569,9 +585,10 @@
 		color: var(--color-text-whisper);
 	}
 
-	/* Sidebar footer / User menu */
+	/* Sidebar footer / User menu - aligned with main content bottom */
 	.sidebar-footer {
 		padding: 0.75rem;
+		padding-bottom: 1.5rem; /* Match chat-layout padding */
 		margin-top: auto;
 		position: relative;
 		border-top: 1px solid var(--color-veil-thin);
@@ -583,6 +600,7 @@
 		align-items: center;
 		gap: 0.625rem;
 		padding: 0.5rem;
+		min-height: 44px; /* Match controls-row height */
 		background: transparent;
 		border: none;
 		border-radius: 0.375rem;
