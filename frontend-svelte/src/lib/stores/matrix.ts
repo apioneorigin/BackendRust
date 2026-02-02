@@ -323,6 +323,37 @@ function createMatrixStore() {
 			update(state => ({ ...state, showRiskHeatmap: !state.showRiskHeatmap }));
 		},
 
+		// Initialize matrix with placeholder data (before LLM generates real data)
+		initializeMatrix() {
+			const placeholderDimensions: CellDimension[] = Array.from({ length: 5 }, (_, i) => ({
+				name: `Dimension ${i + 1}`,
+				value: 50
+			}));
+
+			const placeholderCell: CellData = {
+				value: 50,
+				dimensions: placeholderDimensions,
+				confidence: 0.5,
+				description: '',
+				isLeveragePoint: false,
+				riskLevel: 'low'
+			};
+
+			const displayedMatrixData: CellData[][] = Array.from({ length: 5 }, () =>
+				Array.from({ length: 5 }, () => ({ ...placeholderCell, dimensions: placeholderDimensions.map(d => ({ ...d })) }))
+			);
+
+			update(state => ({
+				...state,
+				displayedMatrixData,
+				displayedRowHeaders: ['Row 1', 'Row 2', 'Row 3', 'Row 4', 'Row 5'],
+				displayedColumnHeaders: ['Column 1', 'Column 2', 'Column 3', 'Column 4', 'Column 5'],
+				displayedRowInsights: ['', '', '', '', ''],
+				displayedColumnInsights: ['', '', '', '', ''],
+				isGenerated: false
+			}));
+		},
+
 		// Reset matrix
 		reset() {
 			set(initialState);
