@@ -1627,7 +1627,7 @@ At (Attachment), Av (Aversion), Se (Seva), Ce (Cleaning), Su (Surrender),
 As (Aspiration), Fe (Fear), De (Desire), Re (Resistance), Hf (Habit Force),
 Sa (Samskara), Bu (Buddhi), Ma (Manas), Ch (Chitta)
 
-CRITICAL OUTPUT FORMAT: You MUST return ONLY a valid JSON object. No markdown formatting, no code blocks, no explanatory text before or after. Start directly with { and end with }. You MUST include ALL 25 operators in observations array.
+CRITICAL OUTPUT FORMAT: You MUST return ONLY a valid JSON object. No markdown formatting, no code blocks, no explanatory text before or after. Start directly with {{ and end with }}. You MUST include ALL 25 operators in observations array.
 
 The observations array MUST contain EXACTLY these 25 operators (use these exact var names):
 Ψ, K, M, G, W, A, P, E, V, L, R, At, Av, Se, Ce, Su, As, Fe, De, Re, Hf, Sa, Bu, Ma, Ch
@@ -1785,7 +1785,7 @@ At (Attachment), Av (Aversion), Se (Seva), Ce (Cleaning), Su (Surrender),
 As (Aspiration), Fe (Fear), De (Desire), Re (Resistance), Hf (Habit Force),
 Sa (Samskara), Bu (Buddhi), Ma (Manas), Ch (Chitta)
 
-CRITICAL OUTPUT FORMAT: You MUST return ONLY a valid JSON object. No markdown formatting, no code blocks, no explanatory text before or after. Start directly with { and end with }. You MUST include ALL 25 operators in observations array.
+CRITICAL OUTPUT FORMAT: You MUST return ONLY a valid JSON object. No markdown formatting, no code blocks, no explanatory text before or after. Start directly with {{ and end with }}. You MUST include ALL 25 operators in observations array.
 
 The observations array MUST contain EXACTLY these 25 operators (use these exact var names):
 Ψ, K, M, G, W, A, P, E, V, L, R, At, Av, Se, Ce, Su, As, Fe, De, Re, Hf, Sa, Bu, Ma, Ch
