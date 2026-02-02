@@ -102,6 +102,7 @@ from reverse_causality import (
 
 # SSE utilities for standardized streaming events
 from utils import sse_status, sse_token, sse_error, sse_done, sse_event
+from llm_schemas import CALL1_SCHEMA, CALL1_OPENAI_SCHEMA, validate_and_log_call1
 
 # Load environment variables
 load_dotenv()
@@ -1870,6 +1871,7 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
 
                 else:
                     # OpenAI Responses API with optional web search
+                    # Uses shared schema from llm_schemas.py (single source of truth)
                     request_body = {
                         "model": model,
                         "instructions": instructions,
@@ -1879,122 +1881,7 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
                             "content": [{"type": "input_text", "text": f"User query:\n{prompt}"}]
                         }],
                         "text": {
-                            "format": {
-                                "type": "json_schema",
-                                "name": "evidence_extraction",
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "user_identity": {"type": "string"},
-                                        "goal": {"type": "string"},
-                                        "s_level": {
-                                            "type": "object",
-                                            "properties": {
-                                                "current": {"type": "number"},
-                                                "confidence": {"type": "number"},
-                                                "in_transition": {"type": "boolean"},
-                                                "transition_direction": {
-                                                    "type": "string",
-                                                    "enum": ["up", "down", "stable"]
-                                                },
-                                                "reasoning": {"type": "string"}
-                                            },
-                                            "required": ["current", "confidence", "in_transition", "transition_direction", "reasoning"],
-                                            "additionalProperties": False
-                                        },
-                                        "query_pattern": {"type": "string"},
-                                        "goal_category": {
-                                            "type": "string",
-                                            "enum": ["achievement", "relationship", "peace", "transformation"]
-                                        },
-                                        "emotional_undertone": {
-                                            "type": "string",
-                                            "enum": ["urgency", "uncertainty", "curiosity", "openness", "neutral"]
-                                        },
-                                        "domain": {
-                                            "type": "string",
-                                            "enum": ["business", "personal", "health", "spiritual"]
-                                        },
-                                        "web_research_summary": {"type": "string"},
-                                        "search_queries_used": {"type": "array", "items": {"type": "string"}},
-                                        "key_facts": {
-                                            "type": "array",
-                                            "items": {
-                                                "type": "object",
-                                                "properties": {
-                                                    "fact": {"type": "string"},
-                                                    "source": {"type": "string"},
-                                                    "relevance": {"type": "string"}
-                                                },
-                                                "required": ["fact", "source", "relevance"],
-                                                "additionalProperties": False
-                                            }
-                                        },
-                                        "search_guidance": {
-                                            "type": "object",
-                                            "properties": {
-                                                "high_priority_values": {"type": "array", "items": {"type": "string"}},
-                                                "evidence_search_queries": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "type": "object",
-                                                        "properties": {
-                                                            "target_value": {"type": "string"},
-                                                            "search_query": {"type": "string"},
-                                                            "proof_type": {"type": "string"}
-                                                        },
-                                                        "required": ["target_value", "search_query", "proof_type"],
-                                                        "additionalProperties": False
-                                                    }
-                                                },
-                                                "consciousness_to_reality_mappings": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "type": "object",
-                                                        "properties": {
-                                                            "consciousness_value": {"type": "string"},
-                                                            "observable_reality": {"type": "string"},
-                                                            "proof_search": {"type": "string"}
-                                                        },
-                                                        "required": ["consciousness_value", "observable_reality", "proof_search"],
-                                                        "additionalProperties": False
-                                                    }
-                                                }
-                                            },
-                                            "required": ["high_priority_values", "evidence_search_queries", "consciousness_to_reality_mappings"],
-                                            "additionalProperties": False
-                                        },
-                                        "observations": {
-                                            "type": "array",
-                                            "items": {
-                                                "type": "object",
-                                                "properties": {
-                                                    "var": {"type": "string"},
-                                                    "value": {"type": "number"},
-                                                    "confidence": {"type": "number"},
-                                                    "reasoning": {"type": "string"}
-                                                },
-                                                "required": ["var", "value", "confidence", "reasoning"],
-                                                "additionalProperties": False
-                                            }
-                                        },
-                                        "targets": {"type": "array", "items": {"type": "string"}},
-                                        "relevant_oof_components": {"type": "array", "items": {"type": "string"}},
-                                        "missing_operator_priority": {
-                                            "type": "array",
-                                            "items": {"type": "string"},
-                                            "description": "Operators not extractable from user input, ordered by priority for follow-up questions. Most important missing operators first."
-                                        },
-                                        "conversation_title": {
-                                            "type": "string",
-                                            "description": "Concise 4-8 word title capturing the essence of the user's query. E.g., 'NVIDIA Investment Analysis', 'Career Change Strategy'"
-                                        }
-                                    },
-                                    "required": ["user_identity", "goal", "s_level", "query_pattern", "goal_category", "emotional_undertone", "domain", "web_research_summary", "search_queries_used", "key_facts", "search_guidance", "observations", "targets", "relevant_oof_components", "missing_operator_priority", "conversation_title"],
-                                    "additionalProperties": False
-                                },
-                                "strict": True
-                            }
+                            "format": CALL1_OPENAI_SCHEMA
                         }
                     }
 
@@ -2147,37 +2034,11 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
                 if search_queries_logged and not result.get("search_queries_used"):
                     result["search_queries_used"] = search_queries_logged
 
-                # Validate required fields
-                if "observations" not in result or not result["observations"]:
-                    raise ValueError("Response missing required 'observations' field")
+                # Post-hoc schema validation (enforces same schema for both Anthropic and OpenAI)
+                # This validates structure and logs any issues, raises ValueError for critical missing fields
+                result = validate_and_log_call1(result, provider)
 
-                # Validate goal context fields (enforced by OpenAI schema, must validate for Anthropic)
-                valid_goal_categories = {'achievement', 'relationship', 'peace', 'transformation'}
-                valid_undertones = {'urgency', 'uncertainty', 'curiosity', 'openness', 'neutral'}
-                valid_domains = {'business', 'personal', 'health', 'spiritual'}
-
-                if result.get('goal_category') not in valid_goal_categories:
-                    api_logger.warning(f"[PARSE] LLM returned invalid/missing goal_category: {result.get('goal_category')!r} — re-extracting from query_pattern")
-                    # Map query_pattern to goal_category (LLM's own classification)
-                    pattern = result.get('query_pattern', '').lower()
-                    if pattern in ('relationship',):
-                        result['goal_category'] = 'relationship'
-                    elif pattern in ('purpose', 'transformation'):
-                        result['goal_category'] = 'transformation'
-                    elif pattern in ('blockage',):
-                        result['goal_category'] = 'peace'
-                    else:
-                        result['goal_category'] = None
-
-                if result.get('emotional_undertone') not in valid_undertones:
-                    api_logger.warning(f"[PARSE] LLM returned invalid/missing emotional_undertone: {result.get('emotional_undertone')!r}")
-                    result['emotional_undertone'] = None
-
-                if result.get('domain') not in valid_domains:
-                    api_logger.warning(f"[PARSE] LLM returned invalid/missing domain: {result.get('domain')!r}")
-                    result['domain'] = None
-
-                api_logger.info(f"[PARSE] Successfully parsed response with {len(result.get('observations'))} observations")
+                api_logger.info(f"[PARSE] Successfully parsed response with {len(result.get('observations', []))} observations")
                 result['_call1_token_usage'] = call1_token_usage
                 return result
 
@@ -2560,13 +2421,10 @@ async def format_results_streaming_bridge(
     articulation_logger.debug(f"  - Domain: {evidence.get('domain')}")
 
     if not api_key:
-        # Fallback: format results without API
-        articulation_logger.warning(f"[ARTICULATION BRIDGE] No API key for {provider} - using fallback")
-        fallback_text = format_results_fallback(prompt, evidence, posteriors)
-        for word in fallback_text.split():
-            yield word + " "
-            await asyncio.sleep(0.02)
-        return
+        # No API key is a configuration error - fail explicitly
+        error_msg = f"No API key configured for {provider}. Set the appropriate environment variable."
+        articulation_logger.error(f"[ARTICULATION BRIDGE] {error_msg}")
+        raise RuntimeError(error_msg)
 
     # Build articulation context using the bridge
     articulation_logger.debug("[ARTICULATION BRIDGE] Building articulation context")
@@ -3208,112 +3066,10 @@ SECTION 5: FIRST STEPS
                 api_logger.error(f"[ARTICULATION] Max retries ({STREAMING_MAX_RETRIES}) exceeded")
             break
 
-    # All retries exhausted or non-retryable error - use fallback
-    api_logger.warning("[ARTICULATION] Using fallback response after streaming failure")
-    fallback_text = format_results_fallback_bridge(prompt, evidence, consciousness_state)
-    for word in fallback_text.split():
-        yield word + " "
-        await asyncio.sleep(0.02)
-
-
-def format_results_fallback(prompt: str, evidence: dict, posteriors: dict) -> str:
-    """Format results without OpenAI (legacy fallback)"""
-
-    lines = [
-        "## Transformation Analysis",
-        "",
-        f"**Query:** {prompt}",
-        "",
-        "### Evidence Detected",
-    ]
-
-    for obs in evidence.get("observations", []):
-        if isinstance(obs, dict) and 'var' in obs and 'value' in obs:
-            obs_val = obs['value']
-            conf_val = obs.get('confidence')
-            obs_str = f"{obs_val:.2f}" if obs_val is not None else "N/C"
-            conf_str = f"{conf_val:.2f}" if conf_val is not None else "N/A"
-            lines.append(f"- {obs['var']}: {obs_str} (confidence: {conf_str})")
-
-    lines.append("")
-    lines.append("### Consciousness State Analysis")
-
-    # Show top posteriors
-    sorted_posteriors = sorted(
-        posteriors.get("values", {}).items(),
-        key=lambda x: abs(x[1] - 0.5),
-        reverse=True
-    )[:10]
-
-    for var, value in sorted_posteriors:
-        lines.append(f"- {var}: {f'{value:.3f}' if value is not None else 'N/C'}")
-
-    lines.append("")
-    lines.append("### Computed State")
-    for key, val in sorted(posteriors.get("values", {}).items(), key=lambda x: x[1] if x[1] is not None else 0, reverse=True)[:5]:
-        if val is not None:
-            lines.append(f"- {key}: {val:.2f}")
-
-    return "\n".join(lines)
-
-
-def format_results_fallback_bridge(
-    prompt: str,
-    evidence: dict,
-    consciousness_state: ConsciousnessState
-) -> str:
-    """Format results without OpenAI using articulation bridge data"""
-
-    ops = consciousness_state.tier1.core_operators
-    s_level = consciousness_state.tier1.s_level
-    matrices = consciousness_state.tier3.transformation_matrices
-
-    lines = [
-        "## Consciousness Analysis",
-        "",
-        f"**Your Inquiry:** {prompt}",
-        "",
-        "### Current State",
-        f"You are operating at a consciousness level characterized by {s_level.label}.",
-        f"Your present-moment awareness is at {f'{ops.P_presence * 100:.0f}' if ops.P_presence is not None else 'N/C'}%, with overall consciousness quality at {f'{ops.Psi_quality * 100:.0f}' if ops.Psi_quality is not None else 'N/C'}%.",
-        "",
-        "### Key Patterns Identified",
-    ]
-
-    # Add bottlenecks
-    if consciousness_state.bottlenecks:
-        lines.append("")
-        lines.append("**Areas Needing Attention:**")
-        for b in consciousness_state.bottlenecks[:3]:
-            lines.append(f"- {b.description}")
-
-    # Add leverage points
-    if consciousness_state.leverage_points:
-        lines.append("")
-        lines.append("**Opportunities for Growth:**")
-        for lp in consciousness_state.leverage_points[:3]:
-            lines.append(f"- {lp.description} ({lp.multiplier}x potential)")
-
-    # Add matrix positions
-    lines.append("")
-    lines.append("### Transformation Readiness")
-    lines.append(f"- Truth clarity: {matrices.truth_position} ({f'{matrices.truth_score * 100:.0f}%' if matrices.truth_score is not None else 'N/C'})")
-    lines.append(f"- Power stance: {matrices.power_position} ({f'{matrices.power_score * 100:.0f}%' if matrices.power_score is not None else 'N/C'})")
-    lines.append(f"- Freedom orientation: {matrices.freedom_position} ({f'{matrices.freedom_score * 100:.0f}%' if matrices.freedom_score is not None else 'N/C'})")
-
-    # Add computed bottleneck/leverage summary
-    if consciousness_state.bottlenecks:
-        lines.append("")
-        lines.append("### Primary Bottleneck")
-        primary = consciousness_state.bottlenecks[0]
-        lines.append(f"- {primary.description}")
-    if consciousness_state.leverage_points:
-        lines.append("")
-        lines.append("### Highest Leverage Point")
-        top_lp = consciousness_state.leverage_points[0]
-        lines.append(f"- {top_lp.description} ({top_lp.multiplier}x potential)")
-
-    return "\n".join(lines)
+    # All retries exhausted or non-retryable error - raise error
+    error_msg = f"Articulation streaming failed after {STREAMING_MAX_RETRIES} retries"
+    api_logger.error(f"[ARTICULATION] {error_msg}")
+    raise RuntimeError(error_msg)
 
 
 async def run_reverse_mapping_for_articulation(

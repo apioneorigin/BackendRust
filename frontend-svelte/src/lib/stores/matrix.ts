@@ -405,7 +405,7 @@ export const powerSpots = derived(matrix, ($matrix) => {
 	return $matrix.displayedMatrixData.flat().filter((c) => c.isLeveragePoint).length;
 });
 
-// Legacy exports for backwards compatibility
+// Document tabs interface - used by CausationPopup and EffectPopup components
 export const documentTabs = derived(matrix, ($matrix) =>
 	$matrix.documents.map(d => ({
 		id: d.id,
