@@ -477,7 +477,7 @@
 							</svg>
 						</div>
 						<h3>Cross-Impact Matrix</h3>
-						<p>Visualize how factors influence each other. Click cells to explore relationships.</p>
+						<p>See how factors influence each other.<br/>Click any cell to explore.</p>
 					</div>
 				</div>
 			{/if}
@@ -514,7 +514,7 @@
 							</svg>
 						</div>
 						<h3>Live Metrics</h3>
-						<p>Real-time coherence, balance, and power spot analysis.</p>
+						<p>Real-time coherence, balance,<br/>and power spot analysis.</p>
 					</div>
 				</div>
 			{/if}
