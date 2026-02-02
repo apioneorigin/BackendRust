@@ -10,6 +10,7 @@
 	let userMenuOpen = false;
 	let sidebarCollapsed = false;
 	let isSelectingConversation = false; // Guard against rapid clicks
+	let activeOptionsMenu: string | null = null; // Track which conversation has options open
 
 	onMount(async () => {
 		const currentUser = await auth.loadUser();
@@ -96,6 +97,39 @@
 
 	function toggleSidebar() {
 		sidebarCollapsed = !sidebarCollapsed;
+	}
+
+	function toggleOptionsMenu(e: Event, conversationId: string) {
+		e.stopPropagation();
+		activeOptionsMenu = activeOptionsMenu === conversationId ? null : conversationId;
+	}
+
+	function closeOptionsMenu() {
+		activeOptionsMenu = null;
+	}
+
+	async function handleDeleteConversation(e: Event, conversationId: string) {
+		e.stopPropagation();
+		activeOptionsMenu = null;
+
+		try {
+			await chat.deleteConversation(conversationId);
+			addToast('success', 'Chat deleted');
+		} catch (error: any) {
+			addToast('error', error.message || 'Failed to delete chat');
+		}
+	}
+
+	function handleShareConversation(e: Event, conversationId: string) {
+		e.stopPropagation();
+		activeOptionsMenu = null;
+
+		const shareUrl = `${window.location.origin}/chat/${conversationId}`;
+		navigator.clipboard.writeText(shareUrl).then(() => {
+			addToast('success', 'Link copied to clipboard');
+		}).catch(() => {
+			addToast('error', 'Failed to copy link');
+		});
 	}
 </script>
 
@@ -187,24 +221,49 @@
 				{/if}
 				<div class="conversations-list">
 					{#each $conversations as conversation (conversation.id)}
-						<button
-							type="button"
-							class="conversation-item"
-							class:active={$currentConversation?.id === conversation.id}
-							disabled={isSelectingConversation}
-							on:click|preventDefault|stopPropagation={() => handleSelectConversation(conversation.id)}
-							title={conversation.title || 'New Chat'}
-						>
-							<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-								<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-							</svg>
+						<div class="conversation-row" class:active={$currentConversation?.id === conversation.id}>
+							<button
+								type="button"
+								class="conversation-item"
+								class:active={$currentConversation?.id === conversation.id}
+								disabled={isSelectingConversation}
+								on:click|preventDefault|stopPropagation={() => handleSelectConversation(conversation.id)}
+								title={conversation.title || 'New Chat'}
+							>
+								<span class="conversation-title">{conversation.title || 'New Chat'}</span>
+							</button>
 							{#if !sidebarCollapsed}
-								<div class="conversation-info">
-									<span class="conversation-title">{conversation.title || 'New Chat'}</span>
-									<span class="conversation-date">{formatConversationDate(conversation.updatedAt)}</span>
-								</div>
+								<button
+									class="options-btn"
+									on:click={(e) => toggleOptionsMenu(e, conversation.id)}
+									title="Options"
+								>
+									<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+										<path d="m6 9 6 6 6-6"/>
+									</svg>
+								</button>
+								{#if activeOptionsMenu === conversation.id}
+									<div class="options-dropdown">
+										<button class="option-item" on:click={(e) => handleShareConversation(e, conversation.id)}>
+											<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+												<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+												<polyline points="16 6 12 2 8 6"/>
+												<line x1="12" x2="12" y1="2" y2="15"/>
+											</svg>
+											<span>Share link</span>
+										</button>
+										<button class="option-item delete" on:click={(e) => handleDeleteConversation(e, conversation.id)}>
+											<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+												<path d="M3 6h18"/>
+												<path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+												<path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+											</svg>
+											<span>Delete</span>
+										</button>
+									</div>
+								{/if}
 							{/if}
-						</button>
+						</div>
 					{:else}
 						{#if !sidebarCollapsed}
 							<div class="no-conversations">
@@ -507,12 +566,28 @@
 		gap: 0.125rem;
 	}
 
-	.conversation-item {
+	/* Conversation row wrapper */
+	.conversation-row {
+		position: relative;
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
-		width: 100%;
-		padding: 0.5rem;
+		border-radius: 0.375rem;
+	}
+
+	.conversation-row:hover {
+		background: var(--color-accent-subtle);
+	}
+
+	.conversation-row.active {
+		background: var(--color-accent-subtle);
+	}
+
+	.conversation-item {
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		align-items: center;
+		padding: 0.5rem 0.625rem;
 		background: transparent;
 		border: none;
 		border-radius: 0.375rem;
@@ -527,26 +602,9 @@
 		padding: 0.5rem;
 	}
 
-	.conversation-item:hover {
-		background: var(--color-accent-subtle);
-		color: var(--color-text-source);
-	}
-
+	.conversation-row:hover .conversation-item,
 	.conversation-item.active {
-		background: var(--color-accent-subtle);
 		color: var(--color-text-source);
-	}
-
-	.conversation-item svg {
-		flex-shrink: 0;
-		color: var(--color-text-hint);
-		width: 14px;
-		height: 14px;
-	}
-
-	.conversation-item:hover svg,
-	.conversation-item.active svg {
-		color: var(--color-text-whisper);
 	}
 
 	.conversation-item:disabled {
@@ -554,25 +612,84 @@
 		cursor: wait;
 	}
 
-	.conversation-info {
-		flex: 1;
-		min-width: 0;
-		display: flex;
-		flex-direction: column;
-		gap: 0.125rem;
-	}
-
 	.conversation-title {
-		font-size: 15px;
+		font-size: 14px;
 		font-weight: 400;
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
 	}
 
-	.conversation-date {
-		font-size: 13px;
+	/* Options button - appears on hover */
+	.options-btn {
+		position: absolute;
+		right: 0.375rem;
+		opacity: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 24px;
+		height: 24px;
+		padding: 0;
+		background: var(--color-field-surface);
+		border: none;
+		border-radius: 0.25rem;
 		color: var(--color-text-whisper);
+		cursor: pointer;
+		transition: opacity 0.1s ease;
+	}
+
+	.conversation-row:hover .options-btn {
+		opacity: 1;
+	}
+
+	.options-btn:hover {
+		background: var(--color-veil-present);
+		color: var(--color-text-source);
+	}
+
+	/* Options dropdown */
+	.options-dropdown {
+		position: absolute;
+		top: 100%;
+		right: 0;
+		z-index: 50;
+		min-width: 140px;
+		padding: 0.25rem;
+		background: var(--color-field-surface);
+		border: 1px solid var(--color-veil-thin);
+		border-radius: 0.375rem;
+		box-shadow: var(--shadow-elevated);
+	}
+
+	.option-item {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		width: 100%;
+		padding: 0.5rem 0.625rem;
+		background: transparent;
+		border: none;
+		border-radius: 0.25rem;
+		font-size: 13px;
+		color: var(--color-text-manifest);
+		cursor: pointer;
+		transition: all 0.1s ease;
+		text-align: left;
+	}
+
+	.option-item:hover {
+		background: var(--color-accent-subtle);
+		color: var(--color-text-source);
+	}
+
+	.option-item.delete:hover {
+		background: var(--color-error-50);
+		color: var(--color-error-500);
+	}
+
+	.option-item svg {
+		flex-shrink: 0;
 	}
 
 	.no-conversations {

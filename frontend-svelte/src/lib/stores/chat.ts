@@ -430,6 +430,33 @@ function createChatStore() {
 			}
 		},
 
+		async deleteConversation(conversationId: string) {
+			try {
+				await api.delete(`/api/chat/conversations/${conversationId}`);
+
+				update(state => {
+					const isCurrentConversation = state.currentConversation?.id === conversationId;
+					return {
+						...state,
+						conversations: state.conversations.filter(c => c.id !== conversationId),
+						// Clear current conversation if it was deleted
+						currentConversation: isCurrentConversation ? null : state.currentConversation,
+						messages: isCurrentConversation ? [] : state.messages,
+						goals: isCurrentConversation ? [] : state.goals,
+						insights: isCurrentConversation ? [] : state.insights,
+						questions: isCurrentConversation ? [] : state.questions,
+						structuredData: isCurrentConversation ? null : state.structuredData,
+					};
+				});
+			} catch (error: any) {
+				update(state => ({
+					...state,
+					error: error.message,
+				}));
+				throw error;
+			}
+		},
+
 		rateGoal(goalId: string, rating: 'accept' | 'reject') {
 			update(state => ({
 				...state,
