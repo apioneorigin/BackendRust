@@ -48,48 +48,53 @@
 	--color-primary-100: rgba(201, 169, 98, 0.12);
 	--color-primary-50: rgba(201, 169, 98, 0.06);
 
-	/* Ambient glow - gold radiance through cool slate */
-	--gradient-ambient: radial-gradient(ellipse at 50% 30%, rgba(201, 169, 98, 0.05) 0%, transparent 60%);
+	/* Ambient glow - gold radiance through mint */
+	--gradient-ambient: linear-gradient(135deg, #F7FDFB 0%, #F0FAF7 50%, #E6F7F3 100%);
 
 	/* ─────────────────────────────────────────────────────────────────────────────
-	   SURFACES - Cool Silver/Slate (contrasts with warm gold)
+	   SURFACES - Mint/Teal Tint (fresh, modern, distinct)
 	   ───────────────────────────────────────────────────────────────────────────── */
-	--color-field-void: #F7F8FA;      /* Cool white with blue undertone */
-	--color-field-depth: #F0F2F5;     /* Light slate depth */
-	--color-field-surface: #FAFBFC;   /* Crisp near-white for cards */
-	--color-field-elevated: #ffffff;  /* Pure white elevated */
+	--color-field-void: #F7FDFB;      /* Barely mint white */
+	--color-field-depth: #F0FAF7;     /* Soft teal depth */
+	--color-field-surface: rgba(255, 255, 255, 0.6);  /* Glassmorphism cards */
+	--color-field-elevated: rgba(255, 255, 255, 0.8); /* Elevated glass */
+	--color-field-solid: #FAFDFB;     /* Solid mint white for inputs */
 
 	/* ─────────────────────────────────────────────────────────────────────────────
-	   TEXT - Corporate silver-gray hierarchy
+	   TEXT - Teal-tinted hierarchy
 	   ───────────────────────────────────────────────────────────────────────────── */
-	--color-text-source: #1a1d23;     /* Near-black with cool undertone */
-	--color-text-manifest: #5c6370;   /* Corporate gray */
-	--color-text-flow: #2d3139;       /* Dark gray for body */
-	--color-text-whisper: #9ca3af;    /* Light silver */
-	--color-text-hint: #d1d5db;       /* Subtle hint */
+	--color-text-source: #134e4a;     /* Deep teal - primary */
+	--color-text-manifest: #2d6a5f;   /* Teal gray - secondary */
+	--color-text-flow: #1a5c52;       /* Medium teal - body */
+	--color-text-whisper: #5eaa9a;    /* Light teal - tertiary */
+	--color-text-hint: #a7d4c9;       /* Subtle teal hint */
 
 	/* ─────────────────────────────────────────────────────────────────────────────
-	   BORDERS - Cool slate structural lines
+	   BORDERS - Teal glassmorphism lines (minimal)
 	   ───────────────────────────────────────────────────────────────────────────── */
-	--color-veil-thin: rgba(100, 116, 139, 0.08);
-	--color-veil-present: rgba(100, 116, 139, 0.12);
-	--color-veil-clear: rgba(100, 116, 139, 0.18);
+	--color-veil-thin: rgba(80, 160, 140, 0.08);
+	--color-veil-present: rgba(80, 160, 140, 0.12);
+	--color-veil-clear: rgba(255, 255, 255, 0.25);  /* Glass border */
 
 	/* ─────────────────────────────────────────────────────────────────────────────
-	   SHADOWS - Cool slate depth
+	   SHADOWS - Soft teal depth (minimal for glassmorphism)
 	   ───────────────────────────────────────────────────────────────────────────── */
-	--shadow-xs: 0 1px 2px rgba(100, 116, 139, 0.06);
-	--shadow-sm: 0 1px 3px rgba(100, 116, 139, 0.08);
-	--shadow-md: 0 4px 12px rgba(100, 116, 139, 0.10);
-	--shadow-lg: 0 8px 24px rgba(100, 116, 139, 0.14);
-	--shadow-xl: 0 16px 48px rgba(100, 116, 139, 0.18);
+	--shadow-xs: 0 1px 2px rgba(80, 160, 140, 0.04);
+	--shadow-sm: 0 1px 3px rgba(80, 160, 140, 0.06);
+	--shadow-md: 0 4px 12px rgba(80, 160, 140, 0.08);
+	--shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.06);
+	--shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.08);
 
-	/* Panel - subtle cool definition */
-	--shadow-panel: 0 0 0 1px rgba(100, 116, 139, 0.08);
-	--shadow-panel-hover: 0 0 0 1px rgba(100, 116, 139, 0.15);
+	/* Panel - glass definition */
+	--shadow-panel: 0 0 0 1px rgba(255, 255, 255, 0.2);
+	--shadow-panel-hover: 0 0 0 1px rgba(255, 255, 255, 0.3);
 
-	/* Elevated - for modals/dropdowns */
-	--shadow-elevated: 0 4px 24px rgba(100, 116, 139, 0.14), 0 0 0 1px rgba(100, 116, 139, 0.08);
+	/* Elevated - glassmorphism for modals/dropdowns */
+	--shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(255, 255, 255, 0.2);
+
+	/* Glassmorphism tokens */
+	--glass-blur: 20px;
+	--glass-blur-subtle: 12px;
 
 	/* ─────────────────────────────────────────────────────────────────────────────
 	   TYPOGRAPHY SCALE - Consistent sizing
@@ -478,15 +483,68 @@ button:disabled,
 .border-subtle { border-color: var(--color-veil-thin); }
 .border-default { border-color: var(--color-veil-present); }
 
-/* Glass effect */
+/* ═══════════════════════════════════════════════════════════════════════════════
+   GLASSMORPHISM UTILITIES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
 .glass {
+	background: rgba(255, 255, 255, 0.6);
+	backdrop-filter: blur(var(--glass-blur));
+	-webkit-backdrop-filter: blur(var(--glass-blur));
+	border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.glass-subtle {
+	background: rgba(255, 255, 255, 0.4);
+	backdrop-filter: blur(var(--glass-blur-subtle));
+	-webkit-backdrop-filter: blur(var(--glass-blur-subtle));
+}
+
+.glass-strong {
 	background: rgba(255, 255, 255, 0.8);
-	backdrop-filter: blur(12px);
-	-webkit-backdrop-filter: blur(12px);
+	backdrop-filter: blur(var(--glass-blur));
+	-webkit-backdrop-filter: blur(var(--glass-blur));
+	border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.glass-card {
+	background: var(--color-field-surface);
+	backdrop-filter: blur(var(--glass-blur));
+	-webkit-backdrop-filter: blur(var(--glass-blur));
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	box-shadow: var(--shadow-lg);
+	border-radius: 16px;
+}
+
+.glass-panel {
+	background: var(--color-field-surface);
+	backdrop-filter: blur(var(--glass-blur-subtle));
+	-webkit-backdrop-filter: blur(var(--glass-blur-subtle));
+	border-right: 1px solid rgba(80, 160, 140, 0.1);
 }
 
 [data-theme='dark'] .glass {
-	background: rgba(10, 10, 10, 0.8);
+	background: rgba(15, 17, 21, 0.8);
+	border-color: rgba(148, 163, 184, 0.1);
+}
+
+[data-theme='dark'] .glass-subtle {
+	background: rgba(15, 17, 21, 0.6);
+}
+
+[data-theme='dark'] .glass-strong {
+	background: rgba(15, 17, 21, 0.9);
+	border-color: rgba(148, 163, 184, 0.15);
+}
+
+[data-theme='dark'] .glass-card {
+	background: rgba(28, 33, 39, 0.8);
+	border-color: rgba(148, 163, 184, 0.1);
+}
+
+[data-theme='dark'] .glass-panel {
+	background: rgba(22, 26, 31, 0.9);
+	border-right-color: rgba(148, 163, 184, 0.08);
 }
 
 /* Hover reveal */
