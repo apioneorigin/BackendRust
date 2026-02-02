@@ -476,7 +476,7 @@
 								<rect x="3" y="14" width="7" height="7"/>
 							</svg>
 						</div>
-						<h3>Cross-Impact Matrix</h3>
+						<h3>Design Your Reality</h3>
 						<p>Visualize how factors influence each other.<br/>Click cells to explore relationships.</p>
 					</div>
 				</div>
