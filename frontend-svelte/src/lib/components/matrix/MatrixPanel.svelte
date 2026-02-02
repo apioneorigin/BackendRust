@@ -335,7 +335,7 @@
 	/* Column header text: vertical, one word per line (max 3 lines) */
 	.col-header .header-text {
 		font-size: 0.5rem;
-		font-weight: 500;
+		font-weight: 700;
 		color: var(--color-text-whisper);
 		text-align: center;
 		line-height: 1.15;
@@ -351,7 +351,7 @@
 	/* Row header text: horizontal, single line */
 	.row-header .header-text {
 		font-size: 0.5rem;
-		font-weight: 500;
+		font-weight: 700;
 		color: var(--color-text-whisper);
 		text-align: right;
 		line-height: 1.2;
