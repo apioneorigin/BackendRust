@@ -684,7 +684,7 @@
 	}
 
 	.welcome-tagline {
-		font-size: 14px;
+		font-size: var(--font-size-sm);
 		font-weight: 500;
 		color: var(--color-text-whisper);
 		text-transform: uppercase;
@@ -697,7 +697,7 @@
 	}
 
 	.welcome-description p {
-		font-size: 16px;
+		font-size: var(--font-size-md);
 		line-height: 1.6;
 		color: var(--color-text-manifest);
 	}
@@ -742,7 +742,7 @@
 	}
 
 	.message-text {
-		font-size: 16px;
+		font-size: var(--font-size-base);
 		line-height: 1.6;
 		word-break: break-word;
 	}
@@ -786,11 +786,11 @@
 		padding: 0.25rem 0.5rem;
 		background: var(--color-field-depth);
 		border-radius: 0.25rem;
-		font-size: 12px;
+		font-size: var(--font-size-xs);
 	}
 
 	.file-icon {
-		font-size: 14px;
+		font-size: var(--font-size-base);
 	}
 
 	.file-name {
@@ -825,7 +825,7 @@
 		border-radius: 0;
 		background: transparent;
 		color: var(--color-text-source);
-		font-size: 16px;
+		font-size: var(--font-size-base);
 		resize: none;
 		font-family: inherit;
 		line-height: 1.6;
@@ -866,7 +866,7 @@
 		border-radius: 0.375rem;
 		color: var(--color-text-whisper);
 		cursor: pointer;
-		font-size: 14px;
+		font-size: var(--font-size-base);
 		font-weight: 400;
 		transition: all 0.1s ease;
 	}
@@ -896,7 +896,7 @@
 		border-radius: 0.375rem;
 		background: transparent;
 		color: var(--color-text-whisper);
-		font-size: 14px;
+		font-size: var(--font-size-base);
 		cursor: pointer;
 		transition: all 0.1s ease;
 	}
@@ -919,7 +919,7 @@
 		border-radius: 0.375rem;
 		background: transparent;
 		color: var(--color-text-whisper);
-		font-size: 14px;
+		font-size: var(--font-size-base);
 		cursor: pointer;
 		transition: all 0.1s ease;
 	}

@@ -108,7 +108,7 @@
 		background: transparent;
 		border: 1px solid var(--color-accent);
 		border-radius: 1rem;
-		font-size: 14px;
+		font-size: var(--font-size-base);
 		font-weight: 400;
 		color: var(--color-accent);
 		cursor: pointer;
