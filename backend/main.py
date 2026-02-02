@@ -1627,7 +1627,7 @@ At (Attachment), Av (Aversion), Se (Seva), Ce (Cleaning), Su (Surrender),
 As (Aspiration), Fe (Fear), De (Desire), Re (Resistance), Hf (Habit Force),
 Sa (Samskara), Bu (Buddhi), Ma (Manas), Ch (Chitta)
 
-CRITICAL: Return ONLY valid JSON. You MUST include ALL 25 operators in observations array.
+CRITICAL OUTPUT FORMAT: You MUST return ONLY a valid JSON object. No markdown formatting, no code blocks, no explanatory text before or after. Start directly with { and end with }. You MUST include ALL 25 operators in observations array.
 
 The observations array MUST contain EXACTLY these 25 operators (use these exact var names):
 Ψ, K, M, G, W, A, P, E, V, L, R, At, Av, Se, Ce, Su, As, Fe, De, Re, Hf, Sa, Bu, Ma, Ch
@@ -1752,6 +1752,8 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
                     user_content = f"User query:\n{prompt}"
                     if use_web_search:
                         user_content += "\n\nIMPORTANT: Use the web_search tool to gather real data before responding."
+                    # Strong JSON enforcement at end of user content
+                    user_content += "\n\nAFTER completing any research, respond with ONLY the JSON object. No markdown, no explanation, no prose - just the raw JSON starting with { and ending with }."
 
                     # Build system prompt with cache_control for prompt caching.
                     # SHARED_LLM_CONTEXT contains BOTH Call 1 and Call 2 framework knowledge.
@@ -1783,7 +1785,7 @@ At (Attachment), Av (Aversion), Se (Seva), Ce (Cleaning), Su (Surrender),
 As (Aspiration), Fe (Fear), De (Desire), Re (Resistance), Hf (Habit Force),
 Sa (Samskara), Bu (Buddhi), Ma (Manas), Ch (Chitta)
 
-CRITICAL: Return ONLY valid JSON. You MUST include ALL 25 operators in observations array.
+CRITICAL OUTPUT FORMAT: You MUST return ONLY a valid JSON object. No markdown formatting, no code blocks, no explanatory text before or after. Start directly with { and end with }. You MUST include ALL 25 operators in observations array.
 
 The observations array MUST contain EXACTLY these 25 operators (use these exact var names):
 Ψ, K, M, G, W, A, P, E, V, L, R, At, Av, Se, Ce, Su, As, Fe, De, Re, Hf, Sa, Bu, Ma, Ch
