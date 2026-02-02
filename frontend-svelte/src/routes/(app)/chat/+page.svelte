@@ -631,7 +631,7 @@
 		flex: 1;
 		overflow-y: auto;
 		overflow-x: hidden;
-		padding: 1.5rem;
+		padding: 1.5rem calc(0.75rem + 1px);
 		min-height: 0;
 	}
 
@@ -743,6 +743,8 @@
 		background: transparent;
 		color: var(--color-text-source);
 		border-radius: 1rem;
+		padding-left: 0;
+		padding-right: 0;
 	}
 
 	.message-text {
