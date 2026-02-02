@@ -68,28 +68,28 @@
 	--color-challenger: #c2410c;
 
 	/* ─────────────────────────────────────────────────────────────────────────────
-	   FIELD - Backgrounds (Cool gray instead of warm cream)
+	   FIELD - Backgrounds (Unified, minimal contrast)
 	   ───────────────────────────────────────────────────────────────────────────── */
-	--color-field-void: #fafbfc;
-	--color-field-depth: #f5f7f9;
+	--color-field-void: #f8f9fa;
+	--color-field-depth: #f8f9fa;
 	--color-field-surface: #ffffff;
-	--color-field-elevated: #fafbfc;
+	--color-field-elevated: #ffffff;
 
 	/* ─────────────────────────────────────────────────────────────────────────────
 	   TEXT - Cool slate tones
 	   ───────────────────────────────────────────────────────────────────────────── */
 	--color-text-source: #111e28;
-	--color-text-manifest: #152632;
+	--color-text-manifest: #3a4a58;
 	--color-text-flow: #3d93ce;
-	--color-text-whisper: #6bb4e1;
-	--color-text-hint: #a3bfc9;
+	--color-text-whisper: #64748b;
+	--color-text-hint: #94a3b8;
 
 	/* ─────────────────────────────────────────────────────────────────────────────
-	   VEIL - Borders (Cool versions)
+	   VEIL - Borders (Ultra subtle, nearly invisible)
 	   ───────────────────────────────────────────────────────────────────────────── */
-	--color-veil-thin: #d1dfe6;
-	--color-veil-present: #a3bfc9;
-	--color-veil-clear: #6bb4e1;
+	--color-veil-thin: rgba(0, 0, 0, 0.04);
+	--color-veil-present: rgba(0, 0, 0, 0.06);
+	--color-veil-clear: rgba(0, 0, 0, 0.08);
 
 	/* ─────────────────────────────────────────────────────────────────────────────
 	   GLOW - Subtle emphasis (primary-based instead of gold)
@@ -101,31 +101,34 @@
 	--color-glow-luminance: rgba(30, 53, 68, 0.12);
 
 	/* ─────────────────────────────────────────────────────────────────────────────
-	   SHADOWS - Cool primary-based
+	   SHADOWS - Soft, modern elevation system
 	   ───────────────────────────────────────────────────────────────────────────── */
-	--shadow-xs: 0 1px 2px rgba(30, 53, 68, 0.03), 0 1px 3px rgba(30, 53, 68, 0.02);
-	--shadow-sm: 0 1px 3px rgba(30, 53, 68, 0.04), 0 2px 8px rgba(30, 53, 68, 0.03);
-	--shadow-md: 0 2px 6px rgba(30, 53, 68, 0.04), 0 4px 16px rgba(30, 53, 68, 0.04);
-	--shadow-lg: 0 4px 12px rgba(30, 53, 68, 0.05), 0 8px 32px rgba(30, 53, 68, 0.05);
-	--shadow-xl: 0 8px 24px rgba(30, 53, 68, 0.06), 0 16px 48px rgba(30, 53, 68, 0.06);
+	--shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.02);
+	--shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.03), 0 1px 2px rgba(0, 0, 0, 0.02);
+	--shadow-md: 0 4px 6px rgba(0, 0, 0, 0.03), 0 2px 4px rgba(0, 0, 0, 0.02);
+	--shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.04), 0 4px 6px rgba(0, 0, 0, 0.02);
+	--shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.05), 0 8px 10px rgba(0, 0, 0, 0.02);
 
 	/* Glow shadows */
-	--shadow-glow-whisper: 0 0 30px rgba(30, 53, 68, 0.02);
-	--shadow-glow-breath: 0 0 40px rgba(30, 53, 68, 0.04);
-	--shadow-glow-pulse: 0 0 50px rgba(30, 53, 68, 0.06);
-	--shadow-glow-radiance: 0 0 60px rgba(30, 53, 68, 0.08);
+	--shadow-glow-whisper: 0 0 20px rgba(0, 0, 0, 0.02);
+	--shadow-glow-breath: 0 0 30px rgba(0, 0, 0, 0.03);
+	--shadow-glow-pulse: 0 0 40px rgba(0, 0, 0, 0.04);
+	--shadow-glow-radiance: 0 0 50px rgba(0, 0, 0, 0.05);
 
-	/* Card shadows */
-	--shadow-card: 0 1px 2px rgba(30, 53, 68, 0.04);
-	--shadow-card-hover: 0 2px 8px rgba(30, 53, 68, 0.06);
-	--shadow-card-active: 0 4px 12px rgba(30, 53, 68, 0.08);
+	/* Card shadows - subtle elevation */
+	--shadow-card: 0 1px 3px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(0, 0, 0, 0.01);
+	--shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.04), 0 2px 4px rgba(0, 0, 0, 0.02);
+	--shadow-card-active: 0 2px 4px rgba(0, 0, 0, 0.03);
 
 	/* Button shadows */
-	--shadow-btn-primary: 0 1px 2px rgba(30, 53, 68, 0.1);
-	--shadow-btn-primary-hover: 0 2px 4px rgba(30, 53, 68, 0.15);
+	--shadow-btn-primary: 0 1px 2px rgba(0, 0, 0, 0.05);
+	--shadow-btn-primary-hover: 0 2px 4px rgba(0, 0, 0, 0.08);
 
 	/* Inner glow */
-	--shadow-inner: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+	--shadow-inner: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+
+	/* Panel shadow - for borderless containers */
+	--shadow-panel: 0 0 0 1px rgba(0, 0, 0, 0.03), 0 1px 3px rgba(0, 0, 0, 0.02);
 
 	/* ─────────────────────────────────────────────────────────────────────────────
 	   TRANSITIONS
@@ -176,20 +179,22 @@
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 [data-theme='dark'] {
-	--color-field-void: #0f0d12;
-	--color-field-depth: #16141a;
-	--color-field-surface: #1c1a21;
-	--color-field-elevated: #24222a;
+	--color-field-void: #0a0a0b;
+	--color-field-depth: #0a0a0b;
+	--color-field-surface: #111113;
+	--color-field-elevated: #18181b;
 
-	--color-text-source: #f5f2ed;
-	--color-text-manifest: #d4d0ca;
-	--color-text-flow: #a8a29e;
-	--color-text-whisper: #78736e;
-	--color-text-hint: #524e4a;
+	--color-text-source: #fafafa;
+	--color-text-manifest: #a1a1aa;
+	--color-text-flow: #60a5fa;
+	--color-text-whisper: #71717a;
+	--color-text-hint: #52525b;
 
-	--color-veil-thin: rgba(255, 252, 245, 0.05);
-	--color-veil-present: rgba(255, 252, 245, 0.08);
-	--color-veil-clear: rgba(255, 252, 245, 0.12);
+	--color-veil-thin: rgba(255, 255, 255, 0.04);
+	--color-veil-present: rgba(255, 255, 255, 0.06);
+	--color-veil-clear: rgba(255, 255, 255, 0.08);
+
+	--shadow-panel: 0 0 0 1px rgba(255, 255, 255, 0.03), 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════

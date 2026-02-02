@@ -178,7 +178,7 @@
 	.matrix-panel {
 		background: var(--color-field-surface);
 		border-radius: 0.75rem;
-		border: 1px solid var(--color-veil-thin);
+		box-shadow: var(--shadow-panel);
 		padding: 1rem;
 		height: 100%;
 		display: flex;
@@ -255,8 +255,8 @@
 		align-items: center;
 		justify-content: center;
 		padding: 0.5rem;
-		border-radius: 0.375rem;
-		border: 1px solid var(--color-veil-thin);
+		border-radius: 0.5rem;
+		border: none;
 		background: var(--color-field-depth);
 		cursor: pointer;
 		transition: all 0.15s ease;
@@ -268,18 +268,26 @@
 	}
 
 	.matrix-cell:hover {
-		border-color: var(--color-primary-400);
+		background: var(--color-primary-50);
 		transform: translateY(-1px);
+		box-shadow: var(--shadow-sm);
+	}
+
+	[data-theme='dark'] .matrix-cell:hover {
+		background: rgba(15, 76, 117, 0.3);
 	}
 
 	.matrix-cell.selected {
-		border-color: var(--color-primary-500);
-		box-shadow: 0 0 0 2px var(--color-primary-100);
+		box-shadow: 0 0 0 2px var(--color-primary-400);
+		background: var(--color-primary-50);
+	}
+
+	[data-theme='dark'] .matrix-cell.selected {
+		background: rgba(15, 76, 117, 0.4);
 	}
 
 	.matrix-cell.leverage-point {
-		border-color: var(--color-accent);
-		border-width: 2px;
+		box-shadow: 0 0 0 2px var(--color-accent);
 	}
 
 	.matrix-cell.cell-risk-low {
@@ -367,7 +375,6 @@
 		overflow-y: auto;
 		background: var(--color-field-surface);
 		border-radius: 1rem;
-		border: 1px solid var(--color-veil-thin);
 		box-shadow: var(--shadow-elevated);
 	}
 
@@ -376,7 +383,8 @@
 		justify-content: space-between;
 		align-items: center;
 		padding: 1rem;
-		border-bottom: 1px solid var(--color-veil-thin);
+		background: var(--color-field-depth);
+		border-radius: 1rem 1rem 0 0;
 	}
 
 	.popup-header h3 {
@@ -429,7 +437,7 @@
 		align-items: center;
 		justify-content: center;
 		background: var(--color-field-depth);
-		border: 1px solid var(--color-veil-thin);
+		border: none;
 		border-radius: 0.5rem;
 		font-size: 1.25rem;
 		font-weight: 600;
@@ -440,28 +448,31 @@
 
 	.value-btn:hover {
 		background: var(--color-primary-50);
-		border-color: var(--color-primary-400);
+		color: var(--color-primary-600);
 	}
 
 	[data-theme='dark'] .value-btn:hover {
 		background: rgba(15, 76, 117, 0.3);
+		color: var(--color-primary-400);
 	}
 
 	.value-input-group input {
 		flex: 1;
 		text-align: center;
 		padding: 0.75rem;
-		border: 1px solid var(--color-veil-thin);
+		border: none;
 		border-radius: 0.5rem;
 		font-size: 1.25rem;
 		font-weight: 700;
 		color: var(--color-text-source);
-		background: var(--color-field-void);
+		background: var(--color-field-depth);
+		transition: all 0.15s ease;
 	}
 
 	.value-input-group input:focus {
 		outline: none;
-		border-color: var(--color-primary-400);
+		background: var(--color-field-void);
+		box-shadow: var(--shadow-sm);
 	}
 
 	.dimensions-section h4 {
@@ -528,6 +539,7 @@
 		justify-content: flex-end;
 		gap: 0.75rem;
 		padding: 1rem;
-		border-top: 1px solid var(--color-veil-thin);
+		background: var(--color-field-depth);
+		border-radius: 0 0 1rem 1rem;
 	}
 </style>

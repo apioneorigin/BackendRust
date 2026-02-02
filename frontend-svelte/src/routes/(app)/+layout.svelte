@@ -321,7 +321,6 @@
 		min-width: 260px;
 		height: 100dvh;
 		background: var(--color-field-surface);
-		border-right: 1px solid var(--color-veil-thin);
 		display: flex;
 		flex-direction: column;
 		flex-shrink: 0;
@@ -339,7 +338,6 @@
 		align-items: center;
 		justify-content: space-between;
 		padding: 1rem;
-		border-bottom: 1px solid var(--color-veil-thin);
 		gap: 0.5rem;
 	}
 
@@ -572,7 +570,7 @@
 	/* Sidebar footer / User menu */
 	.sidebar-footer {
 		padding: 0.5rem;
-		border-top: 1px solid var(--color-veil-thin);
+		margin-top: auto;
 		position: relative;
 	}
 
@@ -662,7 +660,6 @@
 		box-shadow: var(--shadow-elevated);
 		z-index: 100;
 		background: var(--color-field-surface);
-		border: 1px solid var(--color-veil-thin);
 	}
 
 	@keyframes slideUp {
@@ -718,8 +715,8 @@
 
 	.user-menu-divider {
 		height: 1px;
-		background: var(--color-veil-thin);
-		margin: 0.375rem 0.5rem;
+		background: var(--color-field-void);
+		margin: 0.375rem 0.625rem;
 	}
 
 	/* Main content */
@@ -742,7 +739,7 @@
 		right: 0;
 		height: 56px;
 		background: var(--color-field-surface);
-		border-bottom: 1px solid var(--color-veil-thin);
+		box-shadow: var(--shadow-sm);
 		padding: 0 1rem;
 		align-items: center;
 		justify-content: space-between;

@@ -97,7 +97,7 @@
 	.live-preview {
 		background: var(--color-field-surface);
 		border-radius: 0.75rem;
-		border: 1px solid var(--color-veil-thin);
+		box-shadow: var(--shadow-panel);
 		height: 100%;
 		display: flex;
 		flex-direction: column;
@@ -109,8 +109,8 @@
 		align-items: center;
 		gap: 0.5rem;
 		padding: 0.75rem 1rem;
-		border-bottom: 1px solid var(--color-veil-thin);
 		background: var(--color-field-depth);
+		border-radius: 0.75rem 0.75rem 0 0;
 	}
 
 	.header-icon {
@@ -194,7 +194,7 @@
 
 	.metric-bar {
 		height: 4px;
-		background: var(--color-veil-thin);
+		background: var(--color-field-void);
 		border-radius: 2px;
 		overflow: hidden;
 	}

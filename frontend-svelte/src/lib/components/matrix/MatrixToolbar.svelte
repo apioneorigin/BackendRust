@@ -103,8 +103,8 @@
 		gap: 0.375rem;
 		padding: 0.5rem 0.75rem;
 		background: var(--color-field-surface);
-		border: 1px solid var(--color-veil-thin);
-		border-radius: 0.375rem;
+		border: none;
+		border-radius: 0.5rem;
 		font-size: 0.6875rem;
 		font-weight: 500;
 		color: var(--color-text-manifest);
@@ -115,7 +115,6 @@
 
 	.toolbar-btn:hover {
 		background: var(--color-primary-50);
-		border-color: var(--color-primary-400);
 		color: var(--color-primary-600);
 	}
 
@@ -126,7 +125,6 @@
 
 	.toolbar-btn.active {
 		background: var(--color-primary-500);
-		border-color: var(--color-primary-500);
 		color: white;
 	}
 
