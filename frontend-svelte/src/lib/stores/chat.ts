@@ -488,6 +488,21 @@ function createChatStore() {
 			update(state => ({ ...state, error: null }));
 		},
 
+		clearCurrentConversation() {
+			// Clear current conversation without creating a new one
+			// Used for "New Chat" - actual conversation created on first message
+			update(state => ({
+				...state,
+				currentConversation: null,
+				messages: [],
+				goals: [],
+				insights: [],
+				questions: [],
+				structuredData: null,
+				error: null,
+			}));
+		},
+
 		reset() {
 			if (abortController) {
 				abortController.abort();

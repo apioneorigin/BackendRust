@@ -148,8 +148,9 @@
 		}
 	}
 
-	async function handleNewChat() {
-		await chat.createConversation();
+	function handleNewChat() {
+		// Clear current conversation - new one will be created on first message
+		chat.clearCurrentConversation();
 	}
 
 	function handleKeyDown(e: KeyboardEvent) {

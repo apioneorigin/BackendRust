@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { auth, isAuthenticated, user, theme, addToast, chat, conversations, currentConversation } from '$lib/stores';
+	import { auth, isAuthenticated, user, theme, addToast, chat, conversations, currentConversation, messages } from '$lib/stores';
 	import { Spinner } from '$lib/components/ui';
 
 	let isLoading = true;
@@ -35,9 +35,20 @@
 		goto('/login');
 	}
 
-	async function handleNewChat() {
-		await chat.createConversation();
-		goto('/chat');
+	function handleNewChat() {
+		// Don't create conversation yet - just navigate to welcome page
+		// Conversation will be created when user sends first message
+		const isOnChatPage = $page.url.pathname === '/chat';
+
+		if (isOnChatPage && $messages.length === 0 && !$currentConversation) {
+			// Already on welcome page with no conversation - do nothing
+			return;
+		}
+
+		chat.clearCurrentConversation();
+		if (!isOnChatPage) {
+			goto('/chat');
+		}
 	}
 
 	async function handleSelectConversation(conversationId: string) {
