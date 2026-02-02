@@ -112,11 +112,21 @@
 		}
 	});
 
-	// Auto-scroll when new messages or streaming
-	$: if (($messages.length > 0 || $streamingContent) && messagesContainer) {
-		tick().then(() => {
-			messagesContainer.scrollTop = messagesContainer.scrollHeight;
-		});
+	// Auto-scroll when new messages or streaming - use setTimeout to break reactive cycle
+	let lastMessageCount = 0;
+	$: {
+		const currentCount = $messages.length;
+		const hasStreaming = !!$streamingContent;
+		// Only scroll when messages actually change or streaming starts
+		if ((currentCount > lastMessageCount || hasStreaming) && messagesContainer) {
+			lastMessageCount = currentCount;
+			// Use setTimeout to break out of reactive cycle and avoid potential hang
+			setTimeout(() => {
+				if (messagesContainer) {
+					messagesContainer.scrollTop = messagesContainer.scrollHeight;
+				}
+			}, 0);
+		}
 	}
 
 	async function handleSendMessage() {

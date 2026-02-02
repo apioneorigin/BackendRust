@@ -9,6 +9,7 @@
 	let mobileMenuOpen = false;
 	let userMenuOpen = false;
 	let sidebarCollapsed = false;
+	let isSelectingConversation = false; // Guard against rapid clicks
 
 	onMount(async () => {
 		const currentUser = await auth.loadUser();
@@ -39,10 +40,23 @@
 	}
 
 	async function handleSelectConversation(conversationId: string) {
-		await chat.selectConversation(conversationId);
-		// Only navigate if not already on chat page
-		if (!$page.url.pathname.startsWith('/chat')) {
-			goto('/chat');
+		// Guard against rapid clicks or selecting same conversation
+		if (isSelectingConversation || $currentConversation?.id === conversationId) {
+			return;
+		}
+
+		isSelectingConversation = true;
+		try {
+			await chat.selectConversation(conversationId);
+			// Only navigate if not already on chat page
+			if (!$page.url.pathname.startsWith('/chat')) {
+				goto('/chat');
+			}
+		} finally {
+			// Use setTimeout to ensure state is cleared after any reactive updates complete
+			setTimeout(() => {
+				isSelectingConversation = false;
+			}, 100);
 		}
 	}
 
@@ -177,7 +191,8 @@
 							type="button"
 							class="conversation-item"
 							class:active={$currentConversation?.id === conversation.id}
-							on:click|preventDefault={() => handleSelectConversation(conversation.id)}
+							disabled={isSelectingConversation}
+							on:click|preventDefault|stopPropagation={() => handleSelectConversation(conversation.id)}
 							title={conversation.title || 'New Chat'}
 						>
 							<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -515,6 +530,11 @@
 	.conversation-item:hover svg,
 	.conversation-item.active svg {
 		color: inherit;
+	}
+
+	.conversation-item:disabled {
+		opacity: 0.6;
+		cursor: wait;
 	}
 
 	.conversation-info {
