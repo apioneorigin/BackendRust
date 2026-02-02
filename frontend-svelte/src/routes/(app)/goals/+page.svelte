@@ -472,11 +472,15 @@
 	.goals-page {
 		padding: 2rem 3rem;
 		width: 100%;
-		max-width: 1400px;
-		margin: 0 auto;
-		box-sizing: border-box;
+		height: 100%;
+		overflow-y: auto;
 		overflow-x: hidden;
+		box-sizing: border-box;
 		animation: fadeIn 0.2s ease;
+	}
+
+	.goals-page > * {
+		max-width: 1400px;
 	}
 
 	/* Page header */
