@@ -811,6 +811,10 @@
 		background: var(--color-field-depth);
 	}
 
+	.input-panel:focus-within {
+		border-color: var(--color-text-whisper);
+	}
+
 	.hidden-input {
 		display: none;
 	}
