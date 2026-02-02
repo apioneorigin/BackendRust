@@ -216,16 +216,16 @@
 			<div class="popup-body">
 				<div class="selection-info">
 					<span class="selection-count" class:complete={canSubmit}>
-						{selectedRowCount}/5 rows, {selectedColCount}/5 columns
+						{selectedRowCount + selectedColCount}/10 selected
 					</span>
-					<span class="selection-hint">Select 5 of each type to shape your matrix view</span>
+					<span class="selection-hint">Select 5 from each group to shape your context view</span>
 				</div>
 
 				{#if hasOptions}
 					<div class="options-sections">
-						<!-- Row Options -->
+						<!-- Drivers (internally rows) -->
 						<div class="options-section">
-							<h4 class="section-title">Rows ({rowOptions.length} available)</h4>
+							<h4 class="section-title">Drivers ({rowOptions.length} available)</h4>
 							<div class="titles-list">
 								{#each rowOptions as opt, idx (`row-${idx}`)}
 									{@const isSelected = selectedRows.includes(idx)}
@@ -289,9 +289,9 @@
 							</div>
 						</div>
 
-						<!-- Column Options -->
+						<!-- Outcomes (internally columns) -->
 						<div class="options-section">
-							<h4 class="section-title">Columns ({columnOptions.length} available)</h4>
+							<h4 class="section-title">Outcomes ({columnOptions.length} available)</h4>
 							<div class="titles-list">
 								{#each columnOptions as opt, idx (`col-${idx}`)}
 									{@const isSelected = selectedColumns.includes(idx)}

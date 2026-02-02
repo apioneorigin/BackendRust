@@ -19,6 +19,9 @@
 		close: void;
 	}>();
 
+	// Map internal types to user-friendly labels
+	$: displayType = optionType === 'row' ? 'driver' : 'outcome';
+
 	function handleClose() {
 		open = false;
 		dispatch('close');
@@ -55,8 +58,8 @@
 		>
 			<div class="popup-header">
 				<div class="header-content">
-					<span class="option-type-badge" class:row={optionType === 'row'} class:column={optionType === 'column'}>
-						{optionType}
+					<span class="option-type-badge" class:driver={optionType === 'row'} class:outcome={optionType === 'column'}>
+						{displayType}
 					</span>
 					<h3 id="insight-title">{optionLabel}</h3>
 				</div>
@@ -179,22 +182,22 @@
 		border-radius: 0.25rem;
 	}
 
-	.option-type-badge.row {
+	.option-type-badge.driver {
 		background: var(--color-primary-100);
 		color: var(--color-primary-700);
 	}
 
-	.option-type-badge.column {
+	.option-type-badge.outcome {
 		background: #fef3c7;
 		color: #92400e;
 	}
 
-	[data-theme='dark'] .option-type-badge.row {
+	[data-theme='dark'] .option-type-badge.driver {
 		background: rgba(15, 76, 117, 0.3);
 		color: var(--color-primary-300);
 	}
 
-	[data-theme='dark'] .option-type-badge.column {
+	[data-theme='dark'] .option-type-badge.outcome {
 		background: rgba(146, 64, 14, 0.3);
 		color: #fcd34d;
 	}
