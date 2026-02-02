@@ -189,3 +189,241 @@ def validate_and_log_call1(data: Dict[str, Any], provider: str) -> Dict[str, Any
         raise ValueError(f"Critical fields missing from {provider} response: {missing_critical}")
 
     return data
+
+
+# =============================================================================
+# Call 2 (Structured Data) Schema
+# =============================================================================
+# Call 2 streams natural language text and embeds structured JSON data
+# between ===STRUCTURED_DATA_START=== and ===STRUCTURED_DATA_END=== markers.
+
+# Cell schema (used in document matrix_data)
+CELL_SCHEMA: Dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "impact_score": {"type": "integer", "minimum": 0, "maximum": 100},
+        "relationship": {"type": "string"},
+        "dimensions": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string"},
+                    "value": {"type": "integer", "enum": [0, 50, 100]}
+                },
+                "required": ["name", "value"]
+            },
+            "minItems": 5,
+            "maxItems": 5
+        }
+    },
+    "required": ["impact_score", "dimensions"]
+}
+
+# Document schema
+DOCUMENT_SCHEMA: Dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "id": {"type": "string"},
+        "name": {"type": "string"},
+        "description": {"type": "string"},
+        "matrix_data": {
+            "type": "object",
+            "properties": {
+                "row_options": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "id": {"type": "string"},
+                            "label": {"type": "string"}
+                        },
+                        "required": ["id", "label"]
+                    }
+                },
+                "column_options": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "id": {"type": "string"},
+                            "label": {"type": "string"}
+                        },
+                        "required": ["id", "label"]
+                    }
+                },
+                "selected_rows": {"type": "array", "items": {"type": "integer"}},
+                "selected_columns": {"type": "array", "items": {"type": "integer"}},
+                "cells": {
+                    "type": "object",
+                    "additionalProperties": CELL_SCHEMA
+                }
+            },
+            "required": ["row_options", "column_options", "selected_rows", "selected_columns", "cells"]
+        }
+    },
+    "required": ["id", "name", "description", "matrix_data"]
+}
+
+# Path schema
+PATH_SCHEMA: Dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "id": {"type": "string"},
+        "name": {"type": "string"},
+        "description": {"type": "string"},
+        "risk_level": {"type": "string"},
+        "time_horizon": {"type": "string"},
+        "steps": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "order": {"type": "integer"},
+                    "action": {"type": "string"},
+                    "rationale": {"type": "string"}
+                },
+                "required": ["order", "action"]
+            }
+        }
+    },
+    "required": ["id", "name", "steps"]
+}
+
+# Follow-up question schema
+QUESTION_SCHEMA: Dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "question_text": {"type": "string"},
+        "options": {
+            "type": "object",
+            "properties": {
+                "option_1": {"type": "string"},
+                "option_2": {"type": "string"},
+                "option_3": {"type": "string"},
+                "option_4": {"type": "string"}
+            },
+            "required": ["option_1", "option_2", "option_3", "option_4"]
+        }
+    },
+    "required": ["question_text", "options"]
+}
+
+# Complete Call 2 structured data schema
+CALL2_SCHEMA: Dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "documents": {
+            "type": "array",
+            "items": DOCUMENT_SCHEMA,
+            "minItems": 1
+        },
+        "paths": {
+            "type": "array",
+            "items": PATH_SCHEMA
+        },
+        "follow_up_question": QUESTION_SCHEMA
+    },
+    "required": ["documents"]
+}
+
+
+def validate_call2_response(data: Dict[str, Any]) -> Tuple[bool, List[str]]:
+    """
+    Validate Call 2 structured data against schema.
+
+    Returns:
+        Tuple of (is_valid, list_of_errors)
+    """
+    errors = []
+
+    try:
+        jsonschema.validate(data, CALL2_SCHEMA)
+        return True, []
+    except jsonschema.ValidationError:
+        # Collect all validation errors
+        validator = jsonschema.Draft7Validator(CALL2_SCHEMA)
+        for error in validator.iter_errors(data):
+            path = ".".join(str(p) for p in error.absolute_path) if error.absolute_path else "root"
+            errors.append(f"{path}: {error.message}")
+
+        return False, errors
+
+
+def validate_and_log_call2(data: Dict[str, Any], provider: str) -> Dict[str, Any]:
+    """
+    Validate Call 2 structured data and log any errors.
+
+    Post-hoc validation for both Anthropic and OpenAI (Call 2 uses marker-based extraction).
+
+    Returns the data unchanged (validation is for logging/monitoring only).
+    Does NOT raise errors - structured data is optional enhancement.
+    """
+    is_valid, errors = validate_call2_response(data)
+
+    if not is_valid:
+        api_logger.warning(f"[SCHEMA] {provider} Call 2 validation failed with {len(errors)} errors:")
+        for error in errors[:5]:  # Log first 5 errors
+            api_logger.warning(f"[SCHEMA]   - {error}")
+        if len(errors) > 5:
+            api_logger.warning(f"[SCHEMA]   ... and {len(errors) - 5} more errors")
+    else:
+        # Log validation success with summary
+        doc_count = len(data.get("documents", []))
+        path_count = len(data.get("paths", []))
+        has_question = "follow_up_question" in data
+        api_logger.info(
+            f"[SCHEMA] {provider} Call 2 validated: "
+            f"{doc_count} docs, {path_count} paths, question={'yes' if has_question else 'no'}"
+        )
+
+    return data
+
+
+def validate_document_cells(document: Dict[str, Any]) -> Tuple[bool, List[str]]:
+    """
+    Validate that a document has the expected 100 cells (10x10 matrix).
+
+    Returns:
+        Tuple of (is_valid, list_of_errors)
+    """
+    errors = []
+
+    matrix_data = document.get("matrix_data", {})
+    cells = matrix_data.get("cells", {})
+
+    # Check cell count
+    if len(cells) < 100:
+        errors.append(f"Expected 100 cells, got {len(cells)}")
+
+    # Validate cell keys format (should be "row-col" like "0-0", "9-9")
+    for key in cells:
+        if not isinstance(key, str) or "-" not in key:
+            errors.append(f"Invalid cell key format: {key}")
+            continue
+
+        parts = key.split("-")
+        if len(parts) != 2:
+            errors.append(f"Invalid cell key format: {key}")
+            continue
+
+        try:
+            row, col = int(parts[0]), int(parts[1])
+            if not (0 <= row <= 9 and 0 <= col <= 9):
+                errors.append(f"Cell key out of range (0-9): {key}")
+        except ValueError:
+            errors.append(f"Cell key not numeric: {key}")
+
+    # Validate dimension values (should be 0, 50, or 100)
+    invalid_dim_values = []
+    for key, cell in cells.items():
+        dims = cell.get("dimensions", [])
+        for dim in dims:
+            value = dim.get("value")
+            if value not in [0, 50, 100]:
+                invalid_dim_values.append(f"{key}: {dim.get('name')}={value}")
+
+    if invalid_dim_values:
+        errors.append(f"Invalid dimension values (must be 0/50/100): {invalid_dim_values[:5]}")
+
+    return len(errors) == 0, errors

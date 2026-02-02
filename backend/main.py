@@ -102,7 +102,7 @@ from reverse_causality import (
 
 # SSE utilities for standardized streaming events
 from utils import sse_status, sse_token, sse_error, sse_done, sse_event
-from llm_schemas import CALL1_SCHEMA, CALL1_OPENAI_SCHEMA, validate_and_log_call1
+from llm_schemas import CALL1_SCHEMA, CALL1_OPENAI_SCHEMA, validate_and_log_call1, validate_and_log_call2
 
 # Load environment variables
 load_dotenv()
@@ -458,11 +458,15 @@ mvt_calculator = MVTCalculator()
 api_logger.info("Reverse Causality Mapping initialized: 10 components loaded")
 
 
-def extract_structured_data(content: str) -> Optional[dict]:
+def extract_structured_data(content: str, provider: str = "LLM") -> Optional[dict]:
     """
     Extract structured JSON data from LLM response.
     Looks for data between ===STRUCTURED_DATA_START=== and ===STRUCTURED_DATA_END=== markers.
     Returns parsed JSON or None if not found/invalid.
+
+    Args:
+        content: The full LLM response content
+        provider: Provider name for logging (e.g., "Anthropic", "OpenAI")
     """
     import re
 
@@ -488,6 +492,10 @@ def extract_structured_data(content: str) -> Optional[dict]:
     try:
         data = json.loads(json_str)
         api_logger.info(f"[STRUCTURED DATA] Successfully parsed structured data")
+
+        # Post-hoc schema validation (logs warnings but doesn't fail)
+        validate_and_log_call2(data, provider)
+
         return data
     except json.JSONDecodeError as e:
         api_logger.error(f"[STRUCTURED DATA] Failed to parse JSON: {e}")
@@ -1310,8 +1318,9 @@ async def inference_stream(
 
         api_logger.info(f"[ARTICULATION] Streamed {token_count} tokens")
 
-        # Extract and emit structured data if present
-        structured_data = extract_structured_data(full_content)
+        # Extract and emit structured data if present (with post-hoc validation)
+        provider = model_config.get("provider", "LLM")
+        structured_data = extract_structured_data(full_content, provider)
         if structured_data:
             api_logger.info(f"[STRUCTURED DATA] Extracted: matrix={bool(structured_data.get('matrix_data'))}, paths={len(structured_data.get('paths', []))}, docs={len(structured_data.get('documents', []))}")
             yield sse_event("structured_data", structured_data)
