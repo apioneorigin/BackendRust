@@ -1446,93 +1446,52 @@ Articulation Tokens: {token_count}
         })
 
         # =====================================================================
-        # QUESTION FLOW - Combined with Call 2 (no separate Call 3)
-        # Question is now generated as part of Call 2 structured data.
-        # Fall back to separate LLM call only if Call 2 didn't include a question.
+        # QUESTION FLOW - Extracted from Call 2 structured data (no separate Call 3)
+        # Question is generated as part of Call 2's structured output.
         # =====================================================================
-        # Get missing_operator_priority from LLM Call 1
-        missing_operator_priority = evidence.get('missing_operator_priority', [])
-
-        question_context = question_gen.get_question_context(
-            goal_context=goal_context,
-            missing_operators=missing_operators,
-            known_operators=extracted_operators,
-            missing_operator_priority=missing_operator_priority,
-            question_type='gap_filling'
-        )
-
-        if question_context:
-            # First, try to get question from Call 2 structured data (no extra API call)
-            llm_question = None
-            if structured_data and structured_data.get('follow_up_question'):
-                follow_up = structured_data['follow_up_question']
-                if follow_up.get('question_text') and follow_up.get('options'):
-                    llm_question = {
-                        'question_text': follow_up['question_text'],
-                        'options': follow_up['options']
-                    }
-                    api_logger.info(f"[QUESTION] Using question from Call 2 structured data (no Call 3 needed)")
-
-            # Fall back to separate LLM call (Call 3) only if Call 2 didn't include a question
-            if not llm_question:
-                api_logger.info(f"[QUESTION] No question in Call 2 structured data, falling back to Call 3")
-                llm_question = await generate_question_via_llm(
-                    model_config=model_config,
-                    query=prompt,
-                    goal_context=evidence.get('goal_context', {}),
-                    question_context=question_context
+        if structured_data and structured_data.get('follow_up_question'):
+            follow_up = structured_data['follow_up_question']
+            if follow_up.get('question_text') and follow_up.get('options'):
+                # Get question context for metadata
+                missing_operator_priority = evidence.get('missing_operator_priority', [])
+                question_context = question_gen.get_question_context(
+                    goal_context=goal_context,
+                    missing_operators=missing_operators,
+                    known_operators=extracted_operators,
+                    missing_operator_priority=missing_operator_priority,
+                    question_type='gap_filling'
                 )
 
-                if llm_question:
-                    # Extract Call 3 token usage and emit updated totals
-                    call3_token_usage = llm_question.pop('_call3_token_usage', None)
-                    if call3_token_usage:
-                        c3_in = call3_token_usage["input_tokens"]
-                        c3_out = call3_token_usage["output_tokens"]
-                        updated_in = c1_in + c2_in + c3_in
-                        updated_out = c1_out + c2_out + c3_out
-                        updated_all = updated_in + updated_out
-                        updated_cost = (updated_in * pricing["input"] + updated_out * pricing["output"]) / 1_000_000
-                        api_logger.info(f"[TOKEN USAGE] Call 1: {c1_in}+{c1_out}={c1_in+c1_out} | Call 2: {c2_in}+{c2_out}={c2_in+c2_out} | Call 3: {c3_in}+{c3_out}={c3_in+c3_out} | Total: {updated_in}+{updated_out}={updated_all} | Cost: ${updated_cost:.6f}")
-                        yield sse_event("usage", {
-                            "call1": {"input_tokens": c1_in, "output_tokens": c1_out, "total_tokens": c1_in + c1_out},
-                            "call2": {"input_tokens": c2_in, "output_tokens": c2_out, "total_tokens": c2_in + c2_out},
-                            "call3": {"input_tokens": c3_in, "output_tokens": c3_out, "total_tokens": c3_in + c3_out},
-                            "input_tokens": updated_in,
-                            "output_tokens": updated_out,
-                            "total_tokens": updated_all,
-                            "cost": round(updated_cost, 6),
-                        })
+                if question_context:
+                    from constellation_question_generator import MultiDimensionalQuestion
+                    question = MultiDimensionalQuestion(
+                        question_id=question_context['question_id'],
+                        question_text=follow_up['question_text'],
+                        answer_options=follow_up['options'],
+                        diagnostic_power=question_context['diagnostic_power'],
+                        target_operators=question_context['target_operators'],
+                        purposes_served=question_context['purposes_served'],
+                        goal_context=goal_context
+                    )
 
-            if llm_question:
-                from constellation_question_generator import MultiDimensionalQuestion
-                question = MultiDimensionalQuestion(
-                    question_id=question_context['question_id'],
-                    question_text=llm_question['question_text'],
-                    answer_options=llm_question.get('options', {}),
-                    diagnostic_power=question_context['diagnostic_power'],
-                    target_operators=question_context['target_operators'],
-                    purposes_served=question_context['purposes_served'],
-                    goal_context=goal_context
-                )
+                    session_data = api_session_store.get(session_id)
+                    session_data['evidence'] = evidence
+                    session_data['_pending_question'] = question
+                    session_data['_question_asked'] = True
+                    await api_session_store.update(session_id, session_data)
 
-                session_data = api_session_store.get(session_id)
-                session_data['evidence'] = evidence
-                session_data['_pending_question'] = question
-                session_data['_question_asked'] = True
-                await api_session_store.update(session_id, session_data)
+                    yield sse_event("question", {
+                        "session_id": session_id,
+                        "question_id": question.question_id,
+                        "question_text": question.question_text,
+                        "options": [{"id": opt_id, "text": opt_text} for opt_id, opt_text in question.answer_options.items()],
+                        "diagnostic_power": question.diagnostic_power,
+                        "purposes_served": question.purposes_served
+                    })
 
-                yield sse_event("question", {
-                    "session_id": session_id,
-                    "question_id": question.question_id,
-                    "question_text": question.question_text,
-                    "options": [{"id": opt_id, "text": opt_text} for opt_id, opt_text in question.answer_options.items()],
-                    "diagnostic_power": question.diagnostic_power,
-                    "purposes_served": question.purposes_served
-                })
-
-                api_logger.info(f"[QUESTION] Question sent: {question.question_id}")
-                api_logger.info(f"[QUESTION] Missing operators: {len(missing_operators)}")
+                    api_logger.info(f"[QUESTION] Question from Call 2: {question.question_id}")
+        else:
+            api_logger.warning("[QUESTION] No follow_up_question in Call 2 structured data - skipping question")
 
         # =====================================================================
         # END QUESTION FLOW

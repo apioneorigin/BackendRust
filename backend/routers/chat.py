@@ -413,18 +413,11 @@ async def send_message(
 
             # Save structured data (documents with matrices, paths) to conversation
             if structured_data:
-                # New format: documents array, each with its own matrix_data
-                if structured_data.get("documents"):
-                    documents = structured_data["documents"]
-                    # Only update if LLM generated new documents (not empty array for unchanged context)
-                    if documents:
-                        conv.generated_documents = documents
-                        # Also save first document's matrix as legacy matrix_data for backwards compatibility
-                        if documents[0].get("matrix_data"):
-                            conv.matrix_data = documents[0]["matrix_data"]
-                # Legacy format support: top-level matrix_data
-                elif structured_data.get("matrix_data"):
-                    conv.matrix_data = structured_data["matrix_data"]
+                # Documents array format - each document has its own matrix_data
+                documents = structured_data.get("documents", [])
+                # Only update if LLM generated new documents (not empty array for unchanged context)
+                if documents:
+                    conv.generated_documents = documents
                 if structured_data.get("paths"):
                     conv.generated_paths = structured_data["paths"]
 

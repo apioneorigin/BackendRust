@@ -183,27 +183,11 @@ function createMatrixStore() {
 			update(state => ({ ...state, conversationId }));
 		},
 
-		// Populate from structured data received from backend (new format with documents array)
-		populateFromStructuredData(data: { documents?: Document[]; matrix_data?: any }) {
-			if (!data) return;
+		// Populate from structured data received from backend (documents array format)
+		populateFromStructuredData(data: { documents?: Document[] }) {
+			if (!data || !data.documents || data.documents.length === 0) return;
 
-			let documents: Document[] = [];
-
-			// New format: documents array with per-document matrices
-			if (data.documents && data.documents.length > 0) {
-				documents = data.documents;
-			}
-			// Legacy format: single matrix_data at top level
-			else if (data.matrix_data) {
-				documents = [{
-					id: 'doc-0',
-					name: 'Strategy Document',
-					description: 'Your primary transformation strategy with key drivers and outcomes.',
-					matrix_data: data.matrix_data
-				}];
-			}
-
-			if (documents.length === 0) return;
+			const documents = data.documents;
 
 			const activeDocumentId = documents[0].id;
 			const activeDoc = documents[0];
