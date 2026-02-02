@@ -701,8 +701,7 @@
 
 	/* Sidebar footer / User menu - aligned with input panel controls border */
 	.sidebar-footer {
-		padding: 0.5rem 0.75rem;
-		padding-bottom: 2.25rem; /* 1.5rem (chat-layout) + 0.75rem (input-panel padding) */
+		padding: 0 0.75rem 2.25rem 0.75rem; /* No top padding - border aligns with controls-row border */
 		margin-top: auto;
 		position: relative;
 		border-top: 1px solid var(--color-veil-thin);
