@@ -515,7 +515,7 @@
 							</svg>
 						</div>
 						<h3>Live Metrics</h3>
-						<p>Real-time coherence, balance,<br/>and power spot analysis.</p>
+						<p>Watch Reality Unfold Live.<br/>This is your Output Box</p>
 					</div>
 				</div>
 			{/if}
