@@ -486,6 +486,7 @@
 		<!-- Toolbar - always shown -->
 		<MatrixToolbar
 			showRiskHeatmap={$showRiskHeatmapStore}
+			disabled={isWelcomeState}
 			on:openPopup={handleToolbarPopup}
 			on:toggleRisk={handleToggleRisk}
 		/>

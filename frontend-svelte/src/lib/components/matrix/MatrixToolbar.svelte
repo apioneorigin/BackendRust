@@ -9,6 +9,7 @@
 	import { createEventDispatcher } from 'svelte';
 
 	export let showRiskHeatmap = false;
+	export let disabled = false;
 
 	const dispatch = createEventDispatcher<{
 		openPopup: { type: 'powerSpots' | 'plays' | 'scenarios' | 'sensitivity' | 'risk' };
@@ -16,15 +17,17 @@
 	}>();
 
 	function handleOpenPopup(type: 'powerSpots' | 'plays' | 'scenarios' | 'sensitivity' | 'risk') {
+		if (disabled) return;
 		dispatch('openPopup', { type });
 	}
 
 	function handleToggleRisk() {
+		if (disabled) return;
 		dispatch('toggleRisk', { enabled: !showRiskHeatmap });
 	}
 </script>
 
-<div class="matrix-toolbar">
+<div class="matrix-toolbar" class:disabled>
 	<button class="toolbar-btn" on:click={() => handleOpenPopup('powerSpots')} title="Power Spots">
 		<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 			<path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>
@@ -127,6 +130,13 @@
 		flex-shrink: 0;
 		width: 14px;
 		height: 14px;
+	}
+
+	/* Disabled state - non-interactive on welcome page */
+	.disabled .toolbar-btn {
+		opacity: 0.4;
+		cursor: default;
+		pointer-events: none;
 	}
 
 	@media (max-width: 900px) {
