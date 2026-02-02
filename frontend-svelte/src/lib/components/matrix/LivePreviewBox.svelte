@@ -101,7 +101,7 @@
 		height: 100%;
 		display: flex;
 		flex-direction: column;
-		overflow: hidden;
+		overflow: hidden; /* Container doesn't scroll */
 	}
 
 	.preview-header {
@@ -140,6 +140,8 @@
 		flex-direction: column;
 		gap: 0.75rem;
 		overflow-y: auto;
+		overflow-x: hidden;
+		min-height: 0;
 	}
 
 	.metrics-row {

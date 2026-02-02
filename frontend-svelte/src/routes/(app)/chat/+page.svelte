@@ -680,10 +680,12 @@
 	.response-container {
 		flex: 1;
 		overflow-y: auto;
+		overflow-x: hidden;
 		background: var(--color-field-surface);
 		border-radius: 0.75rem;
 		border: 1px solid var(--color-veil-thin);
 		padding: 1rem;
+		min-height: 0;
 	}
 
 	/* Welcome screen */
@@ -846,6 +848,8 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.5rem;
+		flex-shrink: 0; /* Don't shrink, always visible */
+		overflow: hidden;
 	}
 
 	.input-panel.drag-over {
@@ -1066,23 +1070,26 @@
 		background: var(--color-error-600);
 	}
 
-	/* Matrix column */
+	/* Matrix column - right side with matrix and live preview */
 	.matrix-column {
 		display: flex;
 		flex-direction: column;
 		gap: 0.5rem;
 		min-width: 0;
+		min-height: 0;
 		overflow: hidden;
 	}
 
 	.matrix-box {
 		flex: 1;
 		min-height: 0;
+		overflow: hidden; /* No scrolling - matrix should fit within bounds */
 	}
 
 	.preview-box {
 		flex: 1;
 		min-height: 0;
+		overflow: hidden; /* Container doesn't scroll, internal content does */
 	}
 
 	/* Welcome Overlay State */

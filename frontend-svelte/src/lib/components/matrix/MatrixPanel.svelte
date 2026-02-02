@@ -183,23 +183,29 @@
 		height: 100%;
 		display: flex;
 		flex-direction: column;
+		overflow: hidden; /* No scrolling - matrix should fit within bounds */
 	}
 
 	.matrix-panel.compact {
 		padding: 0.75rem;
 	}
 
+	.matrix-panel.compact .matrix-grid {
+		grid-template-columns: minmax(50px, 60px) repeat(5, 1fr);
+	}
+
 	.matrix-grid {
 		display: grid;
-		grid-template-columns: 80px repeat(5, 1fr);
+		grid-template-columns: minmax(60px, 80px) repeat(5, 1fr);
 		grid-template-rows: 32px repeat(5, 1fr);
 		gap: 3px;
 		flex: 1;
 		min-height: 0;
+		overflow: hidden;
 	}
 
 	.compact .matrix-grid {
-		grid-template-columns: 60px repeat(5, 1fr);
+		grid-template-columns: minmax(50px, 60px) repeat(5, 1fr);
 		grid-template-rows: 28px repeat(5, 1fr);
 		gap: 2px;
 	}
