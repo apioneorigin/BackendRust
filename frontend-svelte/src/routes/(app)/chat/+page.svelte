@@ -717,6 +717,11 @@
 		max-width: 85%;
 	}
 
+	.message:not(.user) .message-content {
+		max-width: 100%;
+		width: 100%;
+	}
+
 	.message.user .message-content {
 		display: flex;
 		flex-direction: column;
