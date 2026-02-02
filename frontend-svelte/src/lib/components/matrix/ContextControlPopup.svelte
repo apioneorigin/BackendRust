@@ -2,16 +2,15 @@
 	/**
 	 * ContextControlPopup - Unified context control for matrix dimensions
 	 *
-	 * Combines row (causation) and column (effect) selection into a single popup.
-	 * User sees 10 context titles without knowing which are rows vs columns.
-	 * Backend tracks type internally and determines what to regenerate.
+	 * Shows all available row and column options (up to 40 total: 20 rows + 20 columns).
+	 * User sees context titles without knowing which are rows vs columns.
+	 * User selects exactly 5 rows and 5 columns for display.
 	 *
 	 * Features:
-	 * - Shows 10 context titles (5 rows + 5 columns combined)
+	 * - Shows all context titles from allRowOptions and allColumnOptions
 	 * - Each title has an insight explaining why it was generated
-	 * - User can select/deselect titles
-	 * - Generate more titles button (backend determines row vs column)
-	 * - Max 10-word phrase titles
+	 * - User can select/deselect (must have exactly 5 of each type)
+	 * - Max 3-word phrase titles
 	 */
 
 	import { createEventDispatcher } from 'svelte';
@@ -27,7 +26,7 @@
 
 	// Combined context titles from rows and columns
 	interface ContextTitle {
-		id: string;
+		index: number;  // Original index in allRowOptions or allColumnOptions
 		title: string;
 		insight: string;
 		type: 'row' | 'column'; // Internal tracking, not shown to user
@@ -36,22 +35,22 @@
 
 	let contextTitles: ContextTitle[] = [];
 
-	// Build combined context titles from matrix store
+	// Build combined context titles from all available options
 	$: {
-		const rowTitles = $matrix.rowHeaders.map((title, idx) => ({
-			id: `row-${idx}`,
-			title,
-			insight: $matrix.rowInsights?.[idx] || '',
+		const rowTitles = ($matrix.allRowOptions || []).map((opt, idx) => ({
+			index: idx,
+			title: opt.label,
+			insight: opt.insight || '',
 			type: 'row' as const,
-			selected: true
+			selected: $matrix.selectedRowIndices?.includes(idx) ?? idx < 5
 		}));
 
-		const colTitles = $matrix.columnHeaders.map((title, idx) => ({
-			id: `col-${idx}`,
-			title,
-			insight: $matrix.columnInsights?.[idx] || '',
+		const colTitles = ($matrix.allColumnOptions || []).map((opt, idx) => ({
+			index: idx,
+			title: opt.label,
+			insight: opt.insight || '',
 			type: 'column' as const,
-			selected: true
+			selected: $matrix.selectedColumnIndices?.includes(idx) ?? idx < 5
 		}));
 
 		contextTitles = [...rowTitles, ...colTitles];
@@ -61,64 +60,48 @@
 	$: selectedColCount = contextTitles.filter(t => t.type === 'column' && t.selected).length;
 	$: totalSelected = selectedRowCount + selectedColCount;
 	$: canSubmit = selectedRowCount === 5 && selectedColCount === 5;
-	$: canGenerateMore = contextTitles.length < 20; // Max 10 rows + 10 columns
+	$: hasOptions = contextTitles.length > 0;
 
 	function handleClose() {
 		open = false;
 		dispatch('close');
 	}
 
-	function handleToggleTitle(id: string) {
-		const title = contextTitles.find(t => t.id === id);
-		if (!title) return;
+	function handleToggleTitle(index: number, type: 'row' | 'column') {
+		const titleIdx = contextTitles.findIndex(t => t.index === index && t.type === type);
+		if (titleIdx === -1) return;
 
-		// Check if we can deselect (need at least 5 of each type)
+		const title = contextTitles[titleIdx];
+		const sameTypeSelected = contextTitles.filter(t => t.type === type && t.selected).length;
+
+		// Check if we can toggle
 		if (title.selected) {
-			const sameTypeSelected = contextTitles.filter(t => t.type === title.type && t.selected).length;
-			if (sameTypeSelected <= 5) {
-				// Can't deselect - would go below 5
-				return;
-			}
+			// Can only deselect if more than 5 of this type selected
+			if (sameTypeSelected <= 5) return;
 		} else {
-			// Check if we can select (max 5 of each type active)
-			const sameTypeSelected = contextTitles.filter(t => t.type === title.type && t.selected).length;
-			if (sameTypeSelected >= 5) {
-				// Can't select - already have 5
-				return;
-			}
+			// Can only select if fewer than 5 of this type selected
+			if (sameTypeSelected >= 5) return;
 		}
 
-		contextTitles = contextTitles.map(t =>
-			t.id === id ? { ...t, selected: !t.selected } : t
+		// Toggle selection
+		contextTitles = contextTitles.map((t, i) =>
+			i === titleIdx ? { ...t, selected: !t.selected } : t
 		);
-	}
-
-	async function handleGenerateMore() {
-		if (!canGenerateMore) return;
-
-		// Determine what type needs more options based on current selection
-		const rowCount = contextTitles.filter(t => t.type === 'row').length;
-		const colCount = contextTitles.filter(t => t.type === 'column').length;
-
-		// Generate for whichever type has fewer options, or rows if equal
-		const generateType = rowCount <= colCount ? 'row' : 'column';
-
-		await matrix.generateMoreContextTitles(generateType);
 	}
 
 	function handleSubmit() {
 		if (!canSubmit) return;
 
-		// Extract selected rows and columns
-		const selectedRows = contextTitles
+		// Extract selected row and column indices
+		const selectedRowIndices = contextTitles
 			.filter(t => t.type === 'row' && t.selected)
-			.map(t => t.title);
-		const selectedCols = contextTitles
+			.map(t => t.index);
+		const selectedColumnIndices = contextTitles
 			.filter(t => t.type === 'column' && t.selected)
-			.map(t => t.title);
+			.map(t => t.index);
 
-		// Update matrix with selected context
-		matrix.updateContextSelection(selectedRows, selectedCols);
+		// Update matrix display with new selection
+		matrix.updateDisplayedSelection(selectedRowIndices, selectedColumnIndices);
 
 		dispatch('submit');
 		handleClose();
@@ -170,75 +153,50 @@
 			<div class="popup-body">
 				<div class="selection-info">
 					<span class="selection-count" class:complete={canSubmit}>
-						{totalSelected}/10 active
+						{selectedRowCount}/5 rows, {selectedColCount}/5 columns
 					</span>
-					<span class="selection-hint">Select context dimensions to shape your matrix</span>
+					<span class="selection-hint">Select 5 of each type to shape your matrix view</span>
 				</div>
 
-				<div class="titles-list">
-					{#each contextTitles as ctx (ctx.id)}
-						{@const sameTypeSelected = contextTitles.filter(t => t.type === ctx.type && t.selected).length}
-						{@const canToggle = ctx.selected ? sameTypeSelected > 5 : sameTypeSelected < 5}
-						<button
-							class="title-item"
-							class:selected={ctx.selected}
-							class:disabled={!canToggle}
-							on:click={() => canToggle && handleToggleTitle(ctx.id)}
-							disabled={!canToggle}
-						>
-							<div class="title-checkbox" class:checked={ctx.selected}>
-								{#if ctx.selected}
-									<svg
-										xmlns="http://www.w3.org/2000/svg"
-										width="14"
-										height="14"
-										viewBox="0 0 24 24"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="3"
-									>
-										<polyline points="20 6 9 17 4 12" />
-									</svg>
-								{/if}
-							</div>
-							<div class="title-content">
-								<span class="title-text">{ctx.title}</span>
-								{#if ctx.insight}
-									<span class="title-insight">{ctx.insight}</span>
-								{/if}
-							</div>
-						</button>
-					{/each}
-				</div>
-
-				{#if canGenerateMore}
-					<button
-						class="generate-more-btn"
-						on:click={handleGenerateMore}
-						disabled={$isLoadingOptions}
-					>
-						{#if $isLoadingOptions}
-							<Spinner size="sm" />
-							<span>Generating...</span>
-						{:else}
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								width="16"
-								height="16"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="2"
+				{#if hasOptions}
+					<div class="titles-list">
+						{#each contextTitles as ctx (`${ctx.type}-${ctx.index}`)}
+							{@const sameTypeSelected = contextTitles.filter(t => t.type === ctx.type && t.selected).length}
+							{@const canToggle = ctx.selected ? sameTypeSelected > 5 : sameTypeSelected < 5}
+							<button
+								class="title-item"
+								class:selected={ctx.selected}
+								class:disabled={!canToggle}
+								on:click={() => canToggle && handleToggleTitle(ctx.index, ctx.type)}
+								disabled={!canToggle}
 							>
-								<path d="M12 5v14" />
-								<path d="M5 12h14" />
-							</svg>
-							<span>Generate More Context ({contextTitles.length}/20)</span>
-						{/if}
-					</button>
+								<div class="title-checkbox" class:checked={ctx.selected}>
+									{#if ctx.selected}
+										<svg
+											xmlns="http://www.w3.org/2000/svg"
+											width="14"
+											height="14"
+											viewBox="0 0 24 24"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="3"
+										>
+											<polyline points="20 6 9 17 4 12" />
+										</svg>
+									{/if}
+								</div>
+								<div class="title-content">
+									<span class="title-text">{ctx.title}</span>
+									{#if ctx.insight}
+										<span class="title-insight">{ctx.insight}</span>
+									{/if}
+								</div>
+							</button>
+						{/each}
+					</div>
 				{:else}
-					<div class="options-limit-notice">
-						Maximum context options reached (20/20)
+					<div class="no-options-notice">
+						No context options available yet. Send a message to generate matrix data.
 					</div>
 				{/if}
 			</div>
@@ -460,6 +418,16 @@
 		color: var(--color-text-whisper);
 		background: var(--color-field-depth);
 		border-radius: 0.5rem;
+	}
+
+	.no-options-notice {
+		text-align: center;
+		padding: 2rem 1rem;
+		font-size: 0.875rem;
+		color: var(--color-text-whisper);
+		background: var(--color-field-depth);
+		border-radius: 0.5rem;
+		border: 1px dashed var(--color-veil-thin);
 	}
 
 	.popup-footer {

@@ -906,17 +906,15 @@ Output this EXACT marker followed by valid JSON:
     "row_options": [
       {"id": "r0", "label": "Strategic Resource Flow", "insight": "Core driver identified from pattern analysis"},
       {"id": "r1", "label": "...", "insight": "..."},
-      {"id": "r2", "label": "...", "insight": "..."},
-      {"id": "r3", "label": "...", "insight": "..."},
-      {"id": "r4", "label": "...", "insight": "..."}
+      ... (20 total row options - context titles, max 3 words each)
     ],
     "column_options": [
-      {"id": "c0", "label": "Growth Momentum Shift", "insight": "Effect factor derived from transformation indicators"},
+      {"id": "c0", "label": "Growth Momentum", "insight": "Effect factor derived from transformation indicators"},
       {"id": "c1", "label": "...", "insight": "..."},
-      {"id": "c2", "label": "...", "insight": "..."},
-      {"id": "c3", "label": "...", "insight": "..."},
-      {"id": "c4", "label": "...", "insight": "..."}
+      ... (20 total column options - context titles, max 3 words each)
     ],
+    "selected_rows": [0, 3, 7, 12, 18],
+    "selected_columns": [1, 4, 9, 14, 19],
     "cells": {
       "0-0": {
         "impact_score": 75,
@@ -925,33 +923,32 @@ Output this EXACT marker followed by valid JSON:
           {
             "name": "Income Path Vision",
             "value": 50,
-            "step_labels": ["Completely unclear direction", "Vague sense of path", "Partially defined goals", "Clear vision with gaps", "Crystal clear purpose"]
+            "step_labels": ["Completely unclear", "Vague sense", "Partially defined", "Clear with gaps", "Crystal clear"]
           },
           {
             "name": "Earning Bandwidth",
             "value": 75,
-            "step_labels": ["No capacity available", "Minimal bandwidth", "Some room to grow", "Strong capacity", "Full capability unlocked"]
+            "step_labels": ["No capacity", "Minimal", "Some room", "Strong", "Full capability"]
           },
           {
-            "name": "Financial Leap Preparedness",
+            "name": "Financial Readiness",
             "value": 25,
-            "step_labels": ["Not ready at all", "Early preparation", "Moderately prepared", "Well prepared", "Fully primed"]
+            "step_labels": ["Not ready", "Early prep", "Moderate", "Well prepared", "Fully primed"]
           },
           {
-            "name": "Career Capital Available",
+            "name": "Career Capital",
             "value": 50,
-            "step_labels": ["No resources", "Limited assets", "Adequate support", "Strong foundation", "Abundant resources"]
+            "step_labels": ["No resources", "Limited", "Adequate", "Strong", "Abundant"]
           },
           {
-            "name": "Work-Wealth Alignment",
+            "name": "Work-Wealth Sync",
             "value": 100,
-            "step_labels": ["Completely fragmented", "Poorly connected", "Partially integrated", "Well harmonized", "Seamlessly unified"]
+            "step_labels": ["Fragmented", "Poorly connected", "Partial", "Harmonized", "Unified"]
           }
         ]
       },
       "0-1": { ... },
-      "0-2": { ... },
-      ... (25 total cells for 5x5 matrix, keys are "row-col" format: "0-0", "0-1", ..., "4-4")
+      ... (400 total cells for 20x20 matrix, keys are "row-col" format: "0-0" to "19-19")
     }
   },
   "paths": [
@@ -986,7 +983,11 @@ Output this EXACT marker followed by valid JSON:
 ===STRUCTURED_DATA_END===
 ```
 
-CRITICAL CELL KEY FORMAT: Use "row-col" format like "0-0", "0-1", "1-0", etc. NOT "r0_c0" format.
+CRITICAL REQUIREMENTS:
+1. CELL KEY FORMAT: Use "row-col" format like "0-0", "0-1", "1-0", etc. NOT "r0_c0" format.
+2. FULL 20x20 MATRIX: Generate ALL 400 cells (from "0-0" to "19-19") with 5 dimensions each.
+3. SELECTED ROWS/COLUMNS: The "selected_rows" and "selected_columns" arrays indicate which 5 rows and 5 columns are MOST RELEVANT to the current chat context for initial display. The app displays a 5x5 view using these selections.
+4. ROW/COLUMN LABELS: Max 3 words per label (displayed vertically for columns, horizontally for rows).
 
 ### 5-DIMENSION FRAMEWORK (CRITICAL - FOLLOW THIS EXACTLY):
 
