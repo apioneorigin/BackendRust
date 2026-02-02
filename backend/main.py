@@ -1,7 +1,7 @@
 """
 Reality Transformer Backend
 FastAPI server with OpenAI Responses API integration, web research, and SSE streaming
-Uses claude-opus-4-5-20251101 model exclusively
+Supports models: gpt-4.1-mini, gpt-5.2, claude-opus-4-5-20251101 (user-selected per prompt)
 
 ================================================================================
 ARCHITECTURE PRINCIPLE: PURE SEPARATION OF CONCERNS
@@ -374,30 +374,6 @@ MODEL_CONFIGS = {
         "endpoint": "https://api.openai.com/v1/responses",
         "streaming_endpoint": "https://api.openai.com/v1/responses",
         "pricing": {"input": 0.40, "output": 1.60},  # $/million tokens
-    },
-    "claude-3-haiku-20240307": {
-        "provider": "anthropic",
-        "api_key": ANTHROPIC_API_KEY,
-        "endpoint": "https://api.anthropic.com/v1/messages",
-        "streaming_endpoint": "https://api.anthropic.com/v1/messages",
-        "pricing": {
-            "input": 0.25,
-            "output": 1.25,
-            "cache_write": 0.3125,  # 1.25x input price
-            "cache_read": 0.025,    # 0.1x input price (90% savings)
-        },
-    },
-    "claude-sonnet-4-5-20250929": {
-        "provider": "anthropic",
-        "api_key": ANTHROPIC_API_KEY,
-        "endpoint": "https://api.anthropic.com/v1/messages",
-        "streaming_endpoint": "https://api.anthropic.com/v1/messages",
-        "pricing": {
-            "input": 3.00,
-            "output": 15.00,
-            "cache_write": 3.75,    # 1.25x input price
-            "cache_read": 0.30,     # 0.1x input price (90% savings)
-        },
     },
     "claude-opus-4-5-20251101": {
         "provider": "anthropic",

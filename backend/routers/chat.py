@@ -392,7 +392,7 @@ async def generate_title(
         )
 
         response = await client.chat.completions.create(
-            model=model_config.get("model", "claude-3-5-haiku-20241022"),
+            model=model_config.get("model"),
             messages=[
                 {
                     "role": "system",
