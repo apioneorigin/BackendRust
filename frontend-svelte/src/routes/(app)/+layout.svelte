@@ -46,16 +46,22 @@
 		}
 	}
 
-	function formatConversationDate(date: Date | string): string {
-		const d = typeof date === 'string' ? new Date(date) : date;
-		const now = new Date();
-		const diff = now.getTime() - d.getTime();
-		const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+	function formatConversationDate(date: Date | string | undefined): string {
+		if (!date) return '';
+		try {
+			const d = typeof date === 'string' ? new Date(date) : date;
+			if (isNaN(d.getTime())) return '';
+			const now = new Date();
+			const diff = now.getTime() - d.getTime();
+			const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
-		if (days === 0) return 'Today';
-		if (days === 1) return 'Yesterday';
-		if (days < 7) return `${days} days ago`;
-		return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+			if (days === 0) return 'Today';
+			if (days === 1) return 'Yesterday';
+			if (days < 7) return `${days} days ago`;
+			return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+		} catch {
+			return '';
+		}
 	}
 
 	function toggleTheme() {
@@ -168,9 +174,10 @@
 				<div class="conversations-list">
 					{#each $conversations as conversation (conversation.id)}
 						<button
+							type="button"
 							class="conversation-item"
 							class:active={$currentConversation?.id === conversation.id}
-							on:click={() => handleSelectConversation(conversation.id)}
+							on:click|preventDefault={() => handleSelectConversation(conversation.id)}
 							title={conversation.title || 'New Chat'}
 						>
 							<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
