@@ -50,6 +50,7 @@ class SendMessageRequest(BaseModel):
     web_search_data: bool = True
     web_search_insights: bool = True
     attachments: Optional[List[dict]] = None  # File attachments: [{"name": "file.pdf", "content": "...", "type": "pdf"}]
+    active_document_id: Optional[str] = None  # ID of the currently active document in matrix view
 
 
 class ConversationContext(BaseModel):
@@ -243,11 +244,29 @@ async def send_message(
                 })
 
     # Extract matrix state for context (user's selected rows/columns + cell values)
-    # Use first document's matrix_data from generated_documents
+    # Use active document's matrix_data from generated_documents, fallback to first
     matrix_state = None
     if conversation.generated_documents and len(conversation.generated_documents) > 0:
-        first_doc = conversation.generated_documents[0]
-        md = first_doc.get("matrix_data", {})
+        all_docs = conversation.generated_documents
+
+        # Find active document by ID, or use first document as fallback
+        active_doc = None
+        if request.active_document_id:
+            for doc in all_docs:
+                if doc.get("id") == request.active_document_id:
+                    active_doc = doc
+                    break
+        if not active_doc:
+            active_doc = all_docs[0]
+
+        # Count documents: total and fully populated (have cells)
+        total_documents = len(all_docs)
+        populated_documents = sum(
+            1 for doc in all_docs
+            if doc.get("matrix_data", {}).get("cells") and len(doc.get("matrix_data", {}).get("cells", {})) > 0
+        )
+
+        md = active_doc.get("matrix_data", {})
         # Get selected indices (default to first 5 if not specified)
         selected_rows = md.get("selected_rows", [0, 1, 2, 3, 4])
         selected_cols = md.get("selected_columns", [0, 1, 2, 3, 4])
@@ -276,9 +295,9 @@ async def send_message(
                 if cell:
                     impact = cell.get("impact_score", 50)
                     dims = cell.get("dimensions", [])
-                    # Summarize dimensions (name: value)
+                    # Summarize dimensions (name: value as Low/Medium/High)
                     dim_summary = ", ".join([
-                        f"{d.get('name', 'Dim')}: {d.get('value', 50)}%"
+                        f"{d.get('name', 'Dim')}: {['Low', 'Medium', 'High'][d.get('value', 50) // 50] if d.get('value', 50) in [0, 50, 100] else d.get('value', 50)}"
                         for d in dims[:5]
                     ]) if dims else "no dimensions"
                     cell_summary.append({
@@ -289,6 +308,10 @@ async def send_message(
                     })
 
         matrix_state = {
+            "active_document_id": active_doc.get("id"),
+            "active_document_name": active_doc.get("name", "Document"),
+            "total_documents": total_documents,
+            "populated_documents": populated_documents,
             "selected_row_labels": selected_row_labels,
             "selected_column_labels": selected_col_labels,
             "total_rows_available": len(row_options),

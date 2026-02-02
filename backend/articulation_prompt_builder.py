@@ -188,8 +188,13 @@ Each major insight should connect: Consciousness Pattern → Observable Reality 
             total_rows = ms.get('total_rows_available', 0)
             total_cols = ms.get('total_columns_available', 0)
             cell_values = ms.get('cell_values', [])
+            # Document count metadata
+            active_doc_name = ms.get('active_document_name', 'Primary Document')
+            total_docs = ms.get('total_documents', 1)
+            populated_docs = ms.get('populated_documents', 1)
 
             sections.append("**User's Matrix Focus Selection:**")
+            sections.append(f"Active Document: {active_doc_name} ({populated_docs} of {total_docs} documents fully populated)")
             sections.append(f"The user has chosen to focus on specific dimensions from the transformation matrix.")
             sections.append(f"Selected Row Dimensions ({len(row_labels)} of {total_rows} available): {', '.join(row_labels)}")
             sections.append(f"Selected Column Dimensions ({len(col_labels)} of {total_cols} available): {', '.join(col_labels)}")
