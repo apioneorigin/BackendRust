@@ -5,7 +5,7 @@
 export { auth, user, isAuthenticated } from './auth';
 export { theme } from './theme';
 export { toast, toasts, addToast, removeToast } from './toast';
-export { chat, messages, currentConversation, conversations, isStreaming, streamingContent } from './chat';
+export { chat, messages, currentConversation, conversations, isStreaming, streamingContent, questions } from './chat';
 export { session, currentSession, sessions } from './session';
 export { credits, creditBalance, isLowCredits } from './credits';
 export { documents, currentDocument, documentList } from './documents';

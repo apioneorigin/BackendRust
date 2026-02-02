@@ -21,6 +21,7 @@
 		conversations,
 		isStreaming,
 		streamingContent,
+		questions,
 		addToast,
 		user,
 		matrix,
@@ -327,6 +328,27 @@
 							</div>
 						</div>
 					</div>
+				{/if}
+
+				<!-- Questions -->
+				{#if $questions.length > 0}
+					{#each $questions as q (q.id)}
+						{#if !q.selectedOption}
+							<div class="question-card">
+								<div class="question-text">{q.text}</div>
+								<div class="question-options">
+									{#each q.options as option}
+										<button
+											class="question-option"
+											on:click={() => chat.answerQuestion(q.id, option.id)}
+										>
+											{option.text}
+										</button>
+									{/each}
+								</div>
+							</div>
+						{/if}
+					{/each}
 				{/if}
 			{/if}
 		</div>
@@ -755,6 +777,57 @@
 
 	.bubble-assistant .message-text {
 		text-align: justify;
+	}
+
+	/* Question card */
+	.question-card {
+		margin: 1.5rem 0;
+		padding: 1.25rem;
+		background: var(--color-field-surface);
+		border: 1px solid var(--color-primary-200);
+		border-radius: 0.75rem;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+	}
+
+	[data-theme='dark'] .question-card {
+		border-color: var(--color-primary-700);
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+	}
+
+	.question-text {
+		font-size: var(--font-size-md);
+		font-weight: 500;
+		color: var(--color-text-source);
+		margin-bottom: 1rem;
+		line-height: 1.5;
+	}
+
+	.question-options {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.question-option {
+		padding: 0.75rem 1rem;
+		background: var(--color-field-depth);
+		border: 1px solid var(--color-veil-thin);
+		border-radius: 0.5rem;
+		color: var(--color-text-manifest);
+		font-size: var(--font-size-sm);
+		text-align: left;
+		cursor: pointer;
+		transition: all 0.15s ease;
+	}
+
+	.question-option:hover {
+		background: var(--color-accent-subtle);
+		border-color: var(--color-primary-300);
+		color: var(--color-text-source);
+	}
+
+	[data-theme='dark'] .question-option:hover {
+		border-color: var(--color-primary-600);
 	}
 
 	/* Input panel - minimal */

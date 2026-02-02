@@ -1317,9 +1317,10 @@ async def inference_stream(
 
         token_count = 0
         full_content = ""  # Collect full response for structured data extraction
-        streamed_content = ""  # Content actually streamed to frontend (excludes structured data block)
+        pending_buffer = ""  # Buffer for tokens that might be part of structured data prefix
         in_structured_block = False  # Flag to track if we're inside structured data markers
-        STRUCT_START_MARKER = "===STRUCTURED_DATA_START==="
+        # Markers to detect - look for the code block that precedes structured data
+        STRUCT_BLOCK_MARKERS = ["```json\n===", "```\n===", "===STRUCTURED_DATA_START"]
         call2_token_usage = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
         async for token in format_results_streaming_bridge(
             prompt, evidence, posteriors, consciousness_state, reverse_mapping_data, model_config, web_search_insights,
@@ -1340,22 +1341,53 @@ async def inference_stream(
                 token_count += 1
                 full_content += token  # Always collect for parsing
 
-                # Check if we've entered the structured data block
-                if not in_structured_block:
-                    if STRUCT_START_MARKER in full_content:
-                        # We've hit the structured data block - stop streaming
-                        in_structured_block = True
-                        # Stream any content before the marker that wasn't yet streamed
-                        marker_pos = full_content.find(STRUCT_START_MARKER)
-                        remaining_to_stream = full_content[:marker_pos][len(streamed_content):]
-                        if remaining_to_stream.strip():
-                            yield sse_token(remaining_to_stream.rstrip())
-                        api_logger.debug("[STRUCTURED DATA] Detected start marker, stopping token stream")
+                # If already in structured block, just collect don't stream
+                if in_structured_block:
+                    continue
+
+                # Add token to pending buffer
+                pending_buffer += token
+
+                # Check if buffer contains any structured data marker
+                marker_found = False
+                marker_pos = -1
+                for marker in STRUCT_BLOCK_MARKERS:
+                    pos = pending_buffer.find(marker)
+                    if pos != -1:
+                        marker_found = True
+                        marker_pos = pos
+                        break
+
+                if marker_found:
+                    # Found marker - stream everything before it, then stop
+                    in_structured_block = True
+                    content_before_marker = pending_buffer[:marker_pos].rstrip()
+                    if content_before_marker:
+                        yield sse_token(content_before_marker)
+                    api_logger.debug("[STRUCTURED DATA] Detected start marker, stopping token stream")
+                else:
+                    # Check if buffer might be building toward a marker (partial match)
+                    might_be_marker = False
+                    for marker in STRUCT_BLOCK_MARKERS:
+                        # Check if end of buffer could be start of marker
+                        for i in range(1, min(len(marker), len(pending_buffer)) + 1):
+                            if pending_buffer.endswith(marker[:i]):
+                                might_be_marker = True
+                                break
+                        if might_be_marker:
+                            break
+
+                    if might_be_marker:
+                        # Hold buffer - don't stream yet, might be start of marker
+                        pass
                     else:
-                        # Not in structured block yet, stream normally
-                        streamed_content += token
-                        yield sse_token(token)
-                # If in_structured_block is True, we just collect but don't stream
+                        # Safe to stream the buffer
+                        yield sse_token(pending_buffer)
+                        pending_buffer = ""
+
+        # Stream any remaining buffer that wasn't part of structured data
+        if pending_buffer and not in_structured_block:
+            yield sse_token(pending_buffer)
 
         api_logger.info(f"[ARTICULATION] Streamed {token_count} tokens")
 

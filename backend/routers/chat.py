@@ -383,7 +383,7 @@ async def generate_title(
     from main import get_model_config
     import openai
 
-    model_config = get_model_config("claude-haiku")  # Use fast model for title generation
+    model_config = get_model_config("gpt-4.1-mini")  # Use fast model for title generation
 
     try:
         client = openai.AsyncOpenAI(

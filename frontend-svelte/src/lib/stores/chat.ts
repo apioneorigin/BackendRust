@@ -335,9 +335,15 @@ function createChatStore() {
 									break;
 
 								case 'question':
+									// Map backend field names to frontend interface
+									const question = {
+										id: parsed.question_id,
+										text: parsed.question_text,
+										options: parsed.options || [],
+									};
 									update(state => ({
 										...state,
-										questions: [...state.questions, parsed],
+										questions: [...state.questions, question],
 									}));
 									break;
 
