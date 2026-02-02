@@ -882,9 +882,11 @@
 
 	.causation-btn,
 	.effect-btn {
-		color: var(--color-text-manifest);
+		color: var(--color-accent);
 		border: 1px solid var(--color-accent);
 		border-radius: 1rem;
+		min-width: 100px;
+		justify-content: center;
 	}
 
 	.model-select {

@@ -98,14 +98,16 @@
 	.toolbar-btn {
 		display: flex;
 		align-items: center;
+		justify-content: center;
 		gap: 0.25rem;
 		padding: 0.375rem 0.5rem;
+		min-width: 100px;
 		background: transparent;
 		border: 1px solid var(--color-accent);
 		border-radius: 1rem;
 		font-size: 14px;
 		font-weight: 400;
-		color: var(--color-text-whisper);
+		color: var(--color-accent);
 		cursor: pointer;
 		transition: all 0.1s ease;
 		white-space: nowrap;
