@@ -14,7 +14,7 @@ export default {
 		},
 		extend: {
 			colors: {
-				// Primary (Energetic Cyan - alive, fresh, flowing)
+				// Primary (Vibrant Purple - premium, innovative, powerful)
 				primary: {
 					50: 'var(--color-primary-50)',
 					100: 'var(--color-primary-100)',
@@ -28,7 +28,7 @@ export default {
 					900: 'var(--color-primary-900)',
 					950: 'var(--color-primary-950)'
 				},
-				// Accent (Energetic Cyan)
+				// Accent (Vibrant Purple)
 				accent: 'var(--color-accent)',
 				// Challenger (Warm Orange)
 				challenger: 'var(--color-challenger)',

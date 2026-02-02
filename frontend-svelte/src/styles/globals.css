@@ -3,15 +3,14 @@
 @tailwind utilities;
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   ULTRA-MINIMALIST DESIGN SYSTEM
+   PREMIUM CORPORATE DESIGN SYSTEM
    ═══════════════════════════════════════════════════════════════════════════════
 
    Design Philosophy:
-   - Pure white canvas with typography-driven hierarchy
-   - Near-invisible chrome - UI fades into the background
-   - Single accent color used extremely sparingly
-   - Spacing and weight create visual structure, not colors
-   - Ghost interactions - elements reveal on hover
+   - Premium silver-gray surfaces convey sophistication and trust
+   - Vibrant purple accents create energy and premium positioning
+   - Cool-toned neutrals with subtle blue undertones
+   - Enterprise-grade aesthetics for Fortune 500 positioning
 
    ═══════════════════════════════════════════════════════════════════════════════ */
 
@@ -28,64 +27,64 @@
 	--touch-target-comfortable: 48px;
 
 	/* ─────────────────────────────────────────────────────────────────────────────
-	   ACCENT - Energetic Cyan (alive, fresh, flowing life force)
+	   ACCENT - Vibrant Purple (premium, innovative, powerful)
 	   ───────────────────────────────────────────────────────────────────────────── */
-	--color-accent: #06b6d4;
-	--color-accent-subtle: rgba(6, 182, 212, 0.08);
-	--color-accent-hover: rgba(6, 182, 212, 0.12);
+	--color-accent: #8B5CF6;
+	--color-accent-subtle: rgba(139, 92, 246, 0.08);
+	--color-accent-hover: rgba(139, 92, 246, 0.12);
 
-	/* Primary palette - Energetic Cyan family */
-	--color-primary-950: #083344;  /* Deepest */
-	--color-primary-900: #164e63;  /* Very dark */
-	--color-primary-800: #155e75;
-	--color-primary-700: #0e7490;
-	--color-primary-600: #0891b2;  /* Hover state */
-	--color-primary-500: #06b6d4;  /* Main - Energetic Cyan */
-	--color-primary-400: #22d3ee;
-	--color-primary-300: #67e8f9;
-	--color-primary-200: #a5f3fc;
-	--color-primary-100: rgba(6, 182, 212, 0.12);
-	--color-primary-50: rgba(6, 182, 212, 0.06);
+	/* Primary palette - Vibrant Purple family */
+	--color-primary-950: #2e1065;  /* Deepest */
+	--color-primary-900: #4c1d95;  /* Very dark */
+	--color-primary-800: #5b21b6;
+	--color-primary-700: #6d28d9;
+	--color-primary-600: #7c3aed;  /* Hover state */
+	--color-primary-500: #8B5CF6;  /* Main - Vibrant Purple */
+	--color-primary-400: #a78bfa;
+	--color-primary-300: #c4b5fd;
+	--color-primary-200: #ddd6fe;
+	--color-primary-100: rgba(139, 92, 246, 0.12);
+	--color-primary-50: rgba(139, 92, 246, 0.06);
 
 	/* ─────────────────────────────────────────────────────────────────────────────
-	   SURFACES - Pure white, no layering
+	   SURFACES - Premium Corporate Silver
 	   ───────────────────────────────────────────────────────────────────────────── */
-	--color-field-void: #ffffff;
-	--color-field-depth: #fafafa;
-	--color-field-surface: #ffffff;
-	--color-field-elevated: #ffffff;
+	--color-field-void: #f8f9fb;      /* Slight cool silver tint */
+	--color-field-depth: #f1f3f6;     /* Subtle silver depth */
+	--color-field-surface: #ffffff;   /* Clean white for cards */
+	--color-field-elevated: #ffffff;  /* Pure white elevated */
 
 	/* ─────────────────────────────────────────────────────────────────────────────
-	   TEXT - Minimal palette, weight-driven hierarchy
+	   TEXT - Corporate silver-gray hierarchy
 	   ───────────────────────────────────────────────────────────────────────────── */
-	--color-text-source: #0a0a0a;
-	--color-text-manifest: #525252;
-	--color-text-flow: #171717;
-	--color-text-whisper: #a3a3a3;
-	--color-text-hint: #d4d4d4;
+	--color-text-source: #1a1d23;     /* Near-black with cool undertone */
+	--color-text-manifest: #5c6370;   /* Corporate gray */
+	--color-text-flow: #2d3139;       /* Dark gray for body */
+	--color-text-whisper: #9ca3af;    /* Light silver */
+	--color-text-hint: #d1d5db;       /* Subtle hint */
 
 	/* ─────────────────────────────────────────────────────────────────────────────
-	   BORDERS - Nearly invisible, structural only
+	   BORDERS - Silver structural lines
 	   ───────────────────────────────────────────────────────────────────────────── */
-	--color-veil-thin: rgba(0, 0, 0, 0.06);
-	--color-veil-present: rgba(0, 0, 0, 0.08);
-	--color-veil-clear: rgba(0, 0, 0, 0.12);
+	--color-veil-thin: rgba(100, 116, 139, 0.08);
+	--color-veil-present: rgba(100, 116, 139, 0.12);
+	--color-veil-clear: rgba(100, 116, 139, 0.18);
 
 	/* ─────────────────────────────────────────────────────────────────────────────
-	   SHADOWS - Barely perceptible
+	   SHADOWS - Refined corporate depth
 	   ───────────────────────────────────────────────────────────────────────────── */
-	--shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
-	--shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
-	--shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
-	--shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
-	--shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.16);
+	--shadow-xs: 0 1px 2px rgba(100, 116, 139, 0.06);
+	--shadow-sm: 0 1px 3px rgba(100, 116, 139, 0.08);
+	--shadow-md: 0 4px 12px rgba(100, 116, 139, 0.10);
+	--shadow-lg: 0 8px 24px rgba(100, 116, 139, 0.14);
+	--shadow-xl: 0 16px 48px rgba(100, 116, 139, 0.18);
 
-	/* Panel - subtle definition */
-	--shadow-panel: 0 0 0 1px rgba(0, 0, 0, 0.05);
-	--shadow-panel-hover: 0 0 0 1px rgba(0, 0, 0, 0.1);
+	/* Panel - subtle silver definition */
+	--shadow-panel: 0 0 0 1px rgba(100, 116, 139, 0.08);
+	--shadow-panel-hover: 0 0 0 1px rgba(100, 116, 139, 0.15);
 
 	/* Elevated - for modals/dropdowns */
-	--shadow-elevated: 0 4px 24px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.05);
+	--shadow-elevated: 0 4px 24px rgba(100, 116, 139, 0.14), 0 0 0 1px rgba(100, 116, 139, 0.08);
 
 	/* ─────────────────────────────────────────────────────────────────────────────
 	   TIMING
@@ -99,10 +98,10 @@
 	--ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 
 	/* ─────────────────────────────────────────────────────────────────────────────
-	   GRADIENTS - Energetic Cyan (minimal, let the color breathe)
+	   GRADIENTS - Vibrant Purple (premium energy)
 	   ───────────────────────────────────────────────────────────────────────────── */
-	--gradient-primary: linear-gradient(135deg, #0e7490 0%, #06b6d4 100%);
-	--gradient-subtle: linear-gradient(180deg, rgba(6, 182, 212, 0.03) 0%, transparent 100%);
+	--gradient-primary: linear-gradient(135deg, #7c3aed 0%, #8B5CF6 100%);
+	--gradient-subtle: linear-gradient(180deg, rgba(139, 92, 246, 0.03) 0%, transparent 100%);
 
 	/* Semantic colors */
 	--color-error-500: #dc2626;
@@ -118,45 +117,48 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   DARK MODE - True black, minimal contrast
+   DARK MODE - Premium Dark Silver with Vibrant Purple
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 [data-theme='dark'] {
-	--color-accent: #22d3ee;
-	--color-accent-subtle: rgba(34, 211, 238, 0.12);
-	--color-accent-hover: rgba(34, 211, 238, 0.18);
+	--color-accent: #a78bfa;  /* Brighter purple for dark mode */
+	--color-accent-subtle: rgba(167, 139, 250, 0.12);
+	--color-accent-hover: rgba(167, 139, 250, 0.18);
 
-	--color-primary-950: #042f2e;
-	--color-primary-900: #083344;
-	--color-primary-800: #164e63;
-	--color-primary-700: #0e7490;
-	--color-primary-600: #06b6d4;
-	--color-primary-500: #22d3ee;  /* Brighter for dark mode visibility */
-	--color-primary-400: #67e8f9;
-	--color-primary-300: #a5f3fc;
-	--color-primary-200: #cffafe;
-	--color-primary-100: rgba(34, 211, 238, 0.12);
-	--color-primary-50: rgba(34, 211, 238, 0.08);
+	--color-primary-950: #1a1625;  /* Deep purple-black */
+	--color-primary-900: #2e1065;
+	--color-primary-800: #4c1d95;
+	--color-primary-700: #6d28d9;
+	--color-primary-600: #8B5CF6;
+	--color-primary-500: #a78bfa;  /* Brighter for dark mode visibility */
+	--color-primary-400: #c4b5fd;
+	--color-primary-300: #ddd6fe;
+	--color-primary-200: #ede9fe;
+	--color-primary-100: rgba(167, 139, 250, 0.15);
+	--color-primary-50: rgba(167, 139, 250, 0.08);
 
-	--gradient-primary: linear-gradient(135deg, #06b6d4 0%, #22d3ee 100%);
+	--gradient-primary: linear-gradient(135deg, #8B5CF6 0%, #a78bfa 100%);
 
-	--color-field-void: #0a0a0a;
-	--color-field-depth: #111111;
-	--color-field-surface: #0a0a0a;
-	--color-field-elevated: #1a1a1a;
+	/* Premium dark silver surfaces */
+	--color-field-void: #0f1115;      /* Dark with cool silver undertone */
+	--color-field-depth: #161a1f;     /* Slightly elevated dark silver */
+	--color-field-surface: #1c2127;   /* Card surfaces */
+	--color-field-elevated: #252b33;  /* Elevated elements */
 
-	--color-text-source: #fafafa;
-	--color-text-manifest: #a3a3a3;
-	--color-text-flow: #e5e5e5;
-	--color-text-whisper: #525252;
-	--color-text-hint: #404040;
+	/* Text on dark silver */
+	--color-text-source: #f4f5f7;     /* Bright silver-white */
+	--color-text-manifest: #9ba1ab;   /* Medium silver */
+	--color-text-flow: #e1e4e8;       /* Light silver */
+	--color-text-whisper: #5c6370;    /* Dim silver */
+	--color-text-hint: #3d424a;       /* Subtle hint */
 
-	--color-veil-thin: rgba(255, 255, 255, 0.06);
-	--color-veil-present: rgba(255, 255, 255, 0.08);
-	--color-veil-clear: rgba(255, 255, 255, 0.12);
+	/* Silver borders for dark mode */
+	--color-veil-thin: rgba(148, 163, 184, 0.08);
+	--color-veil-present: rgba(148, 163, 184, 0.12);
+	--color-veil-clear: rgba(148, 163, 184, 0.18);
 
-	--shadow-panel: 0 0 0 1px rgba(255, 255, 255, 0.06);
-	--shadow-elevated: 0 4px 24px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
+	--shadow-panel: 0 0 0 1px rgba(148, 163, 184, 0.08);
+	--shadow-elevated: 0 4px 24px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(148, 163, 184, 0.10);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
