@@ -4,10 +4,12 @@
 	 *
 	 * Extracted from matrix page for unified layout embedding.
 	 * Shows matrix grid with risk heatmap, leverage points, and cell popup.
+	 * Each cell has 5 contextual dimensions with 5-step button selectors.
 	 */
 
 	import { createEventDispatcher } from 'svelte';
 	import { Button } from '$lib/components/ui';
+	import type { CellData, CellDimension } from '$lib/stores';
 
 	export let matrixData: CellData[][] = [];
 	export let rowHeaders: string[] = ['Dimension 1', 'Dimension 2', 'Dimension 3', 'Dimension 4', 'Dimension 5'];
@@ -18,19 +20,31 @@
 	const dispatch = createEventDispatcher<{
 		cellClick: { row: number; col: number };
 		cellChange: { row: number; col: number; value: number };
+		dimensionChange: { row: number; col: number; dimIndex: number; value: number };
 	}>();
 
-	interface CellData {
-		value: number;
-		dimensions: number[];
-		confidence: number;
-		description: string;
-		isLeveragePoint: boolean;
-		riskLevel?: 'low' | 'medium' | 'high';
-	}
+	// The 5 discrete step values for dimensions
+	const STEP_VALUES = [0, 25, 50, 75, 100];
 
 	let selectedCell: { row: number; col: number } | null = null;
 	let showCellPopup = false;
+
+	// Get the step index (0-4) from a dimension value
+	function getStepIndex(value: number): number {
+		const idx = STEP_VALUES.indexOf(value);
+		return idx >= 0 ? idx : 2; // Default to middle step if value not found
+	}
+
+	// Handle dimension step button click
+	function handleDimensionStepClick(dimIndex: number, stepValue: number) {
+		if (!selectedCell) return;
+		dispatch('dimensionChange', {
+			row: selectedCell.row,
+			col: selectedCell.col,
+			dimIndex,
+			value: stepValue
+		});
+	}
 
 	function handleCellClick(row: number, col: number) {
 		selectedCell = { row, col };
@@ -144,15 +158,23 @@
 				</div>
 
 				<div class="dimensions-section">
-					<h4>Dials</h4>
+					<h4>Dimensions</h4>
 					<div class="dimensions-grid">
-						{#each matrixData[selectedCell.row][selectedCell.col].dimensions as dim, idx}
+						{#each matrixData[selectedCell.row][selectedCell.col].dimensions as dim, dimIdx}
 							<div class="dimension-item">
-								<span class="dim-label">Dial {idx + 1}</span>
-								<div class="dim-bar-container">
-									<div class="dim-bar" style="width: {dim}%"></div>
+								<span class="dim-name">{dim.name}</span>
+								<div class="step-buttons">
+									{#each STEP_VALUES as stepValue, stepIdx}
+										<button
+											class="step-btn"
+											class:active={dim.value === stepValue}
+											on:click={() => handleDimensionStepClick(dimIdx, stepValue)}
+											title={dim.stepLabels?.[stepIdx] || `Step ${stepIdx + 1}`}
+										>
+											{dim.stepLabels?.[stepIdx] || `Step ${stepIdx + 1}`}
+										</button>
+									{/each}
 								</div>
-								<span class="dim-value">{dim}</span>
 							</div>
 						{/each}
 					</div>
@@ -460,40 +482,53 @@
 	.dimensions-grid {
 		display: flex;
 		flex-direction: column;
-		gap: 0.5rem;
+		gap: 1rem;
 	}
 
 	.dimension-item {
-		display: grid;
-		grid-template-columns: 50px 1fr 35px;
-		align-items: center;
+		display: flex;
+		flex-direction: column;
 		gap: 0.5rem;
 	}
 
-	.dim-label {
-		font-size: 0.75rem;
-		color: var(--color-text-whisper);
-	}
-
-	.dim-bar-container {
-		height: 6px;
-		background: var(--color-field-depth);
-		border-radius: 3px;
-		overflow: hidden;
-	}
-
-	.dim-bar {
-		height: 100%;
-		background: var(--color-primary-400);
-		border-radius: 3px;
-		transition: width 0.3s ease;
-	}
-
-	.dim-value {
-		font-size: 0.75rem;
-		font-weight: 600;
+	.dim-name {
+		font-size: 0.8125rem;
+		font-weight: 500;
 		color: var(--color-text-source);
-		text-align: right;
+	}
+
+	.step-buttons {
+		display: flex;
+		gap: 0.25rem;
+		flex-wrap: wrap;
+	}
+
+	.step-btn {
+		flex: 1;
+		min-width: 0;
+		padding: 0.375rem 0.25rem;
+		background: transparent;
+		border: 1px solid var(--color-accent);
+		border-radius: 0.75rem;
+		font-size: 0.625rem;
+		font-weight: 400;
+		color: var(--color-accent);
+		cursor: pointer;
+		transition: all 0.1s ease;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.step-btn:hover {
+		background: var(--color-accent-subtle);
+		color: var(--color-text-source);
+	}
+
+	.step-btn.active {
+		background: var(--color-primary-500);
+		border-color: var(--color-primary-500);
+		color: #ffffff;
 	}
 
 	.power-spot-badge {
