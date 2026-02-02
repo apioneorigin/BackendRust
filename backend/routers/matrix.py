@@ -186,6 +186,94 @@ async def generate_additional_documents(
     )
 
 
+class PopulateDocumentResponse(BaseModel):
+    """Response from populating a document stub with cells"""
+    document_id: str
+    cell_count: int
+    success: bool
+
+
+@router.post("/{conversation_id}/document/{doc_id}/populate", response_model=PopulateDocumentResponse)
+async def populate_document_cells(
+    conversation_id: str,
+    doc_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Generate full cell data for a document stub.
+
+    Takes a document with rows/columns but no cells (or empty cells),
+    and generates all 100 cells with dimensions.
+    """
+    from main import populate_document_cells_llm
+
+    conversation = await get_or_404(db, ChatConversation, conversation_id, user_id=current_user.id)
+
+    if not conversation.generated_documents:
+        raise HTTPException(status_code=400, detail="No documents exist")
+
+    # Find the document stub
+    documents = conversation.generated_documents.copy()
+    doc_index = None
+    doc_stub = None
+
+    for i, doc in enumerate(documents):
+        if doc.get("id") == doc_id:
+            doc_index = i
+            doc_stub = doc
+            break
+
+    if doc_stub is None:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    # Check if already populated
+    existing_cells = doc_stub.get("matrix_data", {}).get("cells", {})
+    if existing_cells and len(existing_cells) >= 100:
+        return PopulateDocumentResponse(
+            document_id=doc_id,
+            cell_count=len(existing_cells),
+            success=True
+        )
+
+    # Get conversation context
+    messages_result = await db.execute(
+        select(ChatMessage)
+        .where(ChatMessage.conversation_id == conversation_id)
+        .order_by(ChatMessage.created_at.desc())
+        .limit(10)
+    )
+    messages = messages_result.scalars().all()
+
+    context_messages = []
+    for msg in reversed(messages):
+        context_messages.append({
+            "role": msg.role,
+            "content": msg.content[:2000] if len(msg.content) > 2000 else msg.content
+        })
+
+    # Generate cells
+    result = await populate_document_cells_llm(
+        document_stub=doc_stub,
+        context_messages=context_messages
+    )
+
+    if not result or "cells" not in result:
+        raise HTTPException(status_code=500, detail="Failed to generate cells")
+
+    # Update document with cells
+    documents[doc_index]["matrix_data"]["cells"] = result["cells"]
+    conversation.generated_documents = documents
+
+    await db.commit()
+
+    return PopulateDocumentResponse(
+        document_id=doc_id,
+        cell_count=len(result["cells"]),
+        success=True
+    )
+
+
 class UpdateDocumentSelectionRequest(BaseModel):
     """Request to update row/column selection for a specific document"""
     document_id: str

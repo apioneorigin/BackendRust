@@ -931,7 +931,7 @@ When consciousness values are calculated, ground them in observable reality:
 - Let evidence strengthen insights, not replace them"""
 
     def _build_structured_output_section(self, include_question: bool = True) -> str:
-        """Build instructions for generating structured multi-document matrix data."""
+        """Build instructions for generating structured document matrix data."""
         # Conditionally include follow_up_question based on validation logic
         question_schema = ""
         question_requirement = ""
@@ -946,168 +946,90 @@ When consciousness values are calculated, ground them in observable reality:
       "option_4": "Fourth option completing the spectrum of possibilities"
     }
   }"""
-            question_requirement = "\n7. **FOLLOW-UP QUESTION**: ALWAYS include a follow_up_question to deepen understanding of the user's situation"
+            question_requirement = "\n5. **FOLLOW-UP QUESTION**: Include follow_up_question to deepen understanding"
 
         return f"""## STRUCTURED OUTPUT GENERATION
 
-After your main articulation, you MUST generate structured data in the following JSON format.
-This data will be stored and used for the interactive matrix interface.
+After your main articulation, generate structured data in JSON format.
 
-**IMPORTANT**: Generate EXACTLY 3 documents, each with its own 10x10 matrix.
-If this is a follow-up message and the context hasn't changed significantly from the previous response,
-you MAY choose to return an empty documents array: "documents": []
-
-Output this EXACT marker followed by valid JSON:
+**OUTPUT**: 1 complete document with full matrix data (100 cells with dimensions).
 
 ```json
 ===STRUCTURED_DATA_START===
-{
+{{
   "documents": [
-    {
+    {{
       "id": "doc-0",
       "name": "Strategic Framework",
-      "description": "A twenty-word description explaining what this document represents and how it helps transform your situation toward your desired outcome.",
-      "matrix_data": {
+      "description": "Twenty-word description of this document's perspective.",
+      "matrix_data": {{
         "row_options": [
-          {"id": "r0", "label": "Strategic Resource Flow", "insight": "Core driver identified from pattern analysis"},
-          {"id": "r1", "label": "...", "insight": "..."},
-          ... (10 total row options - context titles, max 4 words each)
+          {{"id": "r0", "label": "Resource Flow"}},
+          {{"id": "r1", "label": "Time Investment"}},
+          ... (10 total - max 4 words each)
         ],
         "column_options": [
-          {"id": "c0", "label": "Growth Momentum", "insight": "Effect factor derived from transformation indicators"},
-          {"id": "c1", "label": "...", "insight": "..."},
-          ... (10 total column options - context titles, max 4 words each)
+          {{"id": "c0", "label": "Growth Impact"}},
+          {{"id": "c1", "label": "Risk Exposure"}},
+          ... (10 total - max 4 words each)
         ],
         "selected_rows": [0, 1, 2, 3, 4],
         "selected_columns": [0, 1, 2, 3, 4],
-        "cells": {
-          "0-0": {
+        "cells": {{
+          "0-0": {{
             "impact_score": 75,
-            "relationship": "How row 0 drives column 0",
+            "relationship": "How this row drives this column outcome",
             "dimensions": [
-              {
-                "name": "Income Path Vision",
-                "value": 50,
-                "step_labels": ["Completely unclear", "Vague sense", "Partially defined", "Clear with gaps", "Crystal clear"]
-              },
-              {
-                "name": "Earning Bandwidth",
-                "value": 75,
-                "step_labels": ["No capacity", "Minimal", "Some room", "Strong", "Full capability"]
-              },
-              {
-                "name": "Financial Readiness",
-                "value": 25,
-                "step_labels": ["Not ready", "Early prep", "Moderate", "Well prepared", "Fully primed"]
-              },
-              {
-                "name": "Career Capital",
-                "value": 50,
-                "step_labels": ["No resources", "Limited", "Adequate", "Strong", "Abundant"]
-              },
-              {
-                "name": "Work-Wealth Sync",
-                "value": 100,
-                "step_labels": ["Fragmented", "Poorly connected", "Partial", "Harmonized", "Unified"]
-              }
+              {{"name": "Vision Clarity", "value": 50}},
+              {{"name": "Action Capacity", "value": 100}},
+              {{"name": "Change Readiness", "value": 0}},
+              {{"name": "Resource Access", "value": 50}},
+              {{"name": "System Integration", "value": 100}}
             ]
-          },
-          "0-1": { ... },
-          ... (100 total cells for 10x10 matrix, keys are "row-col" format: "0-0" to "9-9")
-        }
-      }
-    },
-    {
-      "id": "doc-1",
-      "name": "Action Blueprint",
-      "description": "Twenty words describing how this action-oriented document provides concrete steps and milestones for implementing your transformation strategy effectively.",
-      "matrix_data": { ... same structure with 10 rows, 10 columns, 100 cells ... }
-    },
-    {
-      "id": "doc-2",
-      "name": "Risk Assessment",
-      "description": "Twenty words explaining how this document identifies potential obstacles, challenges, and mitigation strategies for your transformation journey ahead.",
-      "matrix_data": { ... same structure with 10 rows, 10 columns, 100 cells ... }
-    }
+          }},
+          "0-1": {{...}},
+          ... (100 cells total, keys "0-0" to "9-9")
+        }}
+      }}
+    }}
   ],
   "paths": [
-    {
+    {{
       "id": "p0",
-      "name": "...",
-      "description": "...",
-      "risk_level": "low|medium|high",
-      "time_horizon": "...",
-      "steps": [
-        {"order": 1, "action": "...", "rationale": "..."},
-        ...
-      ]
-    },
-    ... (5 total strategic paths)
+      "name": "Conservative Path",
+      "description": "Low-risk approach",
+      "risk_level": "low",
+      "time_horizon": "6-12 months",
+      "steps": [{{"order": 1, "action": "First step", "rationale": "Why"}}]
+    }},
+    ... (5 total paths)
   ]{question_schema}
 }}
 ===STRUCTURED_DATA_END===
 ```
 
-CRITICAL REQUIREMENTS:
-1. **3 DOCUMENTS**: Generate exactly 3 documents, each with a unique perspective on the user's situation
-2. **DOCUMENT NAMES**: Creative, contextual names (not generic like "Document 1")
-3. **20-WORD DESCRIPTIONS**: Each document must have exactly ~20 words explaining its purpose
-4. **10x10 MATRICES**: Each document has 10 row options, 10 column options, and 100 cells
-5. **CELL KEY FORMAT**: Use "row-col" format like "0-0", "0-1", etc. (NOT "r0_c0")
-6. **SELECTED**: selected_rows and selected_columns indicate which 5 are shown initially{question_requirement}
+REQUIREMENTS:
+1. **1 DOCUMENT**: Generate exactly 1 complete document with all 100 cells
+2. **CELL FORMAT**: Keys are "row-col" format: "0-0", "0-1", ... "9-9"
+3. **DIMENSIONS**: Each cell has exactly 5 dimensions with contextual names
+4. **VALUES**: Dimension values are 0 (Low), 50 (Medium), or 100 (High) only{question_requirement}
 
-### DOCUMENT DIFFERENTIATION:
-Each document should offer a DIFFERENT LENS on the user's situation:
-- Document 1: High-level strategic perspective (big picture drivers and outcomes)
-- Document 2: Operational/tactical perspective (concrete actions and implementations)
-- Document 3: Risk/opportunity perspective (challenges, obstacles, and opportunities)
+### 5-DIMENSION FRAMEWORK:
+| # | Meaning | Generate contextual name for |
+|---|---------|------------------------------|
+| 1 | CLARITY | Understanding/vision of this intersection |
+| 2 | CAPACITY | Ability/bandwidth to act |
+| 3 | READINESS | Preparedness/timing |
+| 4 | RESOURCES | Assets/tools available |
+| 5 | INTEGRATION | How well row and column harmonize |
 
-### 5-DIMENSION FRAMEWORK (CRITICAL - FOLLOW THIS EXACTLY):
-
-Each cell MUST have exactly 5 dimensions following this semantic framework:
-
-| # | Framework Meaning | What to Generate |
-|---|-------------------|------------------|
-| 1 | **CLARITY** | Understanding, vision, awareness of THIS row-column intersection |
-| 2 | **CAPACITY** | Ability, bandwidth, capability to act on this intersection |
-| 3 | **READINESS** | Preparedness, timing, preconditions met for this change |
-| 4 | **RESOURCES** | Assets, tools, support available for this transformation |
-| 5 | **INTEGRATION** | How well row and column work together harmoniously |
-
-**DIMENSION NAME GENERATION:**
-- DO NOT use "Clarity", "Capacity", etc. as literal names
-- Generate CONTEXTUAL names that EMBODY these meanings for each specific cell
-- Names must be unique and meaningful for that specific row×column intersection
-
-**STEP LABEL GENERATION:**
-- Each dimension has 5 discrete values: [0, 25, 50, 75, 100]
-- Generate 5 CONTEXTUAL step labels describing what each level means
-- Labels must form a meaningful progression from worst to best state
-
-### GENERATION RULES:
-
-1. **Row Options (10 per document)**: Context titles representing CAUSATION factors
-   - `label`: Max 4-word phrase describing what DRIVES change
-   - `insight`: Brief explanation of why this factor was identified
-
-2. **Column Options (10 per document)**: Context titles representing EFFECT factors
-   - `label`: Max 4-word phrase describing what is AFFECTED
-   - `insight`: Brief explanation of why this effect was identified
-
-3. **Cells (100 per document)**: Cross-impact for each row-column pair
-   - Each cell has exactly 5 dimensions following the framework above
-   - impact_score: 0-100 representing overall relationship strength
-
-4. **Paths (5 total)**: Strategic approaches from conservative to aggressive
+Dimension names must be CONTEXTUAL to the specific row×column intersection.
+Do NOT use literal names like "Clarity" or "Capacity".
 {f'''
-5. **Follow-up Question**: ONE question with exactly 4 options
-   - Question must feel natural and conversational, not clinical
-   - Options should span a spectrum of inner experiences
-   - Use the user's language and domain
-   - Each option 1-2 sentences representing genuinely different experiences
-   - Focus on understanding aspects that would deepen the analysis
-
-**CONTEXT AWARENESS**: If follow-up message with unchanged context, you MAY return "documents": [] but ALWAYS include follow_up_question''' if include_question else ''}"""
+### FOLLOW-UP QUESTION:
+- Natural, conversational question
+- 4 options spanning different inner experiences
+- Use user's language and domain''' if include_question else ''}"""
 
     def _build_user_query(self, user_context: UserContext) -> str:
         """Build the user query section"""

@@ -2219,20 +2219,20 @@ async def generate_additional_documents_llm(
     start_doc_id: int
 ) -> Optional[List[dict]]:
     """
-    Generate 3 additional documents using hardcoded gpt-5.2 model.
+    Generate 3 document STUBS using hardcoded gpt-5.2 model.
 
-    Each document includes:
+    Each stub includes:
     - name: Creative, contextual name
     - description: ~20 word description
-    - matrix_data: 10 rows, 10 columns, 100 cells with 5 dimensions each
+    - matrix_data: 10 row labels, 10 column labels (NO cells - user generates those separately)
 
     Args:
         context_messages: Recent conversation messages for context
         existing_document_names: Names of existing documents to avoid duplication
-        start_doc_id: Starting ID for new documents (e.g., 3 if 3 docs exist)
+        start_doc_id: Starting ID for new documents (e.g., 1 if 1 doc exists)
 
     Returns:
-        List of 3 document dicts, or None on failure
+        List of 3 document stub dicts, or None on failure
     """
     import os
 
@@ -2251,95 +2251,79 @@ async def generate_additional_documents_llm(
 
     existing_names_str = ", ".join(existing_document_names) if existing_document_names else "None yet"
 
-    prompt_text = f"""Generate 3 NEW documents for a transformation matrix interface.
+    prompt_text = f"""Generate 3 document STUBS for a transformation matrix interface.
 
 CONVERSATION CONTEXT:
 {context_summary}
 
 EXISTING DOCUMENTS (avoid similar names): {existing_names_str}
 
-Generate 3 documents, each with:
+Generate 3 document stubs, each with:
 1. A unique, creative name (different from existing)
 2. A 20-word description explaining its purpose
-3. A 10x10 matrix with rows, columns, and cells
+3. 10 row labels and 10 column labels (NO cells - those are generated separately)
 
 Each document should offer a DIFFERENT perspective:
 - Document 1: A new strategic angle not yet covered
 - Document 2: An operational/tactical perspective
 - Document 3: A risk/opportunity or stakeholder perspective
 
-Return ONLY valid JSON with this EXACT structure:
+Return ONLY valid JSON:
 
 {{
   "documents": [
     {{
       "id": "doc-{start_doc_id}",
       "name": "Creative Document Name",
-      "description": "Twenty words explaining what this document represents and how it helps transform the situation toward the desired outcome.",
+      "description": "Twenty words explaining what this document represents and how it helps.",
       "matrix_data": {{
         "row_options": [
-          {{"id": "r0", "label": "Driver Label 1", "insight": "Why this driver matters"}},
-          {{"id": "r1", "label": "Driver Label 2", "insight": "Why this driver matters"}},
-          {{"id": "r2", "label": "Driver Label 3", "insight": "Why this driver matters"}},
-          {{"id": "r3", "label": "Driver Label 4", "insight": "Why this driver matters"}},
-          {{"id": "r4", "label": "Driver Label 5", "insight": "Why this driver matters"}},
-          {{"id": "r5", "label": "Driver Label 6", "insight": "Why this driver matters"}},
-          {{"id": "r6", "label": "Driver Label 7", "insight": "Why this driver matters"}},
-          {{"id": "r7", "label": "Driver Label 8", "insight": "Why this driver matters"}},
-          {{"id": "r8", "label": "Driver Label 9", "insight": "Why this driver matters"}},
-          {{"id": "r9", "label": "Driver Label 10", "insight": "Why this driver matters"}}
+          {{"id": "r0", "label": "Driver 1"}},
+          {{"id": "r1", "label": "Driver 2"}},
+          {{"id": "r2", "label": "Driver 3"}},
+          {{"id": "r3", "label": "Driver 4"}},
+          {{"id": "r4", "label": "Driver 5"}},
+          {{"id": "r5", "label": "Driver 6"}},
+          {{"id": "r6", "label": "Driver 7"}},
+          {{"id": "r7", "label": "Driver 8"}},
+          {{"id": "r8", "label": "Driver 9"}},
+          {{"id": "r9", "label": "Driver 10"}}
         ],
         "column_options": [
-          {{"id": "c0", "label": "Outcome Label 1", "insight": "Why this outcome matters"}},
-          {{"id": "c1", "label": "Outcome Label 2", "insight": "Why this outcome matters"}},
-          {{"id": "c2", "label": "Outcome Label 3", "insight": "Why this outcome matters"}},
-          {{"id": "c3", "label": "Outcome Label 4", "insight": "Why this outcome matters"}},
-          {{"id": "c4", "label": "Outcome Label 5", "insight": "Why this outcome matters"}},
-          {{"id": "c5", "label": "Outcome Label 6", "insight": "Why this outcome matters"}},
-          {{"id": "c6", "label": "Outcome Label 7", "insight": "Why this outcome matters"}},
-          {{"id": "c7", "label": "Outcome Label 8", "insight": "Why this outcome matters"}},
-          {{"id": "c8", "label": "Outcome Label 9", "insight": "Why this outcome matters"}},
-          {{"id": "c9", "label": "Outcome Label 10", "insight": "Why this outcome matters"}}
+          {{"id": "c0", "label": "Outcome 1"}},
+          {{"id": "c1", "label": "Outcome 2"}},
+          {{"id": "c2", "label": "Outcome 3"}},
+          {{"id": "c3", "label": "Outcome 4"}},
+          {{"id": "c4", "label": "Outcome 5"}},
+          {{"id": "c5", "label": "Outcome 6"}},
+          {{"id": "c6", "label": "Outcome 7"}},
+          {{"id": "c7", "label": "Outcome 8"}},
+          {{"id": "c8", "label": "Outcome 9"}},
+          {{"id": "c9", "label": "Outcome 10"}}
         ],
         "selected_rows": [0, 1, 2, 3, 4],
-        "selected_columns": [0, 1, 2, 3, 4],
-        "cells": {{
-          "0-0": {{
-            "impact_score": 75,
-            "relationship": "How row 0 drives column 0",
-            "dimensions": [
-              {{"name": "Clarity Dimension", "value": 50, "step_labels": ["Level 0", "Level 25", "Level 50", "Level 75", "Level 100"]}},
-              {{"name": "Capacity Dimension", "value": 75, "step_labels": ["Level 0", "Level 25", "Level 50", "Level 75", "Level 100"]}},
-              {{"name": "Readiness Dimension", "value": 25, "step_labels": ["Level 0", "Level 25", "Level 50", "Level 75", "Level 100"]}},
-              {{"name": "Resources Dimension", "value": 50, "step_labels": ["Level 0", "Level 25", "Level 50", "Level 75", "Level 100"]}},
-              {{"name": "Integration Dimension", "value": 100, "step_labels": ["Level 0", "Level 25", "Level 50", "Level 75", "Level 100"]}}
-            ]
-          }},
-          "... (all 100 cells from 0-0 to 9-9)"
-        }}
+        "selected_columns": [0, 1, 2, 3, 4]
       }}
     }},
     {{
       "id": "doc-{start_doc_id + 1}",
       "name": "Second Document Name",
-      "description": "...",
-      "matrix_data": {{ ... same structure ... }}
+      "description": "Twenty word description...",
+      "matrix_data": {{ ... same structure with row_options, column_options, selected_rows, selected_columns ... }}
     }},
     {{
       "id": "doc-{start_doc_id + 2}",
       "name": "Third Document Name",
-      "description": "...",
+      "description": "Twenty word description...",
       "matrix_data": {{ ... same structure ... }}
     }}
   ]
 }}
 
-CRITICAL:
-- Generate ALL 100 cells per document (from "0-0" to "9-9")
-- Each cell needs 5 dimensions with contextual names and step labels
-- Row/column labels should be max 4 words
-- Dimension names should be contextual for each specific cell intersection
-- Step labels should form a meaningful progression"""
+REQUIREMENTS:
+- Row/column labels: max 4 words each, contextual to user's situation
+- NO cells in this response - user generates those separately per document
+- Each document must have a unique perspective"""
 
     try:
         async with httpx.AsyncClient(timeout=300.0) as client:
@@ -2349,7 +2333,7 @@ CRITICAL:
             }
             request_body = {
                 "model": DOCUMENT_GENERATION_MODEL,
-                "max_tokens": 16384,
+                "max_tokens": 2048,  # Stubs only need ~250 tokens
                 "messages": [{"role": "user", "content": prompt_text}],
                 "response_format": {"type": "json_object"}
             }
@@ -2386,6 +2370,146 @@ CRITICAL:
         return None
     except Exception as e:
         api_logger.error(f"[DOC_GEN] Failed: {type(e).__name__}: {e}")
+        return None
+
+
+async def populate_document_cells_llm(
+    document_stub: dict,
+    context_messages: List[dict]
+) -> Optional[dict]:
+    """
+    Generate full cell data for a document stub.
+
+    Takes a document with rows/columns but no cells, and generates:
+    - 100 cells (10x10 matrix)
+    - Each cell has impact_score, relationship, and 5 dimensions
+    - Dimension values are 0, 50, or 100 (Low, Medium, High)
+
+    Args:
+        document_stub: Document with id, name, description, row_options, column_options
+        context_messages: Recent conversation messages for context
+
+    Returns:
+        Dict with 'cells' containing all 100 cells, or None on failure
+    """
+    import os
+
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if not api_key:
+        api_logger.error("[DOC_POPULATE] No OPENAI_API_KEY found")
+        return None
+
+    # Build context summary
+    context_summary = ""
+    for msg in context_messages[-5:]:
+        role = msg.get("role", "user")
+        content = msg.get("content", "")[:500]
+        context_summary += f"{role.upper()}: {content}\n\n"
+
+    # Extract row and column labels
+    matrix_data = document_stub.get("matrix_data", {})
+    row_labels = [r.get("label", f"Row {i}") for i, r in enumerate(matrix_data.get("row_options", []))]
+    col_labels = [c.get("label", f"Col {i}") for i, c in enumerate(matrix_data.get("column_options", []))]
+
+    prompt_text = f"""Generate cell data for a 10x10 transformation matrix.
+
+DOCUMENT: {document_stub.get("name", "Unknown")}
+DESCRIPTION: {document_stub.get("description", "")}
+
+CONVERSATION CONTEXT:
+{context_summary}
+
+ROW LABELS (drivers/causes): {', '.join(row_labels)}
+COLUMN LABELS (outcomes/effects): {', '.join(col_labels)}
+
+Generate 100 cells for all combinations of rows (0-9) and columns (0-9).
+
+Each cell needs:
+- impact_score: 0-100 (strength of row→column relationship)
+- relationship: Short description of how row drives column
+- dimensions: Array of 5 dimensions, each with:
+  - name: Contextual name for this specific row×column intersection
+  - value: 0 (Low), 50 (Medium), or 100 (High) ONLY
+
+5-DIMENSION FRAMEWORK (generate contextual names, NOT these literal words):
+1. CLARITY - Understanding/vision of this intersection
+2. CAPACITY - Ability/bandwidth to act
+3. READINESS - Preparedness/timing
+4. RESOURCES - Assets/tools available
+5. INTEGRATION - How well row and column harmonize
+
+Return ONLY valid JSON:
+
+{{
+  "cells": {{
+    "0-0": {{
+      "impact_score": 75,
+      "relationship": "How {row_labels[0] if row_labels else 'row'} affects {col_labels[0] if col_labels else 'column'}",
+      "dimensions": [
+        {{"name": "Contextual Clarity Name", "value": 50}},
+        {{"name": "Contextual Capacity Name", "value": 100}},
+        {{"name": "Contextual Readiness Name", "value": 0}},
+        {{"name": "Contextual Resources Name", "value": 50}},
+        {{"name": "Contextual Integration Name", "value": 100}}
+      ]
+    }},
+    "0-1": {{...}},
+    ... (all 100 cells from "0-0" to "9-9")
+  }}
+}}
+
+REQUIREMENTS:
+- Generate ALL 100 cells (0-0 through 9-9)
+- Dimension values MUST be 0, 50, or 100 only
+- Dimension names must be contextual to each specific cell"""
+
+    try:
+        async with httpx.AsyncClient(timeout=300.0) as client:
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            }
+            request_body = {
+                "model": DOCUMENT_GENERATION_MODEL,
+                "max_tokens": 8192,  # ~3,700 tokens for 100 cells
+                "messages": [{"role": "user", "content": prompt_text}],
+                "response_format": {"type": "json_object"}
+            }
+
+            response = await client.post(
+                DOCUMENT_GENERATION_ENDPOINT,
+                headers=headers,
+                json=request_body
+            )
+
+            if response.status_code != 200:
+                api_logger.error(f"[DOC_POPULATE] OpenAI error: {response.status_code} - {response.text}")
+                return None
+
+            data = response.json()
+            response_text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+
+            # Extract token usage
+            usage = data.get("usage", {})
+            api_logger.info(f"[DOC_POPULATE] Tokens - Input: {usage.get('prompt_tokens')}, Output: {usage.get('completion_tokens')}")
+
+            # Parse JSON response
+            result = json.loads(response_text)
+            cells = result.get("cells", {})
+
+            cell_count = len(cells)
+            api_logger.info(f"[DOC_POPULATE] Generated {cell_count} cells for document '{document_stub.get('name')}'")
+
+            if cell_count < 100:
+                api_logger.warning(f"[DOC_POPULATE] Only got {cell_count} cells, expected 100")
+
+            return {"cells": cells}
+
+    except json.JSONDecodeError as e:
+        api_logger.error(f"[DOC_POPULATE] JSON parse error: {e}")
+        return None
+    except Exception as e:
+        api_logger.error(f"[DOC_POPULATE] Failed: {type(e).__name__}: {e}")
         return None
 
 
