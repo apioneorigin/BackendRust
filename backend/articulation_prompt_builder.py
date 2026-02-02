@@ -917,7 +917,28 @@ communicate everything - focus on what matters most for their transformation.
 
 - **Grounded in Data:** Ground major claims in either web research findings or
 calculated consciousness values. Express these naturally, not as citations.
+
+- **NO SEPARATORS:** NEVER use "---" or horizontal rules in your response text.
+Your prose should flow naturally without visual dividers between sections.
 {priorities_str}
+
+### BRIDGE SENTENCE FOR FOLLOW-UP QUESTION
+
+End your main articulation with a natural bridge sentence that creates anticipation
+for the follow-up question. This bridge should:
+
+1. **Acknowledge** something meaningful from what you've shared
+2. **Reveal** a dimension you want to explore further
+3. **Bridge** naturally into curiosity about their experience
+
+**Examples of good bridge sentences:**
+- "What strikes me most is how much depends on something I don't yet fully understand about your experience..."
+- "There's a dimension to this that I sense matters deeply but haven't yet grasped..."
+- "To truly see the path forward, I find myself curious about something..."
+
+The bridge should make the user PAUSE and feel genuinely invited into the question,
+not rushed through a checklist. Write it as the final 1-2 sentences of your narrative
+prose, flowing naturally from your insights. Do NOT use "---" before the bridge.
 
 ## EVIDENCE GROUNDING PROTOCOL
 
