@@ -515,7 +515,7 @@
 							</svg>
 						</div>
 						<h3>Live Preview</h3>
-						<p>Watch Reality Unfold Live.<br/>This is your Output Box.</p>
+						<p>Watch Reality unfold live.<br/>This is your output box.</p>
 					</div>
 				</div>
 			{/if}
