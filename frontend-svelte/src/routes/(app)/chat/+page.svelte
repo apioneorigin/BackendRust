@@ -294,7 +294,7 @@
 						<p class="welcome-tagline">Strategic Intelligence Platform</p>
 					</div>
 					<div class="welcome-description">
-						<p>Transform complex business challenges into actionable strategies through cross-impact analysis and scenario modeling.</p>
+						<p>Turn complexity into clarity through<br/>cross-impact analysis and scenario modeling.</p>
 					</div>
 					<div class="welcome-spacer"></div>
 				</div>
