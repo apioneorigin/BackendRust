@@ -1018,7 +1018,7 @@
 		align-items: center;
 		text-align: center;
 		padding: 1.5rem;
-		max-width: 240px;
+		max-width: 320px;
 	}
 
 	.overlay-icon {
