@@ -704,14 +704,14 @@
 	}
 
 	.welcome-greeting h1 {
-		font-size: 1.5rem;
+		font-size: 1.75rem;
 		font-weight: 500;
 		color: var(--color-text-source);
 		letter-spacing: -0.02em;
 	}
 
 	.welcome-tagline {
-		font-size: 13px;
+		font-size: 14px;
 		font-weight: 500;
 		color: var(--color-text-whisper);
 		text-transform: uppercase;
@@ -720,11 +720,11 @@
 
 	.welcome-description {
 		margin-top: 2rem;
-		max-width: 360px;
+		max-width: 400px;
 	}
 
 	.welcome-description p {
-		font-size: 15px;
+		font-size: 16px;
 		line-height: 1.6;
 		color: var(--color-text-manifest);
 	}
@@ -788,7 +788,7 @@
 	}
 
 	.message-text {
-		font-size: 15px;
+		font-size: 16px;
 		line-height: 1.6;
 		word-break: break-word;
 	}
@@ -871,10 +871,10 @@
 		border-radius: 0;
 		background: transparent;
 		color: var(--color-text-source);
-		font-size: 15px;
+		font-size: 16px;
 		resize: none;
 		font-family: inherit;
-		line-height: 1.5;
+		line-height: 1.6;
 	}
 
 	.input-row textarea:focus {
@@ -911,7 +911,7 @@
 		border-radius: 0.375rem;
 		color: var(--color-text-whisper);
 		cursor: pointer;
-		font-size: 13px;
+		font-size: 14px;
 		font-weight: 400;
 		transition: all 0.1s ease;
 	}
@@ -937,7 +937,7 @@
 		border-radius: 0.375rem;
 		background: transparent;
 		color: var(--color-text-whisper);
-		font-size: 13px;
+		font-size: 14px;
 		cursor: pointer;
 		transition: all 0.1s ease;
 	}
@@ -960,7 +960,7 @@
 		border-radius: 0.375rem;
 		background: transparent;
 		color: var(--color-text-whisper);
-		font-size: 13px;
+		font-size: 14px;
 		cursor: pointer;
 		transition: all 0.1s ease;
 	}
@@ -1086,14 +1086,14 @@
 	}
 
 	.overlay-content h3 {
-		font-size: 15px;
+		font-size: 16px;
 		font-weight: 500;
 		color: var(--color-text-source);
 		margin-bottom: 0.375rem;
 	}
 
 	.overlay-content p {
-		font-size: 13px;
+		font-size: 14px;
 		line-height: 1.5;
 		color: var(--color-text-manifest);
 	}
@@ -1109,7 +1109,7 @@
 	}
 
 	.cta-text {
-		font-size: 13px;
+		font-size: 14px;
 		font-weight: 500;
 		color: var(--color-text-manifest);
 	}
@@ -1163,7 +1163,7 @@
 	}
 
 	.popup-header h3 {
-		font-size: 15px;
+		font-size: 16px;
 		font-weight: 500;
 		color: var(--color-text-source);
 	}
@@ -1188,7 +1188,7 @@
 	}
 
 	.popup-description {
-		font-size: 13px;
+		font-size: 14px;
 		color: var(--color-text-whisper);
 		margin-bottom: 1rem;
 	}
@@ -1220,13 +1220,13 @@
 	}
 
 	.spot-title {
-		font-size: 14px;
+		font-size: 15px;
 		font-weight: 500;
 		color: var(--color-text-source);
 	}
 
 	.spot-desc {
-		font-size: 12px;
+		font-size: 13px;
 		color: var(--color-text-whisper);
 	}
 
@@ -1247,13 +1247,13 @@
 	}
 
 	.play-name {
-		font-size: 14px;
+		font-size: 15px;
 		font-weight: 500;
 		color: var(--color-text-source);
 	}
 
 	.play-risk {
-		font-size: 11px;
+		font-size: 12px;
 		font-weight: 500;
 		padding: 0.25rem 0.5rem;
 		border-radius: 9999px;
@@ -1278,7 +1278,7 @@
 		padding: 2rem;
 		text-align: center;
 		color: var(--color-text-whisper);
-		font-size: 13px;
+		font-size: 14px;
 	}
 
 	.toggle-risk-btn {

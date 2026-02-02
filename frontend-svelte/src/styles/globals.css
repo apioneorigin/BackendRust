@@ -178,9 +178,9 @@ body {
 	/* Apple System Fonts - SF Pro for macOS/iOS, system fonts for other platforms */
 	font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text',
 		'Helvetica Neue', 'Segoe UI', system-ui, sans-serif;
-	font-size: 15px;
+	font-size: 16px;
 	font-weight: 400;
-	line-height: 1.5;
+	line-height: 1.6;
 	color: var(--color-text-source);
 	background-color: var(--color-field-void);
 	-webkit-font-smoothing: antialiased;

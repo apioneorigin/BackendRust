@@ -348,7 +348,7 @@
 	}
 
 	.logo {
-		font-size: 15px;
+		font-size: 16px;
 		font-weight: 600;
 		color: var(--color-text-source);
 		white-space: nowrap;
@@ -396,7 +396,7 @@
 		border: none;
 		border-radius: 0.375rem;
 		color: #ffffff;
-		font-size: 14px;
+		font-size: 15px;
 		font-weight: 500;
 		cursor: pointer;
 		transition: all 0.15s ease;
@@ -407,10 +407,21 @@
 	}
 
 	.sidebar.collapsed .new-chat-btn {
-		padding: 0.625rem;
+		width: 40px;
+		height: 40px;
+		padding: 0;
 	}
 
 	.sidebar.collapsed .new-chat-btn span {
+		display: none;
+	}
+
+	/* Hide conversations and user menu when collapsed - like Claude Code */
+	.sidebar.collapsed .conversations-section {
+		display: none;
+	}
+
+	.sidebar.collapsed .sidebar-footer {
 		display: none;
 	}
 
@@ -432,7 +443,7 @@
 		text-decoration: none;
 		transition: all 0.1s ease;
 		font-weight: 400;
-		font-size: 14px;
+		font-size: 15px;
 	}
 
 	.sidebar.collapsed .nav-item {
@@ -465,7 +476,7 @@
 
 	.conversations-header {
 		padding: 0.75rem 0.5rem 0.5rem;
-		font-size: 12px;
+		font-size: 13px;
 		font-weight: 500;
 		color: var(--color-text-whisper);
 		text-transform: uppercase;
@@ -536,7 +547,7 @@
 	}
 
 	.conversation-title {
-		font-size: 14px;
+		font-size: 15px;
 		font-weight: 400;
 		white-space: nowrap;
 		overflow: hidden;
@@ -544,7 +555,7 @@
 	}
 
 	.conversation-date {
-		font-size: 12px;
+		font-size: 13px;
 		color: var(--color-text-whisper);
 	}
 
@@ -554,7 +565,7 @@
 	}
 
 	.no-conversations p {
-		font-size: 13px;
+		font-size: 14px;
 		color: var(--color-text-whisper);
 	}
 
@@ -611,13 +622,13 @@
 	.user-name {
 		display: block;
 		font-weight: 500;
-		font-size: 14px;
+		font-size: 15px;
 		color: var(--color-text-source);
 	}
 
 	.user-email {
 		display: block;
-		font-size: 12px;
+		font-size: 13px;
 		color: var(--color-text-whisper);
 		overflow: hidden;
 		text-overflow: ellipsis;
@@ -676,7 +687,7 @@
 		border-radius: 0.375rem;
 		color: var(--color-text-manifest);
 		text-decoration: none;
-		font-size: 14px;
+		font-size: 15px;
 		font-weight: 400;
 		cursor: pointer;
 		transition: all 0.15s ease;

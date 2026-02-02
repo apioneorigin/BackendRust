@@ -103,7 +103,7 @@
 		background: transparent;
 		border: none;
 		border-radius: 0.25rem;
-		font-size: 12px;
+		font-size: 14px;
 		font-weight: 400;
 		color: var(--color-text-whisper);
 		cursor: pointer;

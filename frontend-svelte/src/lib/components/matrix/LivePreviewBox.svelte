@@ -117,14 +117,14 @@
 	}
 
 	.preview-header h3 {
-		font-size: 13px;
+		font-size: 15px;
 		font-weight: 500;
 		color: var(--color-text-source);
 		flex: 1;
 	}
 
 	.pending-badge {
-		font-size: 10px;
+		font-size: 11px;
 		font-weight: 500;
 		padding: 0.125rem 0.375rem;
 		background: var(--color-primary-500);
@@ -174,7 +174,7 @@
 	}
 
 	.metric-label {
-		font-size: 10px;
+		font-size: 12px;
 		color: var(--color-text-whisper);
 		margin-bottom: 0.375rem;
 		text-transform: uppercase;
@@ -221,13 +221,13 @@
 
 	.stat-value {
 		display: block;
-		font-size: 14px;
+		font-size: 15px;
 		font-weight: 600;
 		color: var(--color-text-source);
 	}
 
 	.stat-label {
-		font-size: 9px;
+		font-size: 11px;
 		color: var(--color-text-whisper);
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
@@ -244,7 +244,7 @@
 		display: flex;
 		align-items: flex-start;
 		gap: 0.375rem;
-		font-size: 12px;
+		font-size: 13px;
 		color: var(--color-text-manifest);
 		padding: 0.5rem;
 		background: var(--color-field-depth);
