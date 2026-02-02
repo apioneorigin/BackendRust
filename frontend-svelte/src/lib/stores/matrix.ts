@@ -102,8 +102,8 @@ const DEFAULT_DOCUMENTS: DocumentTab[] = [
 
 const initialState: MatrixState = {
 	matrixData: [],
-	rowHeaders: ['Context 1', 'Context 2', 'Context 3', 'Context 4', 'Context 5'],
-	columnHeaders: ['Context 6', 'Context 7', 'Context 8', 'Context 9', 'Context 10'],
+	rowHeaders: ['Driver 1', 'Driver 2', 'Driver 3', 'Driver 4', 'Driver 5'],
+	columnHeaders: ['Outcome 1', 'Outcome 2', 'Outcome 3', 'Outcome 4', 'Outcome 5'],
 	rowInsights: ['', '', '', '', ''],
 	columnInsights: ['', '', '', '', ''],
 	isGenerated: false,
