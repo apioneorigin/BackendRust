@@ -23,7 +23,10 @@ export {
 	coherence,
 	population,
 	avgScore,
-	powerSpots
+	powerSpots,
+	activeDocument,
+	activeDocumentId,
+	documents as matrixDocuments
 } from './matrix';
 
 // Re-export types
