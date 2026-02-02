@@ -931,66 +931,89 @@ When consciousness values are calculated, ground them in observable reality:
 - Let evidence strengthen insights, not replace them"""
 
     def _build_structured_output_section(self) -> str:
-        """Build instructions for generating structured matrix/paths/documents data."""
+        """Build instructions for generating structured multi-document matrix data."""
         return """## STRUCTURED OUTPUT GENERATION
 
 After your main articulation, you MUST generate structured data in the following JSON format.
 This data will be stored and used for the interactive matrix interface.
+
+**IMPORTANT**: Generate EXACTLY 3 documents, each with its own 10x10 matrix.
+If this is a follow-up message and the context hasn't changed significantly from the previous response,
+you MAY choose to return an empty documents array: "documents": []
 
 Output this EXACT marker followed by valid JSON:
 
 ```json
 ===STRUCTURED_DATA_START===
 {
-  "matrix_data": {
-    "row_options": [
-      {"id": "r0", "label": "Strategic Resource Flow", "insight": "Core driver identified from pattern analysis"},
-      {"id": "r1", "label": "...", "insight": "..."},
-      ... (20 total row options - context titles, max 3 words each)
-    ],
-    "column_options": [
-      {"id": "c0", "label": "Growth Momentum", "insight": "Effect factor derived from transformation indicators"},
-      {"id": "c1", "label": "...", "insight": "..."},
-      ... (20 total column options - context titles, max 3 words each)
-    ],
-    "selected_rows": [0, 3, 7, 12, 18],
-    "selected_columns": [1, 4, 9, 14, 19],
-    "cells": {
-      "0-0": {
-        "impact_score": 75,
-        "relationship": "How row 0 drives column 0",
-        "dimensions": [
-          {
-            "name": "Income Path Vision",
-            "value": 50,
-            "step_labels": ["Completely unclear", "Vague sense", "Partially defined", "Clear with gaps", "Crystal clear"]
+  "documents": [
+    {
+      "id": "doc-0",
+      "name": "Strategic Framework",
+      "description": "A twenty-word description explaining what this document represents and how it helps transform your situation toward your desired outcome.",
+      "matrix_data": {
+        "row_options": [
+          {"id": "r0", "label": "Strategic Resource Flow", "insight": "Core driver identified from pattern analysis"},
+          {"id": "r1", "label": "...", "insight": "..."},
+          ... (10 total row options - context titles, max 4 words each)
+        ],
+        "column_options": [
+          {"id": "c0", "label": "Growth Momentum", "insight": "Effect factor derived from transformation indicators"},
+          {"id": "c1", "label": "...", "insight": "..."},
+          ... (10 total column options - context titles, max 4 words each)
+        ],
+        "selected_rows": [0, 1, 2, 3, 4],
+        "selected_columns": [0, 1, 2, 3, 4],
+        "cells": {
+          "0-0": {
+            "impact_score": 75,
+            "relationship": "How row 0 drives column 0",
+            "dimensions": [
+              {
+                "name": "Income Path Vision",
+                "value": 50,
+                "step_labels": ["Completely unclear", "Vague sense", "Partially defined", "Clear with gaps", "Crystal clear"]
+              },
+              {
+                "name": "Earning Bandwidth",
+                "value": 75,
+                "step_labels": ["No capacity", "Minimal", "Some room", "Strong", "Full capability"]
+              },
+              {
+                "name": "Financial Readiness",
+                "value": 25,
+                "step_labels": ["Not ready", "Early prep", "Moderate", "Well prepared", "Fully primed"]
+              },
+              {
+                "name": "Career Capital",
+                "value": 50,
+                "step_labels": ["No resources", "Limited", "Adequate", "Strong", "Abundant"]
+              },
+              {
+                "name": "Work-Wealth Sync",
+                "value": 100,
+                "step_labels": ["Fragmented", "Poorly connected", "Partial", "Harmonized", "Unified"]
+              }
+            ]
           },
-          {
-            "name": "Earning Bandwidth",
-            "value": 75,
-            "step_labels": ["No capacity", "Minimal", "Some room", "Strong", "Full capability"]
-          },
-          {
-            "name": "Financial Readiness",
-            "value": 25,
-            "step_labels": ["Not ready", "Early prep", "Moderate", "Well prepared", "Fully primed"]
-          },
-          {
-            "name": "Career Capital",
-            "value": 50,
-            "step_labels": ["No resources", "Limited", "Adequate", "Strong", "Abundant"]
-          },
-          {
-            "name": "Work-Wealth Sync",
-            "value": 100,
-            "step_labels": ["Fragmented", "Poorly connected", "Partial", "Harmonized", "Unified"]
-          }
-        ]
-      },
-      "0-1": { ... },
-      ... (400 total cells for 20x20 matrix, keys are "row-col" format: "0-0" to "19-19")
+          "0-1": { ... },
+          ... (100 total cells for 10x10 matrix, keys are "row-col" format: "0-0" to "9-9")
+        }
+      }
+    },
+    {
+      "id": "doc-1",
+      "name": "Action Blueprint",
+      "description": "Twenty words describing how this action-oriented document provides concrete steps and milestones for implementing your transformation strategy effectively.",
+      "matrix_data": { ... same structure with 10 rows, 10 columns, 100 cells ... }
+    },
+    {
+      "id": "doc-2",
+      "name": "Risk Assessment",
+      "description": "Twenty words explaining how this document identifies potential obstacles, challenges, and mitigation strategies for your transformation journey ahead.",
+      "matrix_data": { ... same structure with 10 rows, 10 columns, 100 cells ... }
     }
-  },
+  ],
   "paths": [
     {
       "id": "p0",
@@ -1004,30 +1027,24 @@ Output this EXACT marker followed by valid JSON:
       ]
     },
     ... (5 total strategic paths)
-  ],
-  "documents": [
-    {
-      "id": "d0",
-      "type": "strategy|analysis|action_plan|risk_assessment|opportunity_map|stakeholder_brief|timeline|metrics|executive_summary",
-      "title": "...",
-      "summary": "...",
-      "sections": {
-        "key_insights": "...",
-        "recommendations": "...",
-        "next_steps": "..."
-      }
-    },
-    ... (9 total documents)
   ]
 }
 ===STRUCTURED_DATA_END===
 ```
 
 CRITICAL REQUIREMENTS:
-1. CELL KEY FORMAT: Use "row-col" format like "0-0", "0-1", "1-0", etc. NOT "r0_c0" format.
-2. FULL 20x20 MATRIX: Generate ALL 400 cells (from "0-0" to "19-19") with 5 dimensions each.
-3. SELECTED ROWS/COLUMNS: The "selected_rows" and "selected_columns" arrays indicate which 5 rows and 5 columns are MOST RELEVANT to the current chat context for initial display. The app displays a 5x5 view using these selections.
-4. ROW/COLUMN LABELS: Max 3 words per label (displayed vertically for columns, horizontally for rows).
+1. **3 DOCUMENTS**: Generate exactly 3 documents, each with a unique perspective on the user's situation
+2. **DOCUMENT NAMES**: Creative, contextual names (not generic like "Document 1")
+3. **20-WORD DESCRIPTIONS**: Each document must have exactly ~20 words explaining its purpose
+4. **10x10 MATRICES**: Each document has 10 row options, 10 column options, and 100 cells
+5. **CELL KEY FORMAT**: Use "row-col" format like "0-0", "0-1", etc. (NOT "r0_c0")
+6. **SELECTED**: selected_rows and selected_columns indicate which 5 are shown initially
+
+### DOCUMENT DIFFERENTIATION:
+Each document should offer a DIFFERENT LENS on the user's situation:
+- Document 1: High-level strategic perspective (big picture drivers and outcomes)
+- Document 2: Operational/tactical perspective (concrete actions and implementations)
+- Document 3: Risk/opportunity perspective (challenges, obstacles, and opportunities)
 
 ### 5-DIMENSION FRAMEWORK (CRITICAL - FOLLOW THIS EXACTLY):
 
@@ -1044,53 +1061,30 @@ Each cell MUST have exactly 5 dimensions following this semantic framework:
 **DIMENSION NAME GENERATION:**
 - DO NOT use "Clarity", "Capacity", etc. as literal names
 - Generate CONTEXTUAL names that EMBODY these meanings for each specific cell
-- Example for "Career" × "Financial" cell:
-  - Clarity → "Income Path Vision" (not "Career-Clarity")
-  - Capacity → "Earning Bandwidth"
-  - Readiness → "Financial Leap Preparedness"
-  - Resources → "Career Capital Available"
-  - Integration → "Work-Wealth Alignment"
+- Names must be unique and meaningful for that specific row×column intersection
 
 **STEP LABEL GENERATION:**
 - Each dimension has 5 discrete values: [0, 25, 50, 75, 100]
 - Generate 5 CONTEXTUAL step labels describing what each level means
-- Labels must be meaningful for THAT dimension in THAT cell
-- NEVER use generic labels like ["Low", "Below", "Mid", "Above", "High"]
-- Step labels should form a progression from worst to best state
+- Labels must form a meaningful progression from worst to best state
 
 ### GENERATION RULES:
 
-1. **Row Options (20)**: Context titles representing CAUSATION factors
-   - `label`: Max 10-word phrase describing what DRIVES change
-   - `insight`: Explanation of why this factor was identified, referencing the variables/patterns used
-   - Example: {"label": "Strategic Resource Allocation", "insight": "Identified from capital flow patterns and investment leverage indicators"}
+1. **Row Options (10 per document)**: Context titles representing CAUSATION factors
+   - `label`: Max 4-word phrase describing what DRIVES change
+   - `insight`: Brief explanation of why this factor was identified
 
-2. **Column Options (20)**: Context titles representing EFFECT factors
-   - `label`: Max 10-word phrase describing what is AFFECTED
-   - `insight`: Explanation of why this effect was identified, referencing the transformation vectors used
-   - Example: {"label": "Market Position Momentum", "insight": "Derived from competitive positioning analysis and growth trajectory variables"}
+2. **Column Options (10 per document)**: Context titles representing EFFECT factors
+   - `label`: Max 4-word phrase describing what is AFFECTED
+   - `insight`: Brief explanation of why this effect was identified
 
-3. **Cells (400)**: Cross-impact for each row-column pair
+3. **Cells (100 per document)**: Cross-impact for each row-column pair
    - Each cell has exactly 5 dimensions following the framework above
-   - Each dimension has:
-     - `name`: Contextual name embodying one of the 5 framework meanings
-     - `value`: One of [0, 25, 50, 75, 100] representing the 5 discrete steps
-     - `step_labels`: Array of 5 contextual labels for this dimension IN THIS CELL
-   - impact_score: 0-1 representing overall relationship strength
+   - impact_score: 0-100 representing overall relationship strength
 
-4. **Paths (5)**: Strategic approaches from conservative to aggressive
+4. **Paths (5 total)**: Strategic approaches from conservative to aggressive
 
-5. **Documents (9)**: One of each type, tailored to the user's query
-
-**CONTEXT TITLE RULES:**
-- User sees row_options and column_options as unified "context titles" (no row/column distinction shown)
-- Each title must be meaningful, domain-specific, max 10 words
-- Each insight must explain WHY this context was generated (what formula/variable/pattern led to it)
-- Never use generic titles like "Factor 1" or "Dimension A"
-
-**CRITICAL**: Both dimension names AND step labels must be domain-appropriate and contextual.
-The 5-parameter framework (Clarity, Capacity, Readiness, Resources, Integration) guides the MEANING,
-but you generate CONTEXTUAL names that embody those meanings for each specific cell."""
+**CONTEXT AWARENESS**: If follow-up message with unchanged context, return "documents": []"""
 
     def _build_user_query(self, user_context: UserContext) -> str:
         """Build the user query section"""

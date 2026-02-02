@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database import get_db, User, ChatConversation
+from database import get_db, User, ChatConversation, ChatMessage
 from routers.auth import get_current_user
 from utils import get_or_404
 
@@ -56,10 +56,24 @@ class StrategicPath(BaseModel):
     steps: List[PathStep]
 
 
+class DocumentMatrixData(BaseModel):
+    """Matrix data for a document - 10x10 grid"""
+    row_options: List[RowOption]
+    column_options: List[ColumnOption]
+    selected_rows: List[int]
+    selected_columns: List[int]
+    cells: dict
+
+
 class GeneratedDocument(BaseModel):
+    """Document with its own matrix data"""
     id: str
-    type: str
-    title: str
+    name: str
+    description: str  # ~20 word description
+    matrix_data: Optional[DocumentMatrixData] = None
+    # Legacy fields for backwards compatibility
+    type: Optional[str] = None
+    title: Optional[str] = None
     summary: Optional[str] = None
     sections: Optional[dict] = None
 
@@ -270,3 +284,129 @@ async def get_document(
             return GeneratedDocument(**doc)
 
     return None
+
+
+class GenerateDocumentsResponse(BaseModel):
+    """Response from generating additional documents"""
+    documents: List[GeneratedDocument]
+    total_document_count: int
+
+
+@router.post("/{conversation_id}/documents/generate", response_model=GenerateDocumentsResponse)
+async def generate_additional_documents(
+    conversation_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Generate 3 additional documents using hardcoded gpt-5.2 model.
+
+    This endpoint allows users to add more document tabs to their matrix view.
+    Each document includes its own 10x10 matrix with rows, columns, and cells.
+    """
+    from main import generate_additional_documents_llm
+
+    conversation = await get_or_404(db, ChatConversation, conversation_id, user_id=current_user.id)
+
+    # Get conversation context for document generation
+    messages_result = await db.execute(
+        select(ChatMessage)
+        .where(ChatMessage.conversation_id == conversation_id)
+        .order_by(ChatMessage.created_at.desc())
+        .limit(10)  # Recent messages for context
+    )
+    messages = messages_result.scalars().all()
+
+    # Build context from messages
+    context_messages = []
+    for msg in reversed(messages):
+        context_messages.append({
+            "role": msg.role,
+            "content": msg.content[:2000] if len(msg.content) > 2000 else msg.content
+        })
+
+    # Get existing documents to determine next ID
+    existing_docs = conversation.generated_documents or []
+    next_doc_id = len(existing_docs)
+
+    # Generate new documents using hardcoded gpt-5.2 model
+    new_documents = await generate_additional_documents_llm(
+        context_messages=context_messages,
+        existing_document_names=[doc.get("name", "") for doc in existing_docs],
+        start_doc_id=next_doc_id
+    )
+
+    if not new_documents:
+        raise HTTPException(status_code=500, detail="Failed to generate documents")
+
+    # Append new documents to existing
+    updated_documents = existing_docs + new_documents
+    conversation.generated_documents = updated_documents
+
+    await db.commit()
+
+    return GenerateDocumentsResponse(
+        documents=[GeneratedDocument(**doc) for doc in new_documents],
+        total_document_count=len(updated_documents)
+    )
+
+
+class UpdateDocumentSelectionRequest(BaseModel):
+    """Request to update row/column selection for a specific document"""
+    document_id: str
+    selected_rows: List[int]
+    selected_columns: List[int]
+
+
+@router.patch("/{conversation_id}/document/{doc_id}/selection")
+async def update_document_selection(
+    conversation_id: str,
+    doc_id: str,
+    request: UpdateDocumentSelectionRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Update which rows/columns are selected for a specific document."""
+    conversation = await get_or_404(db, ChatConversation, conversation_id, user_id=current_user.id)
+
+    if not conversation.generated_documents:
+        raise HTTPException(status_code=400, detail="No documents exist")
+
+    # Find the document
+    documents = conversation.generated_documents.copy()
+    doc_found = False
+
+    for i, doc in enumerate(documents):
+        if doc.get("id") == doc_id:
+            matrix_data = doc.get("matrix_data", {})
+            row_count = len(matrix_data.get("row_options", []))
+            col_count = len(matrix_data.get("column_options", []))
+
+            # Validate
+            if len(request.selected_rows) != 5:
+                raise HTTPException(status_code=400, detail="Must select exactly 5 rows")
+            if len(request.selected_columns) != 5:
+                raise HTTPException(status_code=400, detail="Must select exactly 5 columns")
+            if any(idx < 0 or idx >= row_count for idx in request.selected_rows):
+                raise HTTPException(status_code=400, detail="Invalid row index")
+            if any(idx < 0 or idx >= col_count for idx in request.selected_columns):
+                raise HTTPException(status_code=400, detail="Invalid column index")
+
+            # Update selection
+            documents[i]["matrix_data"]["selected_rows"] = request.selected_rows
+            documents[i]["matrix_data"]["selected_columns"] = request.selected_columns
+            doc_found = True
+            break
+
+    if not doc_found:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    conversation.generated_documents = documents
+    await db.commit()
+
+    return {
+        "status": "success",
+        "document_id": doc_id,
+        "selected_rows": request.selected_rows,
+        "selected_columns": request.selected_columns
+    }

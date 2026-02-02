@@ -2483,6 +2483,187 @@ Return ONLY valid JSON:
         return None
 
 
+# Hardcoded model for additional document generation
+DOCUMENT_GENERATION_MODEL = "gpt-4.5-preview"  # or "gpt-5.2" when available
+DOCUMENT_GENERATION_ENDPOINT = "https://api.openai.com/v1/chat/completions"
+
+
+async def generate_additional_documents_llm(
+    context_messages: List[dict],
+    existing_document_names: List[str],
+    start_doc_id: int
+) -> Optional[List[dict]]:
+    """
+    Generate 3 additional documents using hardcoded model (gpt-4.5-preview).
+
+    Each document includes:
+    - name: Creative, contextual name
+    - description: ~20 word description
+    - matrix_data: 10 rows, 10 columns, 100 cells with 5 dimensions each
+
+    Args:
+        context_messages: Recent conversation messages for context
+        existing_document_names: Names of existing documents to avoid duplication
+        start_doc_id: Starting ID for new documents (e.g., 3 if 3 docs exist)
+
+    Returns:
+        List of 3 document dicts, or None on failure
+    """
+    import os
+
+    # Use OpenAI API key for document generation
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if not api_key:
+        api_logger.error("[DOC_GEN] No OPENAI_API_KEY found for document generation")
+        return None
+
+    # Build context summary from messages
+    context_summary = ""
+    for msg in context_messages[-5:]:  # Last 5 messages
+        role = msg.get("role", "user")
+        content = msg.get("content", "")[:500]
+        context_summary += f"{role.upper()}: {content}\n\n"
+
+    existing_names_str = ", ".join(existing_document_names) if existing_document_names else "None yet"
+
+    prompt_text = f"""Generate 3 NEW documents for a transformation matrix interface.
+
+CONVERSATION CONTEXT:
+{context_summary}
+
+EXISTING DOCUMENTS (avoid similar names): {existing_names_str}
+
+Generate 3 documents, each with:
+1. A unique, creative name (different from existing)
+2. A 20-word description explaining its purpose
+3. A 10x10 matrix with rows, columns, and cells
+
+Each document should offer a DIFFERENT perspective:
+- Document 1: A new strategic angle not yet covered
+- Document 2: An operational/tactical perspective
+- Document 3: A risk/opportunity or stakeholder perspective
+
+Return ONLY valid JSON with this EXACT structure:
+
+{{
+  "documents": [
+    {{
+      "id": "doc-{start_doc_id}",
+      "name": "Creative Document Name",
+      "description": "Twenty words explaining what this document represents and how it helps transform the situation toward the desired outcome.",
+      "matrix_data": {{
+        "row_options": [
+          {{"id": "r0", "label": "Driver Label 1", "insight": "Why this driver matters"}},
+          {{"id": "r1", "label": "Driver Label 2", "insight": "Why this driver matters"}},
+          {{"id": "r2", "label": "Driver Label 3", "insight": "Why this driver matters"}},
+          {{"id": "r3", "label": "Driver Label 4", "insight": "Why this driver matters"}},
+          {{"id": "r4", "label": "Driver Label 5", "insight": "Why this driver matters"}},
+          {{"id": "r5", "label": "Driver Label 6", "insight": "Why this driver matters"}},
+          {{"id": "r6", "label": "Driver Label 7", "insight": "Why this driver matters"}},
+          {{"id": "r7", "label": "Driver Label 8", "insight": "Why this driver matters"}},
+          {{"id": "r8", "label": "Driver Label 9", "insight": "Why this driver matters"}},
+          {{"id": "r9", "label": "Driver Label 10", "insight": "Why this driver matters"}}
+        ],
+        "column_options": [
+          {{"id": "c0", "label": "Outcome Label 1", "insight": "Why this outcome matters"}},
+          {{"id": "c1", "label": "Outcome Label 2", "insight": "Why this outcome matters"}},
+          {{"id": "c2", "label": "Outcome Label 3", "insight": "Why this outcome matters"}},
+          {{"id": "c3", "label": "Outcome Label 4", "insight": "Why this outcome matters"}},
+          {{"id": "c4", "label": "Outcome Label 5", "insight": "Why this outcome matters"}},
+          {{"id": "c5", "label": "Outcome Label 6", "insight": "Why this outcome matters"}},
+          {{"id": "c6", "label": "Outcome Label 7", "insight": "Why this outcome matters"}},
+          {{"id": "c7", "label": "Outcome Label 8", "insight": "Why this outcome matters"}},
+          {{"id": "c8", "label": "Outcome Label 9", "insight": "Why this outcome matters"}},
+          {{"id": "c9", "label": "Outcome Label 10", "insight": "Why this outcome matters"}}
+        ],
+        "selected_rows": [0, 1, 2, 3, 4],
+        "selected_columns": [0, 1, 2, 3, 4],
+        "cells": {{
+          "0-0": {{
+            "impact_score": 75,
+            "relationship": "How row 0 drives column 0",
+            "dimensions": [
+              {{"name": "Clarity Dimension", "value": 50, "step_labels": ["Level 0", "Level 25", "Level 50", "Level 75", "Level 100"]}},
+              {{"name": "Capacity Dimension", "value": 75, "step_labels": ["Level 0", "Level 25", "Level 50", "Level 75", "Level 100"]}},
+              {{"name": "Readiness Dimension", "value": 25, "step_labels": ["Level 0", "Level 25", "Level 50", "Level 75", "Level 100"]}},
+              {{"name": "Resources Dimension", "value": 50, "step_labels": ["Level 0", "Level 25", "Level 50", "Level 75", "Level 100"]}},
+              {{"name": "Integration Dimension", "value": 100, "step_labels": ["Level 0", "Level 25", "Level 50", "Level 75", "Level 100"]}}
+            ]
+          }},
+          "... (all 100 cells from 0-0 to 9-9)"
+        }}
+      }}
+    }},
+    {{
+      "id": "doc-{start_doc_id + 1}",
+      "name": "Second Document Name",
+      "description": "...",
+      "matrix_data": {{ ... same structure ... }}
+    }},
+    {{
+      "id": "doc-{start_doc_id + 2}",
+      "name": "Third Document Name",
+      "description": "...",
+      "matrix_data": {{ ... same structure ... }}
+    }}
+  ]
+}}
+
+CRITICAL:
+- Generate ALL 100 cells per document (from "0-0" to "9-9")
+- Each cell needs 5 dimensions with contextual names and step labels
+- Row/column labels should be max 4 words
+- Dimension names should be contextual for each specific cell intersection
+- Step labels should form a meaningful progression"""
+
+    try:
+        async with httpx.AsyncClient(timeout=300.0) as client:
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            }
+            request_body = {
+                "model": DOCUMENT_GENERATION_MODEL,
+                "max_tokens": 16384,
+                "messages": [{"role": "user", "content": prompt_text}],
+                "response_format": {"type": "json_object"}
+            }
+
+            response = await client.post(
+                DOCUMENT_GENERATION_ENDPOINT,
+                headers=headers,
+                json=request_body
+            )
+
+            if response.status_code != 200:
+                api_logger.error(f"[DOC_GEN] OpenAI error: {response.status_code} - {response.text}")
+                return None
+
+            data = response.json()
+            response_text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+
+            # Extract token usage
+            usage = data.get("usage", {})
+            api_logger.info(f"[DOC_GEN] Tokens - Input: {usage.get('prompt_tokens')}, Output: {usage.get('completion_tokens')}")
+
+            # Parse JSON response
+            result = json.loads(response_text)
+            documents = result.get("documents", [])
+
+            if len(documents) < 3:
+                api_logger.warning(f"[DOC_GEN] Only got {len(documents)} documents, expected 3")
+
+            api_logger.info(f"[DOC_GEN] Generated {len(documents)} documents: {[d.get('name') for d in documents]}")
+            return documents
+
+    except json.JSONDecodeError as e:
+        api_logger.error(f"[DOC_GEN] JSON parse error: {e}")
+        return None
+    except Exception as e:
+        api_logger.error(f"[DOC_GEN] Failed: {type(e).__name__}: {e}")
+        return None
+
+
 async def format_results_streaming_bridge(
     prompt: str,
     evidence: dict,
