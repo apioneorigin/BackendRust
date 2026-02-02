@@ -2,7 +2,6 @@
 	import { onMount } from 'svelte';
 	import { auth, theme } from '$lib/stores';
 	import { ToastContainer } from '$lib/components/ui';
-	import '@fontsource-variable/inter';
 	import '../styles/globals.css';
 
 	// Initialize theme on mount
