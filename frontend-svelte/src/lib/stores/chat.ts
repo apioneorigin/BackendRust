@@ -166,12 +166,12 @@ function createChatStore() {
 				return;
 			}
 
-			update(state => ({ ...state, isLoading: true }));
+			update(state => ({ ...state, isLoading: true, error: null }));
 			try {
-				const [conversation, messagesResponse] = await Promise.all([
-					api.get<Conversation>(`/api/chat/conversations/${conversationId}`),
-					api.get<Message[]>(`/api/chat/conversations/${conversationId}/messages`),
-				]);
+				// Sequential calls to avoid potential issues with parallel requests
+				const conversation = await api.get<Conversation>(`/api/chat/conversations/${conversationId}`);
+				const messagesResponse = await api.get<Message[]>(`/api/chat/conversations/${conversationId}/messages`);
+
 				update(state => ({
 					...state,
 					currentConversation: conversation,
