@@ -201,7 +201,7 @@
 		background: var(--color-field-surface);
 		border: 1px solid var(--color-veil-thin);
 		border-radius: 0.5rem;
-		padding: 1rem;
+		padding: 0.5rem;
 		height: 100%;
 		display: flex;
 		flex-direction: column;
@@ -209,17 +209,13 @@
 	}
 
 	.matrix-panel.compact {
-		padding: 0.75rem;
-	}
-
-	.matrix-panel.compact .matrix-grid {
-		grid-template-columns: minmax(50px, 60px) repeat(5, 1fr);
+		padding: 0.375rem;
 	}
 
 	.matrix-grid {
 		display: grid;
-		grid-template-columns: minmax(60px, 80px) repeat(5, 1fr);
-		grid-template-rows: 28px repeat(5, 1fr);
+		grid-template-columns: 48px repeat(5, 1fr);
+		grid-template-rows: 40px repeat(5, 1fr);
 		gap: 2px;
 		flex: 1;
 		min-height: 0;
@@ -227,8 +223,8 @@
 	}
 
 	.compact .matrix-grid {
-		grid-template-columns: minmax(50px, 60px) repeat(5, 1fr);
-		grid-template-rows: 24px repeat(5, 1fr);
+		grid-template-columns: 40px repeat(5, 1fr);
+		grid-template-rows: 36px repeat(5, 1fr);
 		gap: 2px;
 	}
 
@@ -236,30 +232,56 @@
 		/* Empty corner cell */
 	}
 
-	.col-header,
+	.col-header {
+		display: flex;
+		align-items: flex-end;
+		justify-content: center;
+		padding: 0.125rem;
+		background: transparent;
+		overflow: hidden;
+	}
+
 	.row-header {
 		display: flex;
 		align-items: center;
-		justify-content: center;
-		padding: 0.25rem;
+		justify-content: flex-end;
+		padding: 0.125rem 0.25rem;
 		background: transparent;
+		overflow: hidden;
 	}
 
-	.header-text {
-		font-size: 0.5625rem;
+	/* Column header text: vertical, one word per line */
+	.col-header .header-text {
+		font-size: 0.5rem;
 		font-weight: 500;
 		color: var(--color-text-whisper);
 		text-align: center;
-		line-height: 1.2;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
+		line-height: 1.1;
 		text-transform: uppercase;
-		letter-spacing: 0.05em;
+		letter-spacing: 0.02em;
+		word-spacing: 100vw; /* Forces each word to its own line */
+		overflow: hidden;
+		max-height: 100%;
 	}
 
-	.compact .header-text {
+	/* Row header text: horizontal, single line */
+	.row-header .header-text {
 		font-size: 0.5rem;
+		font-weight: 500;
+		color: var(--color-text-whisper);
+		text-align: right;
+		line-height: 1.2;
+		text-transform: uppercase;
+		letter-spacing: 0.02em;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		max-width: 100%;
+	}
+
+	.compact .col-header .header-text,
+	.compact .row-header .header-text {
+		font-size: 0.4375rem;
 	}
 
 	.matrix-cell {
