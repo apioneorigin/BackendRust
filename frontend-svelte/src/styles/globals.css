@@ -7,9 +7,9 @@
    ═══════════════════════════════════════════════════════════════════════════════
 
    Design Philosophy:
-   - Premium silver-gray surfaces convey sophistication and trust
-   - Vibrant purple accents create energy and premium positioning
-   - Cool-toned neutrals with subtle blue undertones
+   - Metallic silver-gray surfaces as the reflective void
+   - Champagne gold ambient glow invites exploration of the unknown
+   - Cool neutrals with warm luminosity beckoning discovery
    - Enterprise-grade aesthetics for Fortune 500 positioning
 
    ═══════════════════════════════════════════════════════════════════════════════ */
@@ -27,24 +27,27 @@
 	--touch-target-comfortable: 48px;
 
 	/* ─────────────────────────────────────────────────────────────────────────────
-	   ACCENT - Vibrant Purple (premium, innovative, powerful)
+	   ACCENT - Champagne Gold (warmth, discovery, invitation)
 	   ───────────────────────────────────────────────────────────────────────────── */
-	--color-accent: #8B5CF6;
-	--color-accent-subtle: rgba(139, 92, 246, 0.08);
-	--color-accent-hover: rgba(139, 92, 246, 0.12);
+	--color-accent: #C9A962;
+	--color-accent-subtle: rgba(201, 169, 98, 0.08);
+	--color-accent-hover: rgba(201, 169, 98, 0.12);
 
-	/* Primary palette - Vibrant Purple family */
-	--color-primary-950: #2e1065;  /* Deepest */
-	--color-primary-900: #4c1d95;  /* Very dark */
-	--color-primary-800: #5b21b6;
-	--color-primary-700: #6d28d9;
-	--color-primary-600: #7c3aed;  /* Hover state */
-	--color-primary-500: #8B5CF6;  /* Main - Vibrant Purple */
-	--color-primary-400: #a78bfa;
-	--color-primary-300: #c4b5fd;
-	--color-primary-200: #ddd6fe;
-	--color-primary-100: rgba(139, 92, 246, 0.12);
-	--color-primary-50: rgba(139, 92, 246, 0.06);
+	/* Primary palette - Champagne Gold family */
+	--color-primary-950: #3d2e0a;  /* Deepest */
+	--color-primary-900: #5c4510;  /* Very dark */
+	--color-primary-800: #7a5c18;
+	--color-primary-700: #97722a;
+	--color-primary-600: #b38a3d;  /* Hover state */
+	--color-primary-500: #C9A962;  /* Main - Champagne Gold */
+	--color-primary-400: #d4ba7e;
+	--color-primary-300: #e0cc9a;
+	--color-primary-200: #ebddb6;
+	--color-primary-100: rgba(201, 169, 98, 0.12);
+	--color-primary-50: rgba(201, 169, 98, 0.06);
+
+	/* Ambient glow - gold radiance through silver */
+	--gradient-ambient: radial-gradient(ellipse at 50% 30%, rgba(201, 169, 98, 0.04) 0%, transparent 60%);
 
 	/* ─────────────────────────────────────────────────────────────────────────────
 	   SURFACES - Premium Corporate Silver
@@ -98,10 +101,10 @@
 	--ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 
 	/* ─────────────────────────────────────────────────────────────────────────────
-	   GRADIENTS - Vibrant Purple (premium energy)
+	   GRADIENTS - Champagne Gold (warm invitation)
 	   ───────────────────────────────────────────────────────────────────────────── */
-	--gradient-primary: linear-gradient(135deg, #7c3aed 0%, #8B5CF6 100%);
-	--gradient-subtle: linear-gradient(180deg, rgba(139, 92, 246, 0.03) 0%, transparent 100%);
+	--gradient-primary: linear-gradient(135deg, #b38a3d 0%, #C9A962 100%);
+	--gradient-subtle: linear-gradient(180deg, rgba(201, 169, 98, 0.03) 0%, transparent 100%);
 
 	/* Semantic colors */
 	--color-error-500: #dc2626;
@@ -117,27 +120,28 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   DARK MODE - Premium Dark Silver with Vibrant Purple
+   DARK MODE - Premium Dark Silver with Champagne Gold Glow
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 [data-theme='dark'] {
-	--color-accent: #a78bfa;  /* Brighter purple for dark mode */
-	--color-accent-subtle: rgba(167, 139, 250, 0.12);
-	--color-accent-hover: rgba(167, 139, 250, 0.18);
+	--color-accent: #d4ba7e;  /* Brighter gold for dark mode */
+	--color-accent-subtle: rgba(212, 186, 126, 0.12);
+	--color-accent-hover: rgba(212, 186, 126, 0.18);
 
-	--color-primary-950: #1a1625;  /* Deep purple-black */
-	--color-primary-900: #2e1065;
-	--color-primary-800: #4c1d95;
-	--color-primary-700: #6d28d9;
-	--color-primary-600: #8B5CF6;
-	--color-primary-500: #a78bfa;  /* Brighter for dark mode visibility */
-	--color-primary-400: #c4b5fd;
-	--color-primary-300: #ddd6fe;
-	--color-primary-200: #ede9fe;
-	--color-primary-100: rgba(167, 139, 250, 0.15);
-	--color-primary-50: rgba(167, 139, 250, 0.08);
+	--color-primary-950: #1a1710;  /* Deep warm black */
+	--color-primary-900: #2e2815;
+	--color-primary-800: #4a3f1f;
+	--color-primary-700: #6b5a2a;
+	--color-primary-600: #C9A962;
+	--color-primary-500: #d4ba7e;  /* Brighter for dark mode visibility */
+	--color-primary-400: #e0cc9a;
+	--color-primary-300: #ebddb6;
+	--color-primary-200: #f5eed2;
+	--color-primary-100: rgba(212, 186, 126, 0.15);
+	--color-primary-50: rgba(212, 186, 126, 0.08);
 
-	--gradient-primary: linear-gradient(135deg, #8B5CF6 0%, #a78bfa 100%);
+	--gradient-primary: linear-gradient(135deg, #C9A962 0%, #d4ba7e 100%);
+	--gradient-ambient: radial-gradient(ellipse at 50% 30%, rgba(212, 186, 126, 0.06) 0%, transparent 60%);
 
 	/* Premium dark silver surfaces */
 	--color-field-void: #0f1115;      /* Dark with cool silver undertone */
@@ -173,7 +177,8 @@
 html {
 	font-size: 16px;
 	scroll-behavior: smooth;
-	background-color: var(--color-field-void);
+	background: var(--gradient-ambient), var(--color-field-void);
+	background-attachment: fixed;
 	height: 100%;
 	overflow: hidden;
 }
@@ -184,7 +189,7 @@ body {
 	font-weight: 400;
 	line-height: 1.6;
 	color: var(--color-text-source);
-	background-color: var(--color-field-void);
+	background: transparent;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
 	height: 100%;
