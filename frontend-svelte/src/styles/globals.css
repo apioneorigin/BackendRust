@@ -48,17 +48,17 @@
 	--color-primary-100: rgba(201, 169, 98, 0.12);
 	--color-primary-50: rgba(201, 169, 98, 0.06);
 
-	/* Ambient glow - subtle gold radiance on neutral */
-	--gradient-ambient: radial-gradient(ellipse at 50% 30%, rgba(201, 169, 98, 0.04) 0%, transparent 70%);
+	/* Ambient glow - champagne gold warmth */
+	--gradient-ambient: radial-gradient(ellipse at 50% 30%, rgba(201, 169, 98, 0.06) 0%, transparent 70%);
 
 	/* ─────────────────────────────────────────────────────────────────────────────
-	   SURFACES - Neutral with Glassmorphism (gold is the only color)
+	   SURFACES - Champagne warmth (gold-derived, not generic cream)
 	   ───────────────────────────────────────────────────────────────────────────── */
-	--color-field-void: #FAFAFA;      /* Clean neutral white */
-	--color-field-depth: #F5F5F5;     /* Subtle gray depth */
-	--color-field-surface: rgba(255, 255, 255, 0.7);  /* Glassmorphism cards */
-	--color-field-elevated: rgba(255, 255, 255, 0.85); /* Elevated glass */
-	--color-field-solid: #FFFFFF;     /* Solid white for inputs */
+	--color-field-void: #FFFDF9;      /* Warm champagne white */
+	--color-field-depth: #FFF9F2;     /* Soft gold glow */
+	--color-field-surface: rgba(255, 253, 250, 0.75);  /* Warm glassmorphism */
+	--color-field-elevated: rgba(255, 255, 255, 0.9); /* Elevated warm glass */
+	--color-field-solid: #FFFEFB;     /* Solid warm white for inputs */
 
 	/* ─────────────────────────────────────────────────────────────────────────────
 	   TEXT - Pure neutral grays (no tint, gold stands alone)
@@ -77,13 +77,13 @@
 	--color-veil-clear: rgba(255, 255, 255, 0.3);  /* Glass border */
 
 	/* ─────────────────────────────────────────────────────────────────────────────
-	   SHADOWS - Neutral depth (minimal for glassmorphism)
+	   SHADOWS - Warm champagne depth (subtle gold undertone)
 	   ───────────────────────────────────────────────────────────────────────────── */
-	--shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.03);
-	--shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
-	--shadow-md: 0 4px 12px rgba(0, 0, 0, 0.05);
-	--shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.08);
-	--shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.10);
+	--shadow-xs: 0 1px 2px rgba(180, 140, 80, 0.04);
+	--shadow-sm: 0 1px 3px rgba(180, 140, 80, 0.06);
+	--shadow-md: 0 4px 12px rgba(180, 140, 80, 0.08);
+	--shadow-lg: 0 8px 32px rgba(120, 90, 40, 0.10);
+	--shadow-xl: 0 16px 48px rgba(120, 90, 40, 0.12);
 
 	/* Panel - glass definition */
 	--shadow-panel: 0 0 0 1px rgba(255, 255, 255, 0.3);
