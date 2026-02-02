@@ -3201,8 +3201,13 @@ async def run_reverse_mapping_for_articulation(
         result = reverse_engine.solve_for_outcome(
             'breakthrough_probability', 0.7, current_operators
         )
-        required_operators = result.required_state.operator_values
-        target_s_level = None
+        if result is None or result.required_state is None:
+            reverse_logger.warning("[REVERSE MAPPING] Reverse engine returned None - using current operators as baseline")
+            required_operators = current_operators.copy()
+            target_s_level = None
+        else:
+            required_operators = result.required_state.operator_values
+            target_s_level = None
 
     if target_s_level is not None and current_s_level is not None:
         reverse_logger.info(f"[REVERSE MAPPING] Target S-Level: {target_s_level:.1f} (delta: {target_s_level - current_s_level:+.1f})")
