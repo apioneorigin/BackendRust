@@ -216,9 +216,9 @@
 			<div class="popup-body">
 				<div class="selection-info">
 					<span class="selection-count" class:complete={canSubmit}>
-						{selectedRowCount + selectedColCount}/10 selected
+						{selectedRowCount}/5 drivers, {selectedColCount}/5 outcomes
 					</span>
-					<span class="selection-hint">Select 5 from each group to shape your context view</span>
+					<span class="selection-hint">{canSubmit ? 'Ready to apply' : 'Deselect one to swap with another'}</span>
 				</div>
 
 				{#if hasOptions}
@@ -229,7 +229,7 @@
 							<div class="titles-list">
 								{#each rowOptions as opt, idx (`row-${idx}`)}
 									{@const isSelected = selectedRows.includes(idx)}
-									{@const canToggle = isSelected ? selectedRows.length > 5 : selectedRows.length < 5}
+									{@const canToggle = isSelected || selectedRows.length < 5}
 									{@const hasInsight = !!opt.articulated_insight}
 									<div class="title-item-wrapper">
 										<button
@@ -295,7 +295,7 @@
 							<div class="titles-list">
 								{#each columnOptions as opt, idx (`col-${idx}`)}
 									{@const isSelected = selectedColumns.includes(idx)}
-									{@const canToggle = isSelected ? selectedColumns.length > 5 : selectedColumns.length < 5}
+									{@const canToggle = isSelected || selectedColumns.length < 5}
 									{@const hasInsight = !!opt.articulated_insight}
 									<div class="title-item-wrapper">
 										<button
