@@ -265,6 +265,8 @@ async def send_message(
         full_response = ""
         input_tokens = 0
         output_tokens = 0
+        structured_data = None  # Capture matrix_data, paths, documents
+        pending_questions = []  # Capture questions for persistence
 
         async for event in inference_stream(
             request.content,
@@ -285,11 +287,25 @@ async def send_message(
                     usage_data = safe_json_loads(data)
                     input_tokens = usage_data.get("input_tokens", 0)
                     output_tokens = usage_data.get("output_tokens", 0)
+                elif event_type == "structured_data":
+                    # Capture structured data for saving to conversation
+                    structured_data = safe_json_loads(data)
+                elif event_type in ("question", "validation_question"):
+                    # Capture questions for persistence
+                    question_data = safe_json_loads(data)
+                    if question_data:
+                        pending_questions.append({
+                            "id": question_data.get("question_id"),
+                            "text": question_data.get("question_text"),
+                            "options": question_data.get("options", []),
+                            "type": event_type,
+                            "selectedOption": None
+                        })
 
                 # Yield dict directly - EventSourceResponse handles formatting
                 yield {"event": event_type, "data": data}
 
-        # Save assistant message after streaming completes
+        # Save assistant message and structured data after streaming completes
         async with AsyncSessionLocal() as save_db:
             assistant_message = ChatMessage(
                 id=generate_id(),
@@ -302,7 +318,7 @@ async def send_message(
             )
             save_db.add(assistant_message)
 
-            # Update conversation totals
+            # Update conversation totals and save structured data
             conv_result = await save_db.execute(
                 select(ChatConversation).where(ChatConversation.id == conversation_id)
             )
@@ -311,6 +327,23 @@ async def send_message(
             conv.total_output_tokens += output_tokens
             conv.total_tokens += input_tokens + output_tokens
             conv.updated_at = datetime.utcnow()
+
+            # Save structured data (matrix, paths, documents) to conversation
+            if structured_data:
+                if structured_data.get("matrix_data"):
+                    conv.matrix_data = structured_data["matrix_data"]
+                if structured_data.get("paths"):
+                    conv.generated_paths = structured_data["paths"]
+                if structured_data.get("documents"):
+                    conv.generated_documents = structured_data["documents"]
+
+            # Save/update questions to conversation
+            if pending_questions:
+                existing_questions = conv.question_answers or {"questions": []}
+                if not isinstance(existing_questions, dict):
+                    existing_questions = {"questions": []}
+                existing_questions.setdefault("questions", []).extend(pending_questions)
+                conv.question_answers = existing_questions
 
             await save_db.commit()
 
@@ -491,3 +524,76 @@ async def upload_files(
         "filesProcessed": len(file_summaries),
         "summaries": file_summaries,
     }
+
+
+class QuestionResponse(CamelModel):
+    id: str
+    text: str
+    options: List[dict]
+    type: str
+    selected_option: Optional[str]
+
+
+@router.get("/conversations/{conversation_id}/questions", response_model=List[QuestionResponse])
+async def get_conversation_questions(
+    conversation_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get all questions for a conversation."""
+    conversation = await get_or_404(
+        db, ChatConversation, conversation_id, user_id=current_user.id
+    )
+
+    question_data = conversation.question_answers or {}
+    questions = question_data.get("questions", [])
+
+    return [
+        QuestionResponse(
+            id=q.get("id", ""),
+            text=q.get("text", ""),
+            options=q.get("options", []),
+            type=q.get("type", "question"),
+            selected_option=q.get("selectedOption")
+        )
+        for q in questions
+    ]
+
+
+class AnswerQuestionRequest(BaseModel):
+    selected_option: str
+
+
+@router.patch("/conversations/{conversation_id}/questions/{question_id}")
+async def answer_question(
+    conversation_id: str,
+    question_id: str,
+    request: AnswerQuestionRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Update the selected answer for a question."""
+    conversation = await get_or_404(
+        db, ChatConversation, conversation_id, user_id=current_user.id
+    )
+
+    question_data = conversation.question_answers or {"questions": []}
+    questions = question_data.get("questions", [])
+
+    # Find and update the question
+    updated = False
+    for q in questions:
+        if q.get("id") == question_id:
+            q["selectedOption"] = request.selected_option
+            updated = True
+            break
+
+    if not updated:
+        raise HTTPException(status_code=404, detail="Question not found")
+
+    question_data["questions"] = questions
+    conversation.question_answers = question_data
+    conversation.updated_at = datetime.utcnow()
+    await db.commit()
+
+    return {"status": "success", "questionId": question_id, "selectedOption": request.selected_option}

@@ -188,15 +188,37 @@ function createChatStore() {
 			isSelectingConversation = true;
 
 			try {
-				const conversation = await api.get<Conversation>(`/api/chat/conversations/${conversationId}`);
-				const messagesResponse = await api.get<Message[]>(`/api/chat/conversations/${conversationId}/messages`);
+				// Load conversation, messages, matrix data, and questions in parallel
+				const [conversation, messagesResponse, matrixData, questionsResponse] = await Promise.all([
+					api.get<Conversation>(`/api/chat/conversations/${conversationId}`),
+					api.get<Message[]>(`/api/chat/conversations/${conversationId}/messages`),
+					api.get<StructuredData['matrix_data'] | null>(`/api/matrix/${conversationId}/data`).catch(() => null),
+					api.get<Question[]>(`/api/chat/conversations/${conversationId}/questions`).catch(() => []),
+				]);
+
+				// Transform questions from API format to store format
+				const questions: Question[] = (Array.isArray(questionsResponse) ? questionsResponse : []).map(q => ({
+					id: q.id,
+					text: q.text,
+					options: q.options,
+					selectedOption: q.selectedOption
+				}));
 
 				update(state => ({
 					...state,
 					currentConversation: conversation,
 					messages: Array.isArray(messagesResponse) ? messagesResponse : [],
+					questions,
 					isLoading: false,
 				}));
+
+				// Apply matrix data to matrix store if present
+				if (matrixData) {
+					matrix.populateFromStructuredData(matrixData);
+				} else {
+					// Reset matrix to default state if no data
+					matrix.initializeMatrix();
+				}
 			} catch (error: any) {
 				update(state => ({
 					...state,
@@ -498,13 +520,31 @@ function createChatStore() {
 			}));
 		},
 
-		answerQuestion(questionId: string, optionId: string) {
+		async answerQuestion(questionId: string, optionId: string) {
+			// Update locally first for immediate UI response
 			update(state => ({
 				...state,
 				questions: state.questions.map(q =>
 					q.id === questionId ? { ...q, selectedOption: optionId } : q
 				),
 			}));
+
+			// Persist to backend
+			let conversationId: string | null = null;
+			update(state => {
+				conversationId = state.currentConversation?.id || null;
+				return state;
+			});
+
+			if (conversationId) {
+				try {
+					await api.patch(`/api/chat/conversations/${conversationId}/questions/${questionId}`, {
+						selected_option: optionId
+					});
+				} catch (error) {
+					console.error('Failed to persist question answer:', error);
+				}
+			}
 		},
 
 		clearError() {
