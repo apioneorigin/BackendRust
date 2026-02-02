@@ -301,23 +301,6 @@
 				<!-- Messages -->
 				{#each $messages as message (message.id)}
 					<div class="message" class:user={message.role === 'user'}>
-						<div class="message-avatar" class:user-avatar={message.role === 'user'}>
-							{#if message.role === 'user'}
-								<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-									<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-									<circle cx="12" cy="7" r="4" />
-								</svg>
-							{:else}
-								<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-									<path d="M12 8V4H8" />
-									<rect width="16" height="12" x="4" y="8" rx="2" />
-									<path d="M2 14h2" />
-									<path d="M20 14h2" />
-									<path d="M15 13v2" />
-									<path d="M9 13v2" />
-								</svg>
-							{/if}
-						</div>
 						<div class="message-content">
 							<div class="message-bubble" class:bubble-user={message.role === 'user'} class:bubble-assistant={message.role === 'assistant'}>
 								<div class="message-text">
@@ -331,16 +314,6 @@
 				<!-- Streaming message -->
 				{#if $isStreaming}
 					<div class="message">
-						<div class="message-avatar">
-							<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-								<path d="M12 8V4H8" />
-								<rect width="16" height="12" x="4" y="8" rx="2" />
-								<path d="M2 14h2" />
-								<path d="M20 14h2" />
-								<path d="M15 13v2" />
-								<path d="M9 13v2" />
-							</svg>
-						</div>
 						<div class="message-content">
 							<div class="message-bubble bubble-assistant">
 								{#if $streamingContent}
@@ -737,29 +710,10 @@
 	}
 
 	.message.user {
-		flex-direction: row-reverse;
-	}
-
-	.message-avatar {
-		width: 28px;
-		height: 28px;
-		border-radius: 50%;
-		background: var(--color-field-depth);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		color: var(--color-text-whisper);
-		flex-shrink: 0;
-	}
-
-	.message-avatar.user-avatar {
-		background: var(--color-field-depth);
-		color: var(--color-text-source);
+		justify-content: flex-end;
 	}
 
 	.message-content {
-		flex: 1;
-		min-width: 0;
 		max-width: 85%;
 	}
 

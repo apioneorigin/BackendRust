@@ -585,10 +585,10 @@
 		color: var(--color-text-whisper);
 	}
 
-	/* Sidebar footer / User menu - aligned with main content bottom */
+	/* Sidebar footer / User menu - aligned with input panel controls border */
 	.sidebar-footer {
-		padding: 0.75rem;
-		padding-bottom: 1.5rem; /* Match chat-layout padding */
+		padding: 0.5rem 0.75rem;
+		padding-bottom: 2.25rem; /* 1.5rem (chat-layout) + 0.75rem (input-panel padding) */
 		margin-top: auto;
 		position: relative;
 		border-top: 1px solid var(--color-veil-thin);
