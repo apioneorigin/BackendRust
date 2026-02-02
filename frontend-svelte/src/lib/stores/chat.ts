@@ -160,15 +160,22 @@ function createChatStore() {
 		},
 
 		async selectConversation(conversationId: string) {
-			// Guard against invalid ID or re-selecting same conversation
-			const currentState = get({ subscribe });
-			if (!conversationId || currentState.currentConversation?.id === conversationId) {
-				return;
-			}
+			// Guard against invalid ID
+			if (!conversationId) return;
 
-			update(state => ({ ...state, isLoading: true, error: null }));
+			// Check and set loading in single update to avoid get() subscription
+			let shouldProceed = false;
+			update(state => {
+				if (state.currentConversation?.id === conversationId) {
+					return state; // No change needed
+				}
+				shouldProceed = true;
+				return { ...state, isLoading: true, error: null };
+			});
+
+			if (!shouldProceed) return;
+
 			try {
-				// Sequential calls to avoid potential issues with parallel requests
 				const conversation = await api.get<Conversation>(`/api/chat/conversations/${conversationId}`);
 				const messagesResponse = await api.get<Message[]>(`/api/chat/conversations/${conversationId}/messages`);
 
