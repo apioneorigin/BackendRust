@@ -2,13 +2,16 @@
 	/**
 	 * MatrixPanel - Embeddable 5x5 transformation matrix
 	 *
-	 * Extracted from matrix page for unified layout embedding.
-	 * Shows matrix grid with risk heatmap, leverage points, and cell popup.
-	 * Each cell has 5 contextual dimensions with 5-step button selectors.
+	 * NEW ARCHITECTURE:
+	 * - Shows document tabs at top (each with its own matrix)
+	 * - No "+" button here (only in ContextControlPopup)
+	 * - Displays matrix from currently active document
+	 * - Each cell has 5 contextual dimensions with 5-step button selectors
 	 */
 
 	import { createEventDispatcher } from 'svelte';
 	import { Button } from '$lib/components/ui';
+	import { matrix, documents, activeDocumentId, activeDocument } from '$lib/stores';
 	import type { CellData, CellDimension } from '$lib/stores';
 
 	export let matrixData: CellData[][] = [];
@@ -16,11 +19,13 @@
 	export let columnHeaders: string[] = ['Stage 1', 'Stage 2', 'Stage 3', 'Stage 4', 'Stage 5'];
 	export let showRiskHeatmap = false;
 	export let compact = false;
+	export let showDocumentTabs = true;
 
 	const dispatch = createEventDispatcher<{
 		cellClick: { row: number; col: number };
 		cellChange: { row: number; col: number; value: number };
 		dimensionChange: { row: number; col: number; dimIndex: number; value: number };
+		documentChange: { documentId: string };
 	}>();
 
 	// The 5 discrete step values for dimensions
@@ -73,9 +78,32 @@
 		showCellPopup = false;
 		selectedCell = null;
 	}
+
+	function handleDocumentTabClick(docId: string) {
+		matrix.setActiveDocument(docId);
+		dispatch('documentChange', { documentId: docId });
+	}
 </script>
 
 <div class="matrix-panel" class:compact>
+	<!-- Document Tabs (no "+" button here) -->
+	{#if showDocumentTabs && $documents.length > 1}
+		<div class="document-tabs-container">
+			<div class="document-tabs">
+				{#each $documents as doc (doc.id)}
+					<button
+						class="document-tab"
+						class:active={doc.id === $activeDocumentId}
+						on:click={() => handleDocumentTabClick(doc.id)}
+						title={doc.description}
+					>
+						<span class="tab-name">{doc.name}</span>
+					</button>
+				{/each}
+			</div>
+		</div>
+	{/if}
+
 	<!-- Matrix Grid -->
 	<div class="matrix-grid">
 		<!-- Top-left corner (empty) -->
@@ -210,6 +238,59 @@
 
 	.matrix-panel.compact {
 		padding: 0.375rem;
+	}
+
+	/* Document Tabs */
+	.document-tabs-container {
+		padding: 0 0 0.5rem;
+		flex-shrink: 0;
+	}
+
+	.document-tabs {
+		display: flex;
+		gap: 0.25rem;
+		overflow-x: auto;
+	}
+
+	.document-tab {
+		padding: 0.375rem 0.75rem;
+		background: var(--color-field-depth);
+		border: 1px solid transparent;
+		border-radius: 0.375rem;
+		font-size: 0.6875rem;
+		font-weight: 500;
+		color: var(--color-text-manifest);
+		cursor: pointer;
+		transition: all 0.15s ease;
+		white-space: nowrap;
+		flex-shrink: 0;
+	}
+
+	.document-tab:hover {
+		background: var(--color-primary-50);
+		border-color: var(--color-primary-200);
+	}
+
+	[data-theme='dark'] .document-tab:hover {
+		background: rgba(15, 76, 117, 0.2);
+		border-color: var(--color-primary-700);
+	}
+
+	.document-tab.active {
+		background: var(--color-primary-100);
+		border-color: var(--color-primary-400);
+		color: var(--color-primary-700);
+	}
+
+	[data-theme='dark'] .document-tab.active {
+		background: rgba(15, 76, 117, 0.3);
+		color: var(--color-primary-300);
+	}
+
+	.tab-name {
+		max-width: 100px;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
 	.matrix-grid {

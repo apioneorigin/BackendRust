@@ -50,6 +50,7 @@ class SendMessageRequest(BaseModel):
     web_search_data: bool = True
     web_search_insights: bool = True
     attachments: Optional[List[dict]] = None  # File attachments: [{"name": "file.pdf", "content": "...", "type": "pdf"}]
+    active_document_id: Optional[str] = None  # ID of the currently active document in matrix view
 
 
 class ConversationContext(BaseModel):
@@ -243,9 +244,29 @@ async def send_message(
                 })
 
     # Extract matrix state for context (user's selected rows/columns + cell values)
+    # Use active document's matrix_data from generated_documents, fallback to first
     matrix_state = None
-    if conversation.matrix_data:
-        md = conversation.matrix_data
+    if conversation.generated_documents and len(conversation.generated_documents) > 0:
+        all_docs = conversation.generated_documents
+
+        # Find active document by ID, or use first document as fallback
+        active_doc = None
+        if request.active_document_id:
+            for doc in all_docs:
+                if doc.get("id") == request.active_document_id:
+                    active_doc = doc
+                    break
+        if not active_doc:
+            active_doc = all_docs[0]
+
+        # Count documents: total and fully populated (have cells)
+        total_documents = len(all_docs)
+        populated_documents = sum(
+            1 for doc in all_docs
+            if doc.get("matrix_data", {}).get("cells") and len(doc.get("matrix_data", {}).get("cells", {})) > 0
+        )
+
+        md = active_doc.get("matrix_data", {})
         # Get selected indices (default to first 5 if not specified)
         selected_rows = md.get("selected_rows", [0, 1, 2, 3, 4])
         selected_cols = md.get("selected_columns", [0, 1, 2, 3, 4])
@@ -273,20 +294,26 @@ async def send_message(
                 cell = cells.get(cell_key, {})
                 if cell:
                     impact = cell.get("impact_score", 50)
+                    relationship = cell.get("relationship", "")
                     dims = cell.get("dimensions", [])
-                    # Summarize dimensions (name: value)
+                    # Summarize dimensions (name: value as Low/Medium/High)
                     dim_summary = ", ".join([
-                        f"{d.get('name', 'Dim')}: {d.get('value', 50)}%"
+                        f"{d.get('name', 'Dim')}: {['Low', 'Medium', 'High'][d.get('value', 50) // 50] if d.get('value', 50) in [0, 50, 100] else d.get('value', 50)}"
                         for d in dims[:5]
                     ]) if dims else "no dimensions"
                     cell_summary.append({
                         "row": row_label,
                         "column": col_label,
                         "impact_score": impact,
+                        "relationship": relationship,
                         "dimensions": dim_summary
                     })
 
         matrix_state = {
+            "active_document_id": active_doc.get("id"),
+            "active_document_name": active_doc.get("name", "Document"),
+            "total_documents": total_documents,
+            "populated_documents": populated_documents,
             "selected_row_labels": selected_row_labels,
             "selected_column_labels": selected_col_labels,
             "total_rows_available": len(row_options),
@@ -411,14 +438,15 @@ async def send_message(
             if conversation_title and not conv.title:
                 conv.title = conversation_title
 
-            # Save structured data (matrix, paths, documents) to conversation
+            # Save structured data (documents with matrices, paths) to conversation
             if structured_data:
-                if structured_data.get("matrix_data"):
-                    conv.matrix_data = structured_data["matrix_data"]
+                # Documents array format - each document has its own matrix_data
+                documents = structured_data.get("documents", [])
+                # Only update if LLM generated new documents (not empty array for unchanged context)
+                if documents:
+                    conv.generated_documents = documents
                 if structured_data.get("paths"):
                     conv.generated_paths = structured_data["paths"]
-                if structured_data.get("documents"):
-                    conv.generated_documents = structured_data["documents"]
 
             # Save/update questions to conversation
             if pending_questions:
@@ -430,7 +458,9 @@ async def send_message(
 
             await save_db.commit()
 
-    return EventSourceResponse(stream_response(), media_type="text/event-stream")
+    # Use ping interval to keep connection alive during long operations
+    # Without pings, proxies/browsers may close the connection during long LLM responses
+    return EventSourceResponse(stream_response(), media_type="text/event-stream", ping=15)
 
 
 @router.delete("/conversations/{conversation_id}")

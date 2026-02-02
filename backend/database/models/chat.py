@@ -36,8 +36,8 @@ class ChatConversation(Base):
     # Persistent state
     question_answers: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 
-    # Generated matrix data (from LLM Call 2)
-    matrix_data: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    # REMOVED: matrix_data column - now using generated_documents instead
+    # Each document in generated_documents has its own matrix_data
 
     # Generated strategic paths (5 paths from LLM Call 2)
     generated_paths: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)

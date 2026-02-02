@@ -60,7 +60,7 @@ class ArticulationPromptBuilder:
             self._build_leverage_section(context.consciousness_state.leverage_points),
             self._build_search_guidance_section(context.search_guidance),
             self._build_generation_instructions(context.instructions),
-            self._build_structured_output_section(),
+            self._build_structured_output_section(include_question=context.include_question),
             self._build_user_query(context.user_context)
         ]
 
@@ -188,8 +188,13 @@ Each major insight should connect: Consciousness Pattern → Observable Reality 
             total_rows = ms.get('total_rows_available', 0)
             total_cols = ms.get('total_columns_available', 0)
             cell_values = ms.get('cell_values', [])
+            # Document count metadata
+            active_doc_name = ms.get('active_document_name', 'Primary Document')
+            total_docs = ms.get('total_documents', 1)
+            populated_docs = ms.get('populated_documents', 1)
 
             sections.append("**User's Matrix Focus Selection:**")
+            sections.append(f"Active Document: {active_doc_name} ({populated_docs} of {total_docs} documents fully populated)")
             sections.append(f"The user has chosen to focus on specific dimensions from the transformation matrix.")
             sections.append(f"Selected Row Dimensions ({len(row_labels)} of {total_rows} available): {', '.join(row_labels)}")
             sections.append(f"Selected Column Dimensions ({len(col_labels)} of {total_cols} available): {', '.join(col_labels)}")
@@ -197,12 +202,14 @@ Each major insight should connect: Consciousness Pattern → Observable Reality 
             # Include cell values and dimensions if available
             if cell_values:
                 sections.append("\n**Current Matrix Cell Values (user's focus area):**")
-                for cv in cell_values[:10]:  # Limit to first 10 cells to avoid prompt bloat
+                for cv in cell_values[:25]:  # All 25 selected cells (5x5 grid)
                     row = cv.get('row', '')
                     col = cv.get('column', '')
                     impact = cv.get('impact_score', 50)
+                    relationship = cv.get('relationship', '')
                     dims = cv.get('dimensions', '')
-                    sections.append(f"• {row} × {col}: Impact {impact}% | {dims}")
+                    rel_str = f" - {relationship}" if relationship else ""
+                    sections.append(f"• {row} × {col}: Impact {impact}%{rel_str} | {dims}")
 
             sections.append("\nPrioritize insights related to these selected dimensions and their current values in your analysis.\n")
 
@@ -930,167 +937,106 @@ When consciousness values are calculated, ground them in observable reality:
 - Integrate evidence into narrative flow naturally
 - Let evidence strengthen insights, not replace them"""
 
-    def _build_structured_output_section(self) -> str:
-        """Build instructions for generating structured matrix/paths/documents data."""
-        return """## STRUCTURED OUTPUT GENERATION
+    def _build_structured_output_section(self, include_question: bool = True) -> str:
+        """Build instructions for generating structured document matrix data."""
+        # Conditionally include follow_up_question based on validation logic
+        question_schema = ""
+        question_requirement = ""
+        if include_question:
+            question_schema = """,
+  "follow_up_question": {
+    "question_text": "A natural, conversational follow-up question to understand the user better",
+    "options": {
+      "option_1": "First option representing one way they might experience their situation",
+      "option_2": "Second option representing a different experience",
+      "option_3": "Third option with another perspective",
+      "option_4": "Fourth option completing the spectrum of possibilities"
+    }
+  }"""
+            question_requirement = "\n5. **FOLLOW-UP QUESTION**: Include follow_up_question to deepen understanding"
 
-After your main articulation, you MUST generate structured data in the following JSON format.
-This data will be stored and used for the interactive matrix interface.
+        return f"""## STRUCTURED OUTPUT GENERATION
 
-Output this EXACT marker followed by valid JSON:
+After your main articulation, generate structured data in JSON format.
+
+**OUTPUT**: 1 complete document with full matrix data (100 cells with dimensions).
 
 ```json
 ===STRUCTURED_DATA_START===
-{
-  "matrix_data": {
-    "row_options": [
-      {"id": "r0", "label": "Strategic Resource Flow", "insight": "Core driver identified from pattern analysis"},
-      {"id": "r1", "label": "...", "insight": "..."},
-      ... (20 total row options - context titles, max 3 words each)
-    ],
-    "column_options": [
-      {"id": "c0", "label": "Growth Momentum", "insight": "Effect factor derived from transformation indicators"},
-      {"id": "c1", "label": "...", "insight": "..."},
-      ... (20 total column options - context titles, max 3 words each)
-    ],
-    "selected_rows": [0, 3, 7, 12, 18],
-    "selected_columns": [1, 4, 9, 14, 19],
-    "cells": {
-      "0-0": {
-        "impact_score": 75,
-        "relationship": "How row 0 drives column 0",
-        "dimensions": [
-          {
-            "name": "Income Path Vision",
-            "value": 50,
-            "step_labels": ["Completely unclear", "Vague sense", "Partially defined", "Clear with gaps", "Crystal clear"]
-          },
-          {
-            "name": "Earning Bandwidth",
-            "value": 75,
-            "step_labels": ["No capacity", "Minimal", "Some room", "Strong", "Full capability"]
-          },
-          {
-            "name": "Financial Readiness",
-            "value": 25,
-            "step_labels": ["Not ready", "Early prep", "Moderate", "Well prepared", "Fully primed"]
-          },
-          {
-            "name": "Career Capital",
-            "value": 50,
-            "step_labels": ["No resources", "Limited", "Adequate", "Strong", "Abundant"]
-          },
-          {
-            "name": "Work-Wealth Sync",
-            "value": 100,
-            "step_labels": ["Fragmented", "Poorly connected", "Partial", "Harmonized", "Unified"]
-          }
-        ]
-      },
-      "0-1": { ... },
-      ... (400 total cells for 20x20 matrix, keys are "row-col" format: "0-0" to "19-19")
-    }
-  },
-  "paths": [
-    {
-      "id": "p0",
-      "name": "...",
-      "description": "...",
-      "risk_level": "low|medium|high",
-      "time_horizon": "...",
-      "steps": [
-        {"order": 1, "action": "...", "rationale": "..."},
-        ...
-      ]
-    },
-    ... (5 total strategic paths)
-  ],
+{{
   "documents": [
-    {
-      "id": "d0",
-      "type": "strategy|analysis|action_plan|risk_assessment|opportunity_map|stakeholder_brief|timeline|metrics|executive_summary",
-      "title": "...",
-      "summary": "...",
-      "sections": {
-        "key_insights": "...",
-        "recommendations": "...",
-        "next_steps": "..."
-      }
-    },
-    ... (9 total documents)
-  ]
-}
+    {{
+      "id": "doc-0",
+      "name": "Strategic Framework",
+      "description": "Twenty-word description of this document's perspective.",
+      "matrix_data": {{
+        "row_options": [
+          {{"id": "r0", "label": "Resource Flow"}},
+          {{"id": "r1", "label": "Time Investment"}},
+          ... (10 total - max 4 words each)
+        ],
+        "column_options": [
+          {{"id": "c0", "label": "Growth Impact"}},
+          {{"id": "c1", "label": "Risk Exposure"}},
+          ... (10 total - max 4 words each)
+        ],
+        "selected_rows": [0, 1, 2, 3, 4],
+        "selected_columns": [0, 1, 2, 3, 4],
+        "cells": {{
+          "0-0": {{
+            "impact_score": 75,
+            "relationship": "How this row drives this column outcome",
+            "dimensions": [
+              {{"name": "Vision Clarity", "value": 50}},
+              {{"name": "Action Capacity", "value": 100}},
+              {{"name": "Change Readiness", "value": 0}},
+              {{"name": "Resource Access", "value": 50}},
+              {{"name": "System Integration", "value": 100}}
+            ]
+          }},
+          "0-1": {{...}},
+          ... (100 cells total, keys "0-0" to "9-9")
+        }}
+      }}
+    }}
+  ],
+  "paths": [
+    {{
+      "id": "p0",
+      "name": "Conservative Path",
+      "description": "Low-risk approach",
+      "risk_level": "low",
+      "time_horizon": "6-12 months",
+      "steps": [{{"order": 1, "action": "First step", "rationale": "Why"}}]
+    }},
+    ... (5 total paths)
+  ]{question_schema}
+}}
 ===STRUCTURED_DATA_END===
 ```
 
-CRITICAL REQUIREMENTS:
-1. CELL KEY FORMAT: Use "row-col" format like "0-0", "0-1", "1-0", etc. NOT "r0_c0" format.
-2. FULL 20x20 MATRIX: Generate ALL 400 cells (from "0-0" to "19-19") with 5 dimensions each.
-3. SELECTED ROWS/COLUMNS: The "selected_rows" and "selected_columns" arrays indicate which 5 rows and 5 columns are MOST RELEVANT to the current chat context for initial display. The app displays a 5x5 view using these selections.
-4. ROW/COLUMN LABELS: Max 3 words per label (displayed vertically for columns, horizontally for rows).
+REQUIREMENTS:
+1. **1 DOCUMENT**: Generate exactly 1 complete document with all 100 cells
+2. **CELL FORMAT**: Keys are "row-col" format: "0-0", "0-1", ... "9-9"
+3. **DIMENSIONS**: Each cell has exactly 5 dimensions with contextual names
+4. **VALUES**: Dimension values are 0 (Low), 50 (Medium), or 100 (High) only{question_requirement}
 
-### 5-DIMENSION FRAMEWORK (CRITICAL - FOLLOW THIS EXACTLY):
+### 5-DIMENSION FRAMEWORK:
+| # | Meaning | Generate contextual name for |
+|---|---------|------------------------------|
+| 1 | CLARITY | Understanding/vision of this intersection |
+| 2 | CAPACITY | Ability/bandwidth to act |
+| 3 | READINESS | Preparedness/timing |
+| 4 | RESOURCES | Assets/tools available |
+| 5 | INTEGRATION | How well row and column harmonize |
 
-Each cell MUST have exactly 5 dimensions following this semantic framework:
-
-| # | Framework Meaning | What to Generate |
-|---|-------------------|------------------|
-| 1 | **CLARITY** | Understanding, vision, awareness of THIS row-column intersection |
-| 2 | **CAPACITY** | Ability, bandwidth, capability to act on this intersection |
-| 3 | **READINESS** | Preparedness, timing, preconditions met for this change |
-| 4 | **RESOURCES** | Assets, tools, support available for this transformation |
-| 5 | **INTEGRATION** | How well row and column work together harmoniously |
-
-**DIMENSION NAME GENERATION:**
-- DO NOT use "Clarity", "Capacity", etc. as literal names
-- Generate CONTEXTUAL names that EMBODY these meanings for each specific cell
-- Example for "Career" × "Financial" cell:
-  - Clarity → "Income Path Vision" (not "Career-Clarity")
-  - Capacity → "Earning Bandwidth"
-  - Readiness → "Financial Leap Preparedness"
-  - Resources → "Career Capital Available"
-  - Integration → "Work-Wealth Alignment"
-
-**STEP LABEL GENERATION:**
-- Each dimension has 5 discrete values: [0, 25, 50, 75, 100]
-- Generate 5 CONTEXTUAL step labels describing what each level means
-- Labels must be meaningful for THAT dimension in THAT cell
-- NEVER use generic labels like ["Low", "Below", "Mid", "Above", "High"]
-- Step labels should form a progression from worst to best state
-
-### GENERATION RULES:
-
-1. **Row Options (20)**: Context titles representing CAUSATION factors
-   - `label`: Max 10-word phrase describing what DRIVES change
-   - `insight`: Explanation of why this factor was identified, referencing the variables/patterns used
-   - Example: {"label": "Strategic Resource Allocation", "insight": "Identified from capital flow patterns and investment leverage indicators"}
-
-2. **Column Options (20)**: Context titles representing EFFECT factors
-   - `label`: Max 10-word phrase describing what is AFFECTED
-   - `insight`: Explanation of why this effect was identified, referencing the transformation vectors used
-   - Example: {"label": "Market Position Momentum", "insight": "Derived from competitive positioning analysis and growth trajectory variables"}
-
-3. **Cells (400)**: Cross-impact for each row-column pair
-   - Each cell has exactly 5 dimensions following the framework above
-   - Each dimension has:
-     - `name`: Contextual name embodying one of the 5 framework meanings
-     - `value`: One of [0, 25, 50, 75, 100] representing the 5 discrete steps
-     - `step_labels`: Array of 5 contextual labels for this dimension IN THIS CELL
-   - impact_score: 0-1 representing overall relationship strength
-
-4. **Paths (5)**: Strategic approaches from conservative to aggressive
-
-5. **Documents (9)**: One of each type, tailored to the user's query
-
-**CONTEXT TITLE RULES:**
-- User sees row_options and column_options as unified "context titles" (no row/column distinction shown)
-- Each title must be meaningful, domain-specific, max 10 words
-- Each insight must explain WHY this context was generated (what formula/variable/pattern led to it)
-- Never use generic titles like "Factor 1" or "Dimension A"
-
-**CRITICAL**: Both dimension names AND step labels must be domain-appropriate and contextual.
-The 5-parameter framework (Clarity, Capacity, Readiness, Resources, Integration) guides the MEANING,
-but you generate CONTEXTUAL names that embody those meanings for each specific cell."""
+Dimension names must be CONTEXTUAL to the specific row×column intersection.
+Do NOT use literal names like "Clarity" or "Capacity".
+{f'''
+### FOLLOW-UP QUESTION:
+- Natural, conversational question
+- 4 options spanning different inner experiences
+- Use user's language and domain''' if include_question else ''}"""
 
     def _build_user_query(self, user_context: UserContext) -> str:
         """Build the user query section"""
@@ -1122,7 +1068,8 @@ def build_articulation_context(
     framework_concealment: bool = True,
     domain_language: bool = True,
     search_guidance_data: Optional[dict] = None,
-    conversation_context: Optional[dict] = None
+    conversation_context: Optional[dict] = None,
+    include_question: bool = True
 ) -> ArticulationContext:
     """
     Helper function to build ArticulationContext from components.
@@ -1226,5 +1173,6 @@ def build_articulation_context(
             ]
         ),
         search_guidance=search_guidance,
-        conversation_context=conv_history_context
+        conversation_context=conv_history_context,
+        include_question=include_question
     )
