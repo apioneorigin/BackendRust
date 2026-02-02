@@ -55,8 +55,8 @@
 	   SURFACES - Pure White (corporate neutral, gold is the only color)
 	   ───────────────────────────────────────────────────────────────────────────── */
 	--color-field-void: #FFFFFF;      /* Pure white */
-	--color-field-depth: #FAFAFA;     /* Barely gray */
-	--color-field-surface: rgba(255, 255, 255, 0.8);  /* Glass on white */
+	--color-field-depth: #FFFFFF;     /* Pure white */
+	--color-field-surface: #FFFFFF;   /* Pure white */
 	--color-field-elevated: #FFFFFF;  /* Pure white elevated */
 	--color-field-solid: #FFFFFF;     /* Solid white for inputs */
 
@@ -196,7 +196,7 @@
 html {
 	font-size: 16px;
 	scroll-behavior: smooth;
-	background: var(--gradient-ambient), var(--color-field-void);
+	background: var(--color-field-void);
 	background-attachment: fixed;
 	height: 100%;
 	overflow: hidden;
