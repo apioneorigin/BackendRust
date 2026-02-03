@@ -271,13 +271,17 @@ async def populate_document_cells(
     if result.get("column_options"):
         documents[doc_index]["matrix_data"]["column_options"] = result["column_options"]
 
-    # Store leverage points and risk analysis (generated with full context during population)
+    # Store leverage points, risk analysis, and plays (generated with full context during population)
     if result.get("leverage_points"):
         documents[doc_index]["leverage_points"] = result["leverage_points"]
         api_logger.info(f"[POPULATE] Stored {len(result['leverage_points'])} leverage points for doc {doc_id}")
     if result.get("risk_analysis"):
         documents[doc_index]["risk_analysis"] = result["risk_analysis"]
         api_logger.info(f"[POPULATE] Stored {len(result['risk_analysis'])} risk points for doc {doc_id}")
+    if result.get("plays"):
+        documents[doc_index]["plays"] = result["plays"]
+        documents[doc_index]["selected_play_id"] = None  # No play selected by default
+        api_logger.info(f"[POPULATE] Stored {len(result['plays'])} plays for doc {doc_id}")
 
     conversation.generated_documents = documents
 
@@ -573,3 +577,142 @@ async def explain_cell(
         },
         cached=False
     )
+
+
+# ============================================================================
+# Plays (Transformation Strategies)
+# Data is generated during document population (populate_document_cells_llm)
+# and cached in the document. No separate LLM calls needed.
+# ============================================================================
+
+
+class Play(BaseModel):
+    """A transformation strategy/play"""
+    id: str
+    name: str
+    description: str
+    fit_score: int  # 0-100
+    risk: str  # "low", "medium", "high"
+    timeline: str
+    phases: int
+    steps: List[str]
+    leverage_point_ids: List[str]
+    expected_improvement: int  # percentage
+    category: str  # "quick_wins", "balanced", "deep_transform", "conservative", "aggressive"
+
+
+class PlaysResponse(BaseModel):
+    """Response from plays endpoint"""
+    document_id: str
+    plays: List[Play]
+    selected_play_id: Optional[str]
+    cached: bool
+
+
+class SelectPlayRequest(BaseModel):
+    """Request to select a play"""
+    play_id: Optional[str]  # None to deselect
+
+
+@router.get("/{conversation_id}/document/{doc_id}/plays", response_model=PlaysResponse)
+async def get_plays(
+    conversation_id: str,
+    doc_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get plays (transformation strategies) for a populated document.
+
+    Plays are generated during document population (populate_document_cells).
+    This endpoint returns cached data - populate the document first if not available.
+    """
+    conversation = await get_or_404(db, ChatConversation, conversation_id, user_id=current_user.id)
+
+    if not conversation.generated_documents:
+        raise HTTPException(status_code=400, detail="No documents exist")
+
+    # Find the document
+    doc = None
+    for d in conversation.generated_documents:
+        if d.get("id") == doc_id:
+            doc = d
+            break
+
+    if doc is None:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    # Return cached plays
+    cached_plays = doc.get("plays", [])
+    selected_play_id = doc.get("selected_play_id")
+
+    if not cached_plays:
+        api_logger.info(f"[PLAYS] No plays for {doc_id} - document may not be fully populated")
+        return PlaysResponse(
+            document_id=doc_id,
+            plays=[],
+            selected_play_id=None,
+            cached=True
+        )
+
+    api_logger.info(f"[PLAYS] Returning {len(cached_plays)} cached plays for {doc_id}")
+    return PlaysResponse(
+        document_id=doc_id,
+        plays=[Play(**p) for p in cached_plays],
+        selected_play_id=selected_play_id,
+        cached=True
+    )
+
+
+@router.put("/{conversation_id}/document/{doc_id}/plays/select")
+async def select_play(
+    conversation_id: str,
+    doc_id: str,
+    request: SelectPlayRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Select a play for a document, or deselect (pass play_id=null).
+
+    The selected play can be used to highlight relevant cells in the matrix view.
+    """
+    conversation = await get_or_404(db, ChatConversation, conversation_id, user_id=current_user.id)
+
+    if not conversation.generated_documents:
+        raise HTTPException(status_code=400, detail="No documents exist")
+
+    # Find the document
+    documents = conversation.generated_documents.copy()
+    doc_index = None
+    doc = None
+
+    for i, d in enumerate(documents):
+        if d.get("id") == doc_id:
+            doc_index = i
+            doc = d
+            break
+
+    if doc is None:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    # Validate play_id if provided
+    if request.play_id is not None:
+        plays = doc.get("plays", [])
+        play_ids = [p.get("id") for p in plays]
+        if request.play_id not in play_ids:
+            raise HTTPException(status_code=400, detail=f"Play '{request.play_id}' not found in document")
+
+    # Update selected_play_id
+    documents[doc_index]["selected_play_id"] = request.play_id
+    conversation.generated_documents = documents
+
+    await db.commit()
+
+    api_logger.info(f"[PLAYS] Selected play '{request.play_id}' for doc {doc_id}")
+
+    return {
+        "status": "success",
+        "document_id": doc_id,
+        "selected_play_id": request.play_id
+    }
