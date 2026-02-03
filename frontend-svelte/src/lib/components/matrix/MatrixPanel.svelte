@@ -6,8 +6,8 @@
 	 * - Shows document tabs at top (each with its own matrix)
 	 * - Displays matrix from currently active document
 	 * - Each cell has 5 contextual dimensions with 3-step signal bar selectors
-	 * - Power Spots View: dims non-leverage cells, clicking shows explanation
-	 * - Risk View: dims low-risk cells, clicking shows explanation
+	 * - Power Spots View: HIDES non-leverage cells completely, shows only power spots
+	 * - Risk View: HIDES low-risk cells completely, shows only medium/high risk cells
 	 */
 
 	import { createEventDispatcher } from 'svelte';
@@ -55,8 +55,9 @@
 		return cell.riskLevel === 'medium' || cell.riskLevel === 'high';
 	}
 
-	// Check if cell should be dimmed based on active view
-	function shouldDimCell(cell: CellData): boolean {
+	// Check if cell should be hidden in filtered views
+	// Hidden cells are completely invisible and non-clickable
+	function shouldHideCell(cell: CellData): boolean {
 		if (showPowerSpotsView && !isPowerSpot(cell)) {
 			return true;
 		}
@@ -91,8 +92,8 @@
 			return;
 		}
 
-		// In filtered views, don't open normal popup for dimmed cells
-		if (shouldDimCell(cell)) {
+		// In filtered views, don't allow any interaction with hidden cells
+		if (shouldHideCell(cell)) {
 			return;
 		}
 
@@ -175,25 +176,29 @@
 
 			<!-- Data cells -->
 			{#each row as cell, colIdx}
-				<button
-					class="matrix-cell {getCellColor(cell)}"
-					class:leverage-point={cell.isLeveragePoint}
-					class:selected={selectedCell?.row === rowIdx && selectedCell?.col === colIdx}
-					class:dimmed={shouldDimCell(cell)}
-					class:clickable-highlight={showPowerSpotsView && isPowerSpot(cell) || showRiskView && isRiskCell(cell)}
-					on:click={() => handleCellClick(rowIdx, colIdx)}
-				>
-					{#if cell.isLeveragePoint && !showRiskView}
-						<span class="power-indicator" title="Power Spot">⚡</span>
-					{/if}
-					{#if showRiskView && isRiskCell(cell)}
-						<span class="risk-indicator" title={cell.riskLevel === 'high' ? 'High Risk' : 'Medium Risk'}>
-							{cell.riskLevel === 'high' ? '⚠' : '!'}
-						</span>
-					{/if}
-					<span class="cell-value">{cell.value}</span>
-					<div class="confidence-bar" style="width: {cell.confidence * 100}%"></div>
-				</button>
+				{#if shouldHideCell(cell)}
+					<!-- Hidden cell placeholder - preserves grid structure -->
+					<div class="matrix-cell-placeholder"></div>
+				{:else}
+					<button
+						class="matrix-cell {getCellColor(cell)}"
+						class:leverage-point={cell.isLeveragePoint}
+						class:selected={selectedCell?.row === rowIdx && selectedCell?.col === colIdx}
+						class:clickable-highlight={showPowerSpotsView && isPowerSpot(cell) || showRiskView && isRiskCell(cell)}
+						on:click={() => handleCellClick(rowIdx, colIdx)}
+					>
+						{#if cell.isLeveragePoint && !showRiskView}
+							<span class="power-indicator" title="Power Spot">⚡</span>
+						{/if}
+						{#if showRiskView && isRiskCell(cell)}
+							<span class="risk-indicator" title={cell.riskLevel === 'high' ? 'High Risk' : 'Medium Risk'}>
+								{cell.riskLevel === 'high' ? '⚠' : '!'}
+							</span>
+						{/if}
+						<span class="cell-value">{cell.value}</span>
+						<div class="confidence-bar" style="width: {cell.confidence * 100}%"></div>
+					</button>
+				{/if}
 			{/each}
 		{/each}
 	</div>
@@ -473,14 +478,10 @@
 		box-shadow: inset 0 0 0 2px rgba(251, 191, 36, 0.5);
 	}
 
-	/* Dimmed cells in filtered views */
-	.matrix-cell.dimmed {
-		opacity: 0.25;
-		cursor: default;
-	}
-
-	.matrix-cell.dimmed:hover {
-		background: var(--color-field-depth);
+	/* Placeholder for hidden cells - preserves grid structure */
+	.matrix-cell-placeholder {
+		/* Empty placeholder - no visible content, just occupies grid space */
+		pointer-events: none;
 	}
 
 	/* Clickable highlight for relevant cells in filtered views */
