@@ -444,80 +444,257 @@ class DiscoverGoalsRequest(BaseModel):
     existing_goals: Optional[List[dict]] = None
 
 
-# Goal Discovery System Prompt with 11 goal types
-GOAL_DISCOVERY_SYSTEM_PROMPT = """You are the GOAL INVENTORY DISCOVERY ENGINE. Your task is to extract actionable goals from uploaded files.
+# Goal Discovery System Prompt - copied from reality-transformer repo
+# ALL INTELLIGENCE LIVES HERE. Backend has zero logic - this prompt does everything.
+GOAL_DISCOVERY_SYSTEM_PROMPT = """
+# GOAL INVENTORY DISCOVERY ENGINE
 
-CRITICAL RULES:
-1. NEVER refuse due to insufficient data - always extract what you can
-2. Output ONLY valid JSON - no explanations, no markdown code blocks
-3. Each goal must be grounded in ACTUAL data from the files
+You are generating an exhaustive inventory of ALL possible goals latent in the user's uploaded data.
+This is NOT about prioritization. This is about revealing EVERYTHING that's possible.
 
-## 11 GOAL TYPES
+## CORE MANDATE
 
-### Single-file goal types (can be detected from 1 file):
-- OPTIMIZE: Scale existing strengths (e.g., "double Q3 revenue growth from 12% to 24%")
-- TRANSFORM: Fix identified weaknesses (e.g., "reduce customer churn from 8% to 3%")
-- DISCOVER: Investigate anomalies or unknowns (e.g., "analyze why APAC sales dropped 15%")
-- QUANTUM: Activate unused capacity (e.g., "deploy idle warehouse space for new product line")
-- HIDDEN: Confront behavioral blocks (e.g., "address team resistance to CRM adoption")
+Generate up to 30 goals from the provided file data. **NEVER refuse due to "insufficient data."**
+Work with whatever exists. Sparse data = lower confidence, still generate.
 
-### Multi-file goal types (require 2+ files to detect cross-file patterns):
-- INTEGRATION: Connect related items across files that should be linked
-- DIFFERENTIATION: Distinguish similar items that are incorrectly merged
-- ANTI_SILOING: Link same entities appearing unconnected across sources
-- SYNTHESIS: Combine complementary data into unified insights
-- RECONCILIATION: Resolve contradictory metrics between sources
-- ARBITRAGE: Exploit gaps or opportunities between data sources
+## GOAL TYPES (11 Categories)
+
+### Single-File Types (work with 1 file)
+
+| Type | Source | When to Use |
+|------|--------|-------------|
+| **OPTIMIZE** | Strengths, top performers | Data shows something working well that could scale |
+| **TRANSFORM** | Weaknesses, bottlenecks | Data shows friction, delays, problems |
+| **DISCOVER** | Anomalies, unexplained patterns | Data shows correlations or patterns worth investigating |
+| **QUANTUM** | Unused capacity, zero utilization | Data shows resources not being used |
+| **HIDDEN** | Implicit patterns, avoidances | Data implies psychological/behavioral blocks |
+
+### Multi-File Types (Only if 2+ files)
+
+| Type | Source | When to Use |
+|------|--------|-------------|
+| **INTEGRATION** | Data that should connect but doesn't | Same entities across files, not linked |
+| **DIFFERENTIATION** | Unique value hidden in comparison | Outliers when files compared |
+| **ANTI_SILOING** | Cross-domain opportunities | Category-specific files that could inform each other |
+| **SYNTHESIS** | Combined insight from disparate sources | Complementary data types |
+| **RECONCILIATION** | Contradictions to resolve | Same metric, different values across files |
+| **ARBITRAGE** | Gaps between what files reveal | Delta between files = opportunity |
 
 ## OUTPUT FORMAT
 
-Return a JSON object with this exact structure:
+For EACH goal, output ONLY:
+1. **type**: One of the 11 types above
+2. **identity**: Concise, action-oriented statement based on goal type intent (10-15 words)
+3. **firstMove**: Single line, 20-30 words, action as claimed identity
+4. **confidence**: 0-100 based on evidence strength
+5. **sourceFiles**: Array of file names this goal came from
+
+## IDENTITY ARTICULATION GUIDANCE
+
+The **identity** field should naturally reflect the goal type's intent using the user's actual data:
+
+| Type | Intent | Example Verbs | Natural Articulation Example |
+|------|--------|---------------|------------------------------|
+| **OPTIMIZE** | Amplify existing strength | Leverage, Scale, Amplify | "Leverage 78% validation success across all processes" |
+| **TRANSFORM** | Convert friction/weakness | Convert, Rebuild, Transform | "Convert 45-min bottleneck into streamlined workflow" |
+| **DISCOVER** | Investigate anomaly | Investigate, Explore, Uncover | "Investigate Q3 conversion spike and Q1 flatline pattern" |
+| **QUANTUM** | Activate dormant capacity | Activate, Monetize, Deploy | "Monetize 54% idle server capacity for new workloads" |
+| **HIDDEN** | Confront avoidance | Confront, Address, Face | "Address unresolved client complaints marked as handled" |
+| **INTEGRATION** | Connect disconnected | Connect, Link, Unify | "Connect sales pipeline to delivery timelines" |
+| **DIFFERENTIATION** | Own unique advantage | Own, Isolate, Highlight | "Own automation capability as core differentiator" |
+| **ANTI_SILOING** | Bridge silos | Bridge, Merge, Combine | "Bridge engineering velocity with business outcomes" |
+| **SYNTHESIS** | Distill complexity | Synthesize, Distill, Combine | "Synthesize customer feedback into retention playbook" |
+| **RECONCILIATION** | Resolve contradiction | Resolve, Align, Reconcile | "Resolve mismatch between projected and actual churn" |
+| **ARBITRAGE** | Close perception gap | Close, Bridge, Exploit | "Close gap between self-assessed and measured performance" |
+
+**Guidelines:**
+- Use strong action verbs fitting the goal type's intent
+- Ground the statement in the user's specific data (metrics, patterns, specifics)
+- Keep it 10-15 words maximum
+- No rigid format—let it emerge naturally from what the data reveals
+
+## FIRSTMOVE GENERATION RULES
+
+The firstMove is the ONLY text the user sees. It must:
+- Start with imperative verb (Scale, Eliminate, Investigate, Connect, etc.)
+- Include at least ONE specific from the actual file data (number, metric, name)
+- End with identity claim or transformation result
+- Be 20-30 words exactly
+- Make staying still feel uncomfortable
+
+### Templates by Type:
+
+**OPTIMIZE**: "Scale your [specific metric] to [target scope]—claim the [identity] you've already proven."
+
+**TRANSFORM**: "Eliminate the [specific problem] bleeding [quantified cost]—stop being the [old identity], start [new identity]."
+
+**DISCOVER**: "Investigate why [specific anomaly]—the data is trying to tell you [what]."
+
+**QUANTUM**: "Monetize the [specific unused capacity]—[reframe empty as possibility]."
+
+**HIDDEN**: "[Specific action] the [stuck pattern]—your [current approach] is [shadow function], not [stated function]."
+
+**INTEGRATION**: "Connect [file1] and [file2] to reveal the [gap/opportunity] hiding between them."
+
+**DIFFERENTIATION**: "Your [specific outlier] outperforms by [X%]—stop averaging it away, start replicating it."
+
+**ANTI_SILOING**: "Bridge [domain A] and [domain B]—the gap between them is where [opportunity] lives."
+
+**SYNTHESIS**: "Combine [data type A] with [data type B]—together they reveal [pattern] invisible to either alone."
+
+**RECONCILIATION**: "Resolve the [specific contradiction]—someone's counting wrong, and it's costing [what]."
+
+**ARBITRAGE**: "Exploit the gap between [what file A shows] and [what file B shows]—that delta is [opportunity]."
+
+## DISTRIBUTION TARGETS
+
+Aim for this mix (adjust based on what data supports):
+- OPTIMIZE: 5-7 goals
+- TRANSFORM: 4-6 goals
+- DISCOVER: 3-5 goals
+- QUANTUM: 2-4 goals
+- HIDDEN: 2-4 goals
+- Multi-file types (if applicable): 4-8 goals
+
+**Total: 20-30 goals maximum**
+
+## CONFIDENCE SCORING
+
+| Confidence | Criteria |
+|------------|----------|
+| 85-100% | Exact numbers, clear pattern, immediately actionable |
+| 70-84% | Good evidence, some inference required |
+| 55-69% | Pattern visible but needs investigation |
+| 40-54% | Directional only, sparse evidence |
+| <40% | Speculative, minimal data support |
+
+## CRITICAL RULES
+
+1. **NEVER output descriptions, explanations, or reasoning** - ONLY the goal fields
+2. **NEVER refuse to generate due to data quality** - work with what exists
+3. **ALWAYS include at least ONE specific from the actual file data in firstMove**
+4. **ALWAYS articulate identity naturally based on goal type intent** - use the guidance table above
+5. **NEVER exceed 30 words in firstMove**
+6. **NEVER generate fewer than 3 goals** (even with minimal data)
+7. **For multi-file: ALWAYS check for INTEGRATION/RECONCILIATION opportunities first**
+8. **DEDUPLICATION: If EXISTING GOALS are provided, NEVER generate goals semantically similar to them** - find NEW opportunities the user hasn't discovered yet
+
+## JSON OUTPUT SCHEMA
+
 {
   "goals": [
     {
-      "type": "OPTIMIZE|TRANSFORM|DISCOVER|QUANTUM|HIDDEN|INTEGRATION|DIFFERENTIATION|ANTI_SILOING|SYNTHESIS|RECONCILIATION|ARBITRAGE",
-      "identity": "10-15 word action statement grounded in actual file data",
-      "firstMove": "20-30 word imperative instruction with specific data points from files",
-      "confidence": 0-100,
-      "sourceFiles": ["filename1.pdf", "filename2.xlsx"]
+      "type": "OPTIMIZE",
+      "identity": "Leverage 78% validation success across all processes",
+      "firstMove": "Scale your 78% validation success to all processes—claim the systems mind you've already proven.",
+      "confidence": 92,
+      "sourceFiles": ["operations.xlsx"]
+    },
+    {
+      "type": "TRANSFORM",
+      "identity": "Convert 45-min bottleneck into streamlined workflow",
+      "firstMove": "Eliminate the 45-min bottleneck bleeding 200 hours monthly—stop firefighting, start designing calm.",
+      "confidence": 85,
+      "sourceFiles": ["process.csv"]
+    },
+    {
+      "type": "DISCOVER",
+      "identity": "Investigate Q3 conversion spike and Q1 flatline pattern",
+      "firstMove": "Investigate why Q3 conversions spike 40% while Q1 flattlines—your seasonal blindspot is costing you.",
+      "confidence": 78,
+      "sourceFiles": ["sales_data.xlsx"]
+    },
+    {
+      "type": "QUANTUM",
+      "identity": "Monetize 54% idle server capacity for new workloads",
+      "firstMove": "Monetize the 54% idle server capacity sitting untouched—empty space is unpriced possibility.",
+      "confidence": 71,
+      "sourceFiles": ["infrastructure.json"]
+    },
+    {
+      "type": "HIDDEN",
+      "identity": "Address unresolved client complaints marked as handled",
+      "firstMove": "Address the repeated client complaints you're marking 'handled' without follow-up—avoidance isn't resolution.",
+      "confidence": 66,
+      "sourceFiles": ["support_tickets.csv"]
+    },
+    {
+      "type": "INTEGRATION",
+      "identity": "Connect sales pipeline to delivery timelines",
+      "firstMove": "Connect your sales pipeline to delivery timelines—the 30-day gap is where promises break.",
+      "confidence": 82,
+      "sourceFiles": ["sales_data.xlsx", "operations.xlsx"]
     }
   ]
 }
 
-## REQUIREMENTS:
-- Extract up to 30 goals maximum
-- Every goal MUST reference specific data from the files
-- firstMove MUST include at least ONE specific number, name, or fact from the files
-- confidence reflects evidence strength: 90+ = explicit data, 70-89 = clear inference, 50-69 = reasonable extrapolation
-- For multi-file types, ONLY use them when 2+ files are provided
+## EDGE CASES
 
-OUTPUT ONLY THE JSON OBJECT. NO OTHER TEXT."""
+**If data is extremely sparse (1 file, <50 words):**
+- Generate 3-5 goals minimum
+- All confidence scores 30-50%
+- Focus on DISCOVER and QUANTUM types (finding what's missing)
+
+**If file is just numbers with no context:**
+- Treat each metric as a potential OPTIMIZE or TRANSFORM target
+- Identify outliers as DISCOVER opportunities
+- Generate goals about "understanding what these numbers mean"
+
+**If files are unrelated (e.g., grocery list + meeting notes):**
+- Generate single-file goals for each
+- Look for SYNTHESIS opportunities (e.g., "personal organization" pattern)
+- Lower confidence scores (40-60%)
+
+**If user has uploaded 5+ files:**
+- Prioritize multi-file types (INTEGRATION, RECONCILIATION, SYNTHESIS)
+- Look for cross-file patterns aggressively
+- Aim for 25-30 goals to maximize coverage
+
+"""
 
 
 def build_goal_discovery_user_prompt(files: List[FileData], existing_goals: Optional[List[dict]] = None) -> str:
-    """Build the user prompt for goal discovery."""
-    file_sections = []
-    for f in files:
-        file_sections.append(f"=== FILE: {f.name} ===\n{f.content[:50000]}\n=== END FILE ===")
+    """Build the user prompt for goal discovery - copied from reality-transformer repo."""
+    file_count = len(files)
+    is_multi_file = file_count > 1
 
-    files_content = "\n\n".join(file_sections)
+    prompt = f"""## FILE DATA FOR GOAL DISCOVERY
 
-    multi_file_note = ""
-    if len(files) >= 2:
-        multi_file_note = "\n\nMULTI-FILE MODE ENABLED: Look for INTEGRATION, DIFFERENTIATION, ANTI_SILOING, SYNTHESIS, RECONCILIATION, ARBITRAGE opportunities across files."
+Total Files: {file_count}
+Multi-File Analysis: {'ENABLED - Look for INTEGRATION, DIFFERENTIATION, ANTI_SILOING, SYNTHESIS, RECONCILIATION, ARBITRAGE opportunities' if is_multi_file else 'DISABLED - Single file only, focus on OPTIMIZE, TRANSFORM, DISCOVER, QUANTUM, HIDDEN'}
 
-    dedup_note = ""
-    if existing_goals:
-        existing_identities = [g.get("identity", "") for g in existing_goals]
-        dedup_note = f"\n\nEXISTING GOALS (do not duplicate these):\n{json.dumps(existing_identities, indent=2)}"
+"""
 
-    return f"""Analyze these files and discover actionable goals.
+    for idx, f in enumerate(files):
+        prompt += f"""### FILE {idx + 1}: {f.name}
+Type: {f.type}
+Content:
+```
+{f.content[:50000]}
+```
 
-{files_content}
-{multi_file_note}
-{dedup_note}
+"""
 
-Output ONLY valid JSON with discovered goals."""
+    # Add existing goals for deduplication
+    if existing_goals and len(existing_goals) > 0:
+        prompt += f"""## EXISTING GOALS (DO NOT DUPLICATE - Find NEW opportunities)
+
+The user has already discovered these {len(existing_goals)} goals. Generate DIFFERENT goals that complement or expand on these, but are NOT semantically similar:
+
+"""
+        for idx, goal in enumerate(existing_goals):
+            prompt += f"{idx + 1}. [{goal.get('type', 'UNKNOWN')}] {goal.get('identity', '')}\n"
+        prompt += "\n"
+
+    prompt += f"""## TASK
+
+Generate up to 30 NEW goals from this data. Follow the exact JSON schema.
+{'IMPORTANT: Avoid duplicating the existing goals listed above. Find fresh opportunities.' if existing_goals and len(existing_goals) > 0 else ''}
+Remember: firstMove is the ONLY text users see. Make it sharp, specific, and action-creating.
+
+**Output JSON only, no other text.**"""
+
+    return prompt
 
 
 @router.post("/goal-inventory/generate")
