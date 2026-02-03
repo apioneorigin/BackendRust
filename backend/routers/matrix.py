@@ -26,6 +26,18 @@ class DimensionOption(CamelModel):
     value: int  # One of [0, 50, 100] = Low, Medium, High
 
 
+class ArticulatedInsight(CamelModel):
+    """Full 3-component insight structure (THE TRUTH -> YOUR TRUTH -> THE MARK)"""
+    title: str
+    the_truth: str
+    the_truth_law: str
+    your_truth: str
+    your_truth_revelation: str
+    the_mark_name: str
+    the_mark_prediction: str
+    the_mark_identity: str
+
+
 class RowOption(CamelModel):
     id: str
     label: str
