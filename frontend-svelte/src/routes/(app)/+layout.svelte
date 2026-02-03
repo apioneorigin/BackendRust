@@ -428,9 +428,10 @@
 	}
 
 	.logo {
-		font-size: 16px;
+		font-family: var(--font-heading);
+		font-size: 18px;
 		font-weight: 600;
-		color: var(--color-text-source);
+		color: var(--color-primary-500);
 		white-space: nowrap;
 		overflow: hidden;
 		letter-spacing: -0.02em;
@@ -460,7 +461,7 @@
 		transform: rotate(180deg);
 	}
 
-	/* New Chat button - subtle ghost style like Claude/ChatGPT */
+	/* New Chat button - primary solid navy */
 	.new-chat-section {
 		padding: 0 0.75rem 0.5rem;
 	}
@@ -470,29 +471,27 @@
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
-		padding: 0.5rem 0.625rem;
-		background: transparent;
-		border: 1px solid var(--color-veil-thin);
-		border-radius: 0.375rem;
-		color: var(--color-text-manifest);
-		font-size: 15px;
-		font-weight: 400;
+		padding: 0.625rem 0.75rem;
+		background: var(--color-primary-500);
+		border: none;
+		border-radius: 0.5rem;
+		color: #FFFFFF;
+		font-size: 14px;
+		font-weight: 500;
 		cursor: pointer;
 		transition: all 0.15s ease;
 	}
 
 	.new-chat-btn:hover {
-		background: var(--color-accent-subtle);
-		border-color: var(--color-veil-present);
-		color: var(--color-text-source);
+		background: var(--color-primary-800);
 	}
 
 	.new-chat-btn svg {
-		color: var(--color-text-whisper);
+		color: #FFFFFF;
 	}
 
 	.new-chat-btn:hover svg {
-		color: var(--color-text-source);
+		color: #FFFFFF;
 	}
 
 	.sidebar.collapsed .new-chat-btn {
@@ -501,11 +500,11 @@
 		padding: 0;
 		justify-content: center;
 		border: none;
-		background: var(--color-accent-subtle);
+		background: var(--color-primary-500);
 	}
 
 	.sidebar.collapsed .new-chat-btn:hover {
-		background: var(--color-accent-hover);
+		background: var(--color-primary-800);
 	}
 
 	.sidebar.collapsed .new-chat-btn span {
