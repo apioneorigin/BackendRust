@@ -13,6 +13,7 @@ export interface Message {
 	role: 'user' | 'assistant';
 	content: string;
 	cosData?: any;
+	feedback?: 'up' | 'down' | null;
 	createdAt: Date;
 }
 
@@ -537,6 +538,33 @@ function createChatStore() {
 					});
 				} catch (error) {
 					console.error('Failed to persist question answer:', error);
+				}
+			}
+		},
+
+		async rateMessage(messageId: string, feedback: 'up' | 'down' | null) {
+			// Update locally first for immediate UI response
+			update(state => ({
+				...state,
+				messages: state.messages.map(m =>
+					m.id === messageId ? { ...m, feedback } : m
+				),
+			}));
+
+			// Persist to backend
+			let conversationId: string | null = null;
+			update(state => {
+				conversationId = state.currentConversation?.id || null;
+				return state;
+			});
+
+			if (conversationId) {
+				try {
+					await api.patch(`/api/chat/conversations/${conversationId}/messages/${messageId}/feedback`, {
+						feedback
+					});
+				} catch (error) {
+					console.error('Failed to persist message feedback:', error);
 				}
 			}
 		},

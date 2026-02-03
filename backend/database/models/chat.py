@@ -89,6 +89,9 @@ class ChatMessage(Base):
     # Engagement tracking
     engagement_flags: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 
+    # User feedback (thumbs up/down)
+    feedback: Mapped[Optional[str]] = mapped_column(String, nullable=True)  # 'up', 'down', or null
+
     # Attachments
     attachments: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 
