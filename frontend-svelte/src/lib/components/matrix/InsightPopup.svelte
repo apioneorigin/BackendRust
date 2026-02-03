@@ -2,9 +2,13 @@
 	/**
 	 * InsightPopup - Displays articulated insights for matrix row/column options
 	 *
-	 * Based on insight-articulation-final.pdf:
-	 * 3-component structure: THE TRUTH -> YOUR TRUTH -> THE MARK
-	 * Total: 160-250 words per insight
+	 * Enhanced structure:
+	 * 1. Micro-moment (user's context) - Fly on the Wall
+	 * 2. Distant anchor (far domain analogy)
+	 * 3. Principle (universal law)
+	 * 4. Installation (recognition + name + identity)
+	 *
+	 * Total: 200-300 words, displayed as continuous prose
 	 */
 
 	import { createEventDispatcher } from 'svelte';
@@ -82,46 +86,30 @@
 			</div>
 
 			<div class="popup-body">
-				<!-- THE TRUTH Section -->
-				<section class="insight-section the-truth">
-					<div class="section-marker">
-						<span class="marker-number">1</span>
-						<span class="marker-label">The Truth</span>
-					</div>
-					<div class="section-content">
-						<p class="analogy">{insight.the_truth}</p>
-						<p class="law">{@html parseBold(insight.the_truth_law)}</p>
-					</div>
-				</section>
+				<!-- Continuous prose insight - fully LLM-generated, no templates -->
+				<article class="insight-prose">
+					{#if insight.the_truth}
+						<p>{@html parseBold(insight.the_truth)}</p>
+					{/if}
 
-				<div class="section-divider"></div>
+					{#if insight.the_truth_law}
+						<p>{@html parseBold(insight.the_truth_law)}</p>
+					{/if}
 
-				<!-- YOUR TRUTH Section -->
-				<section class="insight-section your-truth">
-					<div class="section-marker">
-						<span class="marker-number">2</span>
-						<span class="marker-label">Your Truth</span>
-					</div>
-					<div class="section-content">
-						<p class="recognition">{insight.your_truth}</p>
-						<p class="revelation">{@html parseBold(insight.your_truth_revelation)}</p>
-					</div>
-				</section>
+					{#if insight.your_truth}
+						<p>{@html parseBold(insight.your_truth)}</p>
+					{/if}
 
-				<div class="section-divider"></div>
+					{#if insight.your_truth_revelation}
+						<p>{@html parseBold(insight.your_truth_revelation)}</p>
+					{/if}
 
-				<!-- THE MARK Section -->
-				<section class="insight-section the-mark">
-					<div class="section-marker">
-						<span class="marker-number">3</span>
-						<span class="marker-label">The Mark</span>
-					</div>
-					<div class="section-content">
-						<p class="mark-name">This is <em>{insight.the_mark_name}</em>.</p>
-						<p class="prediction">{insight.the_mark_prediction}</p>
-						<p class="identity">{@html parseBold(insight.the_mark_identity)}</p>
-					</div>
-				</section>
+					{#if insight.the_mark_name || insight.the_mark_prediction || insight.the_mark_identity}
+						<p>
+							{#if insight.the_mark_name}<span class="mark-name">{insight.the_mark_name}</span> {/if}{insight.the_mark_prediction || ''} {@html parseBold(insight.the_mark_identity || '')}
+						</p>
+					{/if}
+				</article>
 			</div>
 
 			<div class="popup-footer">
@@ -226,127 +214,40 @@
 
 	.popup-body {
 		flex: 1;
-		padding: 1.5rem;
+		padding: 1.5rem 2rem;
 		overflow-y: auto;
 	}
 
-	.insight-section {
-		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
-	}
-
-	.section-marker {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-	}
-
-	.marker-number {
-		width: 1.5rem;
-		height: 1.5rem;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-size: 0.75rem;
-		font-weight: 700;
-		background: var(--color-primary-500);
-		color: white;
-		border-radius: 50%;
-	}
-
-	.marker-label {
-		font-size: 0.75rem;
-		font-weight: 600;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-		color: var(--color-text-whisper);
-	}
-
-	.section-content {
-		padding-left: 2rem;
-	}
-
-	.section-content p {
-		margin: 0;
-		line-height: 1.7;
+	/* Continuous prose insight styling - clean, no templates */
+	.insight-prose {
+		font-size: 0.9375rem;
+		line-height: 1.8;
 		color: var(--color-text-manifest);
 	}
 
-	.section-content p + p {
-		margin-top: 0.75rem;
+	.insight-prose p {
+		margin: 0 0 1.25rem 0;
 	}
 
-	/* THE TRUTH styles */
-	.the-truth .analogy {
-		font-style: italic;
-		font-size: 0.9375rem;
-		color: var(--color-text-source);
+	.insight-prose p:last-child {
+		margin-bottom: 0;
 	}
 
-	.the-truth .law {
-		font-size: 0.9375rem;
-	}
-
-	.the-truth .law :global(strong) {
+	/* Bold text styling (from markdown **text**) */
+	.insight-prose :global(strong) {
 		color: var(--color-primary-700);
 		font-weight: 600;
 	}
 
-	[data-theme='dark'] .the-truth .law :global(strong) {
+	[data-theme='dark'] .insight-prose :global(strong) {
 		color: var(--color-primary-300);
 	}
 
-	/* YOUR TRUTH styles */
-	.your-truth .recognition {
-		font-size: 0.9375rem;
-	}
-
-	.your-truth .revelation {
-		font-size: 0.9375rem;
-	}
-
-	.your-truth .revelation :global(strong) {
-		color: var(--color-primary-700);
-		font-weight: 600;
-	}
-
-	[data-theme='dark'] .your-truth .revelation :global(strong) {
-		color: var(--color-primary-300);
-	}
-
-	/* THE MARK styles */
-	.the-mark .mark-name {
-		font-size: 0.9375rem;
-	}
-
-	.the-mark .mark-name em {
+	/* Mark name styling - subtle emphasis */
+	.insight-prose .mark-name {
 		font-style: italic;
 		color: var(--color-text-source);
 		font-weight: 500;
-	}
-
-	.the-mark .prediction {
-		font-size: 0.9375rem;
-	}
-
-	.the-mark .identity {
-		font-size: 0.9375rem;
-	}
-
-	.the-mark .identity :global(strong) {
-		color: var(--color-primary-700);
-		font-weight: 600;
-	}
-
-	[data-theme='dark'] .the-mark .identity :global(strong) {
-		color: var(--color-primary-300);
-	}
-
-	.section-divider {
-		height: 1px;
-		background: var(--color-veil-thin);
-		margin: 1.25rem 0;
 	}
 
 	.popup-footer {
