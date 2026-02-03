@@ -1,18 +1,18 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   PREMIUM CORPORATE DESIGN SYSTEM
+   PREMIUM B2B DESIGN SYSTEM - Fortune 500 Positioning
    ═══════════════════════════════════════════════════════════════════════════════
 
    Design Philosophy:
-   - Gunmetal gray as sophisticated primary accent
-   - Warm cream surfaces for alive, inviting feel
-   - Subtle warmth with professional sophistication
-   - Enterprise-grade aesthetics for Fortune 500 positioning
+   - Single primary color: Deep Navy #0F172A (trust, authority, institutional)
+   - Warm cream backgrounds for alive, premium feel
+   - Inter for UI, Source Serif Pro for headings
+   - Maximum restraint - color appears only where it matters
 
    ═══════════════════════════════════════════════════════════════════════════════ */
 
@@ -29,45 +29,46 @@
 	--touch-target-comfortable: 48px;
 
 	/* ─────────────────────────────────────────────────────────────────────────────
-	   ACCENT - Gunmetal Gray (sophistication, authority, elegance)
+	   PRIMARY - Deep Navy (trust, authority, institutional)
+	   The ONLY prominent color in the entire UI
 	   ───────────────────────────────────────────────────────────────────────────── */
-	--color-accent: #6B7075;
-	--color-accent-subtle: rgba(107, 112, 117, 0.08);
-	--color-accent-hover: rgba(107, 112, 117, 0.12);
+	--color-accent: #0F172A;
+	--color-accent-subtle: rgba(15, 23, 42, 0.06);
+	--color-accent-hover: rgba(15, 23, 42, 0.10);
 
-	/* Primary palette - Gunmetal Gray family */
-	--color-primary-950: #1a1b1c;  /* Deepest */
-	--color-primary-900: #2d2f31;  /* Very dark */
-	--color-primary-800: #404346;
-	--color-primary-700: #53575b;
-	--color-primary-600: #5f6368;  /* Hover state */
-	--color-primary-500: #6B7075;  /* Main - Gunmetal */
-	--color-primary-400: #848990;
-	--color-primary-300: #9da2a8;
-	--color-primary-200: #b6bac0;
-	--color-primary-100: rgba(107, 112, 117, 0.12);
-	--color-primary-50: rgba(107, 112, 117, 0.06);
+	/* Primary palette - Deep Navy family */
+	--color-primary-950: #020617;  /* Deepest */
+	--color-primary-900: #0F172A;  /* Main - Deep Navy */
+	--color-primary-800: #1E293B;  /* Hover state */
+	--color-primary-700: #334155;
+	--color-primary-600: #475569;
+	--color-primary-500: #0F172A;  /* Main - Deep Navy */
+	--color-primary-400: #94A3B8;
+	--color-primary-300: #CBD5E1;
+	--color-primary-200: #E2E8F0;
+	--color-primary-100: rgba(15, 23, 42, 0.12);
+	--color-primary-50: rgba(15, 23, 42, 0.06);
 
-	/* Ambient glow - subtle gray accent on warm cream surface */
-	--gradient-ambient: radial-gradient(ellipse at 50% 30%, rgba(107, 112, 117, 0.03) 0%, transparent 60%);
+	/* Ambient glow - subtle navy accent on warm cream surface */
+	--gradient-ambient: radial-gradient(ellipse at 50% 30%, rgba(15, 23, 42, 0.02) 0%, transparent 60%);
 
 	/* ─────────────────────────────────────────────────────────────────────────────
-	   SURFACES - Subtle Navy Tint (premium, institutional)
+	   SURFACES - Warm Cream (alive, premium, inviting)
 	   ───────────────────────────────────────────────────────────────────────────── */
-	--color-field-void: #FAFBFC;      /* Extremely subtle navy tint - main bg */
-	--color-field-depth: #F6F8FA;     /* Slightly deeper cool */
+	--color-field-void: #FDFCF9;      /* Warm cream - main bg */
+	--color-field-depth: #FAF9F5;     /* Slightly deeper warm */
 	--color-field-surface: #FFFFFF;   /* Pure white for cards/elevated */
 	--color-field-elevated: #FFFFFF;  /* Pure white elevated */
 	--color-field-solid: #FFFFFF;     /* Solid white for inputs */
 
 	/* ─────────────────────────────────────────────────────────────────────────────
-	   TEXT - Pure neutral grays (gunmetal stands alone)
+	   TEXT - Navy-based hierarchy (primary color carries through)
 	   ───────────────────────────────────────────────────────────────────────────── */
-	--color-text-source: #111827;     /* Near-black - primary */
-	--color-text-manifest: #4b5563;   /* Gray 600 - secondary */
-	--color-text-flow: #1f2937;       /* Gray 800 - body */
-	--color-text-whisper: #9ca3af;    /* Gray 400 - tertiary */
-	--color-text-hint: #d1d5db;       /* Gray 300 - hint */
+	--color-text-source: #0F172A;     /* Deep Navy - primary text */
+	--color-text-manifest: #475569;   /* Slate 600 - secondary */
+	--color-text-flow: #1E293B;       /* Slate 800 - body */
+	--color-text-whisper: #94A3B8;    /* Slate 400 - tertiary */
+	--color-text-hint: #CBD5E1;       /* Slate 300 - hint */
 
 	/* ─────────────────────────────────────────────────────────────────────────────
 	   BORDERS - Clean neutral lines
@@ -97,8 +98,11 @@
 	--glass-blur-subtle: 12px;
 
 	/* ─────────────────────────────────────────────────────────────────────────────
-	   TYPOGRAPHY SCALE - Consistent sizing
+	   TYPOGRAPHY - Inter (UI) + Source Serif Pro (headings)
 	   ───────────────────────────────────────────────────────────────────────────── */
+	--font-ui: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+	--font-heading: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+
 	--font-size-xs: 12px;    /* Tiny labels, badges */
 	--font-size-sm: 13px;    /* Small secondary text */
 	--font-size-base: 14px;  /* Body text, messages, buttons */
@@ -120,10 +124,10 @@
 	--ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 
 	/* ─────────────────────────────────────────────────────────────────────────────
-	   GRADIENTS - Gunmetal (sophisticated authority)
+	   GRADIENTS - Deep Navy (institutional authority)
 	   ───────────────────────────────────────────────────────────────────────────── */
-	--gradient-primary: linear-gradient(135deg, #5f6368 0%, #6B7075 100%);
-	--gradient-subtle: linear-gradient(180deg, rgba(107, 112, 117, 0.03) 0%, transparent 100%);
+	--gradient-primary: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+	--gradient-subtle: linear-gradient(180deg, rgba(15, 23, 42, 0.03) 0%, transparent 100%);
 
 	/* Semantic colors */
 	--color-error-500: #dc2626;
@@ -137,28 +141,29 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   DARK MODE - Premium Dark with Gunmetal Accents
+   DARK MODE - Premium Dark with Navy Primary (inverted)
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 [data-theme='dark'] {
-	--color-accent: #9da2a8;  /* Lighter gunmetal for dark mode visibility */
-	--color-accent-subtle: rgba(157, 162, 168, 0.12);
-	--color-accent-hover: rgba(157, 162, 168, 0.18);
+	/* In dark mode, primary buttons/accents become light (inverted) */
+	--color-accent: #F8FAFC;  /* Light for dark mode visibility */
+	--color-accent-subtle: rgba(248, 250, 252, 0.08);
+	--color-accent-hover: rgba(248, 250, 252, 0.12);
 
-	--color-primary-950: #0d0e0f;  /* Deep cool black */
-	--color-primary-900: #1a1b1c;
-	--color-primary-800: #2d2f31;
-	--color-primary-700: #404346;
-	--color-primary-600: #6B7075;
-	--color-primary-500: #9da2a8;  /* Brighter for dark mode visibility */
-	--color-primary-400: #b6bac0;
-	--color-primary-300: #cfd3d8;
-	--color-primary-200: #e8eaec;
-	--color-primary-100: rgba(157, 162, 168, 0.15);
-	--color-primary-50: rgba(157, 162, 168, 0.08);
+	--color-primary-950: #F8FAFC;  /* Inverted - lightest */
+	--color-primary-900: #F1F5F9;
+	--color-primary-800: #E2E8F0;
+	--color-primary-700: #CBD5E1;
+	--color-primary-600: #94A3B8;
+	--color-primary-500: #F8FAFC;  /* Main - Light for dark mode */
+	--color-primary-400: #64748B;
+	--color-primary-300: #475569;
+	--color-primary-200: #334155;
+	--color-primary-100: rgba(248, 250, 252, 0.15);
+	--color-primary-50: rgba(248, 250, 252, 0.08);
 
-	--gradient-primary: linear-gradient(135deg, #6B7075 0%, #9da2a8 100%);
-	--gradient-ambient: radial-gradient(ellipse at 50% 30%, rgba(157, 162, 168, 0.06) 0%, transparent 60%);
+	--gradient-primary: linear-gradient(135deg, #E2E8F0 0%, #F8FAFC 100%);
+	--gradient-ambient: radial-gradient(ellipse at 50% 30%, rgba(248, 250, 252, 0.04) 0%, transparent 60%);
 
 	/* Premium dark navy surfaces */
 	--color-field-void: #0A0D12;      /* Deep navy black - main bg */
@@ -166,14 +171,14 @@
 	--color-field-surface: #141920;   /* Card surfaces */
 	--color-field-elevated: #1A2028;  /* Elevated elements */
 
-	/* Text on dark silver */
-	--color-text-source: #f4f5f7;     /* Bright silver-white */
-	--color-text-manifest: #9ba1ab;   /* Medium silver */
-	--color-text-flow: #e1e4e8;       /* Light silver */
-	--color-text-whisper: #5c6370;    /* Dim silver */
-	--color-text-hint: #3d424a;       /* Subtle hint */
+	/* Text on dark - slate family */
+	--color-text-source: #F8FAFC;     /* Slate 50 - primary */
+	--color-text-manifest: #94A3B8;   /* Slate 400 - secondary */
+	--color-text-flow: #E2E8F0;       /* Slate 200 - body */
+	--color-text-whisper: #64748B;    /* Slate 500 - tertiary */
+	--color-text-hint: #475569;       /* Slate 600 - hint */
 
-	/* Silver borders for dark mode */
+	/* Slate borders for dark mode */
 	--color-veil-thin: rgba(148, 163, 184, 0.08);
 	--color-veil-present: rgba(148, 163, 184, 0.12);
 	--color-veil-clear: rgba(148, 163, 184, 0.18);
@@ -201,7 +206,7 @@ html {
 }
 
 body {
-	font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+	font-family: var(--font-ui);
 	font-size: var(--font-size-base);
 	font-weight: 400;
 	line-height: 1.6;
@@ -215,8 +220,9 @@ body {
 	letter-spacing: -0.011em;
 }
 
-/* Typography Scale - ChatGPT-consistent sizing */
+/* Typography Scale - Source Serif Pro for headings */
 h1 {
+	font-family: var(--font-heading);
 	font-size: 1.5rem;    /* 24px */
 	font-weight: 600;
 	letter-spacing: -0.02em;
@@ -224,6 +230,7 @@ h1 {
 }
 
 h2 {
+	font-family: var(--font-heading);
 	font-size: 1.25rem;   /* 20px */
 	font-weight: 600;
 	letter-spacing: -0.02em;
@@ -231,6 +238,7 @@ h2 {
 }
 
 h3 {
+	font-family: var(--font-heading);
 	font-size: 1rem;      /* 16px */
 	font-weight: 600;
 	letter-spacing: -0.01em;
@@ -238,6 +246,7 @@ h3 {
 }
 
 h4, h5, h6 {
+	font-family: var(--font-heading);
 	font-size: 0.9375rem; /* 15px */
 	font-weight: 600;
 	letter-spacing: -0.01em;

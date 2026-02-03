@@ -1038,9 +1038,10 @@
 	}
 
 	.welcome-greeting h1 {
-		font-size: 1.75rem;
-		font-weight: 500;
-		color: var(--color-text-source);
+		font-family: var(--font-heading);
+		font-size: 2rem;
+		font-weight: 600;
+		color: var(--color-primary-500);
 		letter-spacing: -0.02em;
 	}
 
@@ -1436,7 +1437,7 @@
 	}
 
 	.send-btn:hover:not(:disabled) {
-		background: var(--color-primary-600);
+		background: var(--color-primary-800);
 	}
 
 	.send-btn:disabled {

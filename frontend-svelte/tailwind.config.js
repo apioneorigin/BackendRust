@@ -14,7 +14,7 @@ export default {
 		},
 		extend: {
 			colors: {
-				// Primary (Gunmetal Gray - sophistication, depth, modernity)
+				// Primary (Deep Navy - trust, authority, institutional)
 				primary: {
 					50: 'var(--color-primary-50)',
 					100: 'var(--color-primary-100)',
@@ -28,7 +28,7 @@ export default {
 					900: 'var(--color-primary-900)',
 					950: 'var(--color-primary-950)'
 				},
-				// Accent (Gunmetal Gray)
+				// Accent (Deep Navy)
 				accent: 'var(--color-accent)',
 				// Challenger (Warm Orange)
 				challenger: 'var(--color-challenger)',
@@ -90,6 +90,7 @@ export default {
 			},
 			fontFamily: {
 				sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
+				heading: ['Source Serif 4', 'Georgia', 'Times New Roman', 'serif'],
 				mono: ['JetBrains Mono', 'Fira Code', 'monospace']
 			},
 			fontSize: {
