@@ -1475,10 +1475,8 @@ Articulation Tokens: {token_count}
                 missing_operator_priority = evidence.get('missing_operator_priority', [])
                 question_context = question_gen.get_question_context(
                     goal_context=goal_context,
-                    missing_operators=missing_operators,
-                    known_operators=extracted_operators,
+                    extracted_operators=extracted_operators,
                     missing_operator_priority=missing_operator_priority,
-                    question_type='gap_filling'
                 )
 
                 if question_context:
