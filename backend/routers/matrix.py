@@ -718,3 +718,113 @@ async def select_play(
         "document_id": doc_id,
         "selected_play_id": request.play_id
     }
+
+
+# ============================================================================
+# Cell Dimension Updates
+# Save user-modified dimension values for matrix cells
+# ============================================================================
+
+
+class CellDimensionUpdate(BaseModel):
+    """A single dimension update for a cell"""
+    row_idx: int  # Index in selected_rows (0-4)
+    col_idx: int  # Index in selected_columns (0-4)
+    dim_idx: int  # Dimension index (0-4)
+    value: int    # New value: 0, 50, or 100
+
+
+class SaveCellChangesRequest(BaseModel):
+    """Request to save cell dimension changes"""
+    changes: List[CellDimensionUpdate]
+
+
+class SaveCellChangesResponse(CamelModel):
+    """Response from saving cell changes"""
+    document_id: str
+    changes_saved: int
+    success: bool
+
+
+@router.patch("/{conversation_id}/document/{doc_id}/cells")
+async def save_cell_changes(
+    conversation_id: str,
+    doc_id: str,
+    request: SaveCellChangesRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Save user-modified cell dimension values.
+
+    Takes a list of dimension value changes and persists them to the document.
+    """
+    conversation = await get_or_404(db, ChatConversation, conversation_id, user_id=current_user.id)
+
+    if not conversation.generated_documents:
+        raise HTTPException(status_code=400, detail="No documents exist")
+
+    # Find the document
+    documents = conversation.generated_documents.copy()
+    doc_index = None
+    doc = None
+
+    for i, d in enumerate(documents):
+        if d.get("id") == doc_id:
+            doc_index = i
+            doc = d
+            break
+
+    if doc is None:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    matrix_data = doc.get("matrix_data", {})
+    cells = matrix_data.get("cells", {})
+    selected_rows = matrix_data.get("selected_rows", list(range(5)))
+    selected_cols = matrix_data.get("selected_columns", list(range(5)))
+
+    if not cells:
+        raise HTTPException(status_code=400, detail="Document has no cells to update")
+
+    changes_applied = 0
+
+    for change in request.changes:
+        # Validate indices
+        if change.row_idx < 0 or change.row_idx >= len(selected_rows):
+            continue
+        if change.col_idx < 0 or change.col_idx >= len(selected_cols):
+            continue
+        if change.dim_idx < 0 or change.dim_idx >= 5:
+            continue
+        if change.value not in [0, 50, 100]:
+            continue
+
+        # Map display indices to actual cell key
+        actual_row = selected_rows[change.row_idx]
+        actual_col = selected_cols[change.col_idx]
+        cell_key = f"{actual_row}-{actual_col}"
+
+        if cell_key not in cells:
+            continue
+
+        cell = cells[cell_key]
+        dimensions = cell.get("dimensions", [])
+
+        if change.dim_idx < len(dimensions):
+            dimensions[change.dim_idx]["value"] = change.value
+            cells[cell_key]["dimensions"] = dimensions
+            changes_applied += 1
+
+    # Update the document
+    documents[doc_index]["matrix_data"]["cells"] = cells
+    conversation.generated_documents = documents
+
+    await db.commit()
+
+    api_logger.info(f"[CELLS] Saved {changes_applied} dimension changes for doc {doc_id}")
+
+    return SaveCellChangesResponse(
+        document_id=doc_id,
+        changes_saved=changes_applied,
+        success=True
+    )

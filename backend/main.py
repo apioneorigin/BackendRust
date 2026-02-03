@@ -2190,10 +2190,11 @@ DOCUMENT_GENERATION_ENDPOINT = "https://api.openai.com/v1/chat/completions"
 async def generate_additional_documents_llm(
     context_messages: List[dict],
     existing_document_names: List[str],
-    start_doc_id: int
+    start_doc_id: int,
+    count: int = 3
 ) -> Optional[List[dict]]:
     """
-    Generate 3 document STUBS using hardcoded gpt-5.2 model.
+    Generate document STUBS using hardcoded gpt-5.2 model.
 
     Each stub includes:
     - name: Creative, contextual name
@@ -2204,9 +2205,10 @@ async def generate_additional_documents_llm(
         context_messages: Recent conversation messages for context
         existing_document_names: Names of existing documents to avoid duplication
         start_doc_id: Starting ID for new documents (e.g., 1 if 1 doc exists)
+        count: Number of document stubs to generate (default 3)
 
     Returns:
-        List of 3 document stub dicts, or None on failure
+        List of document stub dicts, or None on failure
     """
     import os
 
@@ -2225,22 +2227,30 @@ async def generate_additional_documents_llm(
 
     existing_names_str = ", ".join(existing_document_names) if existing_document_names else "None yet"
 
-    prompt_text = f"""Generate 3 document STUBS for a transformation matrix interface.
+    # Build perspective hints based on count
+    perspective_hints = []
+    if count >= 1:
+        perspective_hints.append("- Document 1: A new strategic angle not yet covered")
+    if count >= 2:
+        perspective_hints.append("- Document 2: An operational/tactical perspective")
+    if count >= 3:
+        perspective_hints.append("- Document 3: A risk/opportunity or stakeholder perspective")
+    perspectives_str = "\n".join(perspective_hints) if perspective_hints else "- Each document: A unique perspective"
+
+    prompt_text = f"""Generate {count} document STUBS for a transformation matrix interface.
 
 CONVERSATION CONTEXT:
 {context_summary}
 
 EXISTING DOCUMENTS (avoid similar names): {existing_names_str}
 
-Generate 3 document stubs, each with:
+Generate {count} document stubs, each with:
 1. A unique, creative name (different from existing)
 2. A 20-word description explaining its purpose
 3. 10 row labels and 10 column labels (NO cells - those are generated separately)
 
 Each document should offer a DIFFERENT perspective:
-- Document 1: A new strategic angle not yet covered
-- Document 2: An operational/tactical perspective
-- Document 3: A risk/opportunity or stakeholder perspective
+{perspectives_str}
 
 Return ONLY valid JSON:
 
@@ -2333,8 +2343,8 @@ REQUIREMENTS:
             result = json.loads(response_text)
             documents = result.get("documents", [])
 
-            if len(documents) < 3:
-                api_logger.warning(f"[DOC_GEN] Only got {len(documents)} documents, expected 3")
+            if len(documents) < count:
+                api_logger.warning(f"[DOC_GEN] Only got {len(documents)} documents, expected {count}")
 
             api_logger.info(f"[DOC_GEN] Generated {len(documents)} documents: {[d.get('name') for d in documents]}")
             return documents

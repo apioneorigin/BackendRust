@@ -4,16 +4,18 @@
 	 *
 	 * ARCHITECTURE:
 	 * - Shows document tabs at top (each with its own matrix)
+	 * - Tabs show all documents: full data docs are clickable, stubs show "Generate" button
+	 * - Plus button on right to generate 3 more document stubs
 	 * - Displays matrix from currently active document
-	 * - Each cell has 5 contextual dimensions with 3-step signal bar selectors
+	 * - Each cell has 5 contextual dimensions with 3-step horizontal bar selectors
 	 * - Power Spots View: HIDES non-leverage cells completely, shows only power spots
 	 * - Risk View: HIDES low-risk cells completely, shows only medium/high risk cells
 	 */
 
 	import { createEventDispatcher } from 'svelte';
-	import { Button } from '$lib/components/ui';
-	import { matrix, documents, activeDocumentId, activeDocument } from '$lib/stores';
-	import type { CellData, CellDimension } from '$lib/stores';
+	import { Button, Spinner } from '$lib/components/ui';
+	import { matrix, documents, activeDocumentId, activeDocument, isGeneratingMoreDocuments } from '$lib/stores';
+	import type { CellData, CellDimension, Document } from '$lib/stores';
 
 	export let matrixData: CellData[][] = [];
 	export let rowHeaders: string[] = ['Dimension 1', 'Dimension 2', 'Dimension 3', 'Dimension 4', 'Dimension 5'];
@@ -38,11 +40,34 @@
 
 	let selectedCell: { row: number; col: number } | null = null;
 	let showCellPopup = false;
+	let isPopulatingDoc: string | null = null;  // Track which doc is being populated
+
+	// Track local edits and original values for change detection
+	let localDimensionEdits: Map<string, number> = new Map(); // key: "row-col-dimIdx", value: edited value
+	let originalDimensionValues: Map<string, number> = new Map(); // key: "row-col-dimIdx", value: original LLM value
+
+	// Check if there are unsaved changes
+	$: hasUnsavedChanges = localDimensionEdits.size > 0;
+
+	// Check if a document has full data (100 cells)
+	function hasFullData(doc: Document): boolean {
+		const cells = doc.matrix_data?.cells || {};
+		return Object.keys(cells).length >= 100;
+	}
 
 	// Get the step index (0-2) from a dimension value
 	function getStepIndex(value: number): number {
 		const idx = STEP_VALUES.indexOf(value);
 		return idx >= 0 ? idx : 1; // Default to Medium if value not found
+	}
+
+	// Get the current value for a dimension (local edit or original)
+	function getDimensionValue(row: number, col: number, dimIdx: number): number {
+		const key = `${row}-${col}-${dimIdx}`;
+		if (localDimensionEdits.has(key)) {
+			return localDimensionEdits.get(key)!;
+		}
+		return matrixData[row]?.[col]?.dimensions?.[dimIdx]?.value ?? 50;
 	}
 
 	// Check if cell is a power spot (value >= 75)
@@ -67,9 +92,28 @@
 		return false;
 	}
 
-	// Handle dimension step button click
+	// Handle dimension step button click - update local state
 	function handleDimensionStepClick(dimIndex: number, stepValue: number) {
 		if (!selectedCell) return;
+
+		const key = `${selectedCell.row}-${selectedCell.col}-${dimIndex}`;
+		const originalValue = matrixData[selectedCell.row]?.[selectedCell.col]?.dimensions?.[dimIndex]?.value ?? 50;
+
+		// Store original value if not already tracked
+		if (!originalDimensionValues.has(key)) {
+			originalDimensionValues.set(key, originalValue);
+		}
+
+		// If setting back to original value, remove the edit
+		if (stepValue === originalDimensionValues.get(key)) {
+			localDimensionEdits.delete(key);
+		} else {
+			localDimensionEdits.set(key, stepValue);
+		}
+
+		// Trigger reactivity
+		localDimensionEdits = localDimensionEdits;
+
 		dispatch('dimensionChange', {
 			row: selectedCell.row,
 			col: selectedCell.col,
@@ -130,27 +174,128 @@
 		selectedCell = null;
 	}
 
-	function handleDocumentTabClick(docId: string) {
+	let isSaving = false;
+
+	async function handleSave() {
+		if (localDimensionEdits.size === 0) {
+			closeCellPopup();
+			return;
+		}
+
+		isSaving = true;
+
+		// Convert local edits map to array of changes
+		const changes: Array<{ row: number; col: number; dimIdx: number; value: number }> = [];
+
+		localDimensionEdits.forEach((value, key) => {
+			const [row, col, dimIdx] = key.split('-').map(Number);
+			changes.push({ row, col, dimIdx, value });
+		});
+
+		try {
+			const result = await matrix.saveCellChanges(changes);
+
+			if (result.success) {
+				// Clear tracking after successful save
+				localDimensionEdits.clear();
+				originalDimensionValues.clear();
+				localDimensionEdits = localDimensionEdits;
+				closeCellPopup();
+			} else {
+				console.error('Failed to save changes');
+			}
+		} catch (error) {
+			console.error('Error saving changes:', error);
+		} finally {
+			isSaving = false;
+		}
+	}
+
+	function handleDocumentTabClick(docId: string, doc: Document) {
+		// Only allow clicking on documents with full data
+		if (!hasFullData(doc)) return;
 		matrix.setActiveDocument(docId);
 		dispatch('documentChange', { documentId: docId });
+	}
+
+	async function handleGenerateMoreDocuments() {
+		try {
+			await matrix.generateMoreDocuments();
+		} catch (error) {
+			console.error('Failed to generate more documents:', error);
+		}
+	}
+
+	async function handlePopulateDocument(docId: string) {
+		isPopulatingDoc = docId;
+		try {
+			await matrix.populateDocument(docId);
+			// After population, set it as active
+			matrix.setActiveDocument(docId);
+		} catch (error) {
+			console.error('Failed to populate document:', error);
+		} finally {
+			isPopulatingDoc = null;
+		}
 	}
 </script>
 
 <div class="matrix-panel" class:compact>
-	<!-- Document Tabs (no "+" button here) -->
-	{#if showDocumentTabs && $documents.length > 1}
+	<!-- Document Tabs with Plus Button -->
+	{#if showDocumentTabs && $documents.length > 0}
 		<div class="document-tabs-container">
 			<div class="document-tabs">
 				{#each $documents as doc (doc.id)}
-					<button
-						class="document-tab"
-						class:active={doc.id === $activeDocumentId}
-						on:click={() => handleDocumentTabClick(doc.id)}
-						title={doc.description}
-					>
-						<span class="tab-name">{doc.name}</span>
-					</button>
+					{@const isFullData = hasFullData(doc)}
+					{@const isActive = doc.id === $activeDocumentId}
+					{@const isPopulating = isPopulatingDoc === doc.id}
+					{#if isFullData}
+						<!-- Full data document: clickable tab -->
+						<button
+							class="document-tab"
+							class:active={isActive}
+							on:click={() => handleDocumentTabClick(doc.id, doc)}
+							title={doc.description}
+						>
+							<span class="tab-name">{doc.name}</span>
+						</button>
+					{:else}
+						<!-- Stub document: show with generate button -->
+						<div class="document-tab stub" title={doc.description}>
+							<span class="tab-name">{doc.name}</span>
+							<button
+								class="generate-btn"
+								on:click|stopPropagation={() => handlePopulateDocument(doc.id)}
+								disabled={isPopulating}
+								title="Generate full matrix data"
+							>
+								{#if isPopulating}
+									<Spinner size="xs" />
+								{:else}
+									<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+										<path d="M12 3v3m6.366-.366-2.12 2.12M21 12h-3m.366 6.366-2.12-2.12M12 21v-3m-6.366.366 2.12-2.12M3 12h3m-.366-6.366 2.12 2.12"/>
+									</svg>
+								{/if}
+							</button>
+						</div>
+					{/if}
 				{/each}
+
+				<!-- Plus button to generate more document stubs -->
+				<button
+					class="add-document-btn"
+					on:click={handleGenerateMoreDocuments}
+					disabled={$isGeneratingMoreDocuments}
+					title="Generate 3 more documents"
+				>
+					{#if $isGeneratingMoreDocuments}
+						<Spinner size="xs" />
+					{:else}
+						<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M12 5v14M5 12h14"/>
+						</svg>
+					{/if}
+				</button>
 			</div>
 		</div>
 	{/if}
@@ -249,15 +394,20 @@
 					<h4>Dimensions</h4>
 					<div class="dimensions-grid">
 						{#each matrixData[selectedCell.row][selectedCell.col].dimensions as dim, dimIdx}
+							{@const currentValue = getDimensionValue(selectedCell.row, selectedCell.col, dimIdx)}
+							{@const currentStepIdx = getStepIndex(currentValue)}
 							<div class="dimension-item">
 								<span class="dim-name">{dim.name}</span>
-								<div class="signal-bars">
+								<div class="level-bars">
 									{#each STEP_VALUES as stepValue, stepIdx}
 										<button
-											class="signal-bar bar-{stepIdx + 1}"
-											class:filled={getStepIndex(dim.value) >= stepIdx}
+											class="level-bar"
+											class:filled={currentStepIdx >= stepIdx}
+											class:active={currentStepIdx === stepIdx}
 											on:click={() => handleDimensionStepClick(dimIdx, stepValue)}
+											title={STEP_LABELS[stepIdx]}
 										>
+											<span class="bar-fill" style="width: {currentStepIdx >= stepIdx ? 100 : 0}%"></span>
 										</button>
 									{/each}
 								</div>
@@ -275,8 +425,19 @@
 			</div>
 
 			<div class="popup-footer">
-				<Button variant="ghost" on:click={closeCellPopup}>Close</Button>
-				<Button variant="primary" on:click={closeCellPopup}>Save</Button>
+				<Button variant="ghost" on:click={closeCellPopup} disabled={isSaving}>Close</Button>
+				<Button
+					variant={hasUnsavedChanges ? "primary" : "ghost"}
+					on:click={handleSave}
+					disabled={!hasUnsavedChanges || isSaving}
+				>
+					{#if isSaving}
+						<Spinner size="xs" />
+						<span style="margin-left: 0.5rem">Saving...</span>
+					{:else}
+						Save
+					{/if}
+				</Button>
 			</div>
 		</div>
 	</div>
@@ -304,9 +465,28 @@
 		flex-shrink: 0;
 	}
 
+	.document-name-header {
+		padding: 0.5rem 0.75rem;
+		border-bottom: 1px solid var(--color-veil-thin);
+		background: var(--color-field-depth);
+	}
+
+	.document-name {
+		font-size: 0.8125rem;
+		font-weight: 600;
+		color: var(--color-primary-600);
+	}
+
+	[data-theme='dark'] .document-name {
+		color: var(--color-primary-400);
+	}
+
 	.document-tabs {
 		display: flex;
+		align-items: center;
 		gap: 0.25rem;
+		overflow-x: auto;
+		padding-bottom: 0.25rem;
 		overflow-x: auto;
 	}
 
@@ -349,6 +529,77 @@
 		max-width: 100px;
 		overflow: hidden;
 		text-overflow: ellipsis;
+	}
+
+	/* Stub document tabs (not yet populated) */
+	.document-tab.stub {
+		display: flex;
+		align-items: center;
+		gap: 0.375rem;
+		background: var(--color-field-depth);
+		border: 1px dashed var(--color-veil-thin);
+		cursor: default;
+		opacity: 0.8;
+	}
+
+	.document-tab.stub:hover {
+		background: var(--color-field-depth);
+		border-color: var(--color-primary-300);
+	}
+
+	.generate-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 20px;
+		height: 20px;
+		padding: 0;
+		background: var(--color-primary-500);
+		border: none;
+		border-radius: 0.25rem;
+		color: white;
+		cursor: pointer;
+		transition: all 0.15s ease;
+	}
+
+	.generate-btn:hover:not(:disabled) {
+		background: var(--color-primary-600);
+	}
+
+	.generate-btn:disabled {
+		opacity: 0.7;
+		cursor: wait;
+	}
+
+	/* Plus button to add more documents */
+	.add-document-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 28px;
+		height: 28px;
+		padding: 0;
+		background: var(--color-field-depth);
+		border: 1px dashed var(--color-primary-400);
+		border-radius: 0.375rem;
+		color: var(--color-primary-500);
+		cursor: pointer;
+		transition: all 0.15s ease;
+		flex-shrink: 0;
+	}
+
+	.add-document-btn:hover:not(:disabled) {
+		background: var(--color-primary-50);
+		border-style: solid;
+	}
+
+	[data-theme='dark'] .add-document-btn:hover:not(:disabled) {
+		background: rgba(15, 76, 117, 0.2);
+	}
+
+	.add-document-btn:disabled {
+		opacity: 0.7;
+		cursor: wait;
 	}
 
 	.matrix-grid {
@@ -707,36 +958,55 @@
 		min-width: 0;
 	}
 
-	.signal-bars {
+	/* Horizontal level bars - 3 equally wide bars that fill with color */
+	.level-bars {
 		display: flex;
-		align-items: flex-end;
-		gap: 3px;
+		align-items: center;
+		gap: 4px;
 		flex-shrink: 0;
-		height: 22px;
 	}
 
-	.signal-bar {
-		width: 6px;
+	.level-bar {
+		position: relative;
+		width: 28px;
+		height: 10px;
 		background: var(--color-veil-thin);
-		border: none;
-		border-radius: 2px;
+		border: 1px solid var(--color-veil-medium);
+		border-radius: 3px;
 		cursor: pointer;
 		padding: 0;
-		transition: background 0.15s ease;
+		overflow: hidden;
+		transition: all 0.15s ease;
 	}
 
-	/* Bar heights - WiFi style increasing heights */
-	.signal-bar.bar-1 { height: 7px; }
-	.signal-bar.bar-2 { height: 14px; }
-	.signal-bar.bar-3 { height: 21px; }
+	.bar-fill {
+		position: absolute;
+		top: 0;
+		left: 0;
+		height: 100%;
+		background: var(--color-primary-500);
+		border-radius: 2px;
+		transition: width 0.15s ease;
+	}
 
 	/* Filled state - bars up to selected level */
-	.signal-bar.filled {
-		background: var(--color-primary-500);
+	.level-bar.filled {
+		border-color: var(--color-primary-400);
+	}
+
+	/* Active state - the currently selected level */
+	.level-bar.active {
+		border-color: var(--color-primary-600);
+		box-shadow: 0 0 0 1px var(--color-primary-300);
 	}
 
 	/* Hover state */
-	.signal-bar:hover {
+	.level-bar:hover {
+		border-color: var(--color-primary-400);
+		transform: scale(1.05);
+	}
+
+	.level-bar:hover .bar-fill {
 		background: var(--color-primary-400);
 	}
 

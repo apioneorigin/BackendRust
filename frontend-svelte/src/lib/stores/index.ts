@@ -27,7 +27,10 @@ export {
 	powerSpots,
 	activeDocument,
 	activeDocumentId,
-	documents as matrixDocuments
+	documents as matrixDocuments,
+	plays,
+	selectedPlayId,
+	isLoadingPlays
 } from './matrix';
 
 // Re-export types
@@ -38,4 +41,4 @@ export type { Session } from './session';
 export type { CreditBalance, Redemption, UsageRecord } from './credits';
 export type { Document } from './documents';
 export type { Goal, MatrixValue } from './goals';
-export type { CellData, CellDimension, Document as MatrixDocument, RowOption, ColumnOption } from './matrix';
+export type { CellData, CellDimension, Document as MatrixDocument, RowOption, ColumnOption, Play } from './matrix';

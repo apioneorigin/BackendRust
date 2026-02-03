@@ -46,6 +46,21 @@ export interface ArticulatedInsight {
 	the_mark_identity: string;   // Bold new capability/identity
 }
 
+// Play (transformation strategy)
+export interface Play {
+	id: string;
+	name: string;
+	description: string;
+	fitScore: number;
+	risk: 'low' | 'medium' | 'high';
+	timeline: string;
+	phases: number;
+	steps: string[];
+	leveragePointIds: string[];
+	expectedImprovement: number;
+	category: string;  // "quick_wins", "balanced", "deep_transform", "conservative", "aggressive"
+}
+
 export interface RowOption {
 	id: string;
 	label: string;
@@ -101,6 +116,11 @@ interface MatrixState {
 	// Risk heatmap state
 	showRiskHeatmap: boolean;
 
+	// Plays state
+	plays: Play[];
+	selectedPlayId: string | null;
+	isLoadingPlays: boolean;
+
 	// Loading states
 	isLoadingOptions: boolean;
 	error: string | null;
@@ -124,6 +144,11 @@ const initialState: MatrixState = {
 	isGeneratingMoreDocuments: false,
 
 	showRiskHeatmap: false,
+
+	plays: [],
+	selectedPlayId: null,
+	isLoadingPlays: false,
+
 	isLoadingOptions: false,
 	error: null,
 	conversationId: null
@@ -324,7 +349,105 @@ function createMatrixStore() {
 			}
 		},
 
-		// Update cell dimension value
+		// Populate a document stub with full cell data
+		async populateDocument(docId: string) {
+			const state = get({ subscribe });
+			if (!state.conversationId) {
+				console.error('No conversation ID set');
+				return;
+			}
+
+			try {
+				const response = await api.post(`/matrix/${state.conversationId}/document/${docId}/populate`);
+
+				if (response.success) {
+					// Refresh documents to get the populated data
+					const docsResponse = await api.get(`/matrix/${state.conversationId}/documents`);
+					if (docsResponse && Array.isArray(docsResponse)) {
+						const activeDocumentId = docId;
+						const activeDoc = docsResponse.find((d: any) => d.id === docId);
+
+						if (activeDoc) {
+							const displayed = buildDisplayedMatrix(activeDoc);
+
+							update(s => ({
+								...s,
+								documents: docsResponse,
+								activeDocumentId,
+								displayedMatrixData: displayed.matrixData,
+								displayedRowHeaders: displayed.rowHeaders,
+								displayedColumnHeaders: displayed.columnHeaders,
+								displayedRowInsights: displayed.rowInsights,
+								displayedColumnInsights: displayed.columnInsights
+							}));
+						}
+					}
+				}
+
+				return response;
+			} catch (error: any) {
+				console.error('Failed to populate document:', error);
+				throw error;
+			}
+		},
+
+		// Fetch plays for active document (plays are generated during document population)
+		async fetchPlays() {
+			const state = get({ subscribe });
+			if (!state.conversationId || !state.activeDocumentId) {
+				console.error('No conversation or document ID set');
+				return [];
+			}
+
+			update(s => ({ ...s, isLoadingPlays: true, error: null }));
+
+			try {
+				const response = await api.get(
+					`/matrix/${state.conversationId}/document/${state.activeDocumentId}/plays`
+				);
+				const plays = response.plays || [];
+				const selectedPlayId = response.selectedPlayId || null;
+
+				update(s => ({
+					...s,
+					plays,
+					selectedPlayId,
+					isLoadingPlays: false
+				}));
+
+				return plays;
+			} catch (error: any) {
+				update(s => ({
+					...s,
+					plays: [],
+					isLoadingPlays: false,
+					error: error.message || 'Failed to fetch plays'
+				}));
+				return [];
+			}
+		},
+
+		// Select a play
+		async selectPlay(playId: string | null) {
+			const state = get({ subscribe });
+			if (!state.conversationId || !state.activeDocumentId) {
+				console.error('No conversation or document ID set');
+				return;
+			}
+
+			try {
+				await api.put(
+					`/matrix/${state.conversationId}/document/${state.activeDocumentId}/plays/select`,
+					{ play_id: playId }
+				);
+
+				update(s => ({ ...s, selectedPlayId: playId }));
+			} catch (error: any) {
+				console.error('Failed to select play:', error);
+			}
+		},
+
+		// Update cell dimension value (local state only)
 		updateCellDimension(rowIdx: number, colIdx: number, dimIdx: number, value: number) {
 			update(state => {
 				const newMatrixData = state.displayedMatrixData.map((row, r) =>
@@ -340,6 +463,59 @@ function createMatrixStore() {
 				);
 				return { ...state, displayedMatrixData: newMatrixData };
 			});
+		},
+
+		// Save cell dimension changes to backend
+		async saveCellChanges(changes: Array<{ row: number; col: number; dimIdx: number; value: number }>) {
+			const state = get({ subscribe });
+			if (!state.conversationId || !state.activeDocumentId) {
+				console.error('No conversation or document ID set');
+				return { success: false, changesSaved: 0 };
+			}
+
+			if (changes.length === 0) {
+				return { success: true, changesSaved: 0 };
+			}
+
+			try {
+				// Apply changes to local state first
+				update(s => {
+					const newMatrixData = s.displayedMatrixData.map((row, r) =>
+						row.map((cell, c) => {
+							const cellChanges = changes.filter(ch => ch.row === r && ch.col === c);
+							if (cellChanges.length === 0) return cell;
+
+							const newDimensions = cell.dimensions.map((dim, d) => {
+								const dimChange = cellChanges.find(ch => ch.dimIdx === d);
+								return dimChange ? { ...dim, value: dimChange.value } : dim;
+							});
+							return { ...cell, dimensions: newDimensions };
+						})
+					);
+					return { ...s, displayedMatrixData: newMatrixData };
+				});
+
+				// Persist to backend
+				const response = await api.patch(
+					`/matrix/${state.conversationId}/document/${state.activeDocumentId}/cells`,
+					{
+						changes: changes.map(ch => ({
+							row_idx: ch.row,
+							col_idx: ch.col,
+							dim_idx: ch.dimIdx,
+							value: ch.value
+						}))
+					}
+				);
+
+				return {
+					success: response.success ?? true,
+					changesSaved: response.changes_saved ?? response.changesSaved ?? changes.length
+				};
+			} catch (error: any) {
+				console.error('Failed to save cell changes:', error);
+				return { success: false, changesSaved: 0 };
+			}
 		},
 
 		// Toggle risk heatmap
@@ -404,6 +580,11 @@ export const isMatrixGenerated = derived(matrix, ($matrix) => $matrix.isGenerate
 export const isGeneratingMoreDocuments = derived(matrix, ($matrix) => $matrix.isGeneratingMoreDocuments);
 export const showRiskHeatmap = derived(matrix, ($matrix) => $matrix.showRiskHeatmap);
 export const isLoadingOptions = derived(matrix, ($matrix) => $matrix.isLoadingOptions);
+
+// Plays derived stores
+export const plays = derived(matrix, ($matrix) => $matrix.plays);
+export const selectedPlayId = derived(matrix, ($matrix) => $matrix.selectedPlayId);
+export const isLoadingPlays = derived(matrix, ($matrix) => $matrix.isLoadingPlays);
 
 // Computed metrics (from currently displayed matrix)
 export const coherence = derived(matrix, ($matrix) => {

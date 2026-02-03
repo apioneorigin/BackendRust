@@ -429,6 +429,39 @@ async def send_message(
                 documents = structured_data.get("documents", [])
                 # Only update if LLM generated new documents (not empty array for unchanged context)
                 if documents:
+                    # Check if this is the FIRST full document (no existing docs) - generate 2 stubs
+                    existing_docs = conv.generated_documents or []
+                    full_doc = documents[0] if documents else None
+                    is_first_full_doc = (
+                        full_doc and
+                        full_doc.get("matrix_data", {}).get("cells") and
+                        len(existing_docs) == 0
+                    )
+
+                    if is_first_full_doc:
+                        # First Call 2 response with a full document - generate 2 stubs alongside
+                        from main import generate_additional_documents_llm
+
+                        # Build context messages for stub generation
+                        context_msgs = [
+                            {"role": m.role, "content": m.content[:500]}
+                            for m in previous_messages
+                            if m.role in ("user", "assistant")
+                        ]
+                        # Add current user message
+                        context_msgs.append({"role": "user", "content": request.content[:500]})
+
+                        # Generate 2 stubs
+                        stubs = await generate_additional_documents_llm(
+                            context_messages=context_msgs,
+                            existing_document_names=[full_doc.get("name", "")],
+                            start_doc_id=1,  # doc-0 is the full doc, stubs are doc-1 and doc-2
+                            count=2
+                        )
+
+                        if stubs:
+                            documents.extend(stubs)
+
                     conv.generated_documents = documents
                 if structured_data.get("paths"):
                     conv.generated_paths = structured_data["paths"]
