@@ -1649,7 +1649,7 @@
 	}
 
 	[data-theme='dark'] .document-name-badge {
-		background: rgba(15, 76, 117, 0.3);
+		background: rgba(15, 23, 42, 0.3);
 		color: var(--color-primary-300);
 	}
 
@@ -1694,7 +1694,7 @@
 	}
 
 	[data-theme='dark'] .play-item.selected {
-		background: rgba(15, 76, 117, 0.2);
+		background: rgba(15, 23, 42, 0.2);
 	}
 
 	.play-info {

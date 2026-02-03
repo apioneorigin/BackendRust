@@ -215,7 +215,7 @@
 	.input-field:focus {
 		outline: none;
 		border-color: var(--color-primary-400);
-		box-shadow: 0 0 0 3px rgba(15, 76, 117, 0.1);
+		box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.1);
 	}
 
 	.input-field:disabled {

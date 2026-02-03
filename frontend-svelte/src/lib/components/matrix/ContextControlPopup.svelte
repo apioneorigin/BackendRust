@@ -510,7 +510,7 @@
 	}
 
 	[data-theme='dark'] .document-tab:hover {
-		background: rgba(15, 76, 117, 0.2);
+		background: rgba(15, 23, 42, 0.2);
 		border-color: var(--color-primary-700);
 	}
 
@@ -521,7 +521,7 @@
 	}
 
 	[data-theme='dark'] .document-tab.active {
-		background: rgba(15, 76, 117, 0.3);
+		background: rgba(15, 23, 42, 0.3);
 		color: var(--color-primary-300);
 	}
 
@@ -557,7 +557,7 @@
 	}
 
 	[data-theme='dark'] .add-document-btn:hover:not(:disabled) {
-		background: rgba(15, 76, 117, 0.2);
+		background: rgba(15, 23, 42, 0.2);
 	}
 
 	.add-document-btn:disabled {
@@ -660,7 +660,7 @@
 	}
 
 	[data-theme='dark'] .show-more-btn:hover {
-		background: rgba(15, 76, 117, 0.2);
+		background: rgba(15, 23, 42, 0.2);
 	}
 
 	.title-item-wrapper {
@@ -690,7 +690,7 @@
 	}
 
 	[data-theme='dark'] .insight-expand-btn:hover {
-		background: rgba(15, 76, 117, 0.2);
+		background: rgba(15, 23, 42, 0.2);
 		color: var(--color-primary-300);
 	}
 
@@ -719,7 +719,7 @@
 	}
 
 	[data-theme='dark'] .title-item.selected {
-		background: rgba(15, 76, 117, 0.2);
+		background: rgba(15, 23, 42, 0.2);
 	}
 
 	.title-item.disabled {

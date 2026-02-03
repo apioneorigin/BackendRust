@@ -456,7 +456,7 @@
 		transform: rotate(180deg);
 	}
 
-	/* New Chat button - primary solid navy */
+	/* New Chat button - transparent with border (matches matrix toolbar) */
 	.new-chat-section {
 		padding: 0 0.75rem 0.5rem;
 	}
@@ -467,10 +467,10 @@
 		align-items: center;
 		gap: 0.5rem;
 		padding: 0.625rem 0.75rem;
-		background: var(--color-primary-500);
-		border: none;
+		background: transparent;
+		border: 1px solid var(--color-accent);
 		border-radius: 0.5rem;
-		color: #FFFFFF;
+		color: var(--color-accent);
 		font-size: 14px;
 		font-weight: 500;
 		cursor: pointer;
@@ -478,15 +478,16 @@
 	}
 
 	.new-chat-btn:hover {
-		background: var(--color-primary-800);
+		background: var(--color-accent-subtle);
+		color: var(--color-text-source);
 	}
 
 	.new-chat-btn svg {
-		color: #FFFFFF;
+		color: var(--color-accent);
 	}
 
 	.new-chat-btn:hover svg {
-		color: #FFFFFF;
+		color: var(--color-text-source);
 	}
 
 	.sidebar.collapsed .new-chat-btn {
@@ -494,12 +495,12 @@
 		height: 40px;
 		padding: 0;
 		justify-content: center;
-		border: none;
-		background: var(--color-primary-500);
+		border: 1px solid var(--color-accent);
+		background: transparent;
 	}
 
 	.sidebar.collapsed .new-chat-btn:hover {
-		background: var(--color-primary-800);
+		background: var(--color-accent-subtle);
 	}
 
 	.sidebar.collapsed .new-chat-btn span {

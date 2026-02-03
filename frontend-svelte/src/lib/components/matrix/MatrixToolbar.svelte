@@ -127,7 +127,7 @@
 		min-width: 100px;
 		background: transparent;
 		border: 1px solid var(--color-accent);
-		border-radius: 1rem;
+		border-radius: 0.5rem;
 		font-size: var(--font-size-base);
 		font-weight: 400;
 		color: var(--color-accent);

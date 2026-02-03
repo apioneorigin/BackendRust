@@ -181,7 +181,7 @@
 	}
 
 	[data-theme='dark'] .option-type-badge.driver {
-		background: rgba(15, 76, 117, 0.3);
+		background: rgba(15, 23, 42, 0.3);
 		color: var(--color-primary-300);
 	}
 
@@ -277,7 +277,7 @@
 	}
 
 	[data-theme='dark'] .close-text-btn:hover {
-		background: rgba(15, 76, 117, 0.2);
+		background: rgba(15, 23, 42, 0.2);
 		color: var(--color-primary-300);
 	}
 </style>
