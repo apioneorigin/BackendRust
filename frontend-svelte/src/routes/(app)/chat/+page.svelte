@@ -58,7 +58,19 @@
 
 	// Popup state
 	let showContextPopup = false;
-	let activeToolbarPopup: 'powerSpots' | 'plays' | 'scenarios' | 'sensitivity' | 'risk' | null = null;
+	let activeToolbarPopup: 'plays' | 'scenarios' | null = null;
+
+	// Filtered view states (Power Spots and Risk are now filtered views, not popups)
+	let showPowerSpotsView = false;
+	let showRiskView = false;
+
+	// Explanation popup state
+	let explanationPopup: {
+		type: 'powerSpot' | 'risk';
+		row: number;
+		col: number;
+		cell: any;
+	} | null = null;
 
 	// Rotating placeholder prompts
 	const PLACEHOLDERS = [
@@ -297,12 +309,54 @@
 		matrix.updateCellValue(row, col, value);
 	}
 
-	function handleToolbarPopup(e: CustomEvent<{ type: 'powerSpots' | 'plays' | 'scenarios' | 'sensitivity' | 'risk' }>) {
+	function handleToolbarPopup(e: CustomEvent<{ type: 'plays' | 'scenarios' }>) {
 		activeToolbarPopup = e.detail.type;
 	}
 
+	function handleTogglePowerSpots(e: CustomEvent<{ enabled: boolean }>) {
+		showPowerSpotsView = e.detail.enabled;
+		// Turn off risk view when enabling power spots
+		if (e.detail.enabled) {
+			showRiskView = false;
+		}
+	}
+
 	function handleToggleRisk(e: CustomEvent<{ enabled: boolean }>) {
-		matrix.toggleRiskHeatmap(e.detail.enabled);
+		showRiskView = e.detail.enabled;
+		// Turn off power spots view when enabling risk
+		if (e.detail.enabled) {
+			showPowerSpotsView = false;
+		}
+	}
+
+	function handleSaveScenario() {
+		// TODO: Implement backend persistence
+		addToast({
+			type: 'info',
+			message: 'Scenario save will be implemented with backend integration'
+		});
+	}
+
+	function handleShowPowerSpotExplanation(e: CustomEvent<{ row: number; col: number; cell: any }>) {
+		explanationPopup = {
+			type: 'powerSpot',
+			row: e.detail.row,
+			col: e.detail.col,
+			cell: e.detail.cell
+		};
+	}
+
+	function handleShowRiskExplanation(e: CustomEvent<{ row: number; col: number; cell: any }>) {
+		explanationPopup = {
+			type: 'risk',
+			row: e.detail.row,
+			col: e.detail.col,
+			cell: e.detail.cell
+		};
+	}
+
+	function closeExplanationPopup() {
+		explanationPopup = null;
 	}
 
 	function closeToolbarPopup() {
@@ -515,10 +569,13 @@
 				matrixData={$matrixDataStore}
 				rowHeaders={$rowHeadersStore}
 				columnHeaders={$columnHeadersStore}
-				showRiskHeatmap={$showRiskHeatmapStore}
+				showPowerSpotsView={showPowerSpotsView}
+				showRiskView={showRiskView}
 				compact={true}
 				on:cellClick={handleCellClick}
 				on:cellChange={handleCellChange}
+				on:showPowerSpotExplanation={handleShowPowerSpotExplanation}
+				on:showRiskExplanation={handleShowRiskExplanation}
 			/>
 			{#if isWelcomeState}
 				<div class="welcome-overlay matrix-overlay">
@@ -540,10 +597,13 @@
 
 		<!-- Toolbar - always shown -->
 		<MatrixToolbar
-			showRiskHeatmap={$showRiskHeatmapStore}
+			showPowerSpotsView={showPowerSpotsView}
+			showRiskView={showRiskView}
 			disabled={isWelcomeState}
 			on:openPopup={handleToolbarPopup}
+			on:togglePowerSpots={handleTogglePowerSpots}
 			on:toggleRisk={handleToggleRisk}
+			on:saveScenario={handleSaveScenario}
 		/>
 
 		<!-- Live Preview - always shown -->
@@ -579,17 +639,14 @@
 	</div>
 </div>
 
-<!-- Toolbar Popups -->
+<!-- Toolbar Popups (Plays and Scenarios only) -->
 {#if activeToolbarPopup}
 	<div class="popup-overlay" on:click={closeToolbarPopup} on:keydown={(e) => e.key === 'Escape' && closeToolbarPopup()} role="presentation" tabindex="-1">
 		<div class="toolbar-popup" on:click|stopPropagation on:keydown|stopPropagation role="dialog" aria-modal="true">
 			<div class="popup-header">
 				<h3>
-					{#if activeToolbarPopup === 'powerSpots'}Power Spots
-					{:else if activeToolbarPopup === 'plays'}Plays
-					{:else if activeToolbarPopup === 'scenarios'}Scenarios Comparison
-					{:else if activeToolbarPopup === 'sensitivity'}Sensitivity Analysis
-					{:else if activeToolbarPopup === 'risk'}Risk View
+					{#if activeToolbarPopup === 'plays'}Plays
+					{:else if activeToolbarPopup === 'scenarios'}Scenarios
 					{/if}
 				</h3>
 				<button class="close-btn" on:click={closeToolbarPopup}>
@@ -600,46 +657,101 @@
 				</button>
 			</div>
 			<div class="popup-body">
-				{#if activeToolbarPopup === 'powerSpots'}
-					<p class="popup-description">Strategic points that create cascading positive effects</p>
-					<div class="power-spots-list">
-						{#each $matrixDataStore.flat().filter(c => c.isLeveragePoint) as _, idx}
-							<div class="power-spot-item">
-								<span class="spot-icon">⚡</span>
-								<div class="spot-info">
-									<span class="spot-title">Power Spot {idx + 1}</span>
-									<span class="spot-desc">High impact cell for transformation</span>
-								</div>
-							</div>
-						{/each}
-					</div>
-				{:else if activeToolbarPopup === 'plays'}
-					<p class="popup-description">Pre-designed transformation strategies</p>
+				{#if activeToolbarPopup === 'plays'}
+					<p class="popup-description">Generate transformation strategies via AI</p>
 					<div class="plays-list">
-						<div class="play-item">
-							<span class="play-name">Rapid Progress</span>
-							<span class="play-risk low">Low Risk</span>
-						</div>
-						<div class="play-item">
-							<span class="play-name">Balanced Growth</span>
-							<span class="play-risk medium">Medium Risk</span>
-						</div>
-						<div class="play-item">
-							<span class="play-name">Deep Transformation</span>
-							<span class="play-risk high">High Risk</span>
-						</div>
+						<button class="generate-plays-btn">
+							<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M12 3v3m6.366-.366-2.12 2.12M21 12h-3m.366 6.366-2.12-2.12M12 21v-3m-6.366.366 2.12-2.12M3 12h3m-.366-6.366 2.12 2.12"/>
+							</svg>
+							Generate Plays
+						</button>
+						<p class="plays-hint">AI will analyze your matrix and generate strategic transformation plays</p>
 					</div>
 				{:else if activeToolbarPopup === 'scenarios'}
 					<p class="popup-description">Compare different transformation scenarios</p>
-					<div class="scenarios-placeholder">Scenarios comparison coming soon</div>
-				{:else if activeToolbarPopup === 'sensitivity'}
-					<p class="popup-description">Analyze factor sensitivity and variations</p>
-					<div class="scenarios-placeholder">Sensitivity analysis coming soon</div>
-				{:else if activeToolbarPopup === 'risk'}
-					<p class="popup-description">Risk heatmap is {$showRiskHeatmapStore ? 'enabled' : 'disabled'}</p>
-					<button class="toggle-risk-btn" on:click={() => matrix.toggleRiskHeatmap()}>
-						{$showRiskHeatmapStore ? 'Disable' : 'Enable'} Risk Heatmap
-					</button>
+					<div class="scenarios-list">
+						<p class="scenarios-hint">Save scenarios using the Save button, then compare them here</p>
+					</div>
+				{/if}
+			</div>
+		</div>
+	</div>
+{/if}
+
+<!-- Explanation Popup (Power Spot or Risk) -->
+{#if explanationPopup}
+	<div class="popup-overlay" on:click={closeExplanationPopup} on:keydown={(e) => e.key === 'Escape' && closeExplanationPopup()} role="presentation" tabindex="-1">
+		<div class="toolbar-popup explanation-popup" on:click|stopPropagation on:keydown|stopPropagation role="dialog" aria-modal="true">
+			<div class="popup-header">
+				<h3>
+					{#if explanationPopup.type === 'powerSpot'}
+						<span class="header-icon">⚡</span> Power Spot
+					{:else}
+						<span class="header-icon">⚠</span> Risk Analysis
+					{/if}
+				</h3>
+				<button class="close-btn" on:click={closeExplanationPopup}>
+					<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M18 6 6 18" />
+						<path d="m6 6 12 12" />
+					</svg>
+				</button>
+			</div>
+			<div class="popup-body">
+				<div class="cell-info">
+					<span class="cell-label">{$rowHeadersStore[explanationPopup.row]} × {$columnHeadersStore[explanationPopup.col]}</span>
+					<span class="cell-score">Score: {explanationPopup.cell.value}</span>
+				</div>
+
+				{#if explanationPopup.type === 'powerSpot'}
+					<div class="explanation-section">
+						<h4>Why is this a Power Spot?</h4>
+						<p>This cell has a high impact score (≥75), indicating it's a strategic leverage point where small changes can create cascading positive effects across your transformation matrix.</p>
+						<div class="impact-details">
+							<div class="impact-item">
+								<span class="impact-label">Impact Score</span>
+								<span class="impact-value high">{explanationPopup.cell.value}</span>
+							</div>
+							<div class="impact-item">
+								<span class="impact-label">Cascade Potential</span>
+								<span class="impact-value">High</span>
+							</div>
+						</div>
+						<h4>Recommended Actions</h4>
+						<ul class="action-list">
+							<li>Prioritize resources and attention to this intersection</li>
+							<li>Monitor changes here for ripple effects</li>
+							<li>Use as anchor point for transformation strategy</li>
+						</ul>
+					</div>
+				{:else}
+					<div class="explanation-section">
+						<h4>Risk Assessment</h4>
+						<p>This cell has been flagged as {explanationPopup.cell.riskLevel === 'high' ? 'high' : 'medium'} risk based on its current state and dependencies.</p>
+						<div class="impact-details">
+							<div class="impact-item">
+								<span class="impact-label">Risk Level</span>
+								<span class="impact-value {explanationPopup.cell.riskLevel}">{explanationPopup.cell.riskLevel === 'high' ? 'High' : 'Medium'}</span>
+							</div>
+							<div class="impact-item">
+								<span class="impact-label">Current Score</span>
+								<span class="impact-value">{explanationPopup.cell.value}</span>
+							</div>
+						</div>
+						<h4>Risk Factors</h4>
+						<ul class="action-list">
+							{#if explanationPopup.cell.riskLevel === 'high'}
+								<li>Critical dependency on multiple factors</li>
+								<li>High sensitivity to external changes</li>
+								<li>Potential bottleneck in transformation flow</li>
+							{:else}
+								<li>Moderate sensitivity to changes</li>
+								<li>Some dependencies that need monitoring</li>
+								<li>May require attention if conditions shift</li>
+							{/if}
+						</ul>
+					</div>
 				{/if}
 			</div>
 		</div>
@@ -1328,21 +1440,132 @@
 		font-size: 14px;
 	}
 
-	.toggle-risk-btn {
+	/* Generate plays button */
+	.generate-plays-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
 		width: 100%;
-		padding: 0.625rem;
+		padding: 0.75rem;
 		background: var(--color-primary-500);
 		color: #ffffff;
 		border: none;
-		border-radius: 0.375rem;
+		border-radius: 0.5rem;
 		font-size: 14px;
 		font-weight: 500;
 		cursor: pointer;
 		transition: all 0.15s ease;
 	}
 
-	.toggle-risk-btn:hover {
+	.generate-plays-btn:hover {
 		background: var(--color-primary-600);
+	}
+
+	.plays-hint,
+	.scenarios-hint {
+		padding: 1rem;
+		text-align: center;
+		color: var(--color-text-whisper);
+		font-size: 13px;
+	}
+
+	/* Explanation popup styles */
+	.explanation-popup {
+		max-width: 480px;
+	}
+
+	.header-icon {
+		margin-right: 0.25rem;
+	}
+
+	.cell-info {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 0.75rem;
+		background: var(--color-field-depth);
+		border-radius: 0.5rem;
+		margin-bottom: 1rem;
+	}
+
+	.cell-label {
+		font-size: 14px;
+		font-weight: 600;
+		color: var(--color-text-source);
+	}
+
+	.cell-score {
+		font-size: 13px;
+		font-weight: 500;
+		color: var(--color-text-manifest);
+		padding: 0.25rem 0.5rem;
+		background: var(--color-accent-subtle);
+		border-radius: 0.25rem;
+	}
+
+	.explanation-section h4 {
+		font-size: 13px;
+		font-weight: 600;
+		color: var(--color-text-source);
+		margin: 0.75rem 0 0.5rem;
+		text-transform: uppercase;
+		letter-spacing: 0.03em;
+	}
+
+	.explanation-section p {
+		font-size: 14px;
+		color: var(--color-text-manifest);
+		line-height: 1.5;
+	}
+
+	.impact-details {
+		display: flex;
+		gap: 1rem;
+		margin: 0.75rem 0;
+	}
+
+	.impact-item {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+		padding: 0.5rem 0.75rem;
+		background: var(--color-field-depth);
+		border-radius: 0.375rem;
+	}
+
+	.impact-label {
+		font-size: 11px;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		color: var(--color-text-whisper);
+	}
+
+	.impact-value {
+		font-size: 16px;
+		font-weight: 600;
+		color: var(--color-text-source);
+	}
+
+	.impact-value.high {
+		color: #16a34a;
+	}
+
+	.impact-value.medium {
+		color: #d97706;
+	}
+
+	.action-list {
+		margin: 0.5rem 0;
+		padding-left: 1.25rem;
+	}
+
+	.action-list li {
+		font-size: 13px;
+		color: var(--color-text-manifest);
+		margin-bottom: 0.375rem;
+		line-height: 1.4;
 	}
 
 	/* Responsive */
