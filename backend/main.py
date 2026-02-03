@@ -75,7 +75,7 @@ from articulation_prompt_builder import ArticulationPromptBuilder, build_articul
 from consciousness_state import ConsciousnessState
 
 # Constellation Q&A imports — backend decides IF/WHICH, LLM generates content
-from constellation_question_generator import ConstellationQuestionGenerator
+from constellation_question_generator import QuestionGenerator
 
 # Import logging
 from logging_config import (
@@ -392,7 +392,6 @@ MODEL_CONFIGS = {
 }
 
 DEFAULT_MODEL = "claude-opus-4-5-20251101"
-OPENAI_MODEL = DEFAULT_MODEL  # Legacy name, now points to Anthropic model
 OPENAI_RESPONSES_URL = MODEL_CONFIGS[DEFAULT_MODEL]["streaming_endpoint"]
 
 def get_model_config(model: str) -> dict:
@@ -1178,7 +1177,7 @@ async def inference_stream(
         yield sse_status(f"Extracted {obs_count} tier-1 operator values...")
 
         # Build goal context from LLM Call 1's extraction (validated in parse_query_with_web_research)
-        question_gen = ConstellationQuestionGenerator()
+        question_gen = QuestionGenerator()
         from consciousness_state import GoalContext
         goal_context = GoalContext(
             goal_text=evidence.get('goal'),
@@ -2768,7 +2767,7 @@ async def format_results_streaming_bridge(
         )
 
         # Generate question context with 2-priority structure
-        question_gen = ConstellationQuestionGenerator()
+        question_gen = QuestionGenerator()
         question_context = question_gen.get_question_context(
             goal_context=goal_context,
             extracted_operators=extracted_operators,
@@ -3778,7 +3777,7 @@ async def health_check():
     return {
         "status": "healthy",
         "version": "4.1.0",
-        "model": OPENAI_MODEL,
+        "model": DEFAULT_MODEL,
         "engine_loaded": inference_engine.is_loaded,
         "formula_count": inference_engine.formula_count,
         "openai_configured": OPENAI_API_KEY is not None,

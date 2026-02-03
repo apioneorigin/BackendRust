@@ -6,6 +6,7 @@
 import { writable, derived } from 'svelte/store';
 import { api } from '$utils/api';
 import { matrix } from './matrix';
+import { addToast } from './toast';
 
 export interface Message {
 	id: string;
@@ -186,13 +187,29 @@ function createChatStore() {
 			isSelectingConversation = true;
 
 			try {
-				// Load conversation, messages, documents, and questions in parallel
-				const [conversation, messagesResponse, documentsResponse, questionsResponse] = await Promise.all([
+				// Load conversation and messages (required), documents and questions (optional with error handling)
+				const [conversation, messagesResponse] = await Promise.all([
 					api.get<Conversation>(`/api/chat/conversations/${conversationId}`),
 					api.get<Message[]>(`/api/chat/conversations/${conversationId}/messages`),
-					api.get<any[]>(`/api/matrix/${conversationId}/documents`).catch(() => []),
-					api.get<Question[]>(`/api/chat/conversations/${conversationId}/questions`).catch(() => []),
 				]);
+
+				// Load optional data with proper error handling (don't block on failure)
+				let documentsResponse: any[] = [];
+				let questionsResponse: Question[] = [];
+
+				try {
+					documentsResponse = await api.get<any[]>(`/api/matrix/${conversationId}/documents`);
+				} catch (docError: any) {
+					console.error('Failed to load documents:', docError);
+					addToast({ type: 'error', message: 'Failed to load matrix documents', duration: 3000 });
+				}
+
+				try {
+					questionsResponse = await api.get<Question[]>(`/api/chat/conversations/${conversationId}/questions`);
+				} catch (qError: any) {
+					console.error('Failed to load questions:', qError);
+					addToast({ type: 'error', message: 'Failed to load questions', duration: 3000 });
+				}
 
 				// Transform questions from API format to store format
 				const questions: Question[] = (Array.isArray(questionsResponse) ? questionsResponse : []).map(q => ({

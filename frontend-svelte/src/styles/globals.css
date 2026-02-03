@@ -134,8 +134,6 @@
 	--color-warning-500: #d97706;
 	--color-warning-600: #b45309;
 
-	/* Legacy */
-	--color-challenger: #dc2626;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -556,50 +554,6 @@ button:disabled,
 .group:hover .hover-reveal,
 *:hover > .hover-reveal {
 	opacity: 1;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   LEGACY COMPATIBILITY
-   ═══════════════════════════════════════════════════════════════════════════════ */
-
-.sidebar-icon-btn {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: 32px;
-	height: 32px;
-	border-radius: 6px;
-	background: transparent;
-	border: none;
-	cursor: pointer;
-	color: var(--color-text-whisper);
-	transition: all var(--duration-fast) ease;
-}
-
-.sidebar-icon-btn:hover {
-	background: var(--color-accent-subtle);
-	color: var(--color-text-source);
-}
-
-.mobile-send-btn {
-	width: 40px;
-	height: 40px;
-	border-radius: 8px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	background: var(--color-text-source);
-	color: var(--color-field-void);
-	border: none;
-	transition: opacity var(--duration-fast) ease;
-}
-
-.mobile-send-btn:hover:not(:disabled) {
-	opacity: 0.85;
-}
-
-.mobile-send-btn:disabled {
-	opacity: 0.3;
 }
 
 /* Input premium - simplified */

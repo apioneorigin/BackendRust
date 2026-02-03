@@ -199,10 +199,18 @@
 				localDimensionEdits = localDimensionEdits;
 				closeCellPopup();
 			} else {
-				console.error('Failed to save changes');
+				// Save failed - revert local edits to original values
+				localDimensionEdits.clear();
+				originalDimensionValues.clear();
+				localDimensionEdits = localDimensionEdits;
+				// Toast notification is shown by matrix store
 			}
 		} catch (error) {
 			console.error('Error saving changes:', error);
+			// Revert local edits on error
+			localDimensionEdits.clear();
+			originalDimensionValues.clear();
+			localDimensionEdits = localDimensionEdits;
 		} finally {
 			isSaving = false;
 		}

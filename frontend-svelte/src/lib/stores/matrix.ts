@@ -10,6 +10,7 @@
 
 import { writable, derived, get } from 'svelte/store';
 import { api } from '$utils/api';
+import { addToast } from './toast';
 
 export interface CellDimension {
 	name: string;
@@ -64,14 +65,12 @@ export interface Play {
 export interface RowOption {
 	id: string;
 	label: string;
-	insight: string;  // Short summary (backward compatible)
 	articulated_insight?: ArticulatedInsight;  // Full 3-component insight (when document is fully populated)
 }
 
 export interface ColumnOption {
 	id: string;
 	label: string;
-	insight: string;  // Short summary (backward compatible)
 	articulated_insight?: ArticulatedInsight;  // Full 3-component insight (when document is fully populated)
 }
 
@@ -174,8 +173,8 @@ function createMatrixStore() {
 
 		const rowHeaders = selected_rows.map(i => row_options[i]?.label || `Row ${i + 1}`);
 		const columnHeaders = selected_columns.map(i => column_options[i]?.label || `Column ${i + 1}`);
-		const rowInsights = selected_rows.map(i => row_options[i]?.insight || '');
-		const columnInsights = selected_columns.map(i => column_options[i]?.insight || '');
+		const rowInsights = selected_rows.map(i => row_options[i]?.articulated_insight?.title || '');
+		const columnInsights = selected_columns.map(i => column_options[i]?.articulated_insight?.title || '');
 
 		const matrixData: CellData[][] = selected_rows.map(rowIdx =>
 			selected_columns.map(colIdx => {
@@ -477,8 +476,16 @@ function createMatrixStore() {
 				return { success: true, changesSaved: 0 };
 			}
 
+			// Save original state for rollback
+			const originalMatrixData = state.displayedMatrixData.map(row =>
+				row.map(cell => ({
+					...cell,
+					dimensions: cell.dimensions.map(dim => ({ ...dim }))
+				}))
+			);
+
 			try {
-				// Apply changes to local state first
+				// Apply changes to local state first (optimistic update)
 				update(s => {
 					const newMatrixData = s.displayedMatrixData.map((row, r) =>
 						row.map((cell, c) => {
@@ -514,6 +521,17 @@ function createMatrixStore() {
 				};
 			} catch (error: any) {
 				console.error('Failed to save cell changes:', error);
+
+				// Rollback to original state
+				update(s => ({ ...s, displayedMatrixData: originalMatrixData }));
+
+				// Notify user of failure
+				addToast({
+					type: 'error',
+					message: 'Failed to save changes. Please try again.',
+					duration: 4000
+				});
+
 				return { success: false, changesSaved: 0 };
 			}
 		},
