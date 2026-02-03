@@ -444,68 +444,52 @@ class DiscoverGoalsRequest(BaseModel):
     existing_goals: Optional[List[dict]] = None
 
 
-# Goal Discovery System Prompt with 11 goal types - optimized for creative content
-GOAL_DISCOVERY_SYSTEM_PROMPT = """You are an AGGRESSIVE GOAL DISCOVERY ENGINE. Extract MAXIMUM actionable goals from uploaded files.
+# Goal Discovery System Prompt with 11 goal types
+GOAL_DISCOVERY_SYSTEM_PROMPT = """You are the GOAL INVENTORY DISCOVERY ENGINE. Your task is to extract actionable goals from uploaded files.
 
-## MINDSET: BE MAXIMALLY EXTRACTIVE
-- For a script: Every character, every scene, every theme, every line of dialogue is a potential goal source
-- For a document: Every section, every concept, every name, every idea can spawn goals
-- NEVER say "insufficient data" - always find at least 15-30 goals in any substantial file
-- Think like a producer, editor, or consultant who wants to identify EVERY possible improvement
+CRITICAL RULES:
+1. NEVER refuse due to insufficient data - always extract what you can
+2. Output ONLY valid JSON - no explanations, no markdown code blocks
+3. Each goal must be grounded in ACTUAL data from the files
 
 ## 11 GOAL TYPES
 
-### Single-file (use these for 1 file):
-- OPTIMIZE: Amplify what works (e.g., "intensify the tension in the confrontation scene")
-- TRANSFORM: Fix what doesn't (e.g., "rewrite the weak opening to hook readers faster")
-- DISCOVER: Explore potential (e.g., "develop the mystery around character X's past")
-- QUANTUM: Activate dormant elements (e.g., "give the silent supporting character a voice")
-- HIDDEN: Address barriers (e.g., "resolve the pacing drag in act 2")
+### Single-file goal types (can be detected from 1 file):
+- OPTIMIZE: Scale existing strengths (e.g., "double Q3 revenue growth from 12% to 24%")
+- TRANSFORM: Fix identified weaknesses (e.g., "reduce customer churn from 8% to 3%")
+- DISCOVER: Investigate anomalies or unknowns (e.g., "analyze why APAC sales dropped 15%")
+- QUANTUM: Activate unused capacity (e.g., "deploy idle warehouse space for new product line")
+- HIDDEN: Confront behavioral blocks (e.g., "address team resistance to CRM adoption")
 
-### Multi-file (require 2+ files):
-- INTEGRATION: Link related elements across files
-- DIFFERENTIATION: Separate wrongly merged concepts
-- ANTI_SILOING: Connect same entities across sources
-- SYNTHESIS: Combine complementary pieces
-- RECONCILIATION: Resolve contradictions
-- ARBITRAGE: Exploit gaps between sources
-
-## FOR CREATIVE CONTENT (scripts, stories, etc.):
-Extract goals for:
-- Each major character (development, arc, motivation, dialogue style)
-- Each scene/chapter (pacing, tension, payoff, transitions)
-- Plot structure (setup, conflict, resolution, twists)
-- Themes (deepen, clarify, connect)
-- Dialogue (authenticity, subtext, humor, emotion)
-- Setting/World (atmosphere, consistency, detail)
-- Tone (consistency, shifts, impact)
-- Format/Presentation (scene headings, action lines, visual storytelling)
+### Multi-file goal types (require 2+ files to detect cross-file patterns):
+- INTEGRATION: Connect related items across files that should be linked
+- DIFFERENTIATION: Distinguish similar items that are incorrectly merged
+- ANTI_SILOING: Link same entities appearing unconnected across sources
+- SYNTHESIS: Combine complementary data into unified insights
+- RECONCILIATION: Resolve contradictory metrics between sources
+- ARBITRAGE: Exploit gaps or opportunities between data sources
 
 ## OUTPUT FORMAT
+
+Return a JSON object with this exact structure:
 {
   "goals": [
     {
       "type": "OPTIMIZE|TRANSFORM|DISCOVER|QUANTUM|HIDDEN|INTEGRATION|DIFFERENTIATION|ANTI_SILOING|SYNTHESIS|RECONCILIATION|ARBITRAGE",
-      "identity": "10-15 word action statement",
-      "firstMove": "20-30 word specific instruction referencing actual content (character names, scene references, specific lines)",
+      "identity": "10-15 word action statement grounded in actual file data",
+      "firstMove": "20-30 word imperative instruction with specific data points from files",
       "confidence": 0-100,
-      "sourceFiles": ["filename.ext"]
+      "sourceFiles": ["filename1.pdf", "filename2.xlsx"]
     }
   ]
 }
 
-## CONFIDENCE LEVELS:
-- 90-100: Explicitly stated problem or opportunity
-- 70-89: Clearly implied improvement area
-- 50-69: Reasonable inference from patterns
-- 30-49: Creative extrapolation (still valid!)
-
 ## REQUIREMENTS:
-- MINIMUM 15 goals for any file with 1+ pages of content
-- TARGET 20-30 goals for scripts, stories, detailed documents
-- Reference SPECIFIC content (names, scenes, lines, concepts) in firstMove
-- Cover ALL aspects: character, plot, theme, structure, style, format
-- Be CREATIVE with lower-confidence goals - extrapolation is encouraged!
+- Extract up to 30 goals maximum
+- Every goal MUST reference specific data from the files
+- firstMove MUST include at least ONE specific number, name, or fact from the files
+- confidence reflects evidence strength: 90+ = explicit data, 70-89 = clear inference, 50-69 = reasonable extrapolation
+- For multi-file types, ONLY use them when 2+ files are provided
 
 OUTPUT ONLY THE JSON OBJECT. NO OTHER TEXT."""
 
@@ -527,19 +511,13 @@ def build_goal_discovery_user_prompt(files: List[FileData], existing_goals: Opti
         existing_identities = [g.get("identity", "") for g in existing_goals]
         dedup_note = f"\n\nEXISTING GOALS (do not duplicate these):\n{json.dumps(existing_identities, indent=2)}"
 
-    return f"""TASK: Extract MAXIMUM goals from these files. Target 20-30 goals.
+    return f"""Analyze these files and discover actionable goals.
 
 {files_content}
 {multi_file_note}
 {dedup_note}
 
-REMEMBER:
-- Extract AT LEAST 15 goals, ideally 20-30
-- Cover character development, plot, themes, dialogue, structure, style
-- Reference specific content (names, scenes, lines) in firstMove
-- Lower confidence goals (30-49) are encouraged for creative extrapolations
-
-Output ONLY the JSON object with discovered goals."""
+Output ONLY valid JSON with discovered goals."""
 
 
 @router.post("/goal-inventory/generate")
@@ -574,7 +552,7 @@ async def discover_goals_from_files(
                 {"role": "user", "content": user_prompt}
             ],
             max_tokens=8000,
-            temperature=0.85,  # Higher temperature for more creative goal extraction
+            temperature=0.7,
             response_format={"type": "json_object"}
         )
 
