@@ -953,8 +953,8 @@ class TestSkeletonShapeValidation:
             "sourceFiles": ["data.csv"],
             "classification_reason": "Quantifiable metrics with improvement potential",
             "consciousness_context": {
-                "matrix_positions": {"power": {"position": "Responsibility", "score": 0.6}},
-                "bottleneck_data": {"primary": "R_resistance", "value": 0.55},
+                "matrix_positions": {"power": {"position": "Responsibility", "score": 65.0}},  # score is progress_pct
+                "bottleneck_data": {"primary": "R_resistance", "value": 0.55, "description": "High resistance"},
                 "drive_profile": {"dominant": "achievement"},
                 "s_level": 4.2
             }
@@ -1024,9 +1024,13 @@ class TestSkeletonShapeValidation:
         bottleneck_data = ctx.get("bottleneck_data", {})
 
         if bottleneck_data:
-            assert "primary" in bottleneck_data
+            assert "primary" in bottleneck_data  # primary is the variable name
             assert "value" in bottleneck_data
             assert 0 <= bottleneck_data["value"] <= 1
+            # primary should be a valid operator variable name
+            valid_bottleneck_vars = {"At_attachment", "R_resistance", "F_fear", "M_maya", "K_karma", "Hf_habit"}
+            if bottleneck_data.get("primary"):
+                assert bottleneck_data["primary"] in valid_bottleneck_vars or "_" in bottleneck_data["primary"]
 
 
 # =============================================================================
