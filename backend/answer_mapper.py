@@ -56,10 +56,6 @@ class AnswerMapper:
     This is the ONLY mapping mechanism - no single-operator fallbacks.
     """
 
-    def __init__(self):
-        """Initialize the answer mapper."""
-        pass
-
     def map_constellation_to_operators(
         self,
         selected_constellation: 'OperatorConstellation',

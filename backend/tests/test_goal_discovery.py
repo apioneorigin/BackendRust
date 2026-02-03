@@ -1057,52 +1057,6 @@ class TestEndToEndIntegration:
         assert business_plan_file["content"]
         assert len(business_plan_file["content"]) > 100
 
-    @pytest.mark.skipif(
-        not os.getenv("ANTHROPIC_API_KEY"),
-        reason="No Anthropic API key"
-    )
-    async def test_call1_returns_valid_json(self, business_plan_file):
-        """Verify Call 1 returns valid JSON (requires Anthropic API key)."""
-        # This would make actual API call
-        # Placeholder for integration test structure
-        pass
-
-    @pytest.mark.skipif(
-        not os.getenv("ANTHROPIC_API_KEY"),
-        reason="No Anthropic API key"
-    )
-    async def test_classifier_produces_goals(self, business_plan_file):
-        """Verify classifier produces 3+ goals (requires API)."""
-        # This would use actual Call 1 output
-        pass
-
-    @pytest.mark.skipif(
-        not os.getenv("ANTHROPIC_API_KEY"),
-        reason="No Anthropic API key"
-    )
-    async def test_call2_adds_articulation(self, business_plan_file):
-        """Verify Call 2 adds identity and firstMove (requires API)."""
-        # This would verify articulation output
-        pass
-
-    @pytest.mark.skipif(
-        not os.getenv("ANTHROPIC_API_KEY"),
-        reason="No Anthropic API key"
-    )
-    async def test_identity_word_count(self, business_plan_file):
-        """Verify identity is 10-15 words (requires API)."""
-        # This would check actual articulation
-        pass
-
-    @pytest.mark.skipif(
-        not os.getenv("ANTHROPIC_API_KEY"),
-        reason="No Anthropic API key"
-    )
-    async def test_first_move_word_count(self, business_plan_file):
-        """Verify firstMove is 20-30 words (requires API)."""
-        # This would check actual articulation
-        pass
-
 
 # =============================================================================
 # HELPER TESTS

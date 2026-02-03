@@ -132,9 +132,6 @@ class PathwayGenerator:
         'M_maya': ['reality inquiry', 'illusion piercing', 'truth seeking'],
     }
 
-    def __init__(self):
-        pass
-
     def generate_pathways(
         self,
         current_operators: Dict[str, float],

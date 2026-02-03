@@ -164,9 +164,6 @@ class GraceCalculator:
         }
     }
 
-    def __init__(self):
-        pass
-
     def calculate_grace_requirements(
         self,
         current_operators: Dict[str, float],

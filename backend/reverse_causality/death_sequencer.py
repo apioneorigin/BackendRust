@@ -146,9 +146,6 @@ class DeathSequencer:
         }
     }
 
-    def __init__(self):
-        pass
-
     def analyze_death_requirements(
         self,
         current_operators: Dict[str, float],

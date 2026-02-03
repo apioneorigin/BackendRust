@@ -94,9 +94,6 @@ class PathwayOptimizer:
         'success': 0.25
     }
 
-    def __init__(self):
-        pass
-
     def optimize_pathways(
         self,
         pathways: List[TransformationPathway],

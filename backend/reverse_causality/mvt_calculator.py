@@ -121,9 +121,6 @@ class MVTCalculator:
         'V_void': 0.7,
     }
 
-    def __init__(self):
-        pass
-
     def calculate_mvt(
         self,
         current_operators: Dict[str, float],

@@ -77,9 +77,6 @@ class ConstraintChecker:
     # Minimum coherence required
     MIN_COHERENCE = 0.85
 
-    def __init__(self):
-        pass
-
     def check_all_constraints(
         self,
         current_operators: Dict[str, float],

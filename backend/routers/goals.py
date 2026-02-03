@@ -9,6 +9,7 @@ Includes:
 
 import os
 import json
+import re
 import time
 import httpx
 from datetime import datetime
@@ -94,7 +95,7 @@ def parse_llm_json_response(text: str, context: str = "JSON_PARSE") -> Optional[
     Returns None on failure (caller must handle).
     """
     if not text or not text.strip():
-        logger.warning(f"[{context}] Empty response")
+        api_logger.warning(f"[{context}] Empty response")
         return None
 
     original_text = text
@@ -155,13 +156,13 @@ def parse_llm_json_response(text: str, context: str = "JSON_PARSE") -> Optional[
     try:
         repaired = repair_truncated_json(text)
         result = json.loads(repaired)
-        logger.info("[JSON_PARSE] Repair successful")
+        api_logger.info("[JSON_PARSE] Repair successful")
         return result
     except json.JSONDecodeError as e:
-        logger.warning(f"[JSON_PARSE] Repair failed: {e}")
+        api_logger.warning(f"[JSON_PARSE] Repair failed: {e}")
 
     # All strategies failed
-    logger.error(f"[{context}] All parse strategies failed. Original text (first 500 chars): {original_text[:500]}")
+    api_logger.error(f"[{context}] All parse strategies failed. Original text (first 500 chars): {original_text[:500]}")
     return None
 
 
