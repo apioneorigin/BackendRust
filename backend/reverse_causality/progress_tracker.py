@@ -149,9 +149,6 @@ class ProgressTracker:
         }
     }
 
-    def __init__(self):
-        pass
-
     def generate_monitoring_plan(
         self,
         pathway,  # TransformationPathway from pathway_generator

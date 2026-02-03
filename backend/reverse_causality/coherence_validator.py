@@ -183,9 +183,6 @@ class CoherenceValidator:
         }
     ]
 
-    def __init__(self):
-        pass
-
     def validate_coherence(
         self,
         operators: Dict[str, float],
