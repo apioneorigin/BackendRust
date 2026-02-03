@@ -14,6 +14,7 @@ import { api } from '$utils/api';
 export interface CellDimension {
 	name: string;
 	value: number;  // 0 (Low), 50 (Medium), or 100 (High)
+	explanation?: string;  // Max 10-word phrase explaining this dimension's state
 }
 
 export interface CellData {
