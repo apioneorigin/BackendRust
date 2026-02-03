@@ -174,13 +174,41 @@
 		selectedCell = null;
 	}
 
-	function handleSave() {
-		// TODO: Persist changes to backend
-		// For now, clear the local edits tracking
-		localDimensionEdits.clear();
-		originalDimensionValues.clear();
-		localDimensionEdits = localDimensionEdits;
-		closeCellPopup();
+	let isSaving = false;
+
+	async function handleSave() {
+		if (localDimensionEdits.size === 0) {
+			closeCellPopup();
+			return;
+		}
+
+		isSaving = true;
+
+		// Convert local edits map to array of changes
+		const changes: Array<{ row: number; col: number; dimIdx: number; value: number }> = [];
+
+		localDimensionEdits.forEach((value, key) => {
+			const [row, col, dimIdx] = key.split('-').map(Number);
+			changes.push({ row, col, dimIdx, value });
+		});
+
+		try {
+			const result = await matrix.saveCellChanges(changes);
+
+			if (result.success) {
+				// Clear tracking after successful save
+				localDimensionEdits.clear();
+				originalDimensionValues.clear();
+				localDimensionEdits = localDimensionEdits;
+				closeCellPopup();
+			} else {
+				console.error('Failed to save changes');
+			}
+		} catch (error) {
+			console.error('Error saving changes:', error);
+		} finally {
+			isSaving = false;
+		}
 	}
 
 	function handleDocumentTabClick(docId: string, doc: Document) {
@@ -397,13 +425,18 @@
 			</div>
 
 			<div class="popup-footer">
-				<Button variant="ghost" on:click={closeCellPopup}>Close</Button>
+				<Button variant="ghost" on:click={closeCellPopup} disabled={isSaving}>Close</Button>
 				<Button
 					variant={hasUnsavedChanges ? "primary" : "ghost"}
 					on:click={handleSave}
-					disabled={!hasUnsavedChanges}
+					disabled={!hasUnsavedChanges || isSaving}
 				>
-					Save
+					{#if isSaving}
+						<Spinner size="xs" />
+						<span style="margin-left: 0.5rem">Saving...</span>
+					{:else}
+						Save
+					{/if}
 				</Button>
 			</div>
 		</div>
