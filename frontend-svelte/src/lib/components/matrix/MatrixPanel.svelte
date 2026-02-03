@@ -196,12 +196,9 @@
 									{#each STEP_VALUES as stepValue, stepIdx}
 										<button
 											class="signal-bar bar-{stepIdx + 1}"
-											class:active={getStepIndex(dim.value) >= stepIdx}
-											class:selected={dim.value === stepValue}
+											class:filled={getStepIndex(dim.value) >= stepIdx}
 											on:click={() => handleDimensionStepClick(dimIdx, stepValue)}
-											title={STEP_LABELS[stepIdx]}
 										>
-											<span class="bar-fill"></span>
 										</button>
 									{/each}
 								</div>
@@ -611,64 +608,32 @@
 		align-items: flex-end;
 		gap: 3px;
 		flex-shrink: 0;
-		height: 24px;
-		padding: 2px;
+		height: 22px;
 	}
 
 	.signal-bar {
-		width: 8px;
-		background: transparent;
+		width: 6px;
+		background: var(--color-veil-thin);
 		border: none;
+		border-radius: 2px;
 		cursor: pointer;
 		padding: 0;
-		display: flex;
-		align-items: flex-end;
-		transition: all 0.15s ease;
-	}
-
-	.signal-bar .bar-fill {
-		width: 100%;
-		background: var(--color-veil-thin);
-		border-radius: 2px;
-		transition: all 0.15s ease;
+		transition: background 0.15s ease;
 	}
 
 	/* Bar heights - WiFi style increasing heights */
-	.signal-bar.bar-1 {
-		height: 8px;
-	}
-	.signal-bar.bar-1 .bar-fill {
-		height: 100%;
-	}
+	.signal-bar.bar-1 { height: 7px; }
+	.signal-bar.bar-2 { height: 14px; }
+	.signal-bar.bar-3 { height: 21px; }
 
-	.signal-bar.bar-2 {
-		height: 14px;
-	}
-	.signal-bar.bar-2 .bar-fill {
-		height: 100%;
-	}
-
-	.signal-bar.bar-3 {
-		height: 20px;
-	}
-	.signal-bar.bar-3 .bar-fill {
-		height: 100%;
-	}
-
-	/* Active state - bars that are "filled" up to the selected level */
-	.signal-bar.active .bar-fill {
+	/* Filled state - bars up to selected level */
+	.signal-bar.filled {
 		background: var(--color-primary-500);
 	}
 
 	/* Hover state */
-	.signal-bar:hover .bar-fill {
+	.signal-bar:hover {
 		background: var(--color-primary-400);
-	}
-
-	/* Selected indicator - the exact bar that was clicked */
-	.signal-bar.selected .bar-fill {
-		background: var(--color-primary-600);
-		box-shadow: 0 0 0 1px var(--color-primary-300);
 	}
 
 	.power-spot-badge {
