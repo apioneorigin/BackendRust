@@ -389,7 +389,7 @@ class GoalClassifier:
             "Hf_habit": ["routine", "habit", "automatic", "default", "usual"],
         }
 
-        operator = bottleneck.operator
+        operator = bottleneck.variable
         keywords = bottleneck_keywords.get(operator, [])
         return any(kw in desc_lower for kw in keywords)
 
@@ -451,7 +451,7 @@ class GoalClassifier:
         weakness_signals = [s for s in signals if s.category == SignalCategory.WEAKNESSES]
         if weakness_signals:
             has_blocking_bottleneck = any(
-                b.operator in ["R_resistance", "F_fear"] and b.value > 0.6
+                b.variable in ["R_resistance", "F_fear"] and b.value > 0.6
                 for b in bottlenecks
             )
             if weakness_signals and (has_blocking_bottleneck or len(weakness_signals) >= 2):
@@ -525,7 +525,7 @@ class GoalClassifier:
         # RELEASE: Avoidances + high attachment bottleneck
         avoidance_signals = [s for s in signals if s.category == SignalCategory.AVOIDANCES]
         high_attachment = any(
-            b.operator == "At_attachment" and b.value > THRESHOLDS["HIGH_ATTACHMENT"]
+            b.variable == "At_attachment" and b.value > THRESHOLDS["HIGH_ATTACHMENT"]
             for b in bottlenecks
         )
         if avoidance_signals and high_attachment:
@@ -993,8 +993,9 @@ class GoalClassifier:
             for matrix_name in ["truth", "love", "power", "freedom", "creation", "time", "death"]:
                 matrix = getattr(profile.matrices_profile, matrix_name, None)
                 if matrix:
-                    position = getattr(matrix, "position", None)
-                    score = getattr(matrix, "score", None)
+                    # MatrixProfile uses dominant_state for position name, current_position for numeric
+                    position = getattr(matrix, "dominant_state", None)
+                    score = getattr(matrix, "progress_pct", None)
                     if position:
                         matrices[matrix_name] = {"position": position, "score": score}
             if matrices:
@@ -1004,7 +1005,7 @@ class GoalClassifier:
         if consciousness_state.tier2 and consciousness_state.tier2.bottlenecks:
             primary = consciousness_state.tier2.bottlenecks[0]
             context["bottleneck_data"] = {
-                "primary": primary.operator,
+                "primary": primary.variable,  # Bottleneck uses 'variable' not 'operator'
                 "value": primary.value,
                 "description": primary.description,
             }
