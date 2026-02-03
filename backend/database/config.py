@@ -111,10 +111,39 @@ async def get_db() -> AsyncSession:
             await session.close()
 
 
+async def _run_sqlite_migrations(conn):
+    """Run SQLite migrations to add missing columns to existing tables."""
+    from sqlalchemy import text
+
+    # Define columns that may need to be added (table, column, type, default)
+    migrations = [
+        ("chat_messages", "feedback", "TEXT", None),
+    ]
+
+    for table, column, col_type, default in migrations:
+        # Check if column exists
+        result = await conn.execute(text(f"PRAGMA table_info({table})"))
+        columns = [row[1] for row in result.fetchall()]
+
+        if column not in columns:
+            # Add missing column
+            default_clause = f" DEFAULT {default}" if default is not None else ""
+            stmt = f'ALTER TABLE {table} ADD COLUMN {column} {col_type}{default_clause}'
+            try:
+                await conn.execute(text(stmt))
+                print(f"[Database] Added missing column: {table}.{column}")
+            except Exception as e:
+                print(f"[Database] Migration warning: {e}")
+
+
 async def init_db():
-    """Initialize database tables."""
+    """Initialize database tables and run migrations for SQLite."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+        # For SQLite, run migrations to add missing columns
+        if USE_SQLITE:
+            await _run_sqlite_migrations(conn)
 
 
 async def close_db():
