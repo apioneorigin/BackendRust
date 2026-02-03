@@ -444,9 +444,110 @@ class DiscoverGoalsRequest(BaseModel):
     existing_goals: Optional[List[dict]] = None
 
 
-# Goal Discovery System Prompt - copied from reality-transformer repo
-# ALL INTELLIGENCE LIVES HERE. Backend has zero logic - this prompt does everything.
-GOAL_DISCOVERY_SYSTEM_PROMPT = """
+# =============================================================================
+# GOAL DISCOVERY 2-CALL SYSTEM
+# Mirrors the chat route's Call 1 (extraction) + Backend + Call 2 (articulation)
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# CALL 1: Signal Extraction
+# Extract raw signals from files - entities, metrics, patterns, anomalies
+# NO goal generation - just extraction
+# -----------------------------------------------------------------------------
+CALL1_SIGNAL_EXTRACTION_PROMPT = """
+# GOAL SIGNAL EXTRACTION ENGINE (Call 1)
+
+You are extracting RAW SIGNALS from uploaded files. Do NOT generate goals yet.
+Your job is to identify everything that COULD become a goal.
+
+## WHAT TO EXTRACT
+
+### 1. ENTITIES
+People, companies, products, teams, departments, systems, processes mentioned.
+```json
+{"name": "entity name", "type": "person|company|product|team|system|process", "context": "how it appears in file"}
+```
+
+### 2. METRICS
+Any numbers, percentages, KPIs, measurements, counts, rates.
+```json
+{"name": "metric name", "value": "the value", "context": "what it measures", "trend": "up|down|stable|unknown"}
+```
+
+### 3. STRENGTHS
+Things working well, high performers, successes, positive patterns.
+```json
+{"description": "what's working", "evidence": "specific data point", "magnitude": "how significant"}
+```
+
+### 4. WEAKNESSES
+Problems, bottlenecks, failures, friction points, complaints.
+```json
+{"description": "the problem", "evidence": "specific data point", "impact": "cost/consequence"}
+```
+
+### 5. ANOMALIES
+Outliers, unexpected values, correlations, patterns worth investigating.
+```json
+{"description": "what's unusual", "evidence": "the data", "question": "what should be investigated"}
+```
+
+### 6. UNUSED_CAPACITY
+Resources not being utilized, idle assets, untapped potential.
+```json
+{"resource": "what's unused", "current_utilization": "how much used", "potential": "what could be done"}
+```
+
+### 7. AVOIDANCES
+Things being avoided, delayed decisions, unaddressed issues, behavioral blocks.
+```json
+{"pattern": "what's being avoided", "evidence": "how you know", "cost": "what it's costing"}
+```
+
+### 8. CROSS_FILE_PATTERNS (only if 2+ files)
+Connections, contradictions, gaps between files.
+```json
+{"type": "connection|contradiction|gap", "file1": "first file", "file2": "second file", "description": "the pattern"}
+```
+
+## OUTPUT FORMAT
+
+```json
+{
+  "file_summary": {
+    "total_files": 1,
+    "file_types": ["text"],
+    "data_richness": "sparse|moderate|rich",
+    "domain": "business|personal|technical|creative|mixed"
+  },
+  "entities": [...],
+  "metrics": [...],
+  "strengths": [...],
+  "weaknesses": [...],
+  "anomalies": [...],
+  "unused_capacity": [...],
+  "avoidances": [...],
+  "cross_file_patterns": [...]
+}
+```
+
+## CRITICAL RULES
+
+1. Extract EVERYTHING - be exhaustive, not selective
+2. Include SPECIFIC data points from the files (names, numbers, quotes)
+3. Do NOT generate goals - just extract signals
+4. For creative content (scripts, stories): extract characters, scenes, themes, plot points, dialogue patterns
+5. Confidence comes from specificity - vague signals get filtered out later
+
+**Output JSON only, no other text.**
+"""
+
+
+# -----------------------------------------------------------------------------
+# CALL 2: Goal Articulation
+# Take classified signals and articulate them into goals
+# -----------------------------------------------------------------------------
+CALL2_GOAL_ARTICULATION_PROMPT = """
 # GOAL INVENTORY DISCOVERY ENGINE
 
 You are generating an exhaustive inventory of ALL possible goals latent in the user's uploaded data.
