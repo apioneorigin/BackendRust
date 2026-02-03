@@ -33,7 +33,8 @@
 		coherence as coherenceStore,
 		population as populationStore,
 		avgScore as avgScoreStore,
-		powerSpots as powerSpotsStore
+		powerSpots as powerSpotsStore,
+		activeDocumentId
 	} from '$lib/stores';
 	import { Button, Spinner, TypingIndicator } from '$lib/components/ui';
 	import MatrixPanel from '$lib/components/matrix/MatrixPanel.svelte';
