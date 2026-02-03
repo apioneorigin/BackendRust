@@ -99,15 +99,12 @@
 		});
 	}
 
-	// Get dimension bar fill level (0, 1, 2, 3 for empty, low, mid, high)
-	function getDimFillLevel(value: number): number {
-		if (value === 0) return 0;
-		if (value === 50) return 1;
-		if (value === 100) return 2;
-		// Snap unknown values
-		if (value < 25) return 0;
-		if (value < 75) return 1;
-		return 2;
+	// Get dimension bar fill count (0, 1, 2, 3 segments to fill)
+	function getDimFillCount(value: number): number {
+		if (value <= 0) return 0;
+		if (value <= 25) return 1;
+		if (value <= 75) return 2;
+		return 3; // 100
 	}
 
 	function handleCellClick(row: number, col: number) {
@@ -181,25 +178,32 @@
 			{#each row as cell, colIdx}
 				{@const cellAvg = calcCellValueFromDimensions(cell.dimensions)}
 				{@const filledCount = getFilledSegments(cellAvg)}
-				<button
+				<div
 					class="matrix-cell {getCellColor(cell)}"
 					class:leverage-point={cell.isLeveragePoint}
 					class:selected={selectedCell?.row === rowIdx && selectedCell?.col === colIdx}
-					on:click={() => handleCellClick(rowIdx, colIdx)}
 				>
 					{#if cell.isLeveragePoint}
 						<span class="power-indicator" title="Power Spot">⚡</span>
 					{/if}
-					<!-- 5-segment bar display -->
+					<!-- Top 50%: click to open dimensions popup -->
+					<button
+						class="cell-top-area"
+						on:click={() => handleCellClick(rowIdx, colIdx)}
+						aria-label="Open dimensions"
+					></button>
+					<!-- Bottom 50%: 5-segment bar, clickable -->
 					<div class="cell-bar">
 						{#each Array(CELL_SEGMENTS) as _, segIdx}
-							<div
+							<button
 								class="cell-bar-segment"
 								class:filled={segIdx < filledCount}
-							></div>
+								on:click={() => handleCellBarClick(rowIdx, colIdx, segIdx)}
+								aria-label="Set level {segIdx + 1}"
+							></button>
 						{/each}
 					</div>
-				</button>
+				</div>
 			{/each}
 		{/each}
 	</div>
@@ -222,66 +226,35 @@
 			</div>
 
 			<div class="popup-body">
-				<div class="value-control">
-					<label for="cell-value">Score</label>
-					<div class="value-input-group">
-						<button
-							class="value-btn"
-							on:click={() => handleCellValueChange(selectedCell.row, selectedCell.col, matrixData[selectedCell.row][selectedCell.col].value - 5)}
-						>
-							-
-						</button>
-						<input
-							id="cell-value"
-							type="number"
-							min="0"
-							max="100"
-							value={matrixData[selectedCell.row][selectedCell.col].value}
-							on:input={(e) => handleCellValueChange(selectedCell.row, selectedCell.col, parseInt(e.currentTarget.value) || 0)}
-						/>
-						<button
-							class="value-btn"
-							on:click={() => handleCellValueChange(selectedCell.row, selectedCell.col, matrixData[selectedCell.row][selectedCell.col].value + 5)}
-						>
-							+
-						</button>
-					</div>
-				</div>
-
-				<div class="dimensions-section">
-					<h4>Dimensions</h4>
-					<div class="dimensions-grid">
-						{#each matrixData[selectedCell.row][selectedCell.col].dimensions as dim, dimIdx}
-							<div class="dimension-item">
-								<span class="dim-name">{dim.name}</span>
-								<div class="step-buttons">
-									{#each STEP_VALUES as stepValue, stepIdx}
-										<button
-											class="step-btn"
-											class:active={dim.value === stepValue}
-											on:click={() => handleDimensionStepClick(dimIdx, stepValue)}
-											title={STEP_LABELS[stepIdx]}
-										>
-											{STEP_LABELS[stepIdx]}
-										</button>
-									{/each}
-								</div>
+				<!-- Dimensions as visual bars (no labels, no cell value) -->
+				<div class="dimensions-list">
+					{#each matrixData[selectedCell.row][selectedCell.col].dimensions as dim, dimIdx}
+						{@const fillCount = getDimFillCount(dim.value)}
+						<div class="dimension-row">
+							<span class="dim-name">{dim.name}</span>
+							<div class="dim-bar">
+								{#each DIM_STEPS as _, stepIdx}
+									<button
+										class="dim-bar-segment"
+										class:filled={stepIdx < fillCount}
+										on:click={() => handleDimensionBarClick(dimIdx, stepIdx)}
+									></button>
+								{/each}
 							</div>
-						{/each}
-					</div>
+						</div>
+					{/each}
 				</div>
 
 				{#if matrixData[selectedCell.row][selectedCell.col].isLeveragePoint}
 					<div class="power-spot-badge">
 						<span>⚡</span>
-						<span>Power Spot - High Impact Cell</span>
+						<span>Power Spot</span>
 					</div>
 				{/if}
 			</div>
 
 			<div class="popup-footer">
 				<Button variant="ghost" on:click={closeCellPopup}>Close</Button>
-				<Button variant="primary" on:click={closeCellPopup}>Save</Button>
 			</div>
 		</div>
 	</div>
@@ -434,19 +407,15 @@
 		position: relative;
 		display: flex;
 		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		padding: 0.375rem;
+		align-items: stretch;
+		justify-content: stretch;
+		padding: 0;
 		border-radius: 0.25rem;
 		border: none;
 		background: var(--color-field-depth);
-		cursor: pointer;
 		transition: all 0.1s ease;
 		min-height: 0;
-	}
-
-	.compact .matrix-cell {
-		padding: 0.25rem;
+		overflow: hidden;
 	}
 
 	.matrix-cell:hover {
@@ -474,6 +443,75 @@
 		background: rgba(220, 38, 38, 0.08);
 	}
 
+	/* Top 50% - click to open dimensions popup */
+	.cell-top-area {
+		flex: 1;
+		background: transparent;
+		border: none;
+		cursor: pointer;
+		min-height: 50%;
+	}
+
+	.cell-top-area:hover {
+		background: rgba(0, 0, 0, 0.05);
+	}
+
+	[data-theme='dark'] .cell-top-area:hover {
+		background: rgba(255, 255, 255, 0.05);
+	}
+
+	/* Bottom 50% - 5-segment bar */
+	.cell-bar {
+		display: flex;
+		gap: 2px;
+		padding: 0.25rem;
+		min-height: 50%;
+		align-items: stretch;
+	}
+
+	.compact .cell-bar {
+		padding: 0.125rem;
+		gap: 1px;
+	}
+
+	.cell-bar-segment {
+		flex: 1;
+		background: var(--color-veil-thin);
+		border: none;
+		border-radius: 2px;
+		cursor: pointer;
+		transition: all 0.1s ease;
+		min-height: 8px;
+	}
+
+	.cell-bar-segment:hover {
+		background: var(--color-primary-300);
+	}
+
+	.cell-bar-segment.filled {
+		background: var(--color-primary-500);
+	}
+
+	.cell-bar-segment.filled:hover {
+		background: var(--color-primary-600);
+	}
+
+	[data-theme='dark'] .cell-bar-segment {
+		background: rgba(255, 255, 255, 0.1);
+	}
+
+	[data-theme='dark'] .cell-bar-segment:hover {
+		background: var(--color-primary-400);
+	}
+
+	[data-theme='dark'] .cell-bar-segment.filled {
+		background: var(--color-primary-400);
+	}
+
+	[data-theme='dark'] .cell-bar-segment.filled:hover {
+		background: var(--color-primary-300);
+	}
+
 	.power-indicator {
 		position: absolute;
 		top: 2px;
@@ -487,33 +525,13 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		z-index: 1;
 	}
 
 	.compact .power-indicator {
 		width: 10px;
 		height: 10px;
 		font-size: 0.4375rem;
-	}
-
-	.cell-value {
-		font-size: 0.875rem;
-		font-weight: 600;
-		color: var(--color-text-source);
-	}
-
-	.compact .cell-value {
-		font-size: 0.75rem;
-	}
-
-	.confidence-bar {
-		position: absolute;
-		bottom: 0;
-		left: 0;
-		height: 2px;
-		background: var(--color-text-source);
-		border-radius: 0 0 0.25rem 0.25rem;
-		transition: width 0.2s ease;
-		opacity: 0.3;
 	}
 
 	/* Popup styles */
@@ -575,90 +593,21 @@
 		padding: 0.75rem 1rem;
 	}
 
-	.value-control {
-		margin-bottom: 0.75rem;
+	/* Dimensions list in popup */
+	.dimensions-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
 	}
 
-	.value-control label {
-		display: block;
-		font-size: 0.875rem;
-		font-weight: 500;
-		color: var(--color-text-manifest);
-		margin-bottom: 0.5rem;
-	}
-
-	.value-input-group {
+	.dimension-row {
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
-	}
-
-	.value-btn {
-		width: 32px;
-		height: 32px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		background: var(--color-field-depth);
-		border: none;
-		border-radius: 0.5rem;
-		font-size: 1rem;
-		font-weight: 600;
-		color: var(--color-text-source);
-		cursor: pointer;
-		transition: all 0.15s ease;
-	}
-
-	.value-btn:hover {
-		background: var(--color-primary-50);
-		color: var(--color-primary-600);
-	}
-
-	[data-theme='dark'] .value-btn:hover {
-		background: rgba(15, 76, 117, 0.3);
-		color: var(--color-primary-400);
-	}
-
-	.value-input-group input {
-		flex: 1;
-		text-align: center;
-		padding: 0.5rem;
-		border: none;
-		border-radius: 0.5rem;
-		font-size: 1rem;
-		font-weight: 700;
-		color: var(--color-text-source);
-		background: var(--color-field-depth);
-		transition: all 0.15s ease;
-	}
-
-	.value-input-group input:focus {
-		outline: none;
-		background: var(--color-field-void);
-		box-shadow: var(--shadow-sm);
-	}
-
-	.dimensions-section h4 {
-		font-size: 0.8125rem;
-		font-weight: 500;
-		color: var(--color-text-manifest);
-		margin-bottom: 0.5rem;
-	}
-
-	.dimensions-grid {
-		display: grid;
-		grid-template-columns: repeat(2, 1fr);
-		gap: 0.5rem 1rem;
-	}
-
-	.dimension-item {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
+		gap: 1rem;
 	}
 
 	.dim-name {
-		font-size: 0.75rem;
+		font-size: 0.8125rem;
 		font-weight: 500;
 		color: var(--color-text-source);
 		flex: 1;
@@ -668,34 +617,48 @@
 		text-overflow: ellipsis;
 	}
 
-	.step-buttons {
+	.dim-bar {
 		display: flex;
-		gap: 0.125rem;
+		gap: 4px;
 		flex-shrink: 0;
 	}
 
-	.step-btn {
-		padding: 0.25rem 0.5rem;
-		background: transparent;
-		border: 1px solid var(--color-accent);
-		border-radius: 0.5rem;
-		font-size: 0.625rem;
-		font-weight: 400;
-		color: var(--color-accent);
+	.dim-bar-segment {
+		width: 28px;
+		height: 16px;
+		background: var(--color-veil-thin);
+		border: none;
+		border-radius: 3px;
 		cursor: pointer;
 		transition: all 0.1s ease;
-		white-space: nowrap;
 	}
 
-	.step-btn:hover {
-		background: var(--color-accent-subtle);
-		color: var(--color-text-source);
+	.dim-bar-segment:hover {
+		background: var(--color-primary-300);
 	}
 
-	.step-btn.active {
+	.dim-bar-segment.filled {
 		background: var(--color-primary-500);
-		border-color: var(--color-primary-500);
-		color: #ffffff;
+	}
+
+	.dim-bar-segment.filled:hover {
+		background: var(--color-primary-600);
+	}
+
+	[data-theme='dark'] .dim-bar-segment {
+		background: rgba(255, 255, 255, 0.15);
+	}
+
+	[data-theme='dark'] .dim-bar-segment:hover {
+		background: var(--color-primary-400);
+	}
+
+	[data-theme='dark'] .dim-bar-segment.filled {
+		background: var(--color-primary-400);
+	}
+
+	[data-theme='dark'] .dim-bar-segment.filled:hover {
+		background: var(--color-primary-300);
 	}
 
 	.power-spot-badge {
