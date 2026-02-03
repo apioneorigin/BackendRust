@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm.attributes import flag_modified
 
 from database import get_db, User, ChatConversation, ChatMessage
 from routers.auth import get_current_user
@@ -192,6 +193,7 @@ async def generate_additional_documents(
     # Append new documents to existing
     updated_documents = existing_docs + new_documents
     conversation.generated_documents = updated_documents
+    flag_modified(conversation, "generated_documents")
 
     await db.commit()
 
@@ -298,6 +300,7 @@ async def populate_document_cells(
         api_logger.info(f"[POPULATE] Stored {len(result['plays'])} plays for doc {doc_id}")
 
     conversation.generated_documents = documents
+    flag_modified(conversation, "generated_documents")
 
     await db.commit()
 
@@ -359,6 +362,7 @@ async def update_document_selection(
         raise HTTPException(status_code=404, detail="Document not found")
 
     conversation.generated_documents = documents
+    flag_modified(conversation, "generated_documents")
     await db.commit()
 
     return {
@@ -720,6 +724,7 @@ async def select_play(
     # Update selected_play_id
     documents[doc_index]["selected_play_id"] = request.play_id
     conversation.generated_documents = documents
+    flag_modified(conversation, "generated_documents")
 
     await db.commit()
 
@@ -830,6 +835,7 @@ async def save_cell_changes(
     # Update the document
     documents[doc_index]["matrix_data"]["cells"] = cells
     conversation.generated_documents = documents
+    flag_modified(conversation, "generated_documents")
 
     await db.commit()
 

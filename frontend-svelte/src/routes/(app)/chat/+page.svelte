@@ -142,8 +142,8 @@
 			placeholderIndex = (placeholderIndex + 1) % PLACEHOLDERS.length;
 		}, 3000);
 
-		// Initialize matrix with sample data (will be replaced by auto-generation)
-		matrix.initializeMatrix();
+		// Matrix initialization is handled by chat.selectConversation() when loading documents
+		// Do NOT call matrix.initializeMatrix() here as it causes race conditions
 	});
 
 	onDestroy(() => {

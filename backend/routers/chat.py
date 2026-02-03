@@ -13,6 +13,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm.attributes import flag_modified
 from sse_starlette.sse import EventSourceResponse
 
 from database import get_db, User, ChatConversation, ChatMessage, ChatSummary, Session, AsyncSessionLocal
@@ -464,8 +465,10 @@ async def send_message(
                             documents.extend(stubs)
 
                     conv.generated_documents = documents
+                    flag_modified(conv, "generated_documents")
                 if structured_data.get("paths"):
                     conv.generated_paths = structured_data["paths"]
+                    flag_modified(conv, "generated_paths")
 
             # Save/update questions to conversation
             if pending_questions:
@@ -474,6 +477,7 @@ async def send_message(
                     existing_questions = {"questions": []}
                 existing_questions.setdefault("questions", []).extend(pending_questions)
                 conv.question_answers = existing_questions
+                flag_modified(conv, "question_answers")
 
             await save_db.commit()
 
