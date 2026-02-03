@@ -218,10 +218,6 @@
 		target.style.height = Math.min(target.scrollHeight, 150) + 'px';
 	}
 
-	function stopGeneration() {
-		chat.stopStreaming();
-	}
-
 	// File upload handlers
 	function handleFileSelect(e: Event) {
 		const target = e.target as HTMLInputElement;
@@ -496,24 +492,16 @@
 						<span>Research</span>
 					</label>
 
-					{#if $isStreaming}
-						<button class="send-btn stop-btn" on:click={stopGeneration}>
-							<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-								<rect x="6" y="6" width="12" height="12" rx="2" />
-							</svg>
-						</button>
-					{:else}
-						<button
-							class="send-btn"
-							on:click={handleSendMessage}
-							disabled={(!messageInput.trim() && attachedFiles.length === 0)}
-						>
-							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-								<path d="M22 2L11 13" />
-								<path d="M22 2L15 22L11 13L2 9L22 2Z" />
-							</svg>
-						</button>
-					{/if}
+					<button
+						class="send-btn"
+						on:click={handleSendMessage}
+						disabled={$isStreaming || (!messageInput.trim() && attachedFiles.length === 0)}
+					>
+						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+							<path d="M22 2L11 13" />
+							<path d="M22 2L15 22L11 13L2 9L22 2Z" />
+						</svg>
+					</button>
 				</div>
 			</div>
 		</div>
@@ -1096,10 +1084,6 @@
 	.send-btn:disabled {
 		opacity: 0.3;
 		cursor: not-allowed;
-	}
-
-	.send-btn.stop-btn {
-		background: var(--color-error-500);
 	}
 
 	/* Matrix column */
