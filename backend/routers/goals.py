@@ -1,18 +1,31 @@
 """
 Goal and matrix management endpoints.
+
+Includes:
+- Basic CRUD for goals
+- Goal inventory management
+- Goal discovery from files (2-call LLM architecture with backend classifier)
 """
 
+import os
+import json
+import time
+import httpx
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db, User, Goal, MatrixValue, DiscoveredGoal, UserGoalInventory
 from routers.auth import get_current_user, generate_id
 from utils import get_or_404, paginate, to_response, to_response_list
+from logging_config import api_logger, pipeline_logger
+
+# Goal classifier (backend intelligence between Call 1 and Call 2)
+from goal_classifier import GoalClassifier, classify_goals
 
 router = APIRouter(prefix="/api", tags=["goals"])
 
@@ -244,3 +257,746 @@ async def save_goal_inventory(
     await db.commit()
 
     return {"status": "success"}
+
+
+# =============================================================================
+# GOAL DISCOVERY FROM FILES
+# 2-Call LLM Architecture with Backend Classifier
+# =============================================================================
+
+# Request/Response Models
+class FileData(BaseModel):
+    """Uploaded file data for goal discovery."""
+    name: str
+    content: str
+    type: Optional[str] = None
+    size: Optional[int] = None
+
+
+class DiscoverGoalsRequest(BaseModel):
+    """Request for file-based goal discovery."""
+    files: List[FileData]
+    existing_goals: Optional[List[Dict[str, Any]]] = None
+    model: str = "claude-opus-4-5-20251101"
+
+
+class DiscoverGoalsResponse(BaseModel):
+    """Response from goal discovery."""
+    success: bool
+    goals: List[Dict[str, Any]]
+    generatedAt: str
+    sourceFileCount: int
+    usage: Dict[str, Any]
+
+
+# Legacy prompts (kept for reference, not used in new 2-call architecture)
+GOAL_DISCOVERY_SYSTEM_PROMPT = """[LEGACY - NOT USED]"""
+CALL1_SIGNAL_EXTRACTION_PROMPT = """[LEGACY - NOT USED]"""
+CALL2_GOAL_ARTICULATION_PROMPT = """[LEGACY - NOT USED]"""
+
+
+def build_goal_discovery_user_prompt(files: List[FileData], existing_goals: Optional[List[Dict]] = None) -> str:
+    """Build user prompt for single-call goal discovery (LEGACY - kept for fallback)."""
+    file_sections = []
+    for f in files:
+        file_sections.append(f"""
+=== FILE: {f.name} ===
+{f.content[:50000]}
+=== END FILE ===
+""")
+
+    existing_goals_section = ""
+    if existing_goals:
+        goals_text = "\n".join([f"- {g.get('identity', g.get('goal_text', 'Unknown'))}" for g in existing_goals[:10]])
+        existing_goals_section = f"""
+
+=== EXISTING GOALS (for deduplication) ===
+{goals_text}
+=== END EXISTING GOALS ===
+"""
+
+    return f"""Analyze the following files and discover goals:
+
+{chr(10).join(file_sections)}
+{existing_goals_section}
+
+Return a JSON object with discovered goals."""
+
+
+# =============================================================================
+# NEW 2-CALL ARCHITECTURE HELPERS
+# =============================================================================
+
+def build_call1_user_prompt(files: List[FileData], existing_goals: Optional[List[Dict]] = None) -> str:
+    """
+    Build user prompt for Call 1 (Signal & Consciousness Extraction).
+    Contains ONLY file content - no goal generation instructions.
+    """
+    file_sections = []
+    for f in files:
+        # Limit content to prevent token overflow
+        content = f.content[:50000] if len(f.content) > 50000 else f.content
+        file_sections.append(f"""
+=== FILE: {f.name} ===
+Type: {f.type or 'unknown'}
+Size: {f.size or len(f.content)} bytes
+
+CONTENT:
+{content}
+=== END FILE: {f.name} ===
+""")
+
+    # Include existing goals for context (helps LLM assess user's intent)
+    existing_goals_section = ""
+    if existing_goals:
+        goals_summary = []
+        for g in existing_goals[:10]:
+            identity = g.get('identity', g.get('goal_text', 'Unknown'))
+            goal_type = g.get('type', 'Unknown')
+            goals_summary.append(f"- [{goal_type}] {identity}")
+        existing_goals_section = f"""
+
+=== USER'S EXISTING GOALS (for context) ===
+{chr(10).join(goals_summary)}
+=== END EXISTING GOALS ===
+"""
+
+    return f"""Extract signals and consciousness operators from these files.
+
+FILE COUNT: {len(files)}
+MULTI-FILE MODE: {len(files) > 1}
+
+{chr(10).join(file_sections)}
+{existing_goals_section}
+
+Return JSON with signal_extraction, consciousness_extraction, and cross_mapping sections."""
+
+
+def build_call2_user_prompt(
+    goal_skeletons: List[Dict],
+    files: List[FileData]
+) -> str:
+    """
+    Build user prompt for Call 2 (Goal Articulation).
+    Contains goal skeletons + file summaries (not full content).
+    """
+    # File summaries (first 2000 chars each to save tokens)
+    file_summaries = []
+    for f in files:
+        summary = f.content[:2000] + ("..." if len(f.content) > 2000 else "")
+        file_summaries.append(f"""
+=== FILE SUMMARY: {f.name} ===
+{summary}
+=== END SUMMARY ===
+""")
+
+    # Goal skeletons as JSON
+    skeletons_json = json.dumps(goal_skeletons, indent=2)
+
+    return f"""Articulate the following goal skeletons with identity and firstMove fields.
+
+=== GOAL SKELETONS (from backend classification) ===
+{skeletons_json}
+=== END SKELETONS ===
+
+=== FILE SUMMARIES (for grounding) ===
+{chr(10).join(file_summaries)}
+=== END FILE SUMMARIES ===
+
+For each goal skeleton, write:
+- identity: 10-15 words, action-oriented, grounded in signal data
+- firstMove: 20-30 words, imperative verb start, ONE specific action from signals
+
+Return JSON with goals array containing all skeletons with identity and firstMove populated."""
+
+
+def parse_llm_json_response(response_text: str, context: str = "LLM") -> Optional[Dict]:
+    """
+    Parse JSON from LLM response with robust error handling.
+    Handles markdown code blocks and truncated JSON.
+    """
+    if not response_text:
+        api_logger.error(f"[{context}] Empty response text")
+        return None
+
+    json_text = response_text.strip()
+
+    # Handle markdown code blocks
+    if "```json" in json_text:
+        json_text = json_text.split("```json")[1].split("```")[0].strip()
+    elif "```" in json_text:
+        parts = json_text.split("```")
+        for part in parts[1::2]:
+            part = part.strip()
+            if part.startswith("{"):
+                json_text = part
+                break
+
+    # Remove leading non-JSON content
+    if not json_text.startswith("{"):
+        start_idx = json_text.find("{")
+        if start_idx != -1:
+            json_text = json_text[start_idx:]
+
+    try:
+        return json.loads(json_text)
+    except json.JSONDecodeError as e:
+        api_logger.warning(f"[{context}] JSON decode failed at pos {e.pos}, attempting repair...")
+        # Simple repair: find matching braces
+        try:
+            brace_count = 0
+            end_idx = 0
+            for i, char in enumerate(json_text):
+                if char == '{':
+                    brace_count += 1
+                elif char == '}':
+                    brace_count -= 1
+                    if brace_count == 0:
+                        end_idx = i + 1
+                        break
+            if end_idx > 0:
+                repaired = json_text[:end_idx]
+                return json.loads(repaired)
+        except:
+            pass
+        api_logger.error(f"[{context}] JSON repair failed: {e}")
+        return None
+
+
+def get_goal_discovery_model_config(model: str) -> Dict[str, Any]:
+    """Get model configuration for goal discovery."""
+    configs = {
+        "claude-opus-4-5-20251101": {
+            "provider": "anthropic",
+            "api_key": os.getenv("ANTHROPIC_API_KEY"),
+            "endpoint": "https://api.anthropic.com/v1/messages",
+            "max_tokens": 8192,
+        },
+        "gpt-4.1-mini": {
+            "provider": "openai",
+            "api_key": os.getenv("OPENAI_API_KEY"),
+            "endpoint": "https://api.openai.com/v1/chat/completions",
+            "max_tokens": 8192,
+        },
+        "gpt-5.2": {
+            "provider": "openai",
+            "api_key": os.getenv("OPENAI_API_KEY"),
+            "endpoint": "https://api.openai.com/v1/chat/completions",
+            "max_tokens": 16384,
+        },
+    }
+    if model not in configs:
+        raise ValueError(f"Unknown model: {model}")
+    return {"model": model, **configs[model]}
+
+
+# =============================================================================
+# MAIN ENDPOINT
+# =============================================================================
+
+@router.post("/goals/discover-from-files", response_model=DiscoverGoalsResponse)
+async def discover_goals_from_files(
+    request: DiscoverGoalsRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Discover goals from uploaded files using 2-call LLM architecture.
+
+    Flow:
+    1. Call 1: Extract signals + consciousness operators from files
+    2. Backend: Classify signals into goal skeletons using OOF inference
+    3. Call 2: Articulate goal skeletons with identity + firstMove
+    4. Return merged results
+    """
+    start_time = time.time()
+    pipeline_logger.info(f"[GOAL DISCOVERY] Starting for user {current_user.id}, {len(request.files)} files")
+
+    # Get model config
+    try:
+        model_config = get_goal_discovery_model_config(request.model)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    provider = model_config["provider"]
+    api_key = model_config["api_key"]
+    model = model_config["model"]
+
+    if not api_key:
+        raise HTTPException(
+            status_code=500,
+            detail=f"No API key configured for {provider}"
+        )
+
+    # Import shared context from main (lazy import to avoid circular dependency)
+    from main import SHARED_GOAL_DISCOVERY_CONTEXT
+
+    # Track token usage
+    total_usage = {
+        "call1_input_tokens": 0,
+        "call1_output_tokens": 0,
+        "call2_input_tokens": 0,
+        "call2_output_tokens": 0,
+        "total_input_tokens": 0,
+        "total_output_tokens": 0,
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 0,
+    }
+
+    # =========================================================================
+    # STEP 1: CALL 1 - Signal & Consciousness Extraction
+    # =========================================================================
+    pipeline_logger.info("[GOAL DISCOVERY] Step 1: Call 1 - Signal extraction")
+
+    call1_dynamic_prompt = f"""You are analyzing {len(request.files)} file(s) for goal discovery.
+Multi-file mode: {len(request.files) > 1}
+
+YOUR TASK:
+1. Extract signals from each file using the three-layer protocol (LITERAL, INFERRED, ABSENT)
+2. Extract consciousness operators (25 operators + S-level)
+3. If multiple files, identify cross-file patterns
+
+Return valid JSON only. No markdown, no explanation."""
+
+    call1_user_prompt = build_call1_user_prompt(request.files, request.existing_goals)
+
+    call1_output = None
+    try:
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            if provider == "anthropic":
+                # Anthropic with prompt caching
+                system_content = [
+                    {
+                        "type": "text",
+                        "text": SHARED_GOAL_DISCOVERY_CONTEXT,
+                        "cache_control": {"type": "ephemeral"}
+                    },
+                    {
+                        "type": "text",
+                        "text": call1_dynamic_prompt
+                    }
+                ]
+
+                request_body = {
+                    "model": model,
+                    "max_tokens": model_config["max_tokens"],
+                    "system": system_content,
+                    "messages": [
+                        {"role": "user", "content": call1_user_prompt},
+                        {"role": "assistant", "content": "{"}  # Force JSON start
+                    ]
+                }
+
+                headers = {
+                    "x-api-key": api_key,
+                    "anthropic-version": "2023-06-01",
+                    "Content-Type": "application/json"
+                }
+
+                pipeline_logger.debug(f"[GOAL DISCOVERY] Call 1 request to Anthropic: {len(call1_user_prompt)} chars")
+                response = await client.post(
+                    model_config["endpoint"],
+                    headers=headers,
+                    json=request_body
+                )
+                response.raise_for_status()
+                data = response.json()
+
+                # Extract usage
+                usage = data.get("usage", {})
+                total_usage["call1_input_tokens"] = usage.get("input_tokens", 0)
+                total_usage["call1_output_tokens"] = usage.get("output_tokens", 0)
+                total_usage["cache_read_tokens"] += usage.get("cache_read_input_tokens", 0)
+                total_usage["cache_write_tokens"] += usage.get("cache_creation_input_tokens", 0)
+
+                # Extract response text
+                response_text = ""
+                for block in data.get("content", []):
+                    if block.get("type") == "text":
+                        response_text += block.get("text", "")
+
+                # Prepend the forced "{" we used
+                response_text = "{" + response_text
+                call1_output = parse_llm_json_response(response_text, "CALL1")
+
+            else:
+                # OpenAI
+                instructions = f"{SHARED_GOAL_DISCOVERY_CONTEXT}\n\n{call1_dynamic_prompt}"
+
+                request_body = {
+                    "model": model,
+                    "max_tokens": model_config["max_tokens"],
+                    "messages": [
+                        {"role": "system", "content": instructions},
+                        {"role": "user", "content": call1_user_prompt}
+                    ],
+                    "response_format": {"type": "json_object"}
+                }
+
+                headers = {
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json"
+                }
+
+                pipeline_logger.debug(f"[GOAL DISCOVERY] Call 1 request to OpenAI: {len(call1_user_prompt)} chars")
+                response = await client.post(
+                    model_config["endpoint"],
+                    headers=headers,
+                    json=request_body
+                )
+                response.raise_for_status()
+                data = response.json()
+
+                # Extract usage
+                usage = data.get("usage", {})
+                total_usage["call1_input_tokens"] = usage.get("prompt_tokens", 0)
+                total_usage["call1_output_tokens"] = usage.get("completion_tokens", 0)
+
+                # Extract response text
+                response_text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                call1_output = parse_llm_json_response(response_text, "CALL1")
+
+        if call1_output:
+            signal_count = len(call1_output.get("signals", []))
+            obs_count = len(call1_output.get("observations", []))
+            pipeline_logger.info(f"[GOAL DISCOVERY] Call 1 complete: {signal_count} signals, {obs_count} observations")
+        else:
+            pipeline_logger.warning("[GOAL DISCOVERY] Call 1 returned no valid JSON")
+
+    except httpx.HTTPStatusError as e:
+        pipeline_logger.error(f"[GOAL DISCOVERY] Call 1 HTTP error: {e.response.status_code}")
+        api_logger.error(f"[GOAL DISCOVERY] Call 1 response: {e.response.text[:1000]}")
+        call1_output = None
+    except Exception as e:
+        pipeline_logger.error(f"[GOAL DISCOVERY] Call 1 error: {e}")
+        call1_output = None
+
+    # =========================================================================
+    # STEP 2: BACKEND CLASSIFICATION
+    # =========================================================================
+    pipeline_logger.info("[GOAL DISCOVERY] Step 2: Backend classification")
+
+    goal_skeletons = []
+    if call1_output:
+        try:
+            classifier = GoalClassifier()
+            goal_skeletons = classifier.classify(
+                call1_output,
+                request.existing_goals
+            )
+            pipeline_logger.info(f"[GOAL DISCOVERY] Classified {len(goal_skeletons)} goal skeletons")
+        except Exception as e:
+            pipeline_logger.error(f"[GOAL DISCOVERY] Classification error: {e}")
+            goal_skeletons = []
+
+    # Fallback: If no skeletons, use single-call approach
+    if not goal_skeletons:
+        pipeline_logger.warning("[GOAL DISCOVERY] No skeletons from classifier, using fallback single-call")
+        return await _fallback_single_call_discovery(
+            request, current_user, model_config, SHARED_GOAL_DISCOVERY_CONTEXT, total_usage, start_time
+        )
+
+    # =========================================================================
+    # STEP 3: CALL 2 - Articulation
+    # =========================================================================
+    pipeline_logger.info("[GOAL DISCOVERY] Step 3: Call 2 - Articulation")
+
+    call2_dynamic_prompt = """You are articulating pre-classified goal skeletons.
+
+YOUR TASK:
+For each goal skeleton provided, write:
+- identity: 10-15 words describing the goal in action-oriented language
+- firstMove: 20-30 words describing the first concrete action, starting with imperative verb
+
+Use the consciousness_context to shape tone and language.
+Ground your articulation in the file summaries provided.
+
+Return valid JSON with a "goals" array containing all skeletons with identity and firstMove added."""
+
+    call2_user_prompt = build_call2_user_prompt(goal_skeletons, request.files)
+
+    articulated_goals = None
+    try:
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            if provider == "anthropic":
+                # Same cached prefix guarantees cache HIT from Call 1
+                system_content = [
+                    {
+                        "type": "text",
+                        "text": SHARED_GOAL_DISCOVERY_CONTEXT,
+                        "cache_control": {"type": "ephemeral"}
+                    },
+                    {
+                        "type": "text",
+                        "text": call2_dynamic_prompt
+                    }
+                ]
+
+                request_body = {
+                    "model": model,
+                    "max_tokens": model_config["max_tokens"],
+                    "system": system_content,
+                    "messages": [
+                        {"role": "user", "content": call2_user_prompt},
+                        {"role": "assistant", "content": "{"}
+                    ]
+                }
+
+                headers = {
+                    "x-api-key": api_key,
+                    "anthropic-version": "2023-06-01",
+                    "Content-Type": "application/json"
+                }
+
+                pipeline_logger.debug(f"[GOAL DISCOVERY] Call 2 request to Anthropic: {len(call2_user_prompt)} chars")
+                response = await client.post(
+                    model_config["endpoint"],
+                    headers=headers,
+                    json=request_body
+                )
+                response.raise_for_status()
+                data = response.json()
+
+                # Extract usage
+                usage = data.get("usage", {})
+                total_usage["call2_input_tokens"] = usage.get("input_tokens", 0)
+                total_usage["call2_output_tokens"] = usage.get("output_tokens", 0)
+                total_usage["cache_read_tokens"] += usage.get("cache_read_input_tokens", 0)
+                total_usage["cache_write_tokens"] += usage.get("cache_creation_input_tokens", 0)
+
+                response_text = ""
+                for block in data.get("content", []):
+                    if block.get("type") == "text":
+                        response_text += block.get("text", "")
+
+                response_text = "{" + response_text
+                articulated_goals = parse_llm_json_response(response_text, "CALL2")
+
+            else:
+                # OpenAI
+                instructions = f"{SHARED_GOAL_DISCOVERY_CONTEXT}\n\n{call2_dynamic_prompt}"
+
+                request_body = {
+                    "model": model,
+                    "max_tokens": model_config["max_tokens"],
+                    "messages": [
+                        {"role": "system", "content": instructions},
+                        {"role": "user", "content": call2_user_prompt}
+                    ],
+                    "response_format": {"type": "json_object"}
+                }
+
+                headers = {
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json"
+                }
+
+                pipeline_logger.debug(f"[GOAL DISCOVERY] Call 2 request to OpenAI: {len(call2_user_prompt)} chars")
+                response = await client.post(
+                    model_config["endpoint"],
+                    headers=headers,
+                    json=request_body
+                )
+                response.raise_for_status()
+                data = response.json()
+
+                usage = data.get("usage", {})
+                total_usage["call2_input_tokens"] = usage.get("prompt_tokens", 0)
+                total_usage["call2_output_tokens"] = usage.get("completion_tokens", 0)
+
+                response_text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                articulated_goals = parse_llm_json_response(response_text, "CALL2")
+
+        if articulated_goals:
+            goals_list = articulated_goals.get("goals", [])
+            pipeline_logger.info(f"[GOAL DISCOVERY] Call 2 complete: {len(goals_list)} articulated goals")
+        else:
+            pipeline_logger.warning("[GOAL DISCOVERY] Call 2 returned no valid JSON")
+
+    except httpx.HTTPStatusError as e:
+        pipeline_logger.error(f"[GOAL DISCOVERY] Call 2 HTTP error: {e.response.status_code}")
+        articulated_goals = None
+    except Exception as e:
+        pipeline_logger.error(f"[GOAL DISCOVERY] Call 2 error: {e}")
+        articulated_goals = None
+
+    # =========================================================================
+    # STEP 4: MERGE AND RETURN
+    # =========================================================================
+    pipeline_logger.info("[GOAL DISCOVERY] Step 4: Merge and return")
+
+    # Merge articulated identity/firstMove into skeletons
+    final_goals = []
+    articulated_list = articulated_goals.get("goals", []) if articulated_goals else []
+
+    # Create lookup by type for merging
+    articulated_by_type: Dict[str, List[Dict]] = {}
+    for ag in articulated_list:
+        goal_type = ag.get("type", "UNKNOWN")
+        if goal_type not in articulated_by_type:
+            articulated_by_type[goal_type] = []
+        articulated_by_type[goal_type].append(ag)
+
+    for skeleton in goal_skeletons:
+        goal_type = skeleton.get("type", "UNKNOWN")
+        merged_goal = {**skeleton}
+
+        # Try to find matching articulation
+        if goal_type in articulated_by_type and articulated_by_type[goal_type]:
+            articulated = articulated_by_type[goal_type].pop(0)
+            merged_goal["identity"] = articulated.get("identity", skeleton.get("classification_reason", "Goal identified"))
+            merged_goal["firstMove"] = articulated.get("firstMove", "Review the supporting signals and take action.")
+        else:
+            # Fallback if no articulation
+            merged_goal["identity"] = skeleton.get("classification_reason", "Goal identified from file analysis")
+            merged_goal["firstMove"] = "Review the supporting signals and determine your first action."
+
+        # Add UUID and timestamp
+        merged_goal["id"] = generate_id()
+        merged_goal["createdAt"] = datetime.utcnow().isoformat()
+        merged_goal["userId"] = current_user.id
+
+        final_goals.append(merged_goal)
+
+    # Calculate total usage
+    total_usage["total_input_tokens"] = total_usage["call1_input_tokens"] + total_usage["call2_input_tokens"]
+    total_usage["total_output_tokens"] = total_usage["call1_output_tokens"] + total_usage["call2_output_tokens"]
+
+    elapsed = time.time() - start_time
+    pipeline_logger.info(
+        f"[GOAL DISCOVERY] Complete: {len(final_goals)} goals in {elapsed:.1f}s, "
+        f"tokens: {total_usage['total_input_tokens']} in / {total_usage['total_output_tokens']} out"
+    )
+
+    return DiscoverGoalsResponse(
+        success=True,
+        goals=final_goals,
+        generatedAt=datetime.utcnow().isoformat(),
+        sourceFileCount=len(request.files),
+        usage=total_usage
+    )
+
+
+async def _fallback_single_call_discovery(
+    request: DiscoverGoalsRequest,
+    current_user: User,
+    model_config: Dict[str, Any],
+    shared_context: str,
+    total_usage: Dict[str, int],
+    start_time: float
+) -> DiscoverGoalsResponse:
+    """
+    Fallback single-call approach when 2-call architecture fails.
+    Used as safety net when Call 1 or classification produces no results.
+    """
+    pipeline_logger.info("[GOAL DISCOVERY FALLBACK] Using single-call approach")
+
+    provider = model_config["provider"]
+    api_key = model_config["api_key"]
+    model = model_config["model"]
+
+    fallback_prompt = f"""Analyze these files and discover goals.
+
+For each goal, provide:
+- type: one of OPTIMIZE, TRANSFORM, DISCOVER, PROTECT, RESOLVE, BUILD, ALIGN, LEVERAGE, RELEASE, QUANTUM, HIDDEN
+- identity: 10-15 words describing the goal
+- firstMove: 20-30 words describing the first action
+- confidence: 0.0-1.0
+- sourceFiles: list of relevant file names
+- classification_reason: why this goal type
+
+Return JSON with "goals" array."""
+
+    user_prompt = build_goal_discovery_user_prompt(request.files, request.existing_goals)
+
+    try:
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            if provider == "anthropic":
+                system_content = [
+                    {"type": "text", "text": shared_context, "cache_control": {"type": "ephemeral"}},
+                    {"type": "text", "text": fallback_prompt}
+                ]
+
+                response = await client.post(
+                    model_config["endpoint"],
+                    headers={
+                        "x-api-key": api_key,
+                        "anthropic-version": "2023-06-01",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "model": model,
+                        "max_tokens": model_config["max_tokens"],
+                        "system": system_content,
+                        "messages": [
+                            {"role": "user", "content": user_prompt},
+                            {"role": "assistant", "content": "{"}
+                        ]
+                    }
+                )
+                response.raise_for_status()
+                data = response.json()
+
+                usage = data.get("usage", {})
+                total_usage["call1_input_tokens"] = usage.get("input_tokens", 0)
+                total_usage["call1_output_tokens"] = usage.get("output_tokens", 0)
+
+                response_text = "{"
+                for block in data.get("content", []):
+                    if block.get("type") == "text":
+                        response_text += block.get("text", "")
+
+                result = parse_llm_json_response(response_text, "FALLBACK")
+
+            else:
+                response = await client.post(
+                    model_config["endpoint"],
+                    headers={
+                        "Authorization": f"Bearer {api_key}",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "model": model,
+                        "max_tokens": model_config["max_tokens"],
+                        "messages": [
+                            {"role": "system", "content": f"{shared_context}\n\n{fallback_prompt}"},
+                            {"role": "user", "content": user_prompt}
+                        ],
+                        "response_format": {"type": "json_object"}
+                    }
+                )
+                response.raise_for_status()
+                data = response.json()
+
+                usage = data.get("usage", {})
+                total_usage["call1_input_tokens"] = usage.get("prompt_tokens", 0)
+                total_usage["call1_output_tokens"] = usage.get("completion_tokens", 0)
+
+                response_text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                result = parse_llm_json_response(response_text, "FALLBACK")
+
+        # Process results
+        goals = []
+        if result and "goals" in result:
+            for goal in result["goals"]:
+                goal["id"] = generate_id()
+                goal["createdAt"] = datetime.utcnow().isoformat()
+                goal["userId"] = current_user.id
+                goals.append(goal)
+
+        total_usage["total_input_tokens"] = total_usage["call1_input_tokens"]
+        total_usage["total_output_tokens"] = total_usage["call1_output_tokens"]
+
+        elapsed = time.time() - start_time
+        pipeline_logger.info(f"[GOAL DISCOVERY FALLBACK] Complete: {len(goals)} goals in {elapsed:.1f}s")
+
+        return DiscoverGoalsResponse(
+            success=True,
+            goals=goals,
+            generatedAt=datetime.utcnow().isoformat(),
+            sourceFileCount=len(request.files),
+            usage=total_usage
+        )
+
+    except Exception as e:
+        pipeline_logger.error(f"[GOAL DISCOVERY FALLBACK] Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Goal discovery failed: {str(e)}")
