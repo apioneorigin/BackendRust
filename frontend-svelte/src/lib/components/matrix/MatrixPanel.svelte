@@ -350,8 +350,8 @@
 
 	.matrix-grid {
 		display: grid;
-		grid-template-columns: 48px repeat(5, 1fr);
-		grid-template-rows: 48px repeat(5, minmax(0, 1fr));
+		grid-template-columns: 100px repeat(5, 1fr);
+		grid-template-rows: 56px repeat(5, minmax(0, 1fr));
 		gap: 2px;
 		flex: 1;
 		min-height: 0;
@@ -359,8 +359,8 @@
 	}
 
 	.compact .matrix-grid {
-		grid-template-columns: 40px repeat(5, 1fr);
-		grid-template-rows: 42px repeat(5, minmax(0, 1fr));
+		grid-template-columns: 90px repeat(5, 1fr);
+		grid-template-rows: 52px repeat(5, minmax(0, 1fr));
 		gap: 2px;
 	}
 
@@ -388,9 +388,9 @@
 
 	/* Column header text: vertical, one word per line (max 3 lines) */
 	.col-header .header-text {
-		font-size: 0.625rem;
-		font-weight: 900;
-		color: var(--color-text-source);
+		font-size: 0.75rem;
+		font-weight: 600;
+		color: var(--color-text-whisper);
 		text-align: center;
 		line-height: 1.2;
 		text-transform: uppercase;
@@ -404,9 +404,9 @@
 
 	/* Row header text: vertical, one word per line (max 3 lines) */
 	.row-header .header-text {
-		font-size: 0.625rem;
-		font-weight: 900;
-		color: var(--color-text-source);
+		font-size: 0.75rem;
+		font-weight: 600;
+		color: var(--color-text-whisper);
 		text-align: right;
 		line-height: 1.2;
 		text-transform: uppercase;
@@ -420,7 +420,7 @@
 
 	.compact .col-header .header-text,
 	.compact .row-header .header-text {
-		font-size: 0.5rem;
+		font-size: 0.6875rem;
 	}
 
 	.matrix-cell {
