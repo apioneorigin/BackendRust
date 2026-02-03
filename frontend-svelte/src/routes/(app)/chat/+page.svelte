@@ -115,6 +115,7 @@
 	let lastMessageCount = 0;
 	let userScrolledUp = false;
 	let wasStreamingBefore = false;
+	let lastScrollTop = 0; // Track last scroll position to detect user scroll direction
 	const SCROLL_THRESHOLD = 150; // pixels from bottom to consider "at bottom"
 
 	function isNearBottom(): boolean {
@@ -124,12 +125,28 @@
 	}
 
 	function handleScroll() {
-		// If user scrolls up during streaming, respect their choice
+		if (!messagesContainer) return;
+
+		const currentScrollTop = messagesContainer.scrollTop;
+
+		// During streaming: detect if user is actively scrolling UP (away from bottom)
+		// Once they scroll up, lock the scroll position until streaming ends or they scroll back to bottom
 		if ($isStreaming) {
-			userScrolledUp = !isNearBottom();
+			// User scrolled up (intentional scroll away from new content)
+			if (currentScrollTop < lastScrollTop) {
+				userScrolledUp = true;
+			}
+			// User scrolled back to bottom - allow auto-scroll again
+			else if (isNearBottom()) {
+				userScrolledUp = false;
+			}
+			// If user scrolled down but not to bottom, keep userScrolledUp state
 		} else {
+			// Not streaming - simple check if at bottom
 			userScrolledUp = !isNearBottom();
 		}
+
+		lastScrollTop = currentScrollTop;
 	}
 
 	// Only auto-scroll on message count changes, NOT on every streaming token
@@ -141,11 +158,18 @@
 		const streamingJustStarted = isCurrentlyStreaming && !wasStreamingBefore;
 		const messageAdded = currentCount > lastMessageCount;
 
+		// Reset userScrolledUp when streaming ends
+		const streamingJustEnded = !isCurrentlyStreaming && wasStreamingBefore;
+		if (streamingJustEnded) {
+			userScrolledUp = false;
+		}
+
 		if ((messageAdded || streamingJustStarted) && messagesContainer) {
 			lastMessageCount = currentCount;
 			// Reset userScrolledUp when a NEW message is added (user sent message)
 			if (messageAdded) {
 				userScrolledUp = false;
+				lastScrollTop = messagesContainer.scrollHeight; // Reset scroll tracking
 			}
 			setTimeout(() => {
 				if (messagesContainer && !userScrolledUp) {
@@ -669,6 +693,8 @@
 		overflow-x: hidden;
 		padding: 1.5rem calc(0.75rem + 1px);
 		min-height: 0;
+		/* Override global smooth scroll - prevents conflicts during streaming */
+		scroll-behavior: auto;
 	}
 
 	/* Welcome screen - ultra minimal */
