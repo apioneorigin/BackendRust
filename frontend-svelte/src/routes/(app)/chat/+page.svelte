@@ -34,7 +34,11 @@
 		population as populationStore,
 		avgScore as avgScoreStore,
 		powerSpots as powerSpotsStore,
-		activeDocumentId
+		activeDocumentId,
+		activeDocument,
+		plays as playsStore,
+		selectedPlayId as selectedPlayIdStore,
+		isLoadingPlays as isLoadingPlaysStore
 	} from '$lib/stores';
 	import { Button, Spinner, TypingIndicator } from '$lib/components/ui';
 	import MatrixPanel from '$lib/components/matrix/MatrixPanel.svelte';
@@ -310,8 +314,12 @@
 		matrix.updateCellValue(row, col, value);
 	}
 
-	function handleToolbarPopup(e: CustomEvent<{ type: 'plays' | 'scenarios' }>) {
+	async function handleToolbarPopup(e: CustomEvent<{ type: 'plays' | 'scenarios' }>) {
 		activeToolbarPopup = e.detail.type;
+		// Fetch plays when opening plays popup
+		if (e.detail.type === 'plays') {
+			await matrix.fetchPlays();
+		}
 	}
 
 	function handleTogglePowerSpots(e: CustomEvent<{ enabled: boolean }>) {
@@ -706,15 +714,41 @@
 			</div>
 			<div class="popup-body">
 				{#if activeToolbarPopup === 'plays'}
-					<p class="popup-description">Generate transformation strategies via AI</p>
+					{#if $activeDocument?.name}
+						<div class="document-name-badge">{$activeDocument.name}</div>
+					{/if}
+					<p class="popup-description">Transformation strategies for this document</p>
 					<div class="plays-list">
-						<button class="generate-plays-btn">
-							<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-								<path d="M12 3v3m6.366-.366-2.12 2.12M21 12h-3m.366 6.366-2.12-2.12M12 21v-3m-6.366.366 2.12-2.12M3 12h3m-.366-6.366 2.12 2.12"/>
-							</svg>
-							Generate Plays
-						</button>
-						<p class="plays-hint">AI will analyze your matrix and generate strategic transformation plays</p>
+						{#if $isLoadingPlaysStore}
+							<div class="plays-loading">
+								<Spinner size="sm" />
+								<span>Loading plays...</span>
+							</div>
+						{:else if $playsStore.length > 0}
+							{#each $playsStore as play (play.id)}
+								<button
+									class="play-item"
+									class:selected={$selectedPlayIdStore === play.id}
+									on:click={() => matrix.selectPlay(play.id)}
+								>
+									<div class="play-info">
+										<span class="play-name">{play.name}</span>
+										<span class="play-desc">{play.description}</span>
+										<div class="play-meta">
+											<span class="play-timeline">{play.timeline}</span>
+											<span class="play-phases">{play.phases} phases</span>
+											<span class="play-improvement">+{play.expectedImprovement}%</span>
+										</div>
+									</div>
+									<div class="play-badges">
+										<span class="play-fit">Fit: {play.fitScore}%</span>
+										<span class="play-risk {play.risk}">{play.risk}</span>
+									</div>
+								</button>
+							{/each}
+						{:else}
+							<p class="plays-hint">No plays available. Plays are generated during document population - send a message to generate matrix data first.</p>
+						{/if}
 					</div>
 				{:else if activeToolbarPopup === 'scenarios'}
 					<p class="popup-description">Compare different transformation scenarios</p>
@@ -1499,6 +1533,23 @@
 		color: var(--color-text-whisper);
 	}
 
+	/* Document name badge */
+	.document-name-badge {
+		display: inline-block;
+		padding: 0.25rem 0.75rem;
+		margin-bottom: 0.75rem;
+		background: var(--color-primary-100);
+		color: var(--color-primary-700);
+		border-radius: 1rem;
+		font-size: 0.75rem;
+		font-weight: 600;
+	}
+
+	[data-theme='dark'] .document-name-badge {
+		background: rgba(15, 76, 117, 0.3);
+		color: var(--color-primary-300);
+	}
+
 	/* Plays list */
 	.plays-list {
 		display: flex;
@@ -1506,19 +1557,93 @@
 		gap: 0.5rem;
 	}
 
-	.play-item {
+	.plays-loading {
 		display: flex;
 		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+		padding: 2rem;
+		color: var(--color-text-whisper);
+		font-size: 14px;
+	}
+
+	.play-item {
+		display: flex;
+		align-items: flex-start;
 		justify-content: space-between;
+		gap: 1rem;
 		padding: 0.75rem;
 		background: var(--color-field-depth);
-		border-radius: 0.375rem;
+		border: 1px solid transparent;
+		border-radius: 0.5rem;
+		cursor: pointer;
+		transition: all 0.15s ease;
+		text-align: left;
+	}
+
+	.play-item:hover {
+		border-color: var(--color-primary-400);
+	}
+
+	.play-item.selected {
+		background: var(--color-primary-50);
+		border-color: var(--color-primary-500);
+	}
+
+	[data-theme='dark'] .play-item.selected {
+		background: rgba(15, 76, 117, 0.2);
+	}
+
+	.play-info {
+		flex: 1;
+		min-width: 0;
 	}
 
 	.play-name {
-		font-size: 15px;
-		font-weight: 500;
+		display: block;
+		font-size: 14px;
+		font-weight: 600;
 		color: var(--color-text-source);
+		margin-bottom: 0.25rem;
+	}
+
+	.play-desc {
+		display: block;
+		font-size: 12px;
+		color: var(--color-text-whisper);
+		margin-bottom: 0.5rem;
+		line-height: 1.4;
+	}
+
+	.play-meta {
+		display: flex;
+		gap: 0.75rem;
+		font-size: 11px;
+		color: var(--color-text-manifest);
+	}
+
+	.play-meta span {
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
+	}
+
+	.play-badges {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 0.25rem;
+		flex-shrink: 0;
+	}
+
+	.play-fit {
+		font-size: 11px;
+		font-weight: 600;
+		color: var(--color-primary-600);
+	}
+
+	[data-theme='dark'] .play-fit {
+		color: var(--color-primary-400);
 	}
 
 	.play-risk {

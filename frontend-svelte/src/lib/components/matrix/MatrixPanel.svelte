@@ -153,6 +153,11 @@
 				{/each}
 			</div>
 		</div>
+	{:else if $activeDocument?.name}
+		<!-- Single document: show name as header -->
+		<div class="document-name-header">
+			<span class="document-name">{$activeDocument.name}</span>
+		</div>
 	{/if}
 
 	<!-- Matrix Grid -->
@@ -302,6 +307,22 @@
 	.document-tabs-container {
 		padding: 0 0 0.5rem;
 		flex-shrink: 0;
+	}
+
+	.document-name-header {
+		padding: 0.5rem 0.75rem;
+		border-bottom: 1px solid var(--color-veil-thin);
+		background: var(--color-field-depth);
+	}
+
+	.document-name {
+		font-size: 0.8125rem;
+		font-weight: 600;
+		color: var(--color-primary-600);
+	}
+
+	[data-theme='dark'] .document-name {
+		color: var(--color-primary-400);
 	}
 
 	.document-tabs {
