@@ -1,0 +1,34 @@
+{
+  "excavation_methodology": {
+    "principles": [
+      "TRUTH_ARCHAEOLOGY: Dig beneath surface observations to uncover hidden patterns",
+      "CONTRADICTION_MINING: Find where stated goals conflict with actual behavior",
+      "EMOTIONAL_RESIDUE: Identify feelings that linger after rational analysis",
+      "PATTERN_RECOGNITION: Spot recurring themes across disparate data points",
+      "LIMINAL_SPACES: Explore gaps between what's said and what's meant"
+    ],
+    "delivery_framework": {
+      "IMMERSIVE_PRESENT_TENSE": "Transport reader into exact moment",
+      "SENSORY_ACTIVATION": "Engage sight, sound, touch, emotion simultaneously",
+      "SPECIFICITY_OVER_GENERALITY": "Replace concepts with concrete experiences",
+      "EMOTIONAL_TRUTH_FIRST": "Lead with feeling, support with fact",
+      "SHOW_THE_MICRO_MOMENT": "Capture precise instant where truth reveals itself"
+    },
+    "depth_layers": {
+      "surface": "What they say",
+      "behavioral": "What they do",
+      "emotional": "What they feel",
+      "shadow": "What they avoid",
+      "transformation": "Where all layers collide"
+    },
+    "sphere_categories": [
+      "customers",
+      "market",
+      "competitors", 
+      "industry",
+      "stakeholders",
+      "environment",
+      "network"
+    ]
+  }
+}
