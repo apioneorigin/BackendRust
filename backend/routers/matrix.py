@@ -112,8 +112,10 @@ async def get_documents(
     conversation = await get_or_404(db, ChatConversation, conversation_id, user_id=current_user.id)
 
     if not conversation.generated_documents:
+        api_logger.info(f"[MATRIX GET] No documents for conv {conversation_id}")
         return []
 
+    api_logger.info(f"[MATRIX GET] Returning {len(conversation.generated_documents)} docs for conv {conversation_id}")
     return conversation.generated_documents
 
 
