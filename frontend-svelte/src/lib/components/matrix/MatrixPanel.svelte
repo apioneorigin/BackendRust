@@ -7,7 +7,7 @@
 	 * - Tabs show all documents: full data docs are clickable, stubs show "Generate" button
 	 * - Plus button on right to generate 3 more document stubs
 	 * - Displays matrix from currently active document
-	 * - Each cell has 5 contextual dimensions with 3-step signal bar selectors
+	 * - Each cell has 5 contextual dimensions with 3-step horizontal bar selectors
 	 * - Power Spots View: HIDES non-leverage cells completely, shows only power spots
 	 * - Risk View: HIDES low-risk cells completely, shows only medium/high risk cells
 	 */
@@ -42,6 +42,13 @@
 	let showCellPopup = false;
 	let isPopulatingDoc: string | null = null;  // Track which doc is being populated
 
+	// Track local edits and original values for change detection
+	let localDimensionEdits: Map<string, number> = new Map(); // key: "row-col-dimIdx", value: edited value
+	let originalDimensionValues: Map<string, number> = new Map(); // key: "row-col-dimIdx", value: original LLM value
+
+	// Check if there are unsaved changes
+	$: hasUnsavedChanges = localDimensionEdits.size > 0;
+
 	// Check if a document has full data (100 cells)
 	function hasFullData(doc: Document): boolean {
 		const cells = doc.matrix_data?.cells || {};
@@ -52,6 +59,15 @@
 	function getStepIndex(value: number): number {
 		const idx = STEP_VALUES.indexOf(value);
 		return idx >= 0 ? idx : 1; // Default to Medium if value not found
+	}
+
+	// Get the current value for a dimension (local edit or original)
+	function getDimensionValue(row: number, col: number, dimIdx: number): number {
+		const key = `${row}-${col}-${dimIdx}`;
+		if (localDimensionEdits.has(key)) {
+			return localDimensionEdits.get(key)!;
+		}
+		return matrixData[row]?.[col]?.dimensions?.[dimIdx]?.value ?? 50;
 	}
 
 	// Check if cell is a power spot (value >= 75)
@@ -76,9 +92,28 @@
 		return false;
 	}
 
-	// Handle dimension step button click
+	// Handle dimension step button click - update local state
 	function handleDimensionStepClick(dimIndex: number, stepValue: number) {
 		if (!selectedCell) return;
+
+		const key = `${selectedCell.row}-${selectedCell.col}-${dimIndex}`;
+		const originalValue = matrixData[selectedCell.row]?.[selectedCell.col]?.dimensions?.[dimIndex]?.value ?? 50;
+
+		// Store original value if not already tracked
+		if (!originalDimensionValues.has(key)) {
+			originalDimensionValues.set(key, originalValue);
+		}
+
+		// If setting back to original value, remove the edit
+		if (stepValue === originalDimensionValues.get(key)) {
+			localDimensionEdits.delete(key);
+		} else {
+			localDimensionEdits.set(key, stepValue);
+		}
+
+		// Trigger reactivity
+		localDimensionEdits = localDimensionEdits;
+
 		dispatch('dimensionChange', {
 			row: selectedCell.row,
 			col: selectedCell.col,
@@ -137,6 +172,15 @@
 	function closeCellPopup() {
 		showCellPopup = false;
 		selectedCell = null;
+	}
+
+	function handleSave() {
+		// TODO: Persist changes to backend
+		// For now, clear the local edits tracking
+		localDimensionEdits.clear();
+		originalDimensionValues.clear();
+		localDimensionEdits = localDimensionEdits;
+		closeCellPopup();
 	}
 
 	function handleDocumentTabClick(docId: string, doc: Document) {
@@ -322,15 +366,20 @@
 					<h4>Dimensions</h4>
 					<div class="dimensions-grid">
 						{#each matrixData[selectedCell.row][selectedCell.col].dimensions as dim, dimIdx}
+							{@const currentValue = getDimensionValue(selectedCell.row, selectedCell.col, dimIdx)}
+							{@const currentStepIdx = getStepIndex(currentValue)}
 							<div class="dimension-item">
 								<span class="dim-name">{dim.name}</span>
-								<div class="signal-bars">
+								<div class="level-bars">
 									{#each STEP_VALUES as stepValue, stepIdx}
 										<button
-											class="signal-bar bar-{stepIdx + 1}"
-											class:filled={getStepIndex(dim.value) >= stepIdx}
+											class="level-bar"
+											class:filled={currentStepIdx >= stepIdx}
+											class:active={currentStepIdx === stepIdx}
 											on:click={() => handleDimensionStepClick(dimIdx, stepValue)}
+											title={STEP_LABELS[stepIdx]}
 										>
+											<span class="bar-fill" style="width: {currentStepIdx >= stepIdx ? 100 : 0}%"></span>
 										</button>
 									{/each}
 								</div>
@@ -349,7 +398,13 @@
 
 			<div class="popup-footer">
 				<Button variant="ghost" on:click={closeCellPopup}>Close</Button>
-				<Button variant="primary" on:click={closeCellPopup}>Save</Button>
+				<Button
+					variant={hasUnsavedChanges ? "primary" : "ghost"}
+					on:click={handleSave}
+					disabled={!hasUnsavedChanges}
+				>
+					Save
+				</Button>
 			</div>
 		</div>
 	</div>
@@ -870,36 +925,55 @@
 		min-width: 0;
 	}
 
-	.signal-bars {
+	/* Horizontal level bars - 3 equally wide bars that fill with color */
+	.level-bars {
 		display: flex;
-		align-items: flex-end;
-		gap: 3px;
+		align-items: center;
+		gap: 4px;
 		flex-shrink: 0;
-		height: 22px;
 	}
 
-	.signal-bar {
-		width: 6px;
+	.level-bar {
+		position: relative;
+		width: 28px;
+		height: 10px;
 		background: var(--color-veil-thin);
-		border: none;
-		border-radius: 2px;
+		border: 1px solid var(--color-veil-medium);
+		border-radius: 3px;
 		cursor: pointer;
 		padding: 0;
-		transition: background 0.15s ease;
+		overflow: hidden;
+		transition: all 0.15s ease;
 	}
 
-	/* Bar heights - WiFi style increasing heights */
-	.signal-bar.bar-1 { height: 7px; }
-	.signal-bar.bar-2 { height: 14px; }
-	.signal-bar.bar-3 { height: 21px; }
+	.bar-fill {
+		position: absolute;
+		top: 0;
+		left: 0;
+		height: 100%;
+		background: var(--color-primary-500);
+		border-radius: 2px;
+		transition: width 0.15s ease;
+	}
 
 	/* Filled state - bars up to selected level */
-	.signal-bar.filled {
-		background: var(--color-primary-500);
+	.level-bar.filled {
+		border-color: var(--color-primary-400);
+	}
+
+	/* Active state - the currently selected level */
+	.level-bar.active {
+		border-color: var(--color-primary-600);
+		box-shadow: 0 0 0 1px var(--color-primary-300);
 	}
 
 	/* Hover state */
-	.signal-bar:hover {
+	.level-bar:hover {
+		border-color: var(--color-primary-400);
+		transform: scale(1.05);
+	}
+
+	.level-bar:hover .bar-fill {
 		background: var(--color-primary-400);
 	}
 
