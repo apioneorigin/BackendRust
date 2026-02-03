@@ -40,10 +40,10 @@ class ChatConversation(Base):
     # Each document in generated_documents has its own matrix_data
 
     # Generated strategic paths (5 paths from LLM Call 2)
-    generated_paths: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    generated_paths: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
 
-    # Generated documents (9 documents from LLM Call 2)
-    generated_documents: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    # Generated documents (array of document objects from LLM Call 2)
+    generated_documents: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
 
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
