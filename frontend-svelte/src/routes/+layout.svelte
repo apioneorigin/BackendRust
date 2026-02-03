@@ -4,6 +4,11 @@
 	import { ToastContainer } from '$lib/components/ui';
 	import '../styles/globals.css';
 
+	// Accept SvelteKit props to avoid "unknown prop" warnings
+	export let data: Record<string, unknown> = {};
+	// Suppress unused variable warning
+	void data;
+
 	// Initialize theme on mount
 	onMount(() => {
 		// Check for system preference

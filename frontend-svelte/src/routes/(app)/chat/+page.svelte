@@ -46,6 +46,11 @@
 	import MatrixToolbar from '$lib/components/matrix/MatrixToolbar.svelte';
 	import ContextControlPopup from '$lib/components/matrix/ContextControlPopup.svelte';
 
+	// Accept SvelteKit props to avoid "unknown prop" warnings
+	export let data: Record<string, unknown> = {};
+	// Suppress unused variable warning
+	void data;
+
 	// Chat state
 	let messageInput = '';
 	let messagesContainer: HTMLElement;

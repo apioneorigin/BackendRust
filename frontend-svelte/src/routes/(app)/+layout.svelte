@@ -5,6 +5,11 @@
 	import { auth, isAuthenticated, user, theme, addToast, chat, conversations, currentConversation, messages } from '$lib/stores';
 	import { Spinner } from '$lib/components/ui';
 
+	// Accept SvelteKit props to avoid "unknown prop" warnings
+	export let data: Record<string, unknown> = {};
+	// Suppress unused variable warning
+	void data;
+
 	let isLoading = true;
 	let mobileMenuOpen = false;
 	let userMenuOpen = false;

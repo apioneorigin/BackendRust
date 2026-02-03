@@ -14,7 +14,7 @@
 	import { createEventDispatcher } from 'svelte';
 	import {
 		matrix,
-		documents,
+		matrixDocuments,
 		activeDocumentId,
 		activeDocument,
 		isGeneratingMoreDocuments,
@@ -33,7 +33,7 @@
 	}
 
 	// Only show documents with full data
-	$: fullDataDocuments = $documents.filter(hasFullData);
+	$: fullDataDocuments = $matrixDocuments.filter(hasFullData);
 
 	// Insight popup state
 	let showInsightPopup = false;
