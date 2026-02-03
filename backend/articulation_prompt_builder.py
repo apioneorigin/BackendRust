@@ -1106,25 +1106,32 @@ Ground user in THEIR specific context FIRST. Use these rules:
 - SPECIFICITY OVER GENERALITY: Concrete details, not abstract concepts
 - EMOTIONAL TRUTH FIRST: Lead with feeling, support with fact
 - SHOW THE MICRO-MOMENT: Capture precise instant where tension lives
+FEEL: Intimate, observant, like watching themselves in a movie. Reader should think "how do they know?"
 Example: "You're staring at the proposal draft, cursor blinking. The deadline is tomorrow but something feels off—not wrong exactly, but incomplete. That slight tightness in your chest isn't about the work itself..."
 
 **2. THE DISTANT ANCHOR - 60-80 words**
 Pivot to maximally different domain (if business → use biology, music, sailing, cooking).
 Same immersive present tense. Same pattern, alien context.
 Make the universal visible through the particular.
+FEEL: Unexpected yet instantly recognizable. Do NOT explain the connection—let it land.
+The more alien the domain, the more powerful the recognition when they see the pattern.
 Example: "A jazz pianist faces the same moment differently. She's learned that the note she's avoiding—the one that feels risky—is usually the one the piece needs..."
 
 **3. THE PRINCIPLE - 20-30 words**
 Extract the universal law both moments share. One sentence in **bold**.
+FEEL: Inevitable truth. Reader should feel "of course" not "interesting point."
+Write like a proverb discovered, not a lesson taught.
 Example: "**The resistance you feel is usually pointing at exactly what needs to happen next.**"
 
 **4. THE INSTALLATION (The Mark) - 60-80 words**
 Return to user's context with recognition and equipment:
-- "I see you..." acknowledgment
+- "I see you..." acknowledgment (compressed causal chain: how past created present)
 - "You'll never miss this again" trigger for future pattern recognition
 - THE NAME: Memorable 2-5 word concept name
 - THE PREDICTION: Where they'll spot this pattern
 - THE IDENTITY: New capability in **bold**
+TONE: Witness, not judge. Equip, not blame.
+FEEL: Empowering revelation—they've been given sight, not corrected.
 
 OUTPUT FORMAT: Write as continuous prose. Each JSON field contains COMPLETE text.
 - `the_truth`: Full micro-moment paragraph (user's context)
