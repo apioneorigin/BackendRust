@@ -2316,7 +2316,7 @@ REQUIREMENTS:
             }
             request_body = {
                 "model": DOCUMENT_GENERATION_MODEL,
-                "max_tokens": 2048,  # Stubs only need ~250 tokens
+                "max_completion_tokens": 2048,  # Stubs only need ~250 tokens
                 "messages": [{"role": "user", "content": prompt_text}],
                 "response_format": {"type": "json_object"}
             }
@@ -2606,7 +2606,7 @@ REQUIREMENTS:
             }
             request_body = {
                 "model": DOCUMENT_GENERATION_MODEL,
-                "max_tokens": 16384,  # Increased for 100 cells + 20 articulated insights
+                "max_completion_tokens": 16384,  # Increased for 100 cells + 20 articulated insights
                 "messages": [{"role": "user", "content": prompt_text}],
                 "response_format": {"type": "json_object"}
             }
