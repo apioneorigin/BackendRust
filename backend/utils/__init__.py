@@ -9,6 +9,7 @@ from .db import (
     safe_json_loads,
 )
 from .responses import (
+    CamelModel,
     to_response,
     to_response_list,
 )
@@ -37,6 +38,7 @@ __all__ = [
     "paginate",
     "safe_json_loads",
     # Response utilities
+    "CamelModel",
     "to_response",
     "to_response_list",
     # SSE utilities

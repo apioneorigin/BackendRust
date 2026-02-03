@@ -2506,6 +2506,63 @@ Return ONLY valid JSON:
       "impact_if_ignored": "What happens if this risk is not addressed"
     }},
     ... (3-6 medium or high risk points)
+  ],
+  "plays": [
+    {{
+      "id": "play-quick-wins",
+      "name": "Quick Wins First",
+      "description": "Focus on highest-ROI leverage points for rapid, visible progress with minimal risk",
+      "fit_score": 85,
+      "risk": "low",
+      "timeline": "4-6 weeks",
+      "phases": 3,
+      "steps": [
+        "Start with highest-impact, lowest-effort cell",
+        "Implement quick changes to build momentum",
+        "Monitor cascade effects before proceeding"
+      ],
+      "leverage_point_ids": ["R0C2", "R1C4"],
+      "expected_improvement": 20,
+      "category": "quick_wins"
+    }},
+    {{
+      "id": "play-balanced",
+      "name": "Balanced Transformation",
+      "description": "Systematic approach addressing multiple leverage points with measured risk",
+      "fit_score": 75,
+      "risk": "medium",
+      "timeline": "2-3 months",
+      "phases": 4,
+      "steps": [
+        "Address foundational dependencies first",
+        "Target primary leverage points",
+        "Implement risk mitigations in parallel",
+        "Validate and iterate"
+      ],
+      "leverage_point_ids": ["R0C2", "R1C4", "R2C3"],
+      "expected_improvement": 40,
+      "category": "balanced"
+    }},
+    {{
+      "id": "play-deep",
+      "name": "Deep Transformation",
+      "description": "Comprehensive overhaul for maximum long-term impact",
+      "fit_score": 65,
+      "risk": "high",
+      "timeline": "4-6 months",
+      "phases": 6,
+      "steps": [
+        "Complete current state assessment",
+        "Address all identified risks",
+        "Transform all leverage points systematically",
+        "Rebuild dependencies",
+        "Optimize cascade effects",
+        "Establish new baseline"
+      ],
+      "leverage_point_ids": ["R0C2", "R1C4", "R2C3", "R3C1"],
+      "expected_improvement": 60,
+      "category": "deep_transform"
+    }}
   ]
 }}
 
@@ -2518,6 +2575,8 @@ REQUIREMENTS:
 - Each insight should be 160-250 words total across all fields
 - Generate 3-5 leverage_points for cells with impact_score >= 75 (power spots)
 - Generate 3-6 risk_analysis for cells that are bottlenecks, dependencies, or areas of concern
+- Generate 3-5 plays covering different risk/timeline profiles (quick_wins, balanced, deep_transform, conservative, aggressive)
+- Each play must reference actual leverage_point cell_ids from the generated leverage_points
 - User should think: "I can't unsee this now" """
 
     try:
@@ -2557,17 +2616,20 @@ REQUIREMENTS:
             new_col_options = result.get("column_options", [])
             leverage_points = result.get("leverage_points", [])
             risk_analysis = result.get("risk_analysis", [])
+            plays = result.get("plays", [])
 
             cell_count = len(cells)
             row_insight_count = sum(1 for r in new_row_options if r.get("articulated_insight"))
             col_insight_count = sum(1 for c in new_col_options if c.get("articulated_insight"))
             leverage_count = len(leverage_points)
             risk_count = len(risk_analysis)
+            plays_count = len(plays)
 
             api_logger.info(
                 f"[DOC_POPULATE] Generated {cell_count} cells, "
                 f"{row_insight_count} row insights, {col_insight_count} col insights, "
-                f"{leverage_count} leverage points, {risk_count} risk points "
+                f"{leverage_count} leverage points, {risk_count} risk points, "
+                f"{plays_count} plays "
                 f"for document '{document_stub.get('name')}'"
             )
 
@@ -2581,13 +2643,16 @@ REQUIREMENTS:
                 api_logger.warning(f"[DOC_POPULATE] Only got {leverage_count} leverage points, expected 3-5")
             if risk_count < 3:
                 api_logger.warning(f"[DOC_POPULATE] Only got {risk_count} risk points, expected 3-6")
+            if plays_count < 3:
+                api_logger.warning(f"[DOC_POPULATE] Only got {plays_count} plays, expected 3-5")
 
             return {
                 "cells": cells,
                 "row_options": new_row_options,
                 "column_options": new_col_options,
                 "leverage_points": leverage_points,
-                "risk_analysis": risk_analysis
+                "risk_analysis": risk_analysis,
+                "plays": plays
             }
 
     except json.JSONDecodeError as e:

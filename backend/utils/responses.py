@@ -1,12 +1,32 @@
 """
 Response builder utilities.
 Auto-converts SQLAlchemy models to Pydantic response models.
+Provides CamelModel base class for consistent camelCase API responses.
 """
 
 from enum import Enum
 from typing import TypeVar, Type, Any, Optional, Dict, Callable
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
+from pydantic.alias_generators import to_camel
+
+
+class CamelModel(BaseModel):
+    """
+    Base model that converts snake_case fields to camelCase in API responses.
+
+    Usage:
+        class MyResponse(CamelModel):
+            user_id: str        # Returns as "userId" in JSON
+            created_at: str     # Returns as "createdAt" in JSON
+
+    All response models should inherit from this for consistent API naming.
+    """
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        populate_by_name=True,
+        from_attributes=True,
+    )
 
 T = TypeVar("T", bound=BaseModel)
 
