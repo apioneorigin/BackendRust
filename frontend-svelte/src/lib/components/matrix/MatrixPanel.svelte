@@ -372,17 +372,22 @@
 				<div class="dimensions-list">
 					{#each matrixData[selectedCell.row][selectedCell.col].dimensions as dim, dimIdx}
 						{@const fillCount = getDimFillCount(dim.value)}
-						<div class="dimension-row">
-							<span class="dim-name">{dim.name}</span>
-							<div class="dim-bar">
-								{#each DIM_STEPS as _, stepIdx}
-									<button
-										class="dim-bar-segment"
-										class:filled={stepIdx < fillCount}
-										on:click={() => handleDimensionBarClick(dimIdx, stepIdx)}
-									></button>
-								{/each}
+						<div class="dimension-item">
+							<div class="dimension-row">
+								<span class="dim-name">{dim.name}</span>
+								<div class="dim-bar">
+									{#each DIM_STEPS as _, stepIdx}
+										<button
+											class="dim-bar-segment"
+											class:filled={stepIdx < fillCount}
+											on:click={() => handleDimensionBarClick(dimIdx, stepIdx)}
+										></button>
+									{/each}
+								</div>
 							</div>
+							{#if dim.explanation}
+								<span class="dim-explanation">{dim.explanation}</span>
+							{/if}
 						</div>
 					{/each}
 				</div>
@@ -830,7 +835,13 @@
 	.dimensions-list {
 		display: flex;
 		flex-direction: column;
-		gap: 0.75rem;
+		gap: 0.875rem;
+	}
+
+	.dimension-item {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
 	}
 
 	.dimension-row {
@@ -841,10 +852,17 @@
 
 	.dim-name {
 		font-size: 0.8125rem;
-		font-weight: 500;
+		font-weight: 600;
 		color: var(--color-text-source);
 		flex: 1;
 		min-width: 0;
+	}
+
+	.dim-explanation {
+		font-size: 0.6875rem;
+		color: var(--color-text-whisper);
+		line-height: 1.3;
+		padding-left: 0;
 	}
 
 	.dim-bar {
