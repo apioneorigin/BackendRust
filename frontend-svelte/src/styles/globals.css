@@ -52,10 +52,10 @@
 	--gradient-ambient: radial-gradient(ellipse at 50% 30%, rgba(107, 112, 117, 0.03) 0%, transparent 60%);
 
 	/* ─────────────────────────────────────────────────────────────────────────────
-	   SURFACES - Soft Cream (warm, alive, inviting)
+	   SURFACES - Subtle Navy Tint (premium, institutional)
 	   ───────────────────────────────────────────────────────────────────────────── */
-	--color-field-void: #FDFCF9;      /* Soft cream - main bg */
-	--color-field-depth: #FAF9F5;     /* Slightly deeper warm */
+	--color-field-void: #FAFBFC;      /* Extremely subtle navy tint - main bg */
+	--color-field-depth: #F6F8FA;     /* Slightly deeper cool */
 	--color-field-surface: #FFFFFF;   /* Pure white for cards/elevated */
 	--color-field-elevated: #FFFFFF;  /* Pure white elevated */
 	--color-field-solid: #FFFFFF;     /* Solid white for inputs */
@@ -160,11 +160,11 @@
 	--gradient-primary: linear-gradient(135deg, #6B7075 0%, #9da2a8 100%);
 	--gradient-ambient: radial-gradient(ellipse at 50% 30%, rgba(157, 162, 168, 0.06) 0%, transparent 60%);
 
-	/* Premium dark warm surfaces */
-	--color-field-void: #121110;      /* Dark with subtle warm undertone */
-	--color-field-depth: #1a1816;     /* Slightly elevated dark warm */
-	--color-field-surface: #211f1c;   /* Card surfaces */
-	--color-field-elevated: #2a2723;  /* Elevated elements */
+	/* Premium dark navy surfaces */
+	--color-field-void: #0A0D12;      /* Deep navy black - main bg */
+	--color-field-depth: #0F1318;     /* Slightly elevated navy */
+	--color-field-surface: #141920;   /* Card surfaces */
+	--color-field-elevated: #1A2028;  /* Elevated elements */
 
 	/* Text on dark silver */
 	--color-text-source: #f4f5f7;     /* Bright silver-white */
