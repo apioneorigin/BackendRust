@@ -10,8 +10,8 @@
 
    Design Philosophy:
    - Gunmetal gray as sophisticated primary accent
-   - Extremely light teal-tinted surfaces for calm depth
-   - Cool neutrals with subtle sophistication
+   - Warm cream surfaces for alive, inviting feel
+   - Subtle warmth with professional sophistication
    - Enterprise-grade aesthetics for Fortune 500 positioning
 
    ═══════════════════════════════════════════════════════════════════════════════ */
@@ -48,14 +48,14 @@
 	--color-primary-100: rgba(107, 112, 117, 0.12);
 	--color-primary-50: rgba(107, 112, 117, 0.06);
 
-	/* Ambient glow - subtle gray accent on teal-tinted surface */
+	/* Ambient glow - subtle gray accent on warm cream surface */
 	--gradient-ambient: radial-gradient(ellipse at 50% 30%, rgba(107, 112, 117, 0.03) 0%, transparent 60%);
 
 	/* ─────────────────────────────────────────────────────────────────────────────
-	   SURFACES - Extremely light teal tint (calm, sophisticated depth)
+	   SURFACES - Soft Cream (warm, alive, inviting)
 	   ───────────────────────────────────────────────────────────────────────────── */
-	--color-field-void: #F7FAFA;      /* Lightest teal tint - main bg */
-	--color-field-depth: #F4F8F8;     /* Slightly deeper teal */
+	--color-field-void: #FDFCF9;      /* Soft cream - main bg */
+	--color-field-depth: #FAF9F5;     /* Slightly deeper warm */
 	--color-field-surface: #FFFFFF;   /* Pure white for cards/elevated */
 	--color-field-elevated: #FFFFFF;  /* Pure white elevated */
 	--color-field-solid: #FFFFFF;     /* Solid white for inputs */
@@ -162,11 +162,11 @@
 	--gradient-primary: linear-gradient(135deg, #6B7075 0%, #9da2a8 100%);
 	--gradient-ambient: radial-gradient(ellipse at 50% 30%, rgba(157, 162, 168, 0.06) 0%, transparent 60%);
 
-	/* Premium dark teal-tinted surfaces */
-	--color-field-void: #0f1214;      /* Dark with subtle teal undertone */
-	--color-field-depth: #151a1c;     /* Slightly elevated dark teal */
-	--color-field-surface: #1a2024;   /* Card surfaces */
-	--color-field-elevated: #232a2e;  /* Elevated elements */
+	/* Premium dark warm surfaces */
+	--color-field-void: #121110;      /* Dark with subtle warm undertone */
+	--color-field-depth: #1a1816;     /* Slightly elevated dark warm */
+	--color-field-surface: #211f1c;   /* Card surfaces */
+	--color-field-elevated: #2a2723;  /* Elevated elements */
 
 	/* Text on dark silver */
 	--color-text-source: #f4f5f7;     /* Bright silver-white */
