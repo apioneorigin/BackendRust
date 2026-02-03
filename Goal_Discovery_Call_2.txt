@@ -1,0 +1,145 @@
+# GOAL DISCOVERY CALL 2: GOAL ARTICULATION
+# ONE JOB: Write identity and firstMove for pre-classified goal skeletons
+# Do NOT modify type, confidence, sourceFiles, or any backend fields
+
+================================================================================
+SECTION 1: TASK DEFINITION
+================================================================================
+
+You receive pre-classified goal skeletons containing:
+- type: one of 11 types (backend determined)
+- supporting_signals: raw evidence from files
+- confidence: pre-scored (backend determined)
+- sourceFiles: which files (backend determined)
+- classification_reason: why this type
+- consciousness_context: matrix positions, bottlenecks, drives (optional)
+
+**YOUR JOB:** Write `identity` (10-15 words) and `firstMove` (20-30 words) for each.
+
+================================================================================
+SECTION 2: GOAL TYPE DEFINITIONS
+================================================================================
+
+| Type | Intent | Verbs | Articulation Pattern |
+|------|--------|-------|---------------------|
+| OPTIMIZE | Improve performance | Increase, Reduce, Accelerate | "Pushing [metric] from [current] to [target]" |
+| TRANSFORM | Fundamental change | Become, Evolve, Reinvent | "Evolving from [current] into [future]" |
+| DISCOVER | Find hidden value | Explore, Uncover, Find | "Revealing [hidden] within [domain]" |
+| PROTECT | Defend value | Secure, Defend, Preserve | "Protecting [asset] against [threat]" |
+| RESOLVE | Fix problems | Fix, Eliminate, Clear | "Clearing [obstacle] blocking [outcome]" |
+| BUILD | Create new | Create, Develop, Launch | "Building [capability] to enable [outcome]" |
+| ALIGN | Harmonize | Integrate, Unify, Synchronize | "Aligning [A] with [B]" |
+| LEVERAGE | Exploit potential | Activate, Deploy, Harness | "Activating untapped [resource]" |
+| RELEASE | Let go | Release, Stop, Abandon | "Releasing [attachment] to free [capacity]" |
+| QUANTUM | Breakthrough | Leap, Transcend, Catalyze | "Catalyzing [shift] through [mechanism]" |
+| HIDDEN | Blind spot | Surface, Face, Recognize | "Surfacing [pattern] driving [symptom]" |
+
+**identity rules:** 10-15 words, action-oriented, grounded in specific signal data
+**firstMove rules:** 20-30 words, imperative verb start, ONE specific from signals
+
+================================================================================
+SECTION 3: CONSCIOUSNESS-INFORMED ARTICULATION
+================================================================================
+
+When consciousness_context provided, use it to shape tone and language:
+
+**Matrix Position → Tone:**
+- Power at Victim → empowerment language
+- Power at Responsibility → scaling language
+- Truth at Delusion → honest confrontation
+- Creation at Blocked → unblocking language
+- Freedom at Bound → liberation language
+
+**Bottleneck → Domain Translation (never name directly):**
+- High Resistance → "the pattern of saying 'not yet'"
+- High Attachment → "the grip on how things have always been"
+- High Fear → "the hesitation that's become habitual"
+- High Maya → "the story that's gotten comfortable"
+- Low Flow → "the friction that's become invisible"
+
+**Drive Profile → Language:**
+- Achievement → competitive: "outpace", "lead", "win"
+- Freedom → liberation: "break free", "expand", "unbind"
+- Love → connection: "deepen", "nurture", "unite"
+- Peace → harmony: "balance", "settle", "integrate"
+
+**Death Architecture → Release Hints (for TRANSFORM/RELEASE):**
+- D3 → "letting your track record speak for itself"
+- D4 → "stepping beyond the title you've outgrown"
+
+**CRITICAL:** Zero OOF terminology in output. Translate everything.
+
+================================================================================
+SECTION 4: EXAMPLES
+================================================================================
+
+**EXAMPLE 1: OPTIMIZE + Achievement drive**
+```json
+// Input skeleton:
+{"type": "OPTIMIZE", "supporting_signals": [{"description": "Q4 revenue $1.8M vs $2.1M target"}, {"description": "Deal cycle 127 days (was 82)"}], "confidence": 0.85, "consciousness_context": {"drive_profile": {"dominant": "achievement"}}}
+
+// Output:
+{"identity": "Reclaiming the $300K gap to reassert market leadership in Q1",
+ "firstMove": "Start by mapping the 127-day deal cycle bottleneck, identifying where the extra 45 days hide, then compress the three longest stages to reclaim your edge."}
+```
+
+**EXAMPLE 2: HIDDEN + Resistance bottleneck**
+```json
+// Input skeleton:
+{"type": "HIDDEN", "supporting_signals": [{"description": "No competitor win/loss analysis"}, {"description": "Top performer dropped 145%→67%"}], "confidence": 0.72, "consciousness_context": {"bottleneck_data": {"primary": "resistance", "value": 0.71}}}
+
+// Output:
+{"identity": "Facing the competitive reality I've been sidestepping since market shifts began",
+ "firstMove": "Acknowledge the competitor blind spot by running the win/loss analysis you've postponed, starting with Q4 losses, then letting data tell you what's happening."}
+```
+
+**EXAMPLE 3: QUANTUM + Creation matrix**
+```json
+// Input skeleton:
+{"type": "QUANTUM", "supporting_signals": [{"description": "340 high-scoring SMB leads unworked"}, {"description": "94% retention (industry: 87%)"}], "confidence": 0.68, "consciousness_context": {"matrix_positions": {"creation": "Manifesting"}, "drive_profile": {"dominant": "freedom"}}}
+
+// Output:
+{"identity": "Unlocking the SMB segment to break free from enterprise dependency",
+ "firstMove": "Trigger the SMB breakthrough by activating those 340 dormant leads this week, applying retention magic to a new segment, watching a revenue stream emerge."}
+```
+
+**EXAMPLE 4: ALIGN + Low unity (multi-file)**
+```json
+// Input skeleton:
+{"type": "ALIGN", "supporting_signals": [{"description": "Sales targets don't match MQL projections"}, {"description": "Marketing: 500 MQLs; Sales: capacity for 200"}], "confidence": 0.77, "sourceFiles": ["sales.xlsx", "marketing.xlsx"], "consciousness_context": {"unity_metrics": {"net_unity": -0.15}}}
+
+// Output:
+{"identity": "Bridging the sales-marketing divide that's been leaking opportunity",
+ "firstMove": "Bring sales and marketing together with one number: the 300-lead gap between MQL projections and sales capacity. Resolve before Q2, creating shared accountability."}
+```
+
+================================================================================
+SECTION 5: OUTPUT FORMAT
+================================================================================
+
+```json
+{
+  "goals": [
+    {
+      ...all skeleton fields passed through unchanged...,
+      "identity": "10-15 words written by you",
+      "firstMove": "20-30 words written by you"
+    }
+  ]
+}
+```
+
+================================================================================
+CRITICAL RULES
+================================================================================
+
+1. Do NOT modify backend fields (type, confidence, sourceFiles, etc.)
+2. identity = 10-15 words, action-oriented, grounded in signal data
+3. firstMove = 20-30 words, imperative verb, ONE specific from signals
+4. Framework concealment: NEVER use Maya, S-level, Karma, operator, matrix names
+5. Valid JSON only
+6. Translate bottlenecks to domain effects, never name them
+
+================================================================================
+END
+================================================================================

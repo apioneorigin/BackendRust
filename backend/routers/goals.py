@@ -1,15 +1,21 @@
 """
 Goal and matrix management endpoints.
+
+Includes:
+- Basic CRUD for goals
+- Goal inventory management
+- Goal discovery from files (2-call LLM architecture with backend classifier)
 """
 
+import os
 import json
-import re
-import uuid
+import time
+import httpx
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 import openai
@@ -17,9 +23,10 @@ import openai
 from database import get_db, User, Goal, MatrixValue, DiscoveredGoal, UserGoalInventory
 from routers.auth import get_current_user, generate_id
 from utils import get_or_404, paginate, to_response, to_response_list
-import logging
+from logging_config import api_logger, pipeline_logger
 
-logger = logging.getLogger(__name__)
+# Goal classifier (backend intelligence between Call 1 and Call 2)
+from goal_classifier import GoalClassifier, classify_goals
 
 router = APIRouter(prefix="/api", tags=["goals"])
 
@@ -401,465 +408,744 @@ async def save_goal_inventory(
     return {"status": "success"}
 
 
-class RemoveGoalRequest(BaseModel):
-    goal_id: str
+# =============================================================================
+# GOAL DISCOVERY FROM FILES
+# 2-Call LLM Architecture with Backend Classifier
+# =============================================================================
 
-
-@router.post("/goal-inventory/remove")
-async def remove_goal_from_inventory(
-    request: RemoveGoalRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-):
-    """Remove a goal from inventory."""
-    result = await db.execute(
-        select(UserGoalInventory).where(UserGoalInventory.od_id == current_user.id)
-    )
-    inventory = result.scalar_one_or_none()
-
-    if not inventory or not inventory.goals:
-        raise HTTPException(status_code=404, detail="Goal inventory not found")
-
-    # Filter out the goal to remove
-    updated_goals = [g for g in inventory.goals if g.get("id") != request.goal_id]
-
-    if len(updated_goals) == len(inventory.goals):
-        raise HTTPException(status_code=404, detail="Goal not found in inventory")
-
-    inventory.goals = updated_goals
-    inventory.updated_at = datetime.utcnow()
-    await db.commit()
-
-    return {"status": "success", "remaining_count": len(updated_goals)}
-
-
+# Request/Response Models
 class FileData(BaseModel):
+    """Uploaded file data for goal discovery."""
     name: str
     content: str
-    type: Optional[str] = "text"
+    type: Optional[str] = None
+    size: Optional[int] = None
 
 
 class DiscoverGoalsRequest(BaseModel):
+    """Request for file-based goal discovery."""
     files: List[FileData]
-    existing_goals: Optional[List[dict]] = None
-
-
-# =============================================================================
-# GOAL DISCOVERY 2-CALL SYSTEM
-# Mirrors the chat route's Call 1 (extraction) + Backend + Call 2 (articulation)
-# =============================================================================
-
-# -----------------------------------------------------------------------------
-# CALL 1: Signal Extraction
-# Extract raw signals from files - entities, metrics, patterns, anomalies
-# NO goal generation - just extraction
-# -----------------------------------------------------------------------------
-CALL1_SIGNAL_EXTRACTION_PROMPT = """
-# GOAL SIGNAL EXTRACTION ENGINE (Call 1)
-
-You are extracting RAW SIGNALS from uploaded files. Do NOT generate goals yet.
-Your job is to identify everything that COULD become a goal.
-
-## WHAT TO EXTRACT
-
-### 1. ENTITIES
-People, companies, products, teams, departments, systems, processes mentioned.
-```json
-{"name": "entity name", "type": "person|company|product|team|system|process", "context": "how it appears in file"}
-```
-
-### 2. METRICS
-Any numbers, percentages, KPIs, measurements, counts, rates.
-```json
-{"name": "metric name", "value": "the value", "context": "what it measures", "trend": "up|down|stable|unknown"}
-```
-
-### 3. STRENGTHS
-Things working well, high performers, successes, positive patterns.
-```json
-{"description": "what's working", "evidence": "specific data point", "magnitude": "how significant"}
-```
-
-### 4. WEAKNESSES
-Problems, bottlenecks, failures, friction points, complaints.
-```json
-{"description": "the problem", "evidence": "specific data point", "impact": "cost/consequence"}
-```
-
-### 5. ANOMALIES
-Outliers, unexpected values, correlations, patterns worth investigating.
-```json
-{"description": "what's unusual", "evidence": "the data", "question": "what should be investigated"}
-```
-
-### 6. UNUSED_CAPACITY
-Resources not being utilized, idle assets, untapped potential.
-```json
-{"resource": "what's unused", "current_utilization": "how much used", "potential": "what could be done"}
-```
-
-### 7. AVOIDANCES
-Things being avoided, delayed decisions, unaddressed issues, behavioral blocks.
-```json
-{"pattern": "what's being avoided", "evidence": "how you know", "cost": "what it's costing"}
-```
-
-### 8. CROSS_FILE_PATTERNS (only if 2+ files)
-Connections, contradictions, gaps between files.
-```json
-{"type": "connection|contradiction|gap", "file1": "first file", "file2": "second file", "description": "the pattern"}
-```
-
-## OUTPUT FORMAT
-
-```json
-{
-  "file_summary": {
-    "total_files": 1,
-    "file_types": ["text"],
-    "data_richness": "sparse|moderate|rich",
-    "domain": "business|personal|technical|creative|mixed"
-  },
-  "entities": [...],
-  "metrics": [...],
-  "strengths": [...],
-  "weaknesses": [...],
-  "anomalies": [...],
-  "unused_capacity": [...],
-  "avoidances": [...],
-  "cross_file_patterns": [...]
-}
-```
-
-## CRITICAL RULES
-
-1. Extract EVERYTHING - be exhaustive, not selective
-2. Include SPECIFIC data points from the files (names, numbers, quotes)
-3. Do NOT generate goals - just extract signals
-4. For creative content (scripts, stories): extract characters, scenes, themes, plot points, dialogue patterns
-5. Confidence comes from specificity - vague signals get filtered out later
-
-**Output JSON only, no other text.**
-"""
-
-
-# -----------------------------------------------------------------------------
-# CALL 2: Goal Articulation
-# Take classified signals and articulate them into goals
-# -----------------------------------------------------------------------------
-CALL2_GOAL_ARTICULATION_PROMPT = """
-# GOAL INVENTORY DISCOVERY ENGINE
-
-You are generating an exhaustive inventory of ALL possible goals latent in the user's uploaded data.
-This is NOT about prioritization. This is about revealing EVERYTHING that's possible.
-
-## CORE MANDATE
-
-Generate up to 30 goals from the provided file data. **NEVER refuse due to "insufficient data."**
-Work with whatever exists. Sparse data = lower confidence, still generate.
-
-## GOAL TYPES (11 Categories)
-
-### Single-File Types (work with 1 file)
-
-| Type | Source | When to Use |
-|------|--------|-------------|
-| **OPTIMIZE** | Strengths, top performers | Data shows something working well that could scale |
-| **TRANSFORM** | Weaknesses, bottlenecks | Data shows friction, delays, problems |
-| **DISCOVER** | Anomalies, unexplained patterns | Data shows correlations or patterns worth investigating |
-| **QUANTUM** | Unused capacity, zero utilization | Data shows resources not being used |
-| **HIDDEN** | Implicit patterns, avoidances | Data implies psychological/behavioral blocks |
-
-### Multi-File Types (Only if 2+ files)
-
-| Type | Source | When to Use |
-|------|--------|-------------|
-| **INTEGRATION** | Data that should connect but doesn't | Same entities across files, not linked |
-| **DIFFERENTIATION** | Unique value hidden in comparison | Outliers when files compared |
-| **ANTI_SILOING** | Cross-domain opportunities | Category-specific files that could inform each other |
-| **SYNTHESIS** | Combined insight from disparate sources | Complementary data types |
-| **RECONCILIATION** | Contradictions to resolve | Same metric, different values across files |
-| **ARBITRAGE** | Gaps between what files reveal | Delta between files = opportunity |
-
-## OUTPUT FORMAT
-
-For EACH goal, output ONLY:
-1. **type**: One of the 11 types above
-2. **identity**: Concise, action-oriented statement based on goal type intent (10-15 words)
-3. **firstMove**: Single line, 20-30 words, action as claimed identity
-4. **confidence**: 0-100 based on evidence strength
-5. **sourceFiles**: Array of file names this goal came from
-
-## IDENTITY ARTICULATION GUIDANCE
-
-The **identity** field should naturally reflect the goal type's intent using the user's actual data:
-
-| Type | Intent | Example Verbs | Natural Articulation Example |
-|------|--------|---------------|------------------------------|
-| **OPTIMIZE** | Amplify existing strength | Leverage, Scale, Amplify | "Leverage 78% validation success across all processes" |
-| **TRANSFORM** | Convert friction/weakness | Convert, Rebuild, Transform | "Convert 45-min bottleneck into streamlined workflow" |
-| **DISCOVER** | Investigate anomaly | Investigate, Explore, Uncover | "Investigate Q3 conversion spike and Q1 flatline pattern" |
-| **QUANTUM** | Activate dormant capacity | Activate, Monetize, Deploy | "Monetize 54% idle server capacity for new workloads" |
-| **HIDDEN** | Confront avoidance | Confront, Address, Face | "Address unresolved client complaints marked as handled" |
-| **INTEGRATION** | Connect disconnected | Connect, Link, Unify | "Connect sales pipeline to delivery timelines" |
-| **DIFFERENTIATION** | Own unique advantage | Own, Isolate, Highlight | "Own automation capability as core differentiator" |
-| **ANTI_SILOING** | Bridge silos | Bridge, Merge, Combine | "Bridge engineering velocity with business outcomes" |
-| **SYNTHESIS** | Distill complexity | Synthesize, Distill, Combine | "Synthesize customer feedback into retention playbook" |
-| **RECONCILIATION** | Resolve contradiction | Resolve, Align, Reconcile | "Resolve mismatch between projected and actual churn" |
-| **ARBITRAGE** | Close perception gap | Close, Bridge, Exploit | "Close gap between self-assessed and measured performance" |
-
-**Guidelines:**
-- Use strong action verbs fitting the goal type's intent
-- Ground the statement in the user's specific data (metrics, patterns, specifics)
-- Keep it 10-15 words maximum
-- No rigid format—let it emerge naturally from what the data reveals
-
-## FIRSTMOVE GENERATION RULES
-
-The firstMove is the ONLY text the user sees. It must:
-- Start with imperative verb (Scale, Eliminate, Investigate, Connect, etc.)
-- Include at least ONE specific from the actual file data (number, metric, name)
-- End with identity claim or transformation result
-- Be 20-30 words exactly
-- Make staying still feel uncomfortable
-
-### Templates by Type:
-
-**OPTIMIZE**: "Scale your [specific metric] to [target scope]—claim the [identity] you've already proven."
-
-**TRANSFORM**: "Eliminate the [specific problem] bleeding [quantified cost]—stop being the [old identity], start [new identity]."
-
-**DISCOVER**: "Investigate why [specific anomaly]—the data is trying to tell you [what]."
-
-**QUANTUM**: "Monetize the [specific unused capacity]—[reframe empty as possibility]."
-
-**HIDDEN**: "[Specific action] the [stuck pattern]—your [current approach] is [shadow function], not [stated function]."
-
-**INTEGRATION**: "Connect [file1] and [file2] to reveal the [gap/opportunity] hiding between them."
-
-**DIFFERENTIATION**: "Your [specific outlier] outperforms by [X%]—stop averaging it away, start replicating it."
-
-**ANTI_SILOING**: "Bridge [domain A] and [domain B]—the gap between them is where [opportunity] lives."
-
-**SYNTHESIS**: "Combine [data type A] with [data type B]—together they reveal [pattern] invisible to either alone."
-
-**RECONCILIATION**: "Resolve the [specific contradiction]—someone's counting wrong, and it's costing [what]."
-
-**ARBITRAGE**: "Exploit the gap between [what file A shows] and [what file B shows]—that delta is [opportunity]."
-
-## DISTRIBUTION TARGETS
-
-Aim for this mix (adjust based on what data supports):
-- OPTIMIZE: 5-7 goals
-- TRANSFORM: 4-6 goals
-- DISCOVER: 3-5 goals
-- QUANTUM: 2-4 goals
-- HIDDEN: 2-4 goals
-- Multi-file types (if applicable): 4-8 goals
-
-**Total: 20-30 goals maximum**
-
-## CONFIDENCE SCORING
-
-| Confidence | Criteria |
-|------------|----------|
-| 85-100% | Exact numbers, clear pattern, immediately actionable |
-| 70-84% | Good evidence, some inference required |
-| 55-69% | Pattern visible but needs investigation |
-| 40-54% | Directional only, sparse evidence |
-| <40% | Speculative, minimal data support |
-
-## CRITICAL RULES
-
-1. **NEVER output descriptions, explanations, or reasoning** - ONLY the goal fields
-2. **NEVER refuse to generate due to data quality** - work with what exists
-3. **ALWAYS include at least ONE specific from the actual file data in firstMove**
-4. **ALWAYS articulate identity naturally based on goal type intent** - use the guidance table above
-5. **NEVER exceed 30 words in firstMove**
-6. **NEVER generate fewer than 3 goals** (even with minimal data)
-7. **For multi-file: ALWAYS check for INTEGRATION/RECONCILIATION opportunities first**
-8. **DEDUPLICATION: If EXISTING GOALS are provided, NEVER generate goals semantically similar to them** - find NEW opportunities the user hasn't discovered yet
-
-## JSON OUTPUT SCHEMA
-
-{
-  "goals": [
-    {
-      "type": "OPTIMIZE",
-      "identity": "Leverage 78% validation success across all processes",
-      "firstMove": "Scale your 78% validation success to all processes—claim the systems mind you've already proven.",
-      "confidence": 92,
-      "sourceFiles": ["operations.xlsx"]
-    },
-    {
-      "type": "TRANSFORM",
-      "identity": "Convert 45-min bottleneck into streamlined workflow",
-      "firstMove": "Eliminate the 45-min bottleneck bleeding 200 hours monthly—stop firefighting, start designing calm.",
-      "confidence": 85,
-      "sourceFiles": ["process.csv"]
-    },
-    {
-      "type": "DISCOVER",
-      "identity": "Investigate Q3 conversion spike and Q1 flatline pattern",
-      "firstMove": "Investigate why Q3 conversions spike 40% while Q1 flattlines—your seasonal blindspot is costing you.",
-      "confidence": 78,
-      "sourceFiles": ["sales_data.xlsx"]
-    },
-    {
-      "type": "QUANTUM",
-      "identity": "Monetize 54% idle server capacity for new workloads",
-      "firstMove": "Monetize the 54% idle server capacity sitting untouched—empty space is unpriced possibility.",
-      "confidence": 71,
-      "sourceFiles": ["infrastructure.json"]
-    },
-    {
-      "type": "HIDDEN",
-      "identity": "Address unresolved client complaints marked as handled",
-      "firstMove": "Address the repeated client complaints you're marking 'handled' without follow-up—avoidance isn't resolution.",
-      "confidence": 66,
-      "sourceFiles": ["support_tickets.csv"]
-    },
-    {
-      "type": "INTEGRATION",
-      "identity": "Connect sales pipeline to delivery timelines",
-      "firstMove": "Connect your sales pipeline to delivery timelines—the 30-day gap is where promises break.",
-      "confidence": 82,
-      "sourceFiles": ["sales_data.xlsx", "operations.xlsx"]
-    }
-  ]
-}
-
-## EDGE CASES
-
-**If data is extremely sparse (1 file, <50 words):**
-- Generate 3-5 goals minimum
-- All confidence scores 30-50%
-- Focus on DISCOVER and QUANTUM types (finding what's missing)
-
-**If file is just numbers with no context:**
-- Treat each metric as a potential OPTIMIZE or TRANSFORM target
-- Identify outliers as DISCOVER opportunities
-- Generate goals about "understanding what these numbers mean"
-
-**If files are unrelated (e.g., grocery list + meeting notes):**
-- Generate single-file goals for each
-- Look for SYNTHESIS opportunities (e.g., "personal organization" pattern)
-- Lower confidence scores (40-60%)
-
-**If user has uploaded 5+ files:**
-- Prioritize multi-file types (INTEGRATION, RECONCILIATION, SYNTHESIS)
-- Look for cross-file patterns aggressively
-- Aim for 25-30 goals to maximize coverage
-
-"""
-
-
-def build_goal_discovery_user_prompt(files: List[FileData], existing_goals: Optional[List[dict]] = None) -> str:
-    """Build the user prompt for goal discovery - copied from reality-transformer repo."""
-    file_count = len(files)
-    is_multi_file = file_count > 1
-
-    prompt = f"""## FILE DATA FOR GOAL DISCOVERY
-
-Total Files: {file_count}
-Multi-File Analysis: {'ENABLED - Look for INTEGRATION, DIFFERENTIATION, ANTI_SILOING, SYNTHESIS, RECONCILIATION, ARBITRAGE opportunities' if is_multi_file else 'DISABLED - Single file only, focus on OPTIMIZE, TRANSFORM, DISCOVER, QUANTUM, HIDDEN'}
-
-"""
-
-    for idx, f in enumerate(files):
-        prompt += f"""### FILE {idx + 1}: {f.name}
-Type: {f.type}
-Content:
-```
+    existing_goals: Optional[List[Dict[str, Any]]] = None
+    model: str = "claude-opus-4-5-20251101"
+
+
+class DiscoverGoalsResponse(BaseModel):
+    """Response from goal discovery."""
+    success: bool
+    goals: List[Dict[str, Any]]
+    generatedAt: str
+    sourceFileCount: int
+    usage: Dict[str, Any]
+
+
+# Legacy prompts (kept for reference, not used in new 2-call architecture)
+GOAL_DISCOVERY_SYSTEM_PROMPT = """[LEGACY - NOT USED]"""
+CALL1_SIGNAL_EXTRACTION_PROMPT = """[LEGACY - NOT USED]"""
+CALL2_GOAL_ARTICULATION_PROMPT = """[LEGACY - NOT USED]"""
+
+
+def build_goal_discovery_user_prompt(files: List[FileData], existing_goals: Optional[List[Dict]] = None) -> str:
+    """Build user prompt for single-call goal discovery (LEGACY - kept for fallback)."""
+    file_sections = []
+    for f in files:
+        file_sections.append(f"""
+=== FILE: {f.name} ===
 {f.content[:50000]}
-```
+=== END FILE ===
+""")
 
+    existing_goals_section = ""
+    if existing_goals:
+        goals_text = "\n".join([f"- {g.get('identity', g.get('goal_text', 'Unknown'))}" for g in existing_goals[:10]])
+        existing_goals_section = f"""
+
+=== EXISTING GOALS (for deduplication) ===
+{goals_text}
+=== END EXISTING GOALS ===
 """
 
-    # Add existing goals for deduplication
-    if existing_goals and len(existing_goals) > 0:
-        prompt += f"""## EXISTING GOALS (DO NOT DUPLICATE - Find NEW opportunities)
+    return f"""Analyze the following files and discover goals:
 
-The user has already discovered these {len(existing_goals)} goals. Generate DIFFERENT goals that complement or expand on these, but are NOT semantically similar:
+{chr(10).join(file_sections)}
+{existing_goals_section}
 
+Return a JSON object with discovered goals."""
+
+
+# =============================================================================
+# NEW 2-CALL ARCHITECTURE HELPERS
+# =============================================================================
+
+def build_call1_user_prompt(files: List[FileData], existing_goals: Optional[List[Dict]] = None) -> str:
+    """
+    Build user prompt for Call 1 (Signal & Consciousness Extraction).
+    Contains ONLY file content - no goal generation instructions.
+    """
+    file_sections = []
+    for f in files:
+        # Limit content to prevent token overflow
+        content = f.content[:50000] if len(f.content) > 50000 else f.content
+        file_sections.append(f"""
+=== FILE: {f.name} ===
+Type: {f.type or 'unknown'}
+Size: {f.size or len(f.content)} bytes
+
+CONTENT:
+{content}
+=== END FILE: {f.name} ===
+""")
+
+    # Include existing goals for context (helps LLM assess user's intent)
+    existing_goals_section = ""
+    if existing_goals:
+        goals_summary = []
+        for g in existing_goals[:10]:
+            identity = g.get('identity', g.get('goal_text', 'Unknown'))
+            goal_type = g.get('type', 'Unknown')
+            goals_summary.append(f"- [{goal_type}] {identity}")
+        existing_goals_section = f"""
+
+=== USER'S EXISTING GOALS (for context) ===
+{chr(10).join(goals_summary)}
+=== END EXISTING GOALS ===
 """
-        for idx, goal in enumerate(existing_goals):
-            prompt += f"{idx + 1}. [{goal.get('type', 'UNKNOWN')}] {goal.get('identity', '')}\n"
-        prompt += "\n"
 
-    prompt += f"""## TASK
+    return f"""Extract signals and consciousness operators from these files.
 
-Generate up to 30 NEW goals from this data. Follow the exact JSON schema.
-{'IMPORTANT: Avoid duplicating the existing goals listed above. Find fresh opportunities.' if existing_goals and len(existing_goals) > 0 else ''}
-Remember: firstMove is the ONLY text users see. Make it sharp, specific, and action-creating.
+FILE COUNT: {len(files)}
+MULTI-FILE MODE: {len(files) > 1}
 
-**Output JSON only, no other text.**"""
+{chr(10).join(file_sections)}
+{existing_goals_section}
 
-    return prompt
+Return JSON with signal_extraction, consciousness_extraction, and cross_mapping sections."""
 
 
-@router.post("/goal-inventory/generate")
+def build_call2_user_prompt(
+    goal_skeletons: List[Dict],
+    files: List[FileData]
+) -> str:
+    """
+    Build user prompt for Call 2 (Goal Articulation).
+    Contains goal skeletons + file summaries (not full content).
+    """
+    # File summaries (first 2000 chars each to save tokens)
+    file_summaries = []
+    for f in files:
+        summary = f.content[:2000] + ("..." if len(f.content) > 2000 else "")
+        file_summaries.append(f"""
+=== FILE SUMMARY: {f.name} ===
+{summary}
+=== END SUMMARY ===
+""")
+
+    # Goal skeletons as JSON
+    skeletons_json = json.dumps(goal_skeletons, indent=2)
+
+    return f"""Articulate the following goal skeletons with identity and firstMove fields.
+
+=== GOAL SKELETONS (from backend classification) ===
+{skeletons_json}
+=== END SKELETONS ===
+
+=== FILE SUMMARIES (for grounding) ===
+{chr(10).join(file_summaries)}
+=== END FILE SUMMARIES ===
+
+For each goal skeleton, write:
+- identity: 10-15 words, action-oriented, grounded in signal data
+- firstMove: 20-30 words, imperative verb start, ONE specific action from signals
+
+Return JSON with goals array containing all skeletons with identity and firstMove populated."""
+
+
+def parse_llm_json_response(response_text: str, context: str = "LLM") -> Optional[Dict]:
+    """
+    Parse JSON from LLM response with robust error handling.
+    Handles markdown code blocks and truncated JSON.
+    """
+    if not response_text:
+        api_logger.error(f"[{context}] Empty response text")
+        return None
+
+    json_text = response_text.strip()
+
+    # Handle markdown code blocks
+    if "```json" in json_text:
+        json_text = json_text.split("```json")[1].split("```")[0].strip()
+    elif "```" in json_text:
+        parts = json_text.split("```")
+        for part in parts[1::2]:
+            part = part.strip()
+            if part.startswith("{"):
+                json_text = part
+                break
+
+    # Remove leading non-JSON content
+    if not json_text.startswith("{"):
+        start_idx = json_text.find("{")
+        if start_idx != -1:
+            json_text = json_text[start_idx:]
+
+    try:
+        return json.loads(json_text)
+    except json.JSONDecodeError as e:
+        api_logger.warning(f"[{context}] JSON decode failed at pos {e.pos}, attempting repair...")
+        # Simple repair: find matching braces
+        try:
+            brace_count = 0
+            end_idx = 0
+            for i, char in enumerate(json_text):
+                if char == '{':
+                    brace_count += 1
+                elif char == '}':
+                    brace_count -= 1
+                    if brace_count == 0:
+                        end_idx = i + 1
+                        break
+            if end_idx > 0:
+                repaired = json_text[:end_idx]
+                return json.loads(repaired)
+        except:
+            pass
+        api_logger.error(f"[{context}] JSON repair failed: {e}")
+        return None
+
+
+def get_goal_discovery_model_config(model: str) -> Dict[str, Any]:
+    """Get model configuration for goal discovery."""
+    configs = {
+        "claude-opus-4-5-20251101": {
+            "provider": "anthropic",
+            "api_key": os.getenv("ANTHROPIC_API_KEY"),
+            "endpoint": "https://api.anthropic.com/v1/messages",
+            "max_tokens": 8192,
+        },
+        "gpt-4.1-mini": {
+            "provider": "openai",
+            "api_key": os.getenv("OPENAI_API_KEY"),
+            "endpoint": "https://api.openai.com/v1/chat/completions",
+            "max_tokens": 8192,
+        },
+        "gpt-5.2": {
+            "provider": "openai",
+            "api_key": os.getenv("OPENAI_API_KEY"),
+            "endpoint": "https://api.openai.com/v1/chat/completions",
+            "max_tokens": 16384,
+        },
+    }
+    if model not in configs:
+        raise ValueError(f"Unknown model: {model}")
+    return {"model": model, **configs[model]}
+
+
+# =============================================================================
+# MAIN ENDPOINT
+# =============================================================================
+
+@router.post("/goals/discover-from-files", response_model=DiscoverGoalsResponse)
 async def discover_goals_from_files(
     request: DiscoverGoalsRequest,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
 ):
     """
-    Discover goals from uploaded files using LLM analysis.
-    Supports 11 goal types including multi-file anti-siloeing detection.
+    Discover goals from uploaded files using 2-call LLM architecture.
+
+    Flow:
+    1. Call 1: Extract signals + consciousness operators from files
+    2. Backend: Classify signals into goal skeletons using OOF inference
+    3. Call 2: Articulate goal skeletons with identity + firstMove
+    4. Return merged results
     """
-    if not request.files:
-        raise HTTPException(status_code=400, detail="At least one file is required")
+    start_time = time.time()
+    pipeline_logger.info(f"[GOAL DISCOVERY] Starting for user {current_user.id}, {len(request.files)} files")
 
     # Get model config
-    from main import get_model_config
-    model_config = get_model_config("gpt-4.1-mini")  # Use fast model for goal discovery
+    try:
+        model_config = get_goal_discovery_model_config(request.model)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    provider = model_config["provider"]
+    api_key = model_config["api_key"]
+    model = model_config["model"]
+
+    if not api_key:
+        raise HTTPException(
+            status_code=500,
+            detail=f"No API key configured for {provider}"
+        )
+
+    # Import shared context from main (lazy import to avoid circular dependency)
+    from main import SHARED_GOAL_DISCOVERY_CONTEXT
+
+    # Track token usage
+    total_usage = {
+        "call1_input_tokens": 0,
+        "call1_output_tokens": 0,
+        "call2_input_tokens": 0,
+        "call2_output_tokens": 0,
+        "total_input_tokens": 0,
+        "total_output_tokens": 0,
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 0,
+    }
+
+    # =========================================================================
+    # STEP 1: CALL 1 - Signal & Consciousness Extraction
+    # =========================================================================
+    pipeline_logger.info("[GOAL DISCOVERY] Step 1: Call 1 - Signal extraction")
+
+    call1_dynamic_prompt = f"""You are analyzing {len(request.files)} file(s) for goal discovery.
+Multi-file mode: {len(request.files) > 1}
+
+YOUR TASK:
+1. Extract signals from each file using the three-layer protocol (LITERAL, INFERRED, ABSENT)
+2. Extract consciousness operators (25 operators + S-level)
+3. If multiple files, identify cross-file patterns
+
+Return valid JSON only. No markdown, no explanation."""
+
+    call1_user_prompt = build_call1_user_prompt(request.files, request.existing_goals)
+
+    call1_output = None
+    try:
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            if provider == "anthropic":
+                # Anthropic with prompt caching
+                system_content = [
+                    {
+                        "type": "text",
+                        "text": SHARED_GOAL_DISCOVERY_CONTEXT,
+                        "cache_control": {"type": "ephemeral"}
+                    },
+                    {
+                        "type": "text",
+                        "text": call1_dynamic_prompt
+                    }
+                ]
+
+                request_body = {
+                    "model": model,
+                    "max_tokens": model_config["max_tokens"],
+                    "system": system_content,
+                    "messages": [
+                        {"role": "user", "content": call1_user_prompt},
+                        {"role": "assistant", "content": "{"}  # Force JSON start
+                    ]
+                }
+
+                headers = {
+                    "x-api-key": api_key,
+                    "anthropic-version": "2023-06-01",
+                    "Content-Type": "application/json"
+                }
+
+                pipeline_logger.debug(f"[GOAL DISCOVERY] Call 1 request to Anthropic: {len(call1_user_prompt)} chars")
+                response = await client.post(
+                    model_config["endpoint"],
+                    headers=headers,
+                    json=request_body
+                )
+                response.raise_for_status()
+                data = response.json()
+
+                # Extract usage
+                usage = data.get("usage", {})
+                total_usage["call1_input_tokens"] = usage.get("input_tokens", 0)
+                total_usage["call1_output_tokens"] = usage.get("output_tokens", 0)
+                total_usage["cache_read_tokens"] += usage.get("cache_read_input_tokens", 0)
+                total_usage["cache_write_tokens"] += usage.get("cache_creation_input_tokens", 0)
+
+                # Extract response text
+                response_text = ""
+                for block in data.get("content", []):
+                    if block.get("type") == "text":
+                        response_text += block.get("text", "")
+
+                # Prepend the forced "{" we used
+                response_text = "{" + response_text
+                call1_output = parse_llm_json_response(response_text, "CALL1")
+
+            else:
+                # OpenAI
+                instructions = f"{SHARED_GOAL_DISCOVERY_CONTEXT}\n\n{call1_dynamic_prompt}"
+
+                request_body = {
+                    "model": model,
+                    "max_tokens": model_config["max_tokens"],
+                    "messages": [
+                        {"role": "system", "content": instructions},
+                        {"role": "user", "content": call1_user_prompt}
+                    ],
+                    "response_format": {"type": "json_object"}
+                }
+
+                headers = {
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json"
+                }
+
+                pipeline_logger.debug(f"[GOAL DISCOVERY] Call 1 request to OpenAI: {len(call1_user_prompt)} chars")
+                response = await client.post(
+                    model_config["endpoint"],
+                    headers=headers,
+                    json=request_body
+                )
+                response.raise_for_status()
+                data = response.json()
+
+                # Extract usage
+                usage = data.get("usage", {})
+                total_usage["call1_input_tokens"] = usage.get("prompt_tokens", 0)
+                total_usage["call1_output_tokens"] = usage.get("completion_tokens", 0)
+
+                # Extract response text
+                response_text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                call1_output = parse_llm_json_response(response_text, "CALL1")
+
+        if call1_output:
+            signal_count = len(call1_output.get("signals", []))
+            obs_count = len(call1_output.get("observations", []))
+            pipeline_logger.info(f"[GOAL DISCOVERY] Call 1 complete: {signal_count} signals, {obs_count} observations")
+        else:
+            pipeline_logger.warning("[GOAL DISCOVERY] Call 1 returned no valid JSON")
+
+    except httpx.HTTPStatusError as e:
+        pipeline_logger.error(f"[GOAL DISCOVERY] Call 1 HTTP error: {e.response.status_code}")
+        api_logger.error(f"[GOAL DISCOVERY] Call 1 response: {e.response.text[:1000]}")
+        call1_output = None
+    except Exception as e:
+        pipeline_logger.error(f"[GOAL DISCOVERY] Call 1 error: {e}")
+        call1_output = None
+
+    # =========================================================================
+    # STEP 2: BACKEND CLASSIFICATION
+    # =========================================================================
+    pipeline_logger.info("[GOAL DISCOVERY] Step 2: Backend classification")
+
+    goal_skeletons = []
+    if call1_output:
+        try:
+            classifier = GoalClassifier()
+            goal_skeletons = classifier.classify(
+                call1_output,
+                request.existing_goals
+            )
+            pipeline_logger.info(f"[GOAL DISCOVERY] Classified {len(goal_skeletons)} goal skeletons")
+        except Exception as e:
+            pipeline_logger.error(f"[GOAL DISCOVERY] Classification error: {e}")
+            goal_skeletons = []
+
+    # Fallback: If no skeletons, use single-call approach
+    if not goal_skeletons:
+        pipeline_logger.warning("[GOAL DISCOVERY] No skeletons from classifier, using fallback single-call")
+        return await _fallback_single_call_discovery(
+            request, current_user, model_config, SHARED_GOAL_DISCOVERY_CONTEXT, total_usage, start_time
+        )
+
+    # =========================================================================
+    # STEP 3: CALL 2 - Articulation
+    # =========================================================================
+    pipeline_logger.info("[GOAL DISCOVERY] Step 3: Call 2 - Articulation")
+
+    call2_dynamic_prompt = """You are articulating pre-classified goal skeletons.
+
+YOUR TASK:
+For each goal skeleton provided, write:
+- identity: 10-15 words describing the goal in action-oriented language
+- firstMove: 20-30 words describing the first concrete action, starting with imperative verb
+
+Use the consciousness_context to shape tone and language.
+Ground your articulation in the file summaries provided.
+
+Return valid JSON with a "goals" array containing all skeletons with identity and firstMove added."""
+
+    call2_user_prompt = build_call2_user_prompt(goal_skeletons, request.files)
+
+    articulated_goals = None
+    try:
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            if provider == "anthropic":
+                # Same cached prefix guarantees cache HIT from Call 1
+                system_content = [
+                    {
+                        "type": "text",
+                        "text": SHARED_GOAL_DISCOVERY_CONTEXT,
+                        "cache_control": {"type": "ephemeral"}
+                    },
+                    {
+                        "type": "text",
+                        "text": call2_dynamic_prompt
+                    }
+                ]
+
+                request_body = {
+                    "model": model,
+                    "max_tokens": model_config["max_tokens"],
+                    "system": system_content,
+                    "messages": [
+                        {"role": "user", "content": call2_user_prompt},
+                        {"role": "assistant", "content": "{"}
+                    ]
+                }
+
+                headers = {
+                    "x-api-key": api_key,
+                    "anthropic-version": "2023-06-01",
+                    "Content-Type": "application/json"
+                }
+
+                pipeline_logger.debug(f"[GOAL DISCOVERY] Call 2 request to Anthropic: {len(call2_user_prompt)} chars")
+                response = await client.post(
+                    model_config["endpoint"],
+                    headers=headers,
+                    json=request_body
+                )
+                response.raise_for_status()
+                data = response.json()
+
+                # Extract usage
+                usage = data.get("usage", {})
+                total_usage["call2_input_tokens"] = usage.get("input_tokens", 0)
+                total_usage["call2_output_tokens"] = usage.get("output_tokens", 0)
+                total_usage["cache_read_tokens"] += usage.get("cache_read_input_tokens", 0)
+                total_usage["cache_write_tokens"] += usage.get("cache_creation_input_tokens", 0)
+
+                response_text = ""
+                for block in data.get("content", []):
+                    if block.get("type") == "text":
+                        response_text += block.get("text", "")
+
+                response_text = "{" + response_text
+                articulated_goals = parse_llm_json_response(response_text, "CALL2")
+
+            else:
+                # OpenAI
+                instructions = f"{SHARED_GOAL_DISCOVERY_CONTEXT}\n\n{call2_dynamic_prompt}"
+
+                request_body = {
+                    "model": model,
+                    "max_tokens": model_config["max_tokens"],
+                    "messages": [
+                        {"role": "system", "content": instructions},
+                        {"role": "user", "content": call2_user_prompt}
+                    ],
+                    "response_format": {"type": "json_object"}
+                }
+
+                headers = {
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json"
+                }
+
+                pipeline_logger.debug(f"[GOAL DISCOVERY] Call 2 request to OpenAI: {len(call2_user_prompt)} chars")
+                response = await client.post(
+                    model_config["endpoint"],
+                    headers=headers,
+                    json=request_body
+                )
+                response.raise_for_status()
+                data = response.json()
+
+                usage = data.get("usage", {})
+                total_usage["call2_input_tokens"] = usage.get("prompt_tokens", 0)
+                total_usage["call2_output_tokens"] = usage.get("completion_tokens", 0)
+
+                response_text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                articulated_goals = parse_llm_json_response(response_text, "CALL2")
+
+        if articulated_goals:
+            goals_list = articulated_goals.get("goals", [])
+            pipeline_logger.info(f"[GOAL DISCOVERY] Call 2 complete: {len(goals_list)} articulated goals")
+        else:
+            pipeline_logger.warning("[GOAL DISCOVERY] Call 2 returned no valid JSON")
+
+    except httpx.HTTPStatusError as e:
+        pipeline_logger.error(f"[GOAL DISCOVERY] Call 2 HTTP error: {e.response.status_code}")
+        articulated_goals = None
+    except Exception as e:
+        pipeline_logger.error(f"[GOAL DISCOVERY] Call 2 error: {e}")
+        articulated_goals = None
+
+    # =========================================================================
+    # STEP 4: MERGE AND RETURN
+    # =========================================================================
+    pipeline_logger.info("[GOAL DISCOVERY] Step 4: Merge and return")
+
+    # Merge articulated identity/firstMove into skeletons
+    final_goals = []
+    articulated_list = articulated_goals.get("goals", []) if articulated_goals else []
+
+    # Create lookup by type for merging
+    articulated_by_type: Dict[str, List[Dict]] = {}
+    for ag in articulated_list:
+        goal_type = ag.get("type", "UNKNOWN")
+        if goal_type not in articulated_by_type:
+            articulated_by_type[goal_type] = []
+        articulated_by_type[goal_type].append(ag)
+
+    for skeleton in goal_skeletons:
+        goal_type = skeleton.get("type", "UNKNOWN")
+        merged_goal = {**skeleton}
+
+        # Try to find matching articulation
+        if goal_type in articulated_by_type and articulated_by_type[goal_type]:
+            articulated = articulated_by_type[goal_type].pop(0)
+            merged_goal["identity"] = articulated.get("identity", skeleton.get("classification_reason", "Goal identified"))
+            merged_goal["firstMove"] = articulated.get("firstMove", "Review the supporting signals and take action.")
+        else:
+            # Fallback if no articulation
+            merged_goal["identity"] = skeleton.get("classification_reason", "Goal identified from file analysis")
+            merged_goal["firstMove"] = "Review the supporting signals and determine your first action."
+
+        # Add UUID and timestamp
+        merged_goal["id"] = generate_id()
+        merged_goal["createdAt"] = datetime.utcnow().isoformat()
+        merged_goal["userId"] = current_user.id
+
+        final_goals.append(merged_goal)
+
+    # Calculate total usage
+    total_usage["total_input_tokens"] = total_usage["call1_input_tokens"] + total_usage["call2_input_tokens"]
+    total_usage["total_output_tokens"] = total_usage["call1_output_tokens"] + total_usage["call2_output_tokens"]
+
+    elapsed = time.time() - start_time
+    pipeline_logger.info(
+        f"[GOAL DISCOVERY] Complete: {len(final_goals)} goals in {elapsed:.1f}s, "
+        f"tokens: {total_usage['total_input_tokens']} in / {total_usage['total_output_tokens']} out"
+    )
+
+    return DiscoverGoalsResponse(
+        success=True,
+        goals=final_goals,
+        generatedAt=datetime.utcnow().isoformat(),
+        sourceFileCount=len(request.files),
+        usage=total_usage
+    )
+
+
+async def _fallback_single_call_discovery(
+    request: DiscoverGoalsRequest,
+    current_user: User,
+    model_config: Dict[str, Any],
+    shared_context: str,
+    total_usage: Dict[str, int],
+    start_time: float
+) -> DiscoverGoalsResponse:
+    """
+    Fallback single-call approach when 2-call architecture fails.
+    Used as safety net when Call 1 or classification produces no results.
+    """
+    pipeline_logger.info("[GOAL DISCOVERY FALLBACK] Using single-call approach")
+
+    provider = model_config["provider"]
+    api_key = model_config["api_key"]
+    model = model_config["model"]
+
+    fallback_prompt = f"""Analyze these files and discover goals.
+
+For each goal, provide:
+- type: one of OPTIMIZE, TRANSFORM, DISCOVER, PROTECT, RESOLVE, BUILD, ALIGN, LEVERAGE, RELEASE, QUANTUM, HIDDEN
+- identity: 10-15 words describing the goal
+- firstMove: 20-30 words describing the first action
+- confidence: 0.0-1.0
+- sourceFiles: list of relevant file names
+- classification_reason: why this goal type
+
+Return JSON with "goals" array."""
+
+    user_prompt = build_goal_discovery_user_prompt(request.files, request.existing_goals)
 
     try:
-        client = openai.AsyncOpenAI(
-            api_key=model_config.get("api_key"),
-            base_url="https://api.openai.com/v1"
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            if provider == "anthropic":
+                system_content = [
+                    {"type": "text", "text": shared_context, "cache_control": {"type": "ephemeral"}},
+                    {"type": "text", "text": fallback_prompt}
+                ]
+
+                response = await client.post(
+                    model_config["endpoint"],
+                    headers={
+                        "x-api-key": api_key,
+                        "anthropic-version": "2023-06-01",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "model": model,
+                        "max_tokens": model_config["max_tokens"],
+                        "system": system_content,
+                        "messages": [
+                            {"role": "user", "content": user_prompt},
+                            {"role": "assistant", "content": "{"}
+                        ]
+                    }
+                )
+                response.raise_for_status()
+                data = response.json()
+
+                usage = data.get("usage", {})
+                total_usage["call1_input_tokens"] = usage.get("input_tokens", 0)
+                total_usage["call1_output_tokens"] = usage.get("output_tokens", 0)
+
+                response_text = "{"
+                for block in data.get("content", []):
+                    if block.get("type") == "text":
+                        response_text += block.get("text", "")
+
+                result = parse_llm_json_response(response_text, "FALLBACK")
+
+            else:
+                response = await client.post(
+                    model_config["endpoint"],
+                    headers={
+                        "Authorization": f"Bearer {api_key}",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "model": model,
+                        "max_tokens": model_config["max_tokens"],
+                        "messages": [
+                            {"role": "system", "content": f"{shared_context}\n\n{fallback_prompt}"},
+                            {"role": "user", "content": user_prompt}
+                        ],
+                        "response_format": {"type": "json_object"}
+                    }
+                )
+                response.raise_for_status()
+                data = response.json()
+
+                usage = data.get("usage", {})
+                total_usage["call1_input_tokens"] = usage.get("prompt_tokens", 0)
+                total_usage["call1_output_tokens"] = usage.get("completion_tokens", 0)
+
+                response_text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                result = parse_llm_json_response(response_text, "FALLBACK")
+
+        # Process results
+        goals = []
+        if result and "goals" in result:
+            for goal in result["goals"]:
+                goal["id"] = generate_id()
+                goal["createdAt"] = datetime.utcnow().isoformat()
+                goal["userId"] = current_user.id
+                goals.append(goal)
+
+        total_usage["total_input_tokens"] = total_usage["call1_input_tokens"]
+        total_usage["total_output_tokens"] = total_usage["call1_output_tokens"]
+
+        elapsed = time.time() - start_time
+        pipeline_logger.info(f"[GOAL DISCOVERY FALLBACK] Complete: {len(goals)} goals in {elapsed:.1f}s")
+
+        return DiscoverGoalsResponse(
+            success=True,
+            goals=goals,
+            generatedAt=datetime.utcnow().isoformat(),
+            sourceFileCount=len(request.files),
+            usage=total_usage
         )
 
-        user_prompt = build_goal_discovery_user_prompt(request.files, request.existing_goals)
-
-        response = await client.chat.completions.create(
-            model=model_config.get("model"),
-            messages=[
-                {"role": "system", "content": GOAL_DISCOVERY_SYSTEM_PROMPT},
-                {"role": "user", "content": user_prompt}
-            ],
-            max_tokens=8000,
-            temperature=0.7,
-            response_format={"type": "json_object"}
-        )
-
-        result_text = response.choices[0].message.content
-
-        # Robust JSON parsing with repair
-        result = parse_llm_json_response(result_text)
-
-        # Add UUIDs and timestamps to goals
-        goals = result.get("goals", [])
-        for goal in goals:
-            goal["id"] = str(uuid.uuid4())
-            goal["createdAt"] = datetime.utcnow().isoformat()
-            goal["addedToContext"] = False
-            goal["addedToInventory"] = False
-
-        return {
-            "success": True,
-            "goals": goals,
-            "generatedAt": datetime.utcnow().isoformat(),
-            "sourceFileCount": len(request.files),
-            "usage": {
-                "input_tokens": response.usage.prompt_tokens if response.usage else 0,
-                "output_tokens": response.usage.completion_tokens if response.usage else 0,
-                "model": model_config.get("model")
-            }
-        }
-
-    except json.JSONDecodeError as e:
-        raise HTTPException(status_code=500, detail=f"Failed to parse LLM response as JSON: {str(e)}")
     except Exception as e:
+        pipeline_logger.error(f"[GOAL DISCOVERY FALLBACK] Error: {e}")
         raise HTTPException(status_code=500, detail=f"Goal discovery failed: {str(e)}")

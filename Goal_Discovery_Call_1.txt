@@ -1,0 +1,401 @@
+# GOAL DISCOVERY CALL 1: SIGNAL & CONSCIOUSNESS EXTRACTION
+# TWO JOBS: (1) Extract signals from files, (2) Extract 25 OOF operators + S-level
+# DO NOT generate goals. DO NOT classify types. Extract only.
+
+================================================================================
+SECTION 1: SIGNAL EXTRACTION PROTOCOL
+================================================================================
+
+## THREE-LAYER EXTRACTION
+
+Extract at three layers for each category:
+- **LITERAL**: Explicitly stated (confidence 0.8-1.0)
+- **INFERRED**: Implied by data (confidence 0.5-0.8)
+- **ABSENT**: Expected but missing (flag as absent_signal)
+
+## SIGNAL SCHEMA (required for ALL signals)
+
+```json
+{
+  "signal_id": "SIG_001",
+  "category": "strength|weakness|metric|anomaly|unused_capacity|avoidance|entity|cross_file",
+  "layer": "literal|inferred|absent",
+  "description": "string",
+  "magnitude": 0.0-1.0,
+  "actionability": 0.0-1.0,
+  "impact_estimate": "dollar/time/resource estimate",
+  "source_quote": "exact text from file",
+  "reasoning": "one sentence classification logic",
+  "data_quality": "hard_measured|soft_estimated|self_reported|inferred|stale",
+  "relationships": [{"related_signal_id": "SIG_002", "type": "reinforcing|undermining|unexplained|dependent"}]
+}
+```
+
+## EIGHT SIGNAL CATEGORIES
+
+1. **ENTITIES**: People, teams, systems, products, customers, competitors
+2. **METRICS**: KPIs, financials, performance data, counts
+3. **STRENGTHS**: Positive capabilities, advantages, what works
+4. **WEAKNESSES**: Problems, gaps, underperformance, risks
+5. **ANOMALIES**: Unexpected patterns, outliers, contradictions
+6. **UNUSED_CAPACITY**: Latent potential, underutilized resources
+7. **AVOIDANCES**: Topics not addressed, elephants in room
+8. **CROSS_FILE_PATTERNS**: Patterns emerging only from combining files
+
+## ADDITIONAL OUTPUTS
+
+**domain_context**: {industry, benchmarks_known, data_time_horizon, data_type: operational|strategic|personal|creative}
+
+**temporal_dynamics**: [{metric_name, trajectory: improving|declining|stagnant|cyclical|inflecting, acceleration, inflection_points}]
+
+**user_intent_inference**: {likely_question, decisions_facing, emotional_tone_of_data: anxious|confident|exploratory|urgent|defensive}
+
+**importance_ranking**: Top 10 signals with rank and one-sentence reasoning
+
+**contradiction_map**: [{signal_id_a, signal_id_b, type: within_file|cross_file|stated_vs_revealed|metric_divergence, description}]
+
+================================================================================
+SECTION 2: CONSCIOUSNESS OPERATOR EXTRACTION
+================================================================================
+
+Read file data as EXPRESSION OF CONSCIOUSNESS that produced it.
+
+## 25 CORE OPERATORS (all 0.0-1.0)
+
+### Consciousness Operators
+| Operator | Definition | 0.0 | 1.0 |
+|----------|------------|-----|-----|
+| Psi_quality | Consciousness depth | reactive/unconscious | deep awareness |
+| K_karma | Past pattern constraints | high freedom | heavy karmic load |
+| M_maya | Illusion/distortion | clear perception | strong delusion |
+| G_grace | Flow/synchronicity | everything struggle | effortless flow |
+| W_witness | Observer capacity | completely identified | strong meta-awareness |
+| A_aware | Present attention | lost in thoughts | vivid presence |
+| P_presence | Now-anchoring | scattered | fully grounded |
+| E_equanimity | Balance | highly reactive | deeply balanced |
+| V_void | Emptiness tolerance | cannot tolerate | comfortable |
+| L_love | Unconditional connection | transactional | unconditional |
+
+### Distortion Operators
+| Operator | Definition | 0.0 | 1.0 |
+|----------|------------|-----|-----|
+| At_attachment | Clinging | non-attached | extreme clinging |
+| Av_aversion | Pushing away | accepting | strong rejection |
+| F_fear | Fear intensity | minimal | dominated by fear |
+| R_resistance | Fighting what is | flowing | strong resistance |
+| De_desire | Craving | content | intense craving |
+| Su_suffering | Pain present | no suffering | intense suffering |
+
+### Action/Structural Operators
+| Operator | Definition | 0.0 | 1.0 |
+|----------|------------|-----|-----|
+| S_surrender | Letting go | controlling | complete surrender |
+| Se_service | Selfless service | self-focused | pure service |
+| Ce_cleaning | Purification | stagnant | active purification |
+| I_intention | Clarity of intention | no clear intention | crystal clear |
+| D_dharma | Purpose alignment | off-path | perfect alignment |
+| Co_coherence | Internal alignment | fragmented | unified |
+| Hf_habit | Pattern momentum | fully free | completely habituated |
+| Sa_samskara | Deep impressions | no grooves | deeply grooved |
+| Tr_trust | Trust in process | deep distrust | profound trust |
+| O_openness | Receptivity | closed/rigid | fully open |
+
+## FILE-TO-CONSCIOUSNESS READING GUIDE
+
+| File Pattern | Operator Reading |
+|--------------|------------------|
+| Risk-averse language, avoid competitors | High F_fear, At_attachment, M_maya |
+| Action-oriented decisive language | High P_presence, I_intention, Low R_resistance |
+| Sitting with uncertainty | Growing V_void |
+| Stated goals vs actual metrics diverge | High M_maya |
+| Blame/externalization patterns | High At_attachment, Low W_witness |
+| Creative/expansive thinking | High O_openness, I_intention |
+| Rigid repetitive patterns | High Hf_habit, Sa_samskara |
+| Letting go, pivoting, accepting change | High S_surrender, G_grace |
+| Defensive about performance | High F_fear, At_attachment |
+| Never-enough achievement | High De_desire, K_karma, Low V_void |
+| Graceful handling of setbacks | High E_equanimity, G_grace |
+| Micromanagement evidence | High At_attachment, F_fear, Low Tr_trust |
+| Clear strategic vision | High Psi_quality, I_intention, Co_coherence |
+| Analysis paralysis | High F_fear, M_maya, Low I_intention |
+| Customer obsession | High Se_service, D_dharma |
+
+## S-LEVEL (1.0-8.0)
+
+| Level | Core Drive | In Files |
+|-------|------------|----------|
+| S1 (1.0-1.9) | Survival/safety | existential concerns, basic needs |
+| S2 (2.0-2.9) | Pleasure/comfort | hedonistic KPIs, pain avoidance |
+| S3 (3.0-3.9) | Achievement/status | competitive metrics, growth focus |
+| S4 (4.0-4.9) | Connection/belonging | team metrics, relationships |
+| S5 (5.0-5.9) | Contribution/meaning | impact metrics, purpose language |
+| S6 (6.0-6.9) | Truth/understanding | meta-analysis, systems thinking |
+| S7 (7.0-7.9) | Unity/oneness | holistic thinking, ecosystem view |
+| S8 (8.0) | Transcendence | complete non-attachment |
+
+================================================================================
+SECTION 3: OOF FORMULA RELATIONSHIP MAP
+================================================================================
+
+The backend COMPUTES these from your operator extractions. Pay extra attention
+to operators feeding multiple calculations.
+
+## TRANSFORMATION MATRICES
+
+| Matrix | Key Operators | Formula |
+|--------|---------------|---------|
+| Truth | W, Psi, Co, M | W * Psi * Co * (1-M) |
+| Love | G, At, S, F | G * S * (1-At) * (1-F) |
+| Power | P, R, E, I | P * I * (1-R) * E |
+| Freedom | V, At, K, S | V * S * (1-At) * (1-K) |
+| Creation | I, P, Co, R | I * P * Co * (1-R) |
+| Time | P, K, A | P * A * (1-K) |
+| Death | S, At, F, V | S * V * (1-At) * (1-F) |
+
+## CASCADE CLEANLINESS
+
+Levels: L7(>=0.9) L6(>=0.7) L5(>=0.5) L4(>=0.35) L3(>=0.2) L2(>=0.1) L1(<0.1)
+Formula: avg(G,S,P,Co,W,A) - avg(At,R,F,M,K)
+
+## BREAKTHROUGH DYNAMICS
+
+breakthrough_prob = (purification * catalyst * grace_factor) / (1 + resistance)
+- purification = (1-M) * (1-K) * Psi
+- catalyst = G * Co
+- resistance = At * R * F
+- grace_factor = G^2 * S
+
+Blockers: At>0.75, F>0.8, R>0.7
+
+## BOTTLENECK THRESHOLDS
+
+At>0.75, F>0.70, R>0.70, M>0.75, flow<0.25
+
+## HIGH-IMPACT OPERATORS (feed multiple systems)
+
+- G_grace: Love, Death, Breakthrough, Leverage (4)
+- S_surrender: Love, Freedom, Death, Breakthrough (4)
+- At_attachment: Love, Freedom, Death, all Bottlenecks (5+)
+- P_presence: Power, Creation, Time, Peace, Unity (5)
+- Co_coherence: Truth, Creation, Breakthrough, Peace (4)
+
+================================================================================
+SECTION 4: CROSS-MAPPING PROTOCOL
+================================================================================
+
+For operators with confidence > 0.6, cite supporting signals:
+
+```json
+{
+  "operator": "At_attachment",
+  "value": 0.72,
+  "confidence": 0.85,
+  "supporting_signal_ids": ["SIG_003", "SIG_007"],
+  "mapping_reasoning": "One sentence connecting signals to operator"
+}
+```
+
+Rules:
+- confidence > 0.6 needs >= 2 supporting signals
+- confidence > 0.8 needs >= 3 supporting signals
+- No signals = lower confidence or null
+
+================================================================================
+SECTION 5: OUTPUT SCHEMA
+================================================================================
+
+```json
+{
+  "signal_extraction": {
+    "file_summary": {
+      "file_count": 1,
+      "total_data_points": "estimate",
+      "primary_data_type": "operational|strategic|personal|creative",
+      "time_coverage": "string"
+    },
+    "entities": [/* signal schema */],
+    "metrics": [/* signal schema + current_value, trend, benchmark, time_period */],
+    "strengths": [/* signal schema */],
+    "weaknesses": [/* signal schema */],
+    "anomalies": [/* signal schema */],
+    "unused_capacity": [/* signal schema */],
+    "avoidances": [/* signal schema + expected_but_missing */],
+    "cross_file_patterns": [/* signal schema + files_involved, pattern_type */],
+    "domain_context": {
+      "industry": "string",
+      "benchmarks_known": ["string"],
+      "data_time_horizon": "string",
+      "data_type": "operational|strategic|personal|creative"
+    },
+    "temporal_dynamics": [{
+      "metric_name": "string",
+      "trajectory": "improving|declining|stagnant|cyclical|inflecting",
+      "acceleration": "accelerating|decelerating|steady",
+      "inflection_points": ["string"]
+    }],
+    "user_intent_inference": {
+      "likely_question": "string",
+      "decisions_facing": ["string"],
+      "emotional_tone_of_data": "anxious|confident|exploratory|urgent|defensive"
+    },
+    "importance_ranking": [{"signal_id": "string", "rank": 1, "reasoning": "string"}],
+    "contradiction_map": [{
+      "signal_id_a": "string",
+      "signal_id_b": "string",
+      "type": "within_file|cross_file|stated_vs_revealed|metric_divergence",
+      "description": "string"
+    }],
+    "signal_relationships": [{
+      "from_signal": "string",
+      "to_signal": "string",
+      "relationship_type": "reinforcing|undermining|unexplained|dependent",
+      "strength": 0.0-1.0
+    }]
+  },
+  "consciousness_extraction": {
+    "extraction_metadata": {
+      "data_richness": "rich|moderate|sparse",
+      "confidence_overall": 0.0-1.0,
+      "extraction_notes": "string"
+    },
+    "core_operators": {
+      "observations": [
+        {"var": "Psi_quality", "value": 0.0-1.0, "confidence": 0.0-1.0, "evidence": "string"},
+        {"var": "K_karma", "value": null, "confidence": 0.0, "evidence": null},
+        /* ... all 25 operators */
+      ]
+    },
+    "s_level": {
+      "current": 1.0-8.0,
+      "confidence": 0.0-1.0,
+      "in_transition": true|false,
+      "transition_direction": "up|down|stable",
+      "reasoning": "string"
+    },
+    "drive_strengths": {
+      "love": 0.0-1.0,
+      "peace": 0.0-1.0,
+      "bliss": 0.0-1.0,
+      "satisfaction": 0.0-1.0,
+      "freedom": 0.0-1.0
+    },
+    "temporal_focus": {
+      "past": 0.0-1.0,
+      "present": 0.0-1.0,
+      "future": 0.0-1.0
+    }
+  },
+  "cross_mapping": [{
+    "operator": "string",
+    "value": 0.0-1.0,
+    "confidence": 0.0-1.0,
+    "supporting_signal_ids": ["string"],
+    "mapping_reasoning": "string"
+  }]
+}
+```
+
+================================================================================
+EXAMPLE: Business Spreadsheet
+================================================================================
+
+```json
+{
+  "signal_extraction": {
+    "file_summary": {"file_count": 1, "total_data_points": "~200 rows", "primary_data_type": "operational", "time_coverage": "Q1-Q4 2024"},
+    "entities": [{
+      "signal_id": "ENT_001", "category": "entity", "layer": "literal",
+      "name": "Enterprise Sales Team", "type": "team",
+      "magnitude": 0.8, "actionability": 0.7,
+      "impact_estimate": "$2.4M quota responsibility",
+      "source_quote": "Enterprise team: 12 reps, $2.4M quota",
+      "reasoning": "Primary revenue driver",
+      "data_quality": "hard_measured",
+      "relationships": [{"related_signal_id": "MET_001", "type": "dependent"}]
+    }],
+    "metrics": [{
+      "signal_id": "MET_001", "category": "metric", "layer": "literal",
+      "name": "Q4 Revenue", "current_value": "$1.8M", "trend": "down", "benchmark": "$2.1M target",
+      "magnitude": 0.9, "actionability": 0.8,
+      "impact_estimate": "$300K shortfall, 14% miss",
+      "source_quote": "Q4 Actual: $1,804,231 vs Target: $2,100,000",
+      "reasoning": "Material revenue miss",
+      "data_quality": "hard_measured",
+      "relationships": [{"related_signal_id": "WEK_001", "type": "reinforcing"}]
+    }],
+    "weaknesses": [{
+      "signal_id": "WEK_001", "category": "weakness", "layer": "literal",
+      "description": "Deal cycle lengthening 55%",
+      "magnitude": 0.8, "actionability": 0.7,
+      "impact_estimate": "$400K pushed revenue",
+      "source_quote": "Avg deal cycle: 127 days (was 82 days Q1)",
+      "reasoning": "Root cause of revenue miss",
+      "data_quality": "hard_measured",
+      "relationships": []
+    }],
+    "avoidances": [{
+      "signal_id": "AVO_001", "category": "avoidance", "layer": "absent",
+      "description": "No competitor win/loss analysis",
+      "expected_but_missing": "Standard sales data tracks competitive displacement",
+      "magnitude": 0.6, "actionability": 0.7,
+      "impact_estimate": "Unknown competitive pressure",
+      "source_quote": "N/A - absent",
+      "reasoning": "Blind spot in operational data",
+      "data_quality": "inferred",
+      "relationships": []
+    }],
+    "domain_context": {"industry": "B2B SaaS", "benchmarks_known": ["87% retention avg", "90-day cycles"], "data_time_horizon": "quarterly", "data_type": "operational"},
+    "user_intent_inference": {"likely_question": "Why missing targets?", "decisions_facing": ["Resource allocation", "Process changes"], "emotional_tone_of_data": "anxious"},
+    "importance_ranking": [
+      {"signal_id": "WEK_001", "rank": 1, "reasoning": "Root cause of miss"},
+      {"signal_id": "MET_001", "rank": 2, "reasoning": "Primary outcome"},
+      {"signal_id": "AVO_001", "rank": 3, "reasoning": "Blind spot"}
+    ],
+    "strengths": [], "anomalies": [], "unused_capacity": [], "cross_file_patterns": [],
+    "temporal_dynamics": [{"metric_name": "Deal cycle", "trajectory": "declining", "acceleration": "accelerating", "inflection_points": ["Q2→Q3"]}],
+    "contradiction_map": [], "signal_relationships": [{"from_signal": "WEK_001", "to_signal": "MET_001", "relationship_type": "reinforcing", "strength": 0.9}]
+  },
+  "consciousness_extraction": {
+    "extraction_metadata": {"data_richness": "moderate", "confidence_overall": 0.65, "extraction_notes": "Operational data reveals patterns"},
+    "core_operators": {
+      "observations": [
+        {"var": "Psi_quality", "value": 0.55, "confidence": 0.6, "evidence": "Good tracking, missing strategic analysis"},
+        {"var": "M_maya", "value": 0.65, "confidence": 0.7, "evidence": "No competitor tracking = blind spot"},
+        {"var": "At_attachment", "value": 0.7, "confidence": 0.75, "evidence": "Avoiding competitor data, protecting current view"},
+        {"var": "F_fear", "value": 0.65, "confidence": 0.7, "evidence": "Focus on misses, anxious tone"},
+        {"var": "W_witness", "value": 0.4, "confidence": 0.6, "evidence": "Data tracked but no meta-analysis"},
+        {"var": "P_presence", "value": 0.5, "confidence": 0.6, "evidence": "Good metrics, past-focused analysis"},
+        {"var": "I_intention", "value": 0.6, "confidence": 0.65, "evidence": "Clear targets set"},
+        {"var": "Co_coherence", "value": 0.45, "confidence": 0.6, "evidence": "Unexplained anomalies"},
+        {"var": "K_karma", "value": 0.6, "confidence": 0.5, "evidence": "Stuck patterns in deal cycles"},
+        {"var": "G_grace", "value": 0.35, "confidence": 0.5, "evidence": "Evident struggle"}
+      ]
+    },
+    "s_level": {"current": 3.2, "confidence": 0.7, "in_transition": false, "transition_direction": "stable", "reasoning": "Achievement-focused metrics"},
+    "drive_strengths": {"love": 0.3, "peace": 0.2, "bliss": 0.2, "satisfaction": 0.4, "freedom": 0.3},
+    "temporal_focus": {"past": 0.4, "present": 0.4, "future": 0.2}
+  },
+  "cross_mapping": [
+    {"operator": "At_attachment", "value": 0.7, "confidence": 0.75, "supporting_signal_ids": ["AVO_001", "WEK_001"], "mapping_reasoning": "Avoiding competitor data and unchanged process despite lengthening cycles indicate attachment."},
+    {"operator": "F_fear", "value": 0.65, "confidence": 0.7, "supporting_signal_ids": ["MET_001", "AVO_001"], "mapping_reasoning": "Focus on misses and avoiding competitive reality indicate fear."},
+    {"operator": "M_maya", "value": 0.65, "confidence": 0.7, "supporting_signal_ids": ["AVO_001"], "mapping_reasoning": "Missing competitor data creates perception gap."}
+  ]
+}
+```
+
+================================================================================
+CRITICAL RULES
+================================================================================
+
+1. Extract EVERYTHING — exhaustive, not selective
+2. Source quotes mandatory — every signal needs exact file text
+3. Null over fabrication — no evidence = null, confidence 0
+4. Backend runs 287 formulas — accuracy > speed
+5. Do NOT generate goals — extract only
+6. Cross-mapping required — operators with confidence > 0.6 cite signals
+7. Valid JSON only — no markdown, no prose outside JSON
+8. Three-layer discipline — LITERAL, INFERRED, ABSENT
+
+================================================================================
+END
+================================================================================
