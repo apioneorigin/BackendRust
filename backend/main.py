@@ -442,6 +442,35 @@ SHARED_LLM_CONTEXT = f"""=== OOF FRAMEWORK: OPERATOR EXTRACTION KNOWLEDGE (Call 
 === END ARTICULATION KNOWLEDGE ==="""
 api_logger.info(f"Built shared LLM context for cross-call caching: {len(SHARED_LLM_CONTEXT)} characters")
 
+# Load Goal Discovery Call 1 context (for signal & consciousness extraction)
+GOAL_DISCOVERY_CALL1_PATH = Path(__file__).parent.parent / "Goal_Discovery_Call_1.txt"
+if GOAL_DISCOVERY_CALL1_PATH.exists():
+    with open(GOAL_DISCOVERY_CALL1_PATH, 'r', encoding='utf-8') as f:
+        GOAL_DISCOVERY_CALL1_CONTEXT = f.read()
+    api_logger.info(f"Loaded Goal Discovery Call 1 context: {len(GOAL_DISCOVERY_CALL1_CONTEXT)} characters")
+else:
+    raise FileNotFoundError(f"Required goal discovery file not found: {GOAL_DISCOVERY_CALL1_PATH}")
+
+# Load Goal Discovery Call 2 context (for goal articulation)
+GOAL_DISCOVERY_CALL2_PATH = Path(__file__).parent.parent / "Goal_Discovery_Call_2.txt"
+if GOAL_DISCOVERY_CALL2_PATH.exists():
+    with open(GOAL_DISCOVERY_CALL2_PATH, 'r', encoding='utf-8') as f:
+        GOAL_DISCOVERY_CALL2_CONTEXT = f.read()
+    api_logger.info(f"Loaded Goal Discovery Call 2 context: {len(GOAL_DISCOVERY_CALL2_CONTEXT)} characters")
+else:
+    raise FileNotFoundError(f"Required goal discovery file not found: {GOAL_DISCOVERY_CALL2_PATH}")
+
+# Build SHARED static prefix for goal discovery prompt caching across both LLM calls.
+# Same caching strategy as SHARED_LLM_CONTEXT — Call 2 gets cache HIT from Call 1's write.
+SHARED_GOAL_DISCOVERY_CONTEXT = f"""=== GOAL DISCOVERY: SIGNAL & CONSCIOUSNESS EXTRACTION (Call 1) ===
+{GOAL_DISCOVERY_CALL1_CONTEXT}
+=== END SIGNAL & CONSCIOUSNESS EXTRACTION ===
+
+=== GOAL DISCOVERY: ARTICULATION KNOWLEDGE (Call 2) ===
+{GOAL_DISCOVERY_CALL2_CONTEXT}
+=== END ARTICULATION KNOWLEDGE ==="""
+api_logger.info(f"Built shared goal discovery context for cross-call caching: {len(SHARED_GOAL_DISCOVERY_CONTEXT)} characters")
+
 api_logger.info("Articulation Bridge initialized: ValueOrganizer, BottleneckDetector, LeverageIdentifier, PromptBuilder")
 
 # Initialize Reverse Causality Mapping components
