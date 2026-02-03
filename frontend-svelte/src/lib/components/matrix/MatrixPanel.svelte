@@ -192,15 +192,16 @@
 						{#each matrixData[selectedCell.row][selectedCell.col].dimensions as dim, dimIdx}
 							<div class="dimension-item">
 								<span class="dim-name">{dim.name}</span>
-								<div class="step-buttons">
+								<div class="signal-bars">
 									{#each STEP_VALUES as stepValue, stepIdx}
 										<button
-											class="step-btn"
-											class:active={dim.value === stepValue}
+											class="signal-bar bar-{stepIdx + 1}"
+											class:active={getStepIndex(dim.value) >= stepIdx}
+											class:selected={dim.value === stepValue}
 											on:click={() => handleDimensionStepClick(dimIdx, stepValue)}
 											title={STEP_LABELS[stepIdx]}
 										>
-											{STEP_LABELS[stepIdx]}
+											<span class="bar-fill"></span>
 										</button>
 									{/each}
 								</div>
@@ -334,38 +335,39 @@
 
 	/* Column header text: vertical, one word per line (max 3 lines) */
 	.col-header .header-text {
-		font-size: 0.5rem;
-		font-weight: 700;
-		color: var(--color-text-whisper);
+		font-size: 0.625rem;
+		font-weight: 900;
+		color: var(--color-text-source);
 		text-align: center;
-		line-height: 1.15;
+		line-height: 1.2;
 		text-transform: uppercase;
 		letter-spacing: 0.02em;
 		word-spacing: 100vw; /* Forces each word to its own line */
-		overflow: hidden;
+		overflow: visible;
 		display: -webkit-box;
 		-webkit-line-clamp: 3;
 		-webkit-box-orient: vertical;
 	}
 
-	/* Row header text: horizontal, single line */
+	/* Row header text: vertical, one word per line (max 3 lines) */
 	.row-header .header-text {
-		font-size: 0.5rem;
-		font-weight: 700;
-		color: var(--color-text-whisper);
+		font-size: 0.625rem;
+		font-weight: 900;
+		color: var(--color-text-source);
 		text-align: right;
 		line-height: 1.2;
 		text-transform: uppercase;
 		letter-spacing: 0.02em;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		max-width: 100%;
+		word-spacing: 100vw; /* Forces each word to its own line */
+		overflow: visible;
+		display: -webkit-box;
+		-webkit-line-clamp: 3;
+		-webkit-box-orient: vertical;
 	}
 
 	.compact .col-header .header-text,
 	.compact .row-header .header-text {
-		font-size: 0.4375rem;
+		font-size: 0.5rem;
 	}
 
 	.matrix-cell {
@@ -584,56 +586,89 @@
 	}
 
 	.dimensions-grid {
-		display: grid;
-		grid-template-columns: repeat(2, 1fr);
-		gap: 0.5rem 1rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.625rem;
 	}
 
 	.dimension-item {
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
+		justify-content: space-between;
+		gap: 0.75rem;
 	}
 
 	.dim-name {
-		font-size: 0.75rem;
-		font-weight: 500;
+		font-size: 0.8125rem;
+		font-weight: 700;
 		color: var(--color-text-source);
 		flex: 1;
 		min-width: 0;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
 	}
 
-	.step-buttons {
+	.signal-bars {
 		display: flex;
-		gap: 0.125rem;
+		align-items: flex-end;
+		gap: 3px;
 		flex-shrink: 0;
+		height: 24px;
+		padding: 2px;
 	}
 
-	.step-btn {
-		padding: 0.25rem 0.5rem;
+	.signal-bar {
+		width: 8px;
 		background: transparent;
-		border: 1px solid var(--color-accent);
-		border-radius: 0.5rem;
-		font-size: 0.625rem;
-		font-weight: 400;
-		color: var(--color-accent);
+		border: none;
 		cursor: pointer;
-		transition: all 0.1s ease;
-		white-space: nowrap;
+		padding: 0;
+		display: flex;
+		align-items: flex-end;
+		transition: all 0.15s ease;
 	}
 
-	.step-btn:hover {
-		background: var(--color-accent-subtle);
-		color: var(--color-text-source);
+	.signal-bar .bar-fill {
+		width: 100%;
+		background: var(--color-veil-thin);
+		border-radius: 2px;
+		transition: all 0.15s ease;
 	}
 
-	.step-btn.active {
+	/* Bar heights - WiFi style increasing heights */
+	.signal-bar.bar-1 {
+		height: 8px;
+	}
+	.signal-bar.bar-1 .bar-fill {
+		height: 100%;
+	}
+
+	.signal-bar.bar-2 {
+		height: 14px;
+	}
+	.signal-bar.bar-2 .bar-fill {
+		height: 100%;
+	}
+
+	.signal-bar.bar-3 {
+		height: 20px;
+	}
+	.signal-bar.bar-3 .bar-fill {
+		height: 100%;
+	}
+
+	/* Active state - bars that are "filled" up to the selected level */
+	.signal-bar.active .bar-fill {
 		background: var(--color-primary-500);
-		border-color: var(--color-primary-500);
-		color: #ffffff;
+	}
+
+	/* Hover state */
+	.signal-bar:hover .bar-fill {
+		background: var(--color-primary-400);
+	}
+
+	/* Selected indicator - the exact bar that was clicked */
+	.signal-bar.selected .bar-fill {
+		background: var(--color-primary-600);
+		box-shadow: 0 0 0 1px var(--color-primary-300);
 	}
 
 	.power-spot-badge {
