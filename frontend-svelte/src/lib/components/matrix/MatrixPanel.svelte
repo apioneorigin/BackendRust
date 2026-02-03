@@ -4,6 +4,8 @@
 	 *
 	 * ARCHITECTURE:
 	 * - Shows document tabs at top (each with its own matrix)
+	 * - Tabs show all documents: full data docs are clickable, stubs show "Generate" button
+	 * - Plus button on right to generate 3 more document stubs
 	 * - Displays matrix from currently active document
 	 * - Each cell has 5 contextual dimensions with 3-step signal bar selectors
 	 * - Power Spots View: HIDES non-leverage cells completely, shows only power spots
@@ -11,9 +13,9 @@
 	 */
 
 	import { createEventDispatcher } from 'svelte';
-	import { Button } from '$lib/components/ui';
-	import { matrix, documents, activeDocumentId, activeDocument } from '$lib/stores';
-	import type { CellData, CellDimension } from '$lib/stores';
+	import { Button, Spinner } from '$lib/components/ui';
+	import { matrix, documents, activeDocumentId, activeDocument, isGeneratingMoreDocuments } from '$lib/stores';
+	import type { CellData, CellDimension, Document } from '$lib/stores';
 
 	export let matrixData: CellData[][] = [];
 	export let rowHeaders: string[] = ['Dimension 1', 'Dimension 2', 'Dimension 3', 'Dimension 4', 'Dimension 5'];
@@ -38,6 +40,13 @@
 
 	let selectedCell: { row: number; col: number } | null = null;
 	let showCellPopup = false;
+	let isPopulatingDoc: string | null = null;  // Track which doc is being populated
+
+	// Check if a document has full data (100 cells)
+	function hasFullData(doc: Document): boolean {
+		const cells = doc.matrix_data?.cells || {};
+		return Object.keys(cells).length >= 100;
+	}
 
 	// Get the step index (0-2) from a dimension value
 	function getStepIndex(value: number): number {
@@ -130,33 +139,92 @@
 		selectedCell = null;
 	}
 
-	function handleDocumentTabClick(docId: string) {
+	function handleDocumentTabClick(docId: string, doc: Document) {
+		// Only allow clicking on documents with full data
+		if (!hasFullData(doc)) return;
 		matrix.setActiveDocument(docId);
 		dispatch('documentChange', { documentId: docId });
+	}
+
+	async function handleGenerateMoreDocuments() {
+		try {
+			await matrix.generateMoreDocuments();
+		} catch (error) {
+			console.error('Failed to generate more documents:', error);
+		}
+	}
+
+	async function handlePopulateDocument(docId: string) {
+		isPopulatingDoc = docId;
+		try {
+			await matrix.populateDocument(docId);
+			// After population, set it as active
+			matrix.setActiveDocument(docId);
+		} catch (error) {
+			console.error('Failed to populate document:', error);
+		} finally {
+			isPopulatingDoc = null;
+		}
 	}
 </script>
 
 <div class="matrix-panel" class:compact>
-	<!-- Document Tabs (no "+" button here) -->
-	{#if showDocumentTabs && $documents.length > 1}
+	<!-- Document Tabs with Plus Button -->
+	{#if showDocumentTabs && $documents.length > 0}
 		<div class="document-tabs-container">
 			<div class="document-tabs">
 				{#each $documents as doc (doc.id)}
-					<button
-						class="document-tab"
-						class:active={doc.id === $activeDocumentId}
-						on:click={() => handleDocumentTabClick(doc.id)}
-						title={doc.description}
-					>
-						<span class="tab-name">{doc.name}</span>
-					</button>
+					{@const isFullData = hasFullData(doc)}
+					{@const isActive = doc.id === $activeDocumentId}
+					{@const isPopulating = isPopulatingDoc === doc.id}
+					{#if isFullData}
+						<!-- Full data document: clickable tab -->
+						<button
+							class="document-tab"
+							class:active={isActive}
+							on:click={() => handleDocumentTabClick(doc.id, doc)}
+							title={doc.description}
+						>
+							<span class="tab-name">{doc.name}</span>
+						</button>
+					{:else}
+						<!-- Stub document: show with generate button -->
+						<div class="document-tab stub" title={doc.description}>
+							<span class="tab-name">{doc.name}</span>
+							<button
+								class="generate-btn"
+								on:click|stopPropagation={() => handlePopulateDocument(doc.id)}
+								disabled={isPopulating}
+								title="Generate full matrix data"
+							>
+								{#if isPopulating}
+									<Spinner size="xs" />
+								{:else}
+									<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+										<path d="M12 3v3m6.366-.366-2.12 2.12M21 12h-3m.366 6.366-2.12-2.12M12 21v-3m-6.366.366 2.12-2.12M3 12h3m-.366-6.366 2.12 2.12"/>
+									</svg>
+								{/if}
+							</button>
+						</div>
+					{/if}
 				{/each}
+
+				<!-- Plus button to generate more document stubs -->
+				<button
+					class="add-document-btn"
+					on:click={handleGenerateMoreDocuments}
+					disabled={$isGeneratingMoreDocuments}
+					title="Generate 3 more documents"
+				>
+					{#if $isGeneratingMoreDocuments}
+						<Spinner size="xs" />
+					{:else}
+						<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M12 5v14M5 12h14"/>
+						</svg>
+					{/if}
+				</button>
 			</div>
-		</div>
-	{:else if $activeDocument?.name}
-		<!-- Single document: show name as header -->
-		<div class="document-name-header">
-			<span class="document-name">{$activeDocument.name}</span>
 		</div>
 	{/if}
 
@@ -327,7 +395,10 @@
 
 	.document-tabs {
 		display: flex;
+		align-items: center;
 		gap: 0.25rem;
+		overflow-x: auto;
+		padding-bottom: 0.25rem;
 		overflow-x: auto;
 	}
 
@@ -370,6 +441,77 @@
 		max-width: 100px;
 		overflow: hidden;
 		text-overflow: ellipsis;
+	}
+
+	/* Stub document tabs (not yet populated) */
+	.document-tab.stub {
+		display: flex;
+		align-items: center;
+		gap: 0.375rem;
+		background: var(--color-field-depth);
+		border: 1px dashed var(--color-veil-thin);
+		cursor: default;
+		opacity: 0.8;
+	}
+
+	.document-tab.stub:hover {
+		background: var(--color-field-depth);
+		border-color: var(--color-primary-300);
+	}
+
+	.generate-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 20px;
+		height: 20px;
+		padding: 0;
+		background: var(--color-primary-500);
+		border: none;
+		border-radius: 0.25rem;
+		color: white;
+		cursor: pointer;
+		transition: all 0.15s ease;
+	}
+
+	.generate-btn:hover:not(:disabled) {
+		background: var(--color-primary-600);
+	}
+
+	.generate-btn:disabled {
+		opacity: 0.7;
+		cursor: wait;
+	}
+
+	/* Plus button to add more documents */
+	.add-document-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 28px;
+		height: 28px;
+		padding: 0;
+		background: var(--color-field-depth);
+		border: 1px dashed var(--color-primary-400);
+		border-radius: 0.375rem;
+		color: var(--color-primary-500);
+		cursor: pointer;
+		transition: all 0.15s ease;
+		flex-shrink: 0;
+	}
+
+	.add-document-btn:hover:not(:disabled) {
+		background: var(--color-primary-50);
+		border-style: solid;
+	}
+
+	[data-theme='dark'] .add-document-btn:hover:not(:disabled) {
+		background: rgba(15, 76, 117, 0.2);
+	}
+
+	.add-document-btn:disabled {
+		opacity: 0.7;
+		cursor: wait;
 	}
 
 	.matrix-grid {

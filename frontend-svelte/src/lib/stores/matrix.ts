@@ -349,6 +349,48 @@ function createMatrixStore() {
 			}
 		},
 
+		// Populate a document stub with full cell data
+		async populateDocument(docId: string) {
+			const state = get({ subscribe });
+			if (!state.conversationId) {
+				console.error('No conversation ID set');
+				return;
+			}
+
+			try {
+				const response = await api.post(`/matrix/${state.conversationId}/document/${docId}/populate`);
+
+				if (response.success) {
+					// Refresh documents to get the populated data
+					const docsResponse = await api.get(`/matrix/${state.conversationId}/documents`);
+					if (docsResponse && Array.isArray(docsResponse)) {
+						const activeDocumentId = docId;
+						const activeDoc = docsResponse.find((d: any) => d.id === docId);
+
+						if (activeDoc) {
+							const displayed = buildDisplayedMatrix(activeDoc);
+
+							update(s => ({
+								...s,
+								documents: docsResponse,
+								activeDocumentId,
+								displayedMatrixData: displayed.matrixData,
+								displayedRowHeaders: displayed.rowHeaders,
+								displayedColumnHeaders: displayed.columnHeaders,
+								displayedRowInsights: displayed.rowInsights,
+								displayedColumnInsights: displayed.columnInsights
+							}));
+						}
+					}
+				}
+
+				return response;
+			} catch (error: any) {
+				console.error('Failed to populate document:', error);
+				throw error;
+			}
+		},
+
 		// Fetch plays for active document (plays are generated during document population)
 		async fetchPlays() {
 			const state = get({ subscribe });
