@@ -10,6 +10,7 @@
 
 import { writable, derived, get } from 'svelte/store';
 import { api } from '$utils/api';
+import { addToast } from './toast';
 
 export interface CellDimension {
 	name: string;
@@ -477,8 +478,16 @@ function createMatrixStore() {
 				return { success: true, changesSaved: 0 };
 			}
 
+			// Save original state for rollback
+			const originalMatrixData = state.displayedMatrixData.map(row =>
+				row.map(cell => ({
+					...cell,
+					dimensions: cell.dimensions.map(dim => ({ ...dim }))
+				}))
+			);
+
 			try {
-				// Apply changes to local state first
+				// Apply changes to local state first (optimistic update)
 				update(s => {
 					const newMatrixData = s.displayedMatrixData.map((row, r) =>
 						row.map((cell, c) => {
@@ -514,6 +523,17 @@ function createMatrixStore() {
 				};
 			} catch (error: any) {
 				console.error('Failed to save cell changes:', error);
+
+				// Rollback to original state
+				update(s => ({ ...s, displayedMatrixData: originalMatrixData }));
+
+				// Notify user of failure
+				addToast({
+					type: 'error',
+					message: 'Failed to save changes. Please try again.',
+					duration: 4000
+				});
+
 				return { success: false, changesSaved: 0 };
 			}
 		},
