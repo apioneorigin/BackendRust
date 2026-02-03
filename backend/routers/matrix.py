@@ -14,37 +14,37 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db, User, ChatConversation, ChatMessage
 from routers.auth import get_current_user
-from utils import get_or_404
+from utils import get_or_404, CamelModel
 from logging_config import api_logger
 
 router = APIRouter(prefix="/api/matrix", tags=["matrix"])
 
 
 # Response models
-class DimensionOption(BaseModel):
+class DimensionOption(CamelModel):
     name: str
     value: int  # One of [0, 50, 100] = Low, Medium, High
 
 
-class RowOption(BaseModel):
+class RowOption(CamelModel):
     id: str
     label: str
     description: Optional[str] = None
 
 
-class ColumnOption(BaseModel):
+class ColumnOption(CamelModel):
     id: str
     label: str
     description: Optional[str] = None
 
 
-class PathStep(BaseModel):
+class PathStep(CamelModel):
     order: int
     action: str
     rationale: Optional[str] = None
 
 
-class StrategicPath(BaseModel):
+class StrategicPath(CamelModel):
     id: str
     name: str
     description: Optional[str] = None
@@ -53,7 +53,7 @@ class StrategicPath(BaseModel):
     steps: List[PathStep]
 
 
-class DocumentMatrixData(BaseModel):
+class DocumentMatrixData(CamelModel):
     """Matrix data for a document - 10x10 grid"""
     row_options: List[RowOption]
     column_options: List[ColumnOption]
@@ -62,7 +62,7 @@ class DocumentMatrixData(BaseModel):
     cells: dict
 
 
-class GeneratedDocument(BaseModel):
+class GeneratedDocument(CamelModel):
     """Document with its own 10x10 matrix data"""
     id: str
     name: str
@@ -122,7 +122,7 @@ async def get_document(
     return None
 
 
-class GenerateDocumentsResponse(BaseModel):
+class GenerateDocumentsResponse(CamelModel):
     """Response from generating additional documents"""
     documents: List[GeneratedDocument]
     total_document_count: int
@@ -187,7 +187,7 @@ async def generate_additional_documents(
     )
 
 
-class PopulateDocumentResponse(BaseModel):
+class PopulateDocumentResponse(CamelModel):
     """Response from populating a document stub with cells"""
     document_id: str
     cell_count: int
@@ -362,7 +362,7 @@ async def update_document_selection(
 # ============================================================================
 
 
-class LeveragePointExplanation(BaseModel):
+class LeveragePointExplanation(CamelModel):
     """Explanation for why a cell is a power spot"""
     cell_id: str
     cell_label: str
@@ -375,7 +375,7 @@ class LeveragePointExplanation(BaseModel):
     roi_ratio: float
 
 
-class RiskExplanation(BaseModel):
+class RiskExplanation(CamelModel):
     """Explanation for why a cell is a risk point"""
     cell_id: str
     cell_label: str
@@ -387,21 +387,21 @@ class RiskExplanation(BaseModel):
     impact_if_ignored: str
 
 
-class LeveragePointsResponse(BaseModel):
+class LeveragePointsResponse(CamelModel):
     """Response from leverage points analysis"""
     document_id: str
     leverage_points: List[LeveragePointExplanation]
     cached: bool
 
 
-class RiskAnalysisResponse(BaseModel):
+class RiskAnalysisResponse(CamelModel):
     """Response from risk analysis"""
     document_id: str
     risk_points: List[RiskExplanation]
     cached: bool
 
 
-class CellExplanationResponse(BaseModel):
+class CellExplanationResponse(CamelModel):
     """Response for a single cell explanation"""
     cell_id: str
     explanation: Dict[str, Any]
@@ -586,7 +586,7 @@ async def explain_cell(
 # ============================================================================
 
 
-class Play(BaseModel):
+class Play(CamelModel):
     """A transformation strategy/play"""
     id: str
     name: str
@@ -601,7 +601,7 @@ class Play(BaseModel):
     category: str  # "quick_wins", "balanced", "deep_transform", "conservative", "aggressive"
 
 
-class PlaysResponse(BaseModel):
+class PlaysResponse(CamelModel):
     """Response from plays endpoint"""
     document_id: str
     plays: List[Play]

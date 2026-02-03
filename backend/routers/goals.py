@@ -22,7 +22,7 @@ import openai
 
 from database import get_db, User, Goal, MatrixValue, DiscoveredGoal, UserGoalInventory
 from routers.auth import get_current_user, generate_id
-from utils import get_or_404, paginate, to_response, to_response_list
+from utils import get_or_404, paginate, to_response, to_response_list, CamelModel
 from logging_config import api_logger, pipeline_logger
 
 # Goal classifier (backend intelligence between Call 1 and Call 2)
@@ -196,7 +196,7 @@ class UpdateGoalRequest(BaseModel):
     domain: Optional[str] = None
 
 
-class GoalResponse(BaseModel):
+class GoalResponse(CamelModel):
     id: str
     user_id: str
     organization_id: str
@@ -213,12 +213,12 @@ class GoalResponse(BaseModel):
     updated_at: datetime
 
 
-class GoalListResponse(BaseModel):
+class GoalListResponse(CamelModel):
     goals: List[GoalResponse]
     total: int
 
 
-class MatrixValueResponse(BaseModel):
+class MatrixValueResponse(CamelModel):
     id: str
     goal_id: str
     value_id: str
@@ -429,12 +429,12 @@ class DiscoverGoalsRequest(BaseModel):
     model: str = "claude-opus-4-5-20251101"
 
 
-class DiscoverGoalsResponse(BaseModel):
+class DiscoverGoalsResponse(CamelModel):
     """Response from goal discovery."""
     success: bool
     goals: List[Dict[str, Any]]
-    generatedAt: str
-    sourceFileCount: int
+    generated_at: str
+    source_file_count: int
     usage: Dict[str, Any]
 
 
@@ -989,20 +989,20 @@ Return valid JSON with a "goals" array containing all skeletons with identity an
         goal_type = skeleton.get("type", "UNKNOWN")
         merged_goal = {**skeleton}
 
-        # Try to find matching articulation
+        # Try to find matching articulation (LLM returns camelCase, we store snake_case)
         if goal_type in articulated_by_type and articulated_by_type[goal_type]:
             articulated = articulated_by_type[goal_type].pop(0)
             merged_goal["identity"] = articulated.get("identity", skeleton.get("classification_reason", "Goal identified"))
-            merged_goal["firstMove"] = articulated.get("firstMove", "Review the supporting signals and take action.")
+            merged_goal["first_move"] = articulated.get("firstMove", "Review the supporting signals and take action.")
         else:
             # Fallback if no articulation
             merged_goal["identity"] = skeleton.get("classification_reason", "Goal identified from file analysis")
-            merged_goal["firstMove"] = "Review the supporting signals and determine your first action."
+            merged_goal["first_move"] = "Review the supporting signals and determine your first action."
 
         # Add UUID and timestamp
         merged_goal["id"] = generate_id()
-        merged_goal["createdAt"] = datetime.utcnow().isoformat()
-        merged_goal["userId"] = current_user.id
+        merged_goal["created_at"] = datetime.utcnow().isoformat()
+        merged_goal["user_id"] = current_user.id
 
         final_goals.append(merged_goal)
 
@@ -1019,8 +1019,8 @@ Return valid JSON with a "goals" array containing all skeletons with identity an
     return DiscoverGoalsResponse(
         success=True,
         goals=final_goals,
-        generatedAt=datetime.utcnow().isoformat(),
-        sourceFileCount=len(request.files),
+        generated_at=datetime.utcnow().isoformat(),
+        source_file_count=len(request.files),
         usage=total_usage
     )
 
@@ -1128,8 +1128,11 @@ Return JSON with "goals" array."""
         if result and "goals" in result:
             for goal in result["goals"]:
                 goal["id"] = generate_id()
-                goal["createdAt"] = datetime.utcnow().isoformat()
-                goal["userId"] = current_user.id
+                goal["created_at"] = datetime.utcnow().isoformat()
+                goal["user_id"] = current_user.id
+                # Convert LLM camelCase to snake_case
+                if "firstMove" in goal:
+                    goal["first_move"] = goal.pop("firstMove")
                 goals.append(goal)
 
         total_usage["total_input_tokens"] = total_usage["call1_input_tokens"]
@@ -1141,8 +1144,8 @@ Return JSON with "goals" array."""
         return DiscoverGoalsResponse(
             success=True,
             goals=goals,
-            generatedAt=datetime.utcnow().isoformat(),
-            sourceFileCount=len(request.files),
+            generated_at=datetime.utcnow().isoformat(),
+            source_file_count=len(request.files),
             usage=total_usage
         )
 

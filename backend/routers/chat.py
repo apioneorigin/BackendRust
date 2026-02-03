@@ -10,29 +10,14 @@ import json
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
 from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 from sse_starlette.sse import EventSourceResponse
 
 from database import get_db, User, ChatConversation, ChatMessage, ChatSummary, Session, AsyncSessionLocal
 from routers.auth import get_current_user, generate_id
-from utils import get_or_404, paginate, to_response, to_response_list, safe_json_loads
-
-
-def to_camel(string: str) -> str:
-    """Convert snake_case to camelCase."""
-    components = string.split('_')
-    return components[0] + ''.join(x.title() for x in components[1:])
-
-
-class CamelModel(BaseModel):
-    """Base model that outputs camelCase JSON."""
-    model_config = ConfigDict(
-        alias_generator=to_camel,
-        populate_by_name=True,
-        from_attributes=True,
-    )
+from utils import get_or_404, paginate, to_response, to_response_list, safe_json_loads, CamelModel
 
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
@@ -231,11 +216,11 @@ async def send_message(
     if conversation.question_answers:
         questions_data = conversation.question_answers.get("questions", [])
         for q in questions_data:
-            if q.get("selectedOption"):
+            if q.get("selected_option"):
                 # Find the selected option text
-                selected_text = q.get("selectedOption")
+                selected_text = q.get("selected_option")
                 for opt in q.get("options", []):
-                    if opt.get("id") == q.get("selectedOption"):
+                    if opt.get("id") == q.get("selected_option"):
                         selected_text = opt.get("text", selected_text)
                         break
                 answered_questions.append({
@@ -405,7 +390,7 @@ async def send_message(
                             "text": question_data.get("question_text"),
                             "options": question_data.get("options", []),
                             "type": event_type,
-                            "selectedOption": None
+                            "selected_option": None
                         })
 
                 # Yield dict directly - EventSourceResponse handles formatting
@@ -570,7 +555,7 @@ async def generate_title(
     conversation.updated_at = datetime.utcnow()
     await db.commit()
 
-    return {"title": title, "conversationId": conversation_id}
+    return {"title": title, "conversation_id": conversation_id}
 
 
 class FileUploadRequest(BaseModel):
@@ -633,8 +618,8 @@ async def upload_files(
     await db.commit()
 
     return {
-        "messageId": file_message.id,
-        "filesProcessed": len(file_summaries),
+        "message_id": file_message.id,
+        "files_processed": len(file_summaries),
         "summaries": file_summaries,
     }
 
@@ -667,7 +652,7 @@ async def get_conversation_questions(
             text=q.get("text", ""),
             options=q.get("options", []),
             type=q.get("type", "question"),
-            selected_option=q.get("selectedOption")
+            selected_option=q.get("selected_option")
         )
         for q in questions
     ]
@@ -697,7 +682,7 @@ async def answer_question(
     updated = False
     for q in questions:
         if q.get("id") == question_id:
-            q["selectedOption"] = request.selected_option
+            q["selected_option"] = request.selected_option
             updated = True
             break
 
@@ -709,4 +694,4 @@ async def answer_question(
     conversation.updated_at = datetime.utcnow()
     await db.commit()
 
-    return {"status": "success", "questionId": question_id, "selectedOption": request.selected_option}
+    return {"status": "success", "question_id": question_id, "selected_option": request.selected_option}
