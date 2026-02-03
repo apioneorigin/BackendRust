@@ -19,6 +19,18 @@ router = APIRouter(prefix="/api/matrix", tags=["matrix"])
 
 
 # Response models
+class ArticulatedInsight(BaseModel):
+    """Full articulated insight with 3-component structure"""
+    title: Optional[str] = None
+    the_truth: Optional[str] = None
+    the_truth_law: Optional[str] = None
+    your_truth: Optional[str] = None
+    your_truth_revelation: Optional[str] = None
+    the_mark_name: Optional[str] = None
+    the_mark_prediction: Optional[str] = None
+    the_mark_identity: Optional[str] = None
+
+
 class DimensionOption(BaseModel):
     name: str
     value: int  # One of [0, 50, 100] = Low, Medium, High
@@ -28,12 +40,14 @@ class RowOption(BaseModel):
     id: str
     label: str
     description: Optional[str] = None
+    articulated_insight: Optional[ArticulatedInsight] = None
 
 
 class ColumnOption(BaseModel):
     id: str
     label: str
     description: Optional[str] = None
+    articulated_insight: Optional[ArticulatedInsight] = None
 
 
 class PathStep(BaseModel):
