@@ -928,20 +928,24 @@ Your prose should flow naturally without visual dividers between sections.
 ### BRIDGE SENTENCE FOR FOLLOW-UP QUESTION
 
 End your main articulation with a natural bridge sentence that creates anticipation
-for the follow-up question. This bridge should:
+for the follow-up question. This bridge should emerge organically from the specific
+insights and context of THIS conversation - never use templated or formulaic phrasing.
 
-1. **Acknowledge** something meaningful from what you've shared
-2. **Reveal** a dimension you want to explore further
-3. **Bridge** naturally into curiosity about their experience
+**Requirements:**
+- The bridge must be UNIQUE to the user's specific situation and what you've just shared
+- Draw directly from the consciousness patterns, insights, or discoveries revealed
+- Reference specific details from their context (their domain, challenges, opportunities)
+- Let the bridge arise naturally from the logical flow of your articulation
 
-**Examples of good bridge sentences:**
-- "What strikes me most is how much depends on something I don't yet fully understand about your experience..."
-- "There's a dimension to this that I sense matters deeply but haven't yet grasped..."
-- "To truly see the path forward, I find myself curious about something..."
+**What to AVOID:**
+- Generic phrases like "I find myself curious about..." or "There's a dimension..."
+- Any sentence that could apply to ANY user or ANY conversation
+- Formulaic structures that feel like templates
 
 The bridge should make the user PAUSE and feel genuinely invited into the question,
 not rushed through a checklist. Write it as the final 1-2 sentences of your narrative
-prose, flowing naturally from your insights. Do NOT use "---" before the bridge.
+prose, flowing naturally from your specific insights about THEIR situation.
+Do NOT use "---" before the bridge.
 
 ## EVIDENCE GROUNDING PROTOCOL
 
