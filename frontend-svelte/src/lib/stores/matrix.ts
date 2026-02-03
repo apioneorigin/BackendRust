@@ -65,14 +65,12 @@ export interface Play {
 export interface RowOption {
 	id: string;
 	label: string;
-	insight: string;  // Short summary (backward compatible)
 	articulated_insight?: ArticulatedInsight;  // Full 3-component insight (when document is fully populated)
 }
 
 export interface ColumnOption {
 	id: string;
 	label: string;
-	insight: string;  // Short summary (backward compatible)
 	articulated_insight?: ArticulatedInsight;  // Full 3-component insight (when document is fully populated)
 }
 
@@ -175,8 +173,8 @@ function createMatrixStore() {
 
 		const rowHeaders = selected_rows.map(i => row_options[i]?.label || `Row ${i + 1}`);
 		const columnHeaders = selected_columns.map(i => column_options[i]?.label || `Column ${i + 1}`);
-		const rowInsights = selected_rows.map(i => row_options[i]?.insight || '');
-		const columnInsights = selected_columns.map(i => column_options[i]?.insight || '');
+		const rowInsights = selected_rows.map(i => row_options[i]?.articulated_insight?.title || '');
+		const columnInsights = selected_columns.map(i => column_options[i]?.articulated_insight?.title || '');
 
 		const matrixData: CellData[][] = selected_rows.map(rowIdx =>
 			selected_columns.map(colIdx => {

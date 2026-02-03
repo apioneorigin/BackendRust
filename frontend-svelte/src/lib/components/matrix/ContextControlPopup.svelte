@@ -274,8 +274,8 @@
 												</div>
 												<div class="title-content">
 													<span class="title-text">{opt.label}</span>
-													{#if opt.insight}
-														<span class="title-insight">{opt.insight}</span>
+													{#if opt.articulated_insight?.title}
+														<span class="title-insight">{opt.articulated_insight.title}</span>
 													{/if}
 												</div>
 											</button>
@@ -352,8 +352,8 @@
 												</div>
 												<div class="title-content">
 													<span class="title-text">{opt.label}</span>
-													{#if opt.insight}
-														<span class="title-insight">{opt.insight}</span>
+													{#if opt.articulated_insight?.title}
+														<span class="title-insight">{opt.articulated_insight.title}</span>
 													{/if}
 												</div>
 											</button>

@@ -291,5 +291,3 @@ def create_question_generator() -> QuestionGenerator:
     return QuestionGenerator()
 
 
-# Backwards compatibility alias
-ConstellationQuestionGenerator = QuestionGenerator
