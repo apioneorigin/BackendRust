@@ -50,9 +50,9 @@
 		return cell.value >= 75 || cell.isLeveragePoint === true;
 	}
 
-	// Check if cell is medium or high risk
+	// Check if cell is high risk (only high risk shown in Risk view)
 	function isRiskCell(cell: CellData): boolean {
-		return cell.riskLevel === 'medium' || cell.riskLevel === 'high';
+		return cell.riskLevel === 'high';
 	}
 
 	// Check if cell should be hidden in filtered views
@@ -191,9 +191,7 @@
 							<span class="power-indicator" title="Power Spot">⚡</span>
 						{/if}
 						{#if showRiskView && isRiskCell(cell)}
-							<span class="risk-indicator" title={cell.riskLevel === 'high' ? 'High Risk' : 'Medium Risk'}>
-								{cell.riskLevel === 'high' ? '⚠' : '!'}
-							</span>
+							<span class="risk-indicator" title="High Risk">⚠</span>
 						{/if}
 						<span class="cell-value">{cell.value}</span>
 						<div class="confidence-bar" style="width: {cell.confidence * 100}%"></div>

@@ -168,8 +168,8 @@ function createMatrixStore() {
 				}
 
 				let riskLevel: 'low' | 'medium' | 'high' = 'low';
-				if (cell.impact_score >= 70) riskLevel = 'high';
-				else if (cell.impact_score >= 40) riskLevel = 'medium';
+				if (cell.impact_score >= 80) riskLevel = 'high';
+				else if (cell.impact_score >= 50) riskLevel = 'medium';
 
 				const isLeveragePoint = cell.impact_score >= 75 &&
 					cell.dimensions?.some(d => d.value >= 75);
