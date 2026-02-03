@@ -2402,6 +2402,7 @@ Each cell needs:
 - dimensions: Array of 5 dimensions, each with:
   - name: Contextual name for this specific row×column intersection
   - value: 0 (Low), 50 (Medium), or 100 (High) ONLY
+  - explanation: Max 10-word phrase explaining this dimension's state at this intersection
 
 5-DIMENSION FRAMEWORK (generate contextual names, NOT these literal words):
 1. CLARITY - Understanding/vision of this intersection
@@ -2437,11 +2438,11 @@ Return ONLY valid JSON:
       "impact_score": 75,
       "relationship": "How {row_labels[0] if row_labels else 'row'} affects {col_labels[0] if col_labels else 'column'}",
       "dimensions": [
-        {{"name": "Contextual Clarity Name", "value": 50}},
-        {{"name": "Contextual Capacity Name", "value": 100}},
-        {{"name": "Contextual Readiness Name", "value": 0}},
-        {{"name": "Contextual Resources Name", "value": 50}},
-        {{"name": "Contextual Integration Name", "value": 100}}
+        {{"name": "Contextual Clarity Name", "value": 50, "explanation": "Current understanding of this relationship is developing"}},
+        {{"name": "Contextual Capacity Name", "value": 100, "explanation": "Full capability to execute on this intersection"}},
+        {{"name": "Contextual Readiness Name", "value": 0, "explanation": "Not yet prepared to act on this"}},
+        {{"name": "Contextual Resources Name", "value": 50, "explanation": "Some assets available but gaps remain"}},
+        {{"name": "Contextual Integration Name", "value": 100, "explanation": "Row and column fully aligned here"}}
       ]
     }},
     ... (all 100 cells from "0-0" to "9-9")
@@ -2570,6 +2571,7 @@ REQUIREMENTS:
 - Generate ALL 100 cells (0-0 through 9-9)
 - Dimension values MUST be 0, 50, or 100 only
 - Dimension names must be contextual to each specific cell
+- Each dimension MUST have an explanation (max 10 words) describing its state
 - ALL 20 row/column options MUST have articulated_insight with all 8 fields including title
 - Each insight title should be max 10 words and different from the row/column label
 - Each insight should be 160-250 words total across all fields

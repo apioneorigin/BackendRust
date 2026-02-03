@@ -1045,11 +1045,11 @@ After your main articulation, generate structured data in JSON format.
             "impact_score": 75,
             "relationship": "How this row drives this column outcome",
             "dimensions": [
-              {{"name": "Vision Clarity", "value": 50}},
-              {{"name": "Action Capacity", "value": 100}},
-              {{"name": "Change Readiness", "value": 0}},
-              {{"name": "Resource Access", "value": 50}},
-              {{"name": "System Integration", "value": 100}}
+              {{"name": "Vision Clarity", "value": 50, "explanation": "Partial view of how these connect"}},
+              {{"name": "Action Capacity", "value": 100, "explanation": "Fully capable of executing here"}},
+              {{"name": "Change Readiness", "value": 0, "explanation": "Not yet prepared for this shift"}},
+              {{"name": "Resource Access", "value": 50, "explanation": "Some tools available, gaps remain"}},
+              {{"name": "System Integration", "value": 100, "explanation": "Seamless alignment between elements"}}
             ]
           }},
           "0-1": {{...}},
@@ -1076,9 +1076,10 @@ After your main articulation, generate structured data in JSON format.
 REQUIREMENTS:
 1. **1 DOCUMENT**: Generate exactly 1 complete document with all 100 cells AND 20 articulated insights
 2. **CELL FORMAT**: Keys are "row-col" format: "0-0", "0-1", ... "9-9"
-3. **DIMENSIONS**: Each cell has exactly 5 dimensions with contextual names
+3. **DIMENSIONS**: Each cell has exactly 5 dimensions with contextual names and explanations
 4. **VALUES**: Dimension values are 0 (Low), 50 (Medium), or 100 (High) only
-5. **ARTICULATED INSIGHTS**: Every row_option and column_option MUST have an articulated_insight{question_requirement}
+5. **EXPLANATIONS**: Each dimension MUST have an explanation (max 10 words) describing its state
+6. **ARTICULATED INSIGHTS**: Every row_option and column_option MUST have an articulated_insight{question_requirement}
 
 ### 5-DIMENSION FRAMEWORK:
 | # | Meaning | Generate contextual name for |
@@ -1091,6 +1092,7 @@ REQUIREMENTS:
 
 Dimension names must be CONTEXTUAL to the specific row×column intersection.
 Do NOT use literal names like "Clarity" or "Capacity".
+Each dimension MUST include an explanation (max 10 words) describing its current state.
 
 ### ARTICULATED INSIGHT FRAMEWORK (for each of 20 row/column options):
 

@@ -14,6 +14,7 @@ import { api } from '$utils/api';
 export interface CellDimension {
 	name: string;
 	value: number;  // 0 (Low), 50 (Medium), or 100 (High)
+	explanation?: string;  // Max 10-word phrase explaining this dimension's state
 }
 
 export interface CellData {
@@ -168,15 +169,16 @@ function createMatrixStore() {
 				}
 
 				let riskLevel: 'low' | 'medium' | 'high' = 'low';
-				if (cell.impact_score >= 70) riskLevel = 'high';
-				else if (cell.impact_score >= 40) riskLevel = 'medium';
+				if (cell.impact_score >= 80) riskLevel = 'high';
+				else if (cell.impact_score >= 50) riskLevel = 'medium';
 
 				const isLeveragePoint = cell.impact_score >= 75 &&
 					cell.dimensions?.some(d => d.value >= 75);
 
 				const dimensions: CellDimension[] = cell.dimensions?.map(d => ({
 					name: d.name,
-					value: d.value
+					value: d.value,
+					explanation: d.explanation
 				})) || placeholderDimensions;
 
 				return {

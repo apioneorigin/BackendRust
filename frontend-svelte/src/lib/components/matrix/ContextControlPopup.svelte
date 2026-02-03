@@ -40,14 +40,33 @@
 	let selectedRows: number[] = [];
 	let selectedColumns: number[] = [];
 
-	// Sync local selection with active document
+	// Track whether extra options are revealed (no LLM call needed - data already in backend)
+	let showExtraDrivers = false;
+	let showExtraOutcomes = false;
+
+	// Sync local selection with active document and reset revealed state
 	$: if ($activeDocument?.matrix_data) {
 		selectedRows = [...($activeDocument.matrix_data.selected_rows || [0, 1, 2, 3, 4])];
 		selectedColumns = [...($activeDocument.matrix_data.selected_columns || [0, 1, 2, 3, 4])];
+		// Reset revealed state when document changes
+		showExtraDrivers = false;
+		showExtraOutcomes = false;
 	}
 
 	$: rowOptions = $activeDocument?.matrix_data?.row_options || [];
 	$: columnOptions = $activeDocument?.matrix_data?.column_options || [];
+
+	// Initially show only selected options, or all if extras are revealed
+	$: visibleRowIndices = showExtraDrivers
+		? rowOptions.map((_, i) => i)
+		: selectedRows.slice(0, 5);
+	$: visibleColIndices = showExtraOutcomes
+		? columnOptions.map((_, i) => i)
+		: selectedColumns.slice(0, 5);
+
+	// Check if there are extra options to reveal
+	$: hasExtraDrivers = rowOptions.length > 5 && !showExtraDrivers;
+	$: hasExtraOutcomes = columnOptions.length > 5 && !showExtraOutcomes;
 
 	$: selectedRowCount = selectedRows.length;
 	$: selectedColCount = selectedColumns.length;
@@ -73,11 +92,12 @@
 
 	function handleToggleRow(index: number) {
 		if (selectedRows.includes(index)) {
-			// Can only deselect if more than 5 selected
+			// Allow deselection only when extra options are visible (so user can swap)
+			if (!showExtraDrivers) return;
 			if (selectedRows.length <= 5) return;
 			selectedRows = selectedRows.filter(i => i !== index);
 		} else {
-			// Can only select if fewer than 5 selected
+			// When selecting a new one and already at 5, don't allow (user must deselect first)
 			if (selectedRows.length >= 5) return;
 			selectedRows = [...selectedRows, index];
 		}
@@ -85,14 +105,23 @@
 
 	function handleToggleColumn(index: number) {
 		if (selectedColumns.includes(index)) {
-			// Can only deselect if more than 5 selected
+			// Allow deselection only when extra options are visible (so user can swap)
+			if (!showExtraOutcomes) return;
 			if (selectedColumns.length <= 5) return;
 			selectedColumns = selectedColumns.filter(i => i !== index);
 		} else {
-			// Can only select if fewer than 5 selected
+			// When selecting a new one and already at 5, don't allow (user must deselect first)
 			if (selectedColumns.length >= 5) return;
 			selectedColumns = [...selectedColumns, index];
 		}
+	}
+
+	function handleShowExtraDrivers() {
+		showExtraDrivers = true;
+	}
+
+	function handleShowExtraOutcomes() {
+		showExtraOutcomes = true;
 	}
 
 	async function handleSubmit() {
@@ -225,134 +254,158 @@
 					<div class="options-sections">
 						<!-- Drivers (internally rows) -->
 						<div class="options-section">
-							<h4 class="section-title">Drivers ({rowOptions.length} available)</h4>
+							<h4 class="section-title">Drivers ({visibleRowIndices.length} of {rowOptions.length})</h4>
 							<div class="titles-list">
-								{#each rowOptions as opt, idx (`row-${idx}`)}
+								{#each visibleRowIndices as idx (`row-${idx}`)}
+									{@const opt = rowOptions[idx]}
 									{@const isSelected = selectedRows.includes(idx)}
-									{@const canToggle = isSelected || selectedRows.length < 5}
-									{@const hasInsight = !!opt.articulated_insight}
-									<div class="title-item-wrapper">
-										<button
-											class="title-item"
-											class:selected={isSelected}
-											class:disabled={!canToggle}
-											on:click={() => canToggle && handleToggleRow(idx)}
-											disabled={!canToggle}
-										>
-											<div class="title-checkbox" class:checked={isSelected}>
-												{#if isSelected}
+									{@const canDeselect = showExtraDrivers && selectedRows.length > 5}
+									{@const canSelect = selectedRows.length < 5}
+									{@const canToggle = isSelected ? canDeselect : canSelect}
+									{@const hasInsight = !!opt?.articulated_insight}
+									{#if opt}
+										<div class="title-item-wrapper">
+											<button
+												class="title-item"
+												class:selected={isSelected}
+												class:disabled={!canToggle}
+												on:click={() => handleToggleRow(idx)}
+											>
+												<div class="title-checkbox" class:checked={isSelected}>
+													{#if isSelected}
+														<svg
+															xmlns="http://www.w3.org/2000/svg"
+															width="14"
+															height="14"
+															viewBox="0 0 24 24"
+															fill="none"
+															stroke="currentColor"
+															stroke-width="3"
+														>
+															<polyline points="20 6 9 17 4 12" />
+														</svg>
+													{/if}
+												</div>
+												<div class="title-content">
+													<span class="title-text">{opt.label}</span>
+													{#if opt.insight}
+														<span class="title-insight">{opt.insight}</span>
+													{/if}
+												</div>
+											</button>
+											{#if hasInsight}
+												<button
+													class="insight-expand-btn"
+													on:click|stopPropagation={() => handleOpenInsight(opt, 'row')}
+													title="View full insight"
+												>
 													<svg
 														xmlns="http://www.w3.org/2000/svg"
-														width="14"
-														height="14"
+														width="16"
+														height="16"
 														viewBox="0 0 24 24"
 														fill="none"
 														stroke="currentColor"
-														stroke-width="3"
+														stroke-width="2"
+														stroke-linecap="round"
+														stroke-linejoin="round"
 													>
-														<polyline points="20 6 9 17 4 12" />
+														<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+														<polyline points="15 3 21 3 21 9" />
+														<line x1="10" y1="14" x2="21" y2="3" />
 													</svg>
-												{/if}
-											</div>
-											<div class="title-content">
-												<span class="title-text">{opt.label}</span>
-												{#if opt.insight}
-													<span class="title-insight">{opt.insight}</span>
-												{/if}
-											</div>
-										</button>
-										{#if hasInsight}
-											<button
-												class="insight-expand-btn"
-												on:click|stopPropagation={() => handleOpenInsight(opt, 'row')}
-												title="View full insight"
-											>
-												<svg
-													xmlns="http://www.w3.org/2000/svg"
-													width="16"
-													height="16"
-													viewBox="0 0 24 24"
-													fill="none"
-													stroke="currentColor"
-													stroke-width="2"
-													stroke-linecap="round"
-													stroke-linejoin="round"
-												>
-													<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-													<polyline points="15 3 21 3 21 9" />
-													<line x1="10" y1="14" x2="21" y2="3" />
-												</svg>
-											</button>
-										{/if}
-									</div>
+												</button>
+											{/if}
+										</div>
+									{/if}
 								{/each}
 							</div>
+							{#if hasExtraDrivers}
+								<button class="show-more-btn" on:click={handleShowExtraDrivers}>
+									<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+										<path d="M12 5v14M5 12h14"/>
+									</svg>
+									Show 5 More Drivers
+								</button>
+							{/if}
 						</div>
 
 						<!-- Outcomes (internally columns) -->
 						<div class="options-section">
-							<h4 class="section-title">Outcomes ({columnOptions.length} available)</h4>
+							<h4 class="section-title">Outcomes ({visibleColIndices.length} of {columnOptions.length})</h4>
 							<div class="titles-list">
-								{#each columnOptions as opt, idx (`col-${idx}`)}
+								{#each visibleColIndices as idx (`col-${idx}`)}
+									{@const opt = columnOptions[idx]}
 									{@const isSelected = selectedColumns.includes(idx)}
-									{@const canToggle = isSelected || selectedColumns.length < 5}
-									{@const hasInsight = !!opt.articulated_insight}
-									<div class="title-item-wrapper">
-										<button
-											class="title-item"
-											class:selected={isSelected}
-											class:disabled={!canToggle}
-											on:click={() => canToggle && handleToggleColumn(idx)}
-											disabled={!canToggle}
-										>
-											<div class="title-checkbox" class:checked={isSelected}>
-												{#if isSelected}
+									{@const canDeselect = showExtraOutcomes && selectedColumns.length > 5}
+									{@const canSelect = selectedColumns.length < 5}
+									{@const canToggle = isSelected ? canDeselect : canSelect}
+									{@const hasInsight = !!opt?.articulated_insight}
+									{#if opt}
+										<div class="title-item-wrapper">
+											<button
+												class="title-item"
+												class:selected={isSelected}
+												class:disabled={!canToggle}
+												on:click={() => handleToggleColumn(idx)}
+											>
+												<div class="title-checkbox" class:checked={isSelected}>
+													{#if isSelected}
+														<svg
+															xmlns="http://www.w3.org/2000/svg"
+															width="14"
+															height="14"
+															viewBox="0 0 24 24"
+															fill="none"
+															stroke="currentColor"
+															stroke-width="3"
+														>
+															<polyline points="20 6 9 17 4 12" />
+														</svg>
+													{/if}
+												</div>
+												<div class="title-content">
+													<span class="title-text">{opt.label}</span>
+													{#if opt.insight}
+														<span class="title-insight">{opt.insight}</span>
+													{/if}
+												</div>
+											</button>
+											{#if hasInsight}
+												<button
+													class="insight-expand-btn"
+													on:click|stopPropagation={() => handleOpenInsight(opt, 'column')}
+													title="View full insight"
+												>
 													<svg
 														xmlns="http://www.w3.org/2000/svg"
-														width="14"
-														height="14"
+														width="16"
+														height="16"
 														viewBox="0 0 24 24"
 														fill="none"
 														stroke="currentColor"
-														stroke-width="3"
+														stroke-width="2"
+														stroke-linecap="round"
+														stroke-linejoin="round"
 													>
-														<polyline points="20 6 9 17 4 12" />
+														<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+														<polyline points="15 3 21 3 21 9" />
+														<line x1="10" y1="14" x2="21" y2="3" />
 													</svg>
-												{/if}
-											</div>
-											<div class="title-content">
-												<span class="title-text">{opt.label}</span>
-												{#if opt.insight}
-													<span class="title-insight">{opt.insight}</span>
-												{/if}
-											</div>
-										</button>
-										{#if hasInsight}
-											<button
-												class="insight-expand-btn"
-												on:click|stopPropagation={() => handleOpenInsight(opt, 'column')}
-												title="View full insight"
-											>
-												<svg
-													xmlns="http://www.w3.org/2000/svg"
-													width="16"
-													height="16"
-													viewBox="0 0 24 24"
-													fill="none"
-													stroke="currentColor"
-													stroke-width="2"
-													stroke-linecap="round"
-													stroke-linejoin="round"
-												>
-													<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-													<polyline points="15 3 21 3 21 9" />
-													<line x1="10" y1="14" x2="21" y2="3" />
-												</svg>
-											</button>
-										{/if}
-									</div>
+												</button>
+											{/if}
+										</div>
+									{/if}
 								{/each}
 							</div>
+							{#if hasExtraOutcomes}
+								<button class="show-more-btn" on:click={handleShowExtraOutcomes}>
+									<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+										<path d="M12 5v14M5 12h14"/>
+									</svg>
+									Show 5 More Outcomes
+								</button>
+							{/if}
 						</div>
 					</div>
 				{:else}
@@ -591,6 +644,37 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.5rem;
+	}
+
+	.show-more-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+		width: 100%;
+		margin-top: 0.75rem;
+		padding: 0.75rem;
+		background: var(--color-field-depth);
+		border: 1px dashed var(--color-primary-400);
+		border-radius: 0.5rem;
+		font-size: 0.8125rem;
+		font-weight: 500;
+		color: var(--color-primary-600);
+		cursor: pointer;
+		transition: all 0.15s ease;
+	}
+
+	.show-more-btn:hover {
+		background: var(--color-primary-50);
+		border-style: solid;
+	}
+
+	[data-theme='dark'] .show-more-btn {
+		color: var(--color-primary-400);
+	}
+
+	[data-theme='dark'] .show-more-btn:hover {
+		background: rgba(15, 76, 117, 0.2);
 	}
 
 	.title-item-wrapper {
