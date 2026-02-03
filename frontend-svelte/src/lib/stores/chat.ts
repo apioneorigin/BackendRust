@@ -108,7 +108,6 @@ const initialState: ChatState = {
 function createChatStore() {
 	const { subscribe, set, update } = writable<ChatState>(initialState);
 
-	let abortController: AbortController | null = null;
 	// Guard flags to prevent concurrent operations that could cause reactive loops
 	let isSelectingConversation = false;
 	let isLoadingConversations = false;
@@ -273,12 +272,6 @@ function createChatStore() {
 				streamingContent: '',
 			}));
 
-			// Cancel any existing stream
-			if (abortController) {
-				abortController.abort();
-			}
-			abortController = new AbortController();
-
 			try {
 				// Use direct backend connection for SSE (bypasses Vite proxy buffering)
 				const response = await api.sseStream(
@@ -288,8 +281,7 @@ function createChatStore() {
 						model,
 						web_search_data: webSearch,
 						web_search_insights: webSearch,
-					},
-					abortController.signal
+					}
 				);
 
 				if (!response.ok) {
@@ -430,15 +422,6 @@ function createChatStore() {
 				// Title is now generated in Call 1 and sent via SSE 'title' event
 
 			} catch (error: any) {
-				if (error.name === 'AbortError') {
-					update(state => ({
-						...state,
-						isStreaming: false,
-						streamingContent: '',
-					}));
-					return;
-				}
-
 				update(state => ({
 					...state,
 					error: error.message,
@@ -446,18 +429,6 @@ function createChatStore() {
 					streamingContent: '',
 				}));
 			}
-		},
-
-		stopStreaming() {
-			if (abortController) {
-				abortController.abort();
-				abortController = null;
-			}
-			update(state => ({
-				...state,
-				isStreaming: false,
-				streamingContent: '',
-			}));
 		},
 
 		async generateTitle(conversationId: string) {
@@ -573,9 +544,6 @@ function createChatStore() {
 		},
 
 		reset() {
-			if (abortController) {
-				abortController.abort();
-			}
 			set(initialState);
 		},
 	};

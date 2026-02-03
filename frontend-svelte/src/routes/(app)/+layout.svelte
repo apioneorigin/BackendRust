@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { auth, isAuthenticated, user, theme, addToast, chat, conversations, currentConversation, messages, isStreaming } from '$lib/stores';
+	import { auth, isAuthenticated, user, theme, addToast, chat, conversations, currentConversation, messages } from '$lib/stores';
 	import { Spinner } from '$lib/components/ui';
 
 	let isLoading = true;
@@ -152,11 +152,6 @@
 		</div>
 	</div>
 {:else}
-	<!-- Freeze overlay: blocks all interactions during LLM streaming -->
-	{#if $isStreaming}
-		<div class="app-freeze-overlay" aria-hidden="true"></div>
-	{/if}
-
 	<div class="app-layout">
 		<!-- Mobile header -->
 		<header class="mobile-header">
@@ -381,15 +376,6 @@
 {/if}
 
 <style>
-	/* Freeze overlay - blocks all interactions during LLM streaming */
-	.app-freeze-overlay {
-		position: fixed;
-		inset: 0;
-		z-index: 9999;
-		background: transparent;
-		cursor: wait;
-	}
-
 	.loading-container {
 		display: flex;
 		align-items: center;

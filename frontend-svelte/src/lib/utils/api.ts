@@ -186,7 +186,7 @@ export const api = {
 	/**
 	 * SSE stream that connects directly to backend (bypasses Vite proxy)
 	 */
-	async sseStream(endpoint: string, data?: any, signal?: AbortSignal): Promise<Response> {
+	async sseStream(endpoint: string, data?: any): Promise<Response> {
 		const token = getToken();
 		const headers: Record<string, string> = {
 			'Content-Type': 'application/json',
@@ -199,7 +199,6 @@ export const api = {
 			method: 'POST',
 			headers,
 			body: data ? JSON.stringify(data) : undefined,
-			signal,
 		});
 	},
 };
