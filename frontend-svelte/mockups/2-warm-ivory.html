@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2. Warm Ivory Background - #FAF9F5</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #FAF9F5;
+      color: #111827;
+      height: 100vh;
+      display: flex;
+    }
+
+    /* Color label */
+    .color-label {
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      background: #6B7075;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      z-index: 100;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 240px;
+      background: #FFFFFF;
+      border-right: 1px solid rgba(107, 112, 117, 0.12);
+      display: flex;
+      flex-direction: column;
+      padding: 16px 12px;
+    }
+    .logo {
+      font-size: 16px;
+      font-weight: 600;
+      color: #111827;
+      padding: 0 8px 16px;
+    }
+    .new-chat-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      background: transparent;
+      border: 1px solid rgba(107, 112, 117, 0.15);
+      border-radius: 8px;
+      color: #4b5563;
+      font-size: 14px;
+      cursor: pointer;
+      margin-bottom: 16px;
+    }
+    .new-chat-btn:hover {
+      background: rgba(107, 112, 117, 0.06);
+      border-color: rgba(107, 112, 117, 0.25);
+    }
+    .section-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: #9ca3af;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 8px;
+    }
+    .conv-item {
+      padding: 10px 12px;
+      border-radius: 8px;
+      color: #4b5563;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .conv-item:hover {
+      background: rgba(107, 112, 117, 0.06);
+    }
+    .conv-item.active {
+      background: rgba(107, 112, 117, 0.08);
+      color: #111827;
+    }
+    .sidebar-footer {
+      margin-top: auto;
+      padding-top: 16px;
+      border-top: 1px solid rgba(107, 112, 117, 0.12);
+    }
+    .user-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .user-btn:hover {
+      background: rgba(107, 112, 117, 0.06);
+    }
+    .avatar {
+      width: 28px;
+      height: 28px;
+      background: #6B7075;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    /* Main content */
+    .main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      padding: 24px;
+      min-height: 0;
+    }
+
+    /* Chat column */
+    .chat-column {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-height: 0;
+    }
+    .response-area {
+      flex: 1;
+      background: #F7F5F1;
+      border-radius: 12px;
+      padding: 24px;
+      overflow-y: auto;
+    }
+    .welcome {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      text-align: center;
+    }
+    .welcome-logo {
+      width: 48px;
+      height: 48px;
+      background: #6B7075;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 24px;
+      font-weight: 500;
+      font-style: italic;
+      margin-bottom: 16px;
+    }
+    .welcome h1 {
+      font-size: 24px;
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+    .welcome-tag {
+      font-size: 12px;
+      color: #9ca3af;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 24px;
+    }
+    .welcome p {
+      color: #4b5563;
+      line-height: 1.6;
+    }
+
+    /* Input panel */
+    .input-panel {
+      background: #FFFFFF;
+      border: 1px solid rgba(107, 112, 117, 0.12);
+      border-radius: 12px;
+      padding: 12px;
+    }
+    .input-row textarea {
+      width: 100%;
+      border: none;
+      background: transparent;
+      font-size: 15px;
+      resize: none;
+      outline: none;
+      font-family: inherit;
+      color: #111827;
+    }
+    .input-row textarea::placeholder {
+      color: #d1d5db;
+    }
+    .controls-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 12px;
+      border-top: 1px solid rgba(107, 112, 117, 0.12);
+      margin-top: 8px;
+    }
+    .controls-left, .controls-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .control-btn {
+      padding: 6px 10px;
+      background: transparent;
+      border: none;
+      color: #9ca3af;
+      font-size: 14px;
+      cursor: pointer;
+      border-radius: 6px;
+    }
+    .control-btn:hover {
+      background: rgba(107, 112, 117, 0.06);
+      color: #111827;
+    }
+    .send-btn {
+      width: 32px;
+      height: 32px;
+      background: #6B7075;
+      border: none;
+      border-radius: 6px;
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .send-btn:hover {
+      background: #5f6368;
+    }
+
+    /* Matrix column */
+    .matrix-column {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .matrix-box, .preview-box {
+      flex: 1;
+      background: #FFFFFF;
+      border: 1px solid rgba(107, 112, 117, 0.12);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #9ca3af;
+      font-size: 14px;
+    }
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      padding: 8px;
+      background: #FFFFFF;
+      border: 1px solid rgba(107, 112, 117, 0.12);
+      border-radius: 8px;
+    }
+    .toolbar-btn {
+      padding: 8px 12px;
+      background: transparent;
+      border: none;
+      color: #4b5563;
+      font-size: 13px;
+      cursor: pointer;
+      border-radius: 6px;
+    }
+    .toolbar-btn:hover {
+      background: rgba(107, 112, 117, 0.06);
+    }
+    .toolbar-btn.active {
+      background: #6B7075;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div class="color-label">2. Warm Ivory - #FAF9F5 / Depth: #F7F5F1 (RECOMMENDED)</div>
+
+  <aside class="sidebar">
+    <div class="logo">Reality Transformer</div>
+    <button class="new-chat-btn">+ New Chat</button>
+    <div class="section-label">Conversations</div>
+    <div class="conv-item active">Strategic Planning Session</div>
+    <div class="conv-item">Market Analysis Q4</div>
+    <div class="conv-item">Product Roadmap 2026</div>
+    <div class="sidebar-footer">
+      <div class="user-btn">
+        <div class="avatar">J</div>
+        <span style="font-size: 14px; color: #111827;">John</span>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="chat-column">
+      <div class="response-area">
+        <div class="welcome">
+          <div class="welcome-logo">G</div>
+          <h1>Good afternoon, John</h1>
+          <div class="welcome-tag">Strategic Intelligence Platform</div>
+          <p>Turn complexity into clarity through<br>cross-impact analysis and scenario modeling.</p>
+        </div>
+      </div>
+      <div class="input-panel">
+        <div class="input-row">
+          <textarea rows="2" placeholder="What's on your mind?"></textarea>
+        </div>
+        <div class="controls-row">
+          <div class="controls-left">
+            <button class="control-btn">Attach</button>
+          </div>
+          <div class="controls-right">
+            <button class="control-btn">Claude Opus 4.5</button>
+            <button class="control-btn">Research</button>
+            <button class="send-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="matrix-column">
+      <div class="matrix-box">5x5 Impact Matrix</div>
+      <div class="toolbar">
+        <button class="toolbar-btn active">Power Spots</button>
+        <button class="toolbar-btn">Plays</button>
+        <button class="toolbar-btn">Scenarios</button>
+        <button class="toolbar-btn">Risk</button>
+      </div>
+      <div class="preview-box">Live Preview</div>
+    </div>
+  </main>
+</body>
+</html>
