@@ -2,11 +2,11 @@
 	/**
 	 * MatrixPanel - Embeddable 5x5 transformation matrix
 	 *
-	 * NEW ARCHITECTURE:
+	 * ARCHITECTURE:
 	 * - Shows document tabs at top (each with its own matrix)
-	 * - No "+" button here (only in ContextControlPopup)
-	 * - Displays matrix from currently active document
-	 * - Each cell has 5 contextual dimensions with 5-step button selectors
+	 * - Each cell displays a 5-segment bar (no numbers)
+	 * - Cell value = average of 5 dimensions (bidirectional sync)
+	 * - Dimensions use 3 steps: 0, 50, 100 (visual bars, no labels)
 	 */
 
 	import { createEventDispatcher } from 'svelte';
@@ -28,22 +28,69 @@
 		documentChange: { documentId: string };
 	}>();
 
-	// The 3 discrete step values for dimensions: Low, Medium, High
-	const STEP_VALUES = [0, 50, 100];
-	const STEP_LABELS = ['Low', 'Medium', 'High'];
+	// Dimension steps: 0, 50, 100
+	const DIM_STEPS = [0, 50, 100];
+
+	// Cell bar has 5 segments, each representing 20% range
+	const CELL_SEGMENTS = 5;
 
 	let selectedCell: { row: number; col: number } | null = null;
 	let showCellPopup = false;
 
-	// Get the step index (0-2) from a dimension value
-	function getStepIndex(value: number): number {
-		const idx = STEP_VALUES.indexOf(value);
-		return idx >= 0 ? idx : 1; // Default to Medium if value not found
+	// Calculate cell value from dimensions (average)
+	function calcCellValueFromDimensions(dimensions: CellDimension[]): number {
+		if (!dimensions || dimensions.length === 0) return 50;
+		const sum = dimensions.reduce((acc, d) => acc + d.value, 0);
+		return Math.round(sum / dimensions.length);
 	}
 
-	// Handle dimension step button click
-	function handleDimensionStepClick(dimIndex: number, stepValue: number) {
+	// Get number of filled segments (0-5) from cell value (0-100)
+	function getFilledSegments(value: number): number {
+		if (value <= 10) return 0;
+		if (value <= 30) return 1;
+		if (value <= 50) return 2;
+		if (value <= 70) return 3;
+		if (value <= 90) return 4;
+		return 5;
+	}
+
+	// Snap to nearest dimension step (0, 50, 100)
+	function snapToStep(value: number): number {
+		if (value < 25) return 0;
+		if (value < 75) return 50;
+		return 100;
+	}
+
+	// When user clicks a cell bar segment, scale all dimensions proportionally
+	function handleCellBarClick(row: number, col: number, segmentIndex: number) {
+		// Target average based on segment clicked (0-4 maps to 10, 30, 50, 70, 90)
+		const targetAvg = (segmentIndex + 1) * 20 - 10; // 10, 30, 50, 70, 90
+
+		const cell = matrixData[row]?.[col];
+		if (!cell?.dimensions) return;
+
+		const currentAvg = calcCellValueFromDimensions(cell.dimensions);
+
+		if (currentAvg === 0) {
+			// All dimensions are 0, set all to target
+			const targetStep = snapToStep(targetAvg);
+			cell.dimensions.forEach((_, idx) => {
+				dispatch('dimensionChange', { row, col, dimIndex: idx, value: targetStep });
+			});
+		} else {
+			// Scale proportionally
+			const scaleFactor = targetAvg / currentAvg;
+			cell.dimensions.forEach((dim, idx) => {
+				const newValue = snapToStep(Math.min(100, Math.max(0, dim.value * scaleFactor)));
+				dispatch('dimensionChange', { row, col, dimIndex: idx, value: newValue });
+			});
+		}
+	}
+
+	// Handle dimension bar click - cycle through steps or set directly
+	function handleDimensionBarClick(dimIndex: number, stepIndex: number) {
 		if (!selectedCell) return;
+		const stepValue = DIM_STEPS[stepIndex];
 		dispatch('dimensionChange', {
 			row: selectedCell.row,
 			col: selectedCell.col,
@@ -52,15 +99,21 @@
 		});
 	}
 
+	// Get dimension bar fill level (0, 1, 2, 3 for empty, low, mid, high)
+	function getDimFillLevel(value: number): number {
+		if (value === 0) return 0;
+		if (value === 50) return 1;
+		if (value === 100) return 2;
+		// Snap unknown values
+		if (value < 25) return 0;
+		if (value < 75) return 1;
+		return 2;
+	}
+
 	function handleCellClick(row: number, col: number) {
 		selectedCell = { row, col };
 		showCellPopup = true;
 		dispatch('cellClick', { row, col });
-	}
-
-	function handleCellValueChange(row: number, col: number, value: number) {
-		const newValue = Math.max(0, Math.min(100, value));
-		dispatch('cellChange', { row, col, value: newValue });
 	}
 
 	function getCellColor(cell: CellData) {
@@ -126,6 +179,8 @@
 
 			<!-- Data cells -->
 			{#each row as cell, colIdx}
+				{@const cellAvg = calcCellValueFromDimensions(cell.dimensions)}
+				{@const filledCount = getFilledSegments(cellAvg)}
 				<button
 					class="matrix-cell {getCellColor(cell)}"
 					class:leverage-point={cell.isLeveragePoint}
@@ -135,8 +190,15 @@
 					{#if cell.isLeveragePoint}
 						<span class="power-indicator" title="Power Spot">⚡</span>
 					{/if}
-					<span class="cell-value">{cell.value}</span>
-					<div class="confidence-bar" style="width: {cell.confidence * 100}%"></div>
+					<!-- 5-segment bar display -->
+					<div class="cell-bar">
+						{#each Array(CELL_SEGMENTS) as _, segIdx}
+							<div
+								class="cell-bar-segment"
+								class:filled={segIdx < filledCount}
+							></div>
+						{/each}
+					</div>
 				</button>
 			{/each}
 		{/each}
