@@ -2595,6 +2595,38 @@ async def format_results_streaming_bridge(
         file_count = len(conversation_context.get('file_summaries', []))
         articulation_logger.info(f"[ARTICULATION BRIDGE] Conversation context: {msg_count} messages, {file_count} files")
 
+    # Build question context using 2-priority structure
+    question_context = None
+    if include_question:
+        # Extract operators from evidence to determine question priority
+        extracted_operators = {}
+        for obs in evidence.get('observations', []):
+            if isinstance(obs, dict) and 'var' in obs and 'value' in obs:
+                canonical = SHORT_TO_CANONICAL.get(obs['var'], obs['var'])
+                if canonical in CANONICAL_OPERATOR_NAMES:
+                    extracted_operators[canonical] = obs['value']
+
+        # Build goal context
+        from consciousness_state import GoalContext
+        goal_context = GoalContext(
+            goal_text=evidence.get('goal'),
+            goal_category=evidence.get('goal_category', 'achievement'),
+            emotional_undertone=evidence.get('emotional_undertone', 'neutral'),
+            domain=evidence.get('domain', 'general')
+        )
+
+        # Generate question context with 2-priority structure
+        question_gen = ConstellationQuestionGenerator()
+        question_context = question_gen.get_question_context(
+            goal_context=goal_context,
+            extracted_operators=extracted_operators,
+            missing_operator_priority=evidence.get('missing_operator_priority', [])
+        )
+        articulation_logger.info(
+            f"[ARTICULATION BRIDGE] Question context: priority={question_context.get('priority_name')} "
+            f"missing={question_context.get('missing_count', 0)} extracted={question_context.get('extracted_count', 0)}"
+        )
+
     articulation_context = build_articulation_context(
         user_identity=evidence.get('user_identity'),
         domain=evidence.get('domain'),
@@ -2607,7 +2639,8 @@ async def format_results_streaming_bridge(
         domain_language=True,  # Use natural domain language
         search_guidance_data=search_guidance_data,  # Pass search guidance for evidence grounding
         conversation_context=conversation_context,  # Pass conversation history and files
-        include_question=include_question  # Conditional question generation based on validation logic
+        include_question=include_question,  # Conditional question generation
+        question_context=question_context  # 2-priority question generation context
     )
 
     # Build the structured articulation prompt

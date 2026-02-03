@@ -839,3 +839,4 @@ class ArticulationContext:
     search_guidance: SearchGuidance = field(default_factory=SearchGuidance)  # Guidance for evidence grounding
     conversation_context: Optional[ConversationHistoryContext] = None  # Conversation history and files
     include_question: bool = True  # Whether to generate follow-up question in structured output
+    question_context: Optional[Dict[str, Any]] = None  # 2-priority question generation context

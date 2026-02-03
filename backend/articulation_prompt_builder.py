@@ -60,7 +60,10 @@ class ArticulationPromptBuilder:
             self._build_leverage_section(context.consciousness_state.leverage_points),
             self._build_search_guidance_section(context.search_guidance),
             self._build_generation_instructions(context.instructions),
-            self._build_structured_output_section(include_question=context.include_question),
+            self._build_structured_output_section(
+                include_question=context.include_question,
+                question_context=context.question_context
+            ),
             self._build_user_query(context.user_context)
         ]
 
@@ -958,23 +961,32 @@ When consciousness values are calculated, ground them in observable reality:
 - Integrate evidence into narrative flow naturally
 - Let evidence strengthen insights, not replace them"""
 
-    def _build_structured_output_section(self, include_question: bool = True) -> str:
+    def _build_structured_output_section(
+        self,
+        include_question: bool = True,
+        question_context: Optional[Dict[str, Any]] = None
+    ) -> str:
         """Build instructions for generating structured document matrix data."""
-        # Conditionally include follow_up_question based on validation logic
+        # Build question schema and instructions based on 2-priority structure
         question_schema = ""
         question_requirement = ""
+        question_instructions = ""
+
         if include_question:
             question_schema = """,
   "follow_up_question": {
-    "question_text": "A natural, conversational follow-up question to understand the user better",
+    "question_text": "A natural, conversational follow-up question",
     "options": {
-      "option_1": "First option representing one way they might experience their situation",
-      "option_2": "Second option representing a different experience",
-      "option_3": "Third option with another perspective",
-      "option_4": "Fourth option completing the spectrum of possibilities"
+      "option_1": "First option",
+      "option_2": "Second option",
+      "option_3": "Third option",
+      "option_4": "Fourth option"
     }
   }"""
-            question_requirement = "\n5. **FOLLOW-UP QUESTION**: Include follow_up_question to deepen understanding"
+            question_requirement = "\n5. **FOLLOW-UP QUESTION**: Include follow_up_question (MANDATORY)"
+
+            # Build detailed question instructions based on priority
+            question_instructions = self._build_question_instructions(question_context)
 
         return f"""## STRUCTURED OUTPUT GENERATION
 
@@ -1109,11 +1121,100 @@ Each insight has a TITLE + 3 components (~160-250 words total):
 - THE IDENTITY: New capability in **bold**
 
 User should think: "I can't unsee this now."
-{f'''
-### FOLLOW-UP QUESTION:
-- Natural, conversational question
-- 4 options spanning different inner experiences
-- Use user's language and domain''' if include_question else ''}"""
+{question_instructions}"""
+
+    def _build_question_instructions(self, question_context: Optional[Dict[str, Any]]) -> str:
+        """
+        Build detailed question generation instructions based on 2-priority structure.
+
+        Priority 1 (OPERATOR_EXTRACTION): Missing tier-1 operators
+        Priority 2 (INTERPRETATION): All tier-1 available, need interpretation + higher tiers
+        """
+        if not question_context:
+            # Fallback to generic instructions
+            return """
+### FOLLOW-UP QUESTION (MANDATORY):
+Generate a natural, conversational follow-up question with 4 answer options.
+Each option should reveal different aspects of the user's inner experience."""
+
+        priority_name = question_context.get('priority_name', 'OPERATOR_EXTRACTION')
+
+        if priority_name == 'OPERATOR_EXTRACTION':
+            return self._build_operator_extraction_question_instructions(question_context)
+        else:
+            return self._build_interpretation_question_instructions(question_context)
+
+    def _build_operator_extraction_question_instructions(self, question_context: Dict[str, Any]) -> str:
+        """Build instructions for Priority 1: Operator Extraction questions."""
+        missing_count = question_context.get('missing_count', 0)
+        missing_with_desc = question_context.get('missing_with_descriptions', [])
+        prioritized = question_context.get('prioritized_missing', [])
+
+        # Format the missing operators list (show top 15)
+        missing_list = '\n'.join(f"  - {desc}" for desc in missing_with_desc[:15])
+        if len(missing_with_desc) > 15:
+            missing_list += f"\n  ... and {len(missing_with_desc) - 15} more"
+
+        return f"""
+### FOLLOW-UP QUESTION (MANDATORY) - PRIORITY 1: OPERATOR EXTRACTION
+
+**SITUATION:** {missing_count} core consciousness operators are still missing.
+
+**MISSING OPERATORS TO EXTRACT:**
+{missing_list}
+
+**YOUR TASK:** Generate a question + 4 answer options designed so that ANY answer
+the user chooses reveals values for MAXIMUM missing operators.
+
+**DESIGN REQUIREMENTS:**
+1. **Question Bridge:** Create a natural bridge sentence that flows from your response
+   into a question about the user's inner experience
+2. **4 Mutually Exclusive Options:** Each option represents a DIFFERENT inner state/experience
+3. **Maximum Extraction:** Each option, if chosen, should allow extraction of 5-10 different
+   operator values (not the same ones across options)
+4. **Natural Language:** Use user's domain language, not technical terms
+5. **Diagnostic Power:** Options should span the spectrum of possible experiences
+
+**OPTION DESIGN EXAMPLE:**
+- Option 1: Represents high attachment + fear-driven state → extracts At, F, R values
+- Option 2: Represents surrender + trust state → extracts S, Tr, G values
+- Option 3: Represents analytical detachment → extracts W, Bu, E values
+- Option 4: Represents active engagement → extracts I, Sh, P values
+
+**REMEMBER:** User can only choose ONE answer. Make every option count for extraction."""
+
+    def _build_interpretation_question_instructions(self, question_context: Dict[str, Any]) -> str:
+        """Build instructions for Priority 2: Interpretation + Higher Tiers questions."""
+        higher_tier_targets = question_context.get('higher_tier_targets', [])
+        targets_list = '\n'.join(f"  - {t}" for t in higher_tier_targets)
+
+        return f"""
+### FOLLOW-UP QUESTION (MANDATORY) - PRIORITY 2: INTERPRETATION + HIGHER TIERS
+
+**SITUATION:** All 25 core operators are available. Now we need:
+1. User's interpretation of the insights shared
+2. Data to calculate higher-tier derived values
+
+**HIGHER-TIER CALCULATIONS NEEDED:**
+{targets_list}
+
+**YOUR TASK:** Generate a question + 4 answer options that reveal:
+- How the user relates to/interprets what you've shared
+- Information to refine consciousness state calculations
+
+**DESIGN REQUIREMENTS:**
+1. **Question Bridge:** Natural transition asking how insights landed/resonate
+2. **4 Interpretation Modes:** Each option represents a different way of receiving the response
+3. **Calculation Value:** Each option should map to different higher-tier configurations
+4. **Validation:** Options help validate whether the articulation hit the mark
+
+**OPTION DESIGN EXAMPLE:**
+- Option 1: "This confirms what I sensed but couldn't articulate" → high clarity, low resistance
+- Option 2: "This challenges my assumptions in uncomfortable ways" → active processing, ego engagement
+- Option 3: "I need to sit with this before I can respond" → integration mode, void tolerance
+- Option 4: "This opens possibilities I hadn't considered" → expansion, openness activation
+
+**REMEMBER:** This is about understanding HOW they receive truth, not just WHAT they think."""
 
     def _build_user_query(self, user_context: UserContext) -> str:
         """Build the user query section"""
@@ -1146,7 +1247,8 @@ def build_articulation_context(
     domain_language: bool = True,
     search_guidance_data: Optional[dict] = None,
     conversation_context: Optional[dict] = None,
-    include_question: bool = True
+    include_question: bool = True,
+    question_context: Optional[Dict[str, Any]] = None
 ) -> ArticulationContext:
     """
     Helper function to build ArticulationContext from components.
@@ -1251,5 +1353,6 @@ def build_articulation_context(
         ),
         search_guidance=search_guidance,
         conversation_context=conv_history_context,
-        include_question=include_question
+        include_question=include_question,
+        question_context=question_context
     )
