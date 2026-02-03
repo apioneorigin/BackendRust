@@ -1446,21 +1446,26 @@ Articulation Tokens: {token_count}
                 missing_operator_priority = evidence.get('missing_operator_priority', [])
                 question_context = question_gen.get_question_context(
                     goal_context=goal_context,
-                    missing_operators=missing_operators,
-                    known_operators=extracted_operators,
+                    extracted_operators=extracted_operators,
                     missing_operator_priority=missing_operator_priority,
-                    question_type='gap_filling'
                 )
 
                 if question_context:
-                    from constellation_question_generator import MultiDimensionalQuestion
+                    from constellation_question_generator import MultiDimensionalQuestion, QuestionPriority
+
+                    # Convert options from list to dict if needed
+                    options_dict = follow_up['options']
+                    if isinstance(options_dict, list):
+                        options_dict = {opt.get('id', f'opt_{i}'): opt.get('text', str(opt)) for i, opt in enumerate(options_dict)}
+
                     question = MultiDimensionalQuestion(
                         question_id=question_context['question_id'],
                         question_text=follow_up['question_text'],
-                        answer_options=follow_up['options'],
-                        diagnostic_power=question_context['diagnostic_power'],
-                        target_operators=question_context['target_operators'],
-                        purposes_served=question_context['purposes_served'],
+                        answer_options=options_dict,
+                        priority=question_context.get('priority', QuestionPriority.OPERATOR_EXTRACTION),
+                        target_operators=question_context.get('missing_operators', []),
+                        missing_operator_count=question_context.get('missing_count', 0),
+                        purposes_served=[question_context.get('purpose', '')],
                         goal_context=goal_context
                     )
 
@@ -1475,11 +1480,12 @@ Articulation Tokens: {token_count}
                         "question_id": question.question_id,
                         "question_text": question.question_text,
                         "options": [{"id": opt_id, "text": opt_text} for opt_id, opt_text in question.answer_options.items()],
-                        "diagnostic_power": question.diagnostic_power,
+                        "priority": question_context.get('priority_name', 'OPERATOR_EXTRACTION'),
+                        "missing_count": question.missing_operator_count,
                         "purposes_served": question.purposes_served
                     })
 
-                    api_logger.info(f"[QUESTION] Question from Call 2: {question.question_id}")
+                    api_logger.info(f"[QUESTION] Question from Call 2: {question.question_id} priority={question_context.get('priority_name')}")
         else:
             api_logger.warning("[QUESTION] No follow_up_question in Call 2 structured data - skipping question")
 
