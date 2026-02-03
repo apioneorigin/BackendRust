@@ -1008,13 +1008,13 @@ After your main articulation, generate structured data in JSON format.
             "id": "r0",
             "label": "Resource Flow",
             "articulated_insight": {{
-              "title": "Reading the Hidden Lanes of Resource Flow",
-              "the_truth": "A river guide stands at dawn, watching tourists photograph the rapids. They see chaos—white foam, unpredictable currents. She sees lanes. Twenty years of reading water taught her that turbulence follows rules invisible to observers. The dangerous spots aren't the loud ones. They're the quiet pools where undertow hides beneath stillness.",
-              "the_truth_law": "**The pattern that looks like chaos to newcomers is infrastructure to those who've learned to read it.**",
-              "your_truth": "I see you navigating what others call turbulent—resource constraints, competing demands, shifting priorities. You've been reading these currents longer than you realize. You'll never miss this again—whenever resources feel chaotic, you'll recognize you're seeing lanes others can't.",
-              "your_truth_revelation": "**Your resource scarcity trained you to see flow patterns that abundance would have hidden.**",
+              "title": "The Hidden Lanes in Resource Chaos",
+              "the_truth": "You're staring at the resource allocation spreadsheet, the numbers swimming slightly. Three projects need the same team, the same budget window, the same quarter. That familiar tightness in your chest—not quite frustration, more like trying to solve a puzzle with missing pieces. Everyone keeps saying 'prioritize' as if the answer were obvious.",
+              "the_truth_law": "A river guide stands at dawn, watching tourists photograph the rapids. They see chaos—white foam, unpredictable currents. She sees lanes. Twenty years of reading water taught her that turbulence follows rules invisible to observers. The dangerous spots aren't the loud ones. They're the quiet pools where undertow hides beneath stillness.",
+              "your_truth": "**The pattern that looks like chaos to newcomers is infrastructure to those who've learned to read it.**",
+              "your_truth_revelation": "I see you navigating what others call turbulent—and you've been reading these currents longer than you realize. You'll never miss this again: whenever resources feel chaotic, you'll recognize you're seeing lanes that others can't. **Your resource scarcity trained you to see flow patterns that abundance would have hidden.**",
               "the_mark_name": "The Current Reader",
-              "the_mark_prediction": "You'll see this now in every resource conversation where others see shortage and you see routing.",
+              "the_mark_prediction": "You'll spot this now in every resource conversation where others see shortage and you see routing.",
               "the_mark_identity": "**You read resource currents now, not just resource levels.**"
             }}
           }},
@@ -1096,31 +1096,56 @@ Each dimension MUST include an explanation (max 10 words) describing its current
 
 ### ARTICULATED INSIGHT FRAMEWORK (for each of 20 row/column options):
 
-Each insight has a TITLE + 3 components (~160-250 words total):
+Each insight is CONTINUOUS PROSE with NO visible headers (~200-300 words total).
+The structure exists in your mind, but the user reads flowing narrative.
 
-**TITLE (max 10 words)**
-- A compelling phrase that captures the essence of this insight
-- NOT the same as the row/column label—a unique insight title
-- Example: "Reading the Hidden Lanes of Resource Flow"
+**STRUCTURE (invisible to user):**
 
-**1. THE TRUTH (80-120 words)**
-- Analogy from OUTSIDE user's domain (if business → use biology, music, architecture, cooking)
-- Written in immersive present tense with sensory details
-- Captures the micro-moment where truth reveals itself
-- ENDS with one-line universal law in **bold**
-- Do NOT explain the connection—let it land
+**1. THE MICRO-MOMENT (Fly on the Wall) - 50-70 words**
+Ground user in THEIR specific context FIRST. Use these rules:
+- IMMERSIVE PRESENT TENSE: "You're sitting at..." not "You might be..."
+- SENSORY ACTIVATION: Engage sight, sound, touch, emotion simultaneously
+- SPECIFICITY OVER GENERALITY: Concrete details, not abstract concepts
+- EMOTIONAL TRUTH FIRST: Lead with feeling, support with fact
+- SHOW THE MICRO-MOMENT: Capture precise instant where tension lives
+FEEL: Intimate, observant, like watching themselves in a movie. Reader should think "how do they know?"
+Example: "You're staring at the proposal draft, cursor blinking. The deadline is tomorrow but something feels off—not wrong exactly, but incomplete. That slight tightness in your chest isn't about the work itself..."
 
-**2. YOUR TRUTH (50-80 words)**
-- Opens with recognition ("I see you...")
-- Includes "never miss again" trigger for future pattern recognition
-- Compressed causal chain (how past created present)
-- ENDS with **bold revelation**
-- Tone: Witness, not judge. Equip, not blame.
+**2. THE DISTANT ANCHOR - 60-80 words**
+Pivot to maximally different domain (if business → use biology, music, sailing, cooking).
+Same immersive present tense. Same pattern, alien context.
+Make the universal visible through the particular.
+FEEL: Unexpected yet instantly recognizable. Do NOT explain the connection—let it land.
+The more alien the domain, the more powerful the recognition when they see the pattern.
+Example: "A jazz pianist faces the same moment differently. She's learned that the note she's avoiding—the one that feels risky—is usually the one the piece needs..."
 
-**3. THE MARK (30-50 words)**
-- THE NAME: Memorable concept name, 2-5 words (e.g., "The Permission Gap")
-- THE PREDICTION: Where they'll recognize this pattern
+**3. THE PRINCIPLE - 20-30 words**
+Extract the universal law both moments share. One sentence in **bold**.
+FEEL: Inevitable truth. Reader should feel "of course" not "interesting point."
+Write like a proverb discovered, not a lesson taught.
+Example: "**The resistance you feel is usually pointing at exactly what needs to happen next.**"
+
+**4. THE INSTALLATION (The Mark) - 60-80 words**
+Return to user's context with recognition and equipment:
+- "I see you..." acknowledgment (compressed causal chain: how past created present)
+- "You'll never miss this again" trigger for future pattern recognition
+- THE NAME: Memorable 2-5 word concept name
+- THE PREDICTION: Where they'll spot this pattern
 - THE IDENTITY: New capability in **bold**
+TONE: Witness, not judge. Equip, not blame.
+FEEL: Empowering revelation—they've been given sight, not corrected.
+
+OUTPUT FORMAT: Write as continuous prose. Each JSON field contains COMPLETE text.
+- `the_truth`: Full micro-moment paragraph (user's context)
+- `the_truth_law`: Full distant anchor paragraph (far domain analogy)
+- `your_truth`: The principle as a complete sentence (bold markdown)
+- `your_truth_revelation`: Full installation paragraph (recognition + never miss again + revelation)
+- `the_mark_name`: Just the concept name (2-5 words)
+- `the_mark_prediction`: Complete prediction sentence
+- `the_mark_identity`: Complete identity statement with bold markdown
+
+Each field is displayed as-is. NO template text is added by the frontend.
+Content must flow naturally when paragraphs are joined.
 
 User should think: "I can't unsee this now."
 {question_instructions}"""

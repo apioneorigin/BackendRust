@@ -4,12 +4,9 @@
 	 *
 	 * ARCHITECTURE:
 	 * - Shows document tabs at top (each with its own matrix)
-	 * - Tabs show all documents: full data docs are clickable, stubs show "Generate" button
-	 * - Plus button on right to generate 3 more document stubs
-	 * - Displays matrix from currently active document
-	 * - Each cell has 5 contextual dimensions with 3-step horizontal bar selectors
-	 * - Power Spots View: HIDES non-leverage cells completely, shows only power spots
-	 * - Risk View: HIDES low-risk cells completely, shows only medium/high risk cells
+	 * - Each cell displays a 5-segment bar (no numbers)
+	 * - Cell value = average of 5 dimensions (bidirectional sync)
+	 * - Dimensions use 3 steps: 0, 50, 100 (visual bars, no labels)
 	 */
 
 	import { createEventDispatcher } from 'svelte';
@@ -34,9 +31,11 @@
 		showRiskExplanation: { row: number; col: number; cell: CellData };
 	}>();
 
-	// The 3 discrete step values for dimensions: Low, Medium, High
-	const STEP_VALUES = [0, 50, 100];
-	const STEP_LABELS = ['Low', 'Medium', 'High'];
+	// Dimension steps: 0, 50, 100
+	const DIM_STEPS = [0, 50, 100];
+
+	// Cell bar has 5 segments, each representing 20% range
+	const CELL_SEGMENTS = 5;
 
 	let selectedCell: { row: number; col: number } | null = null;
 	let showCellPopup = false;
@@ -55,71 +54,74 @@
 		return Object.keys(cells).length >= 100;
 	}
 
-	// Get the step index (0-2) from a dimension value
-	function getStepIndex(value: number): number {
-		const idx = STEP_VALUES.indexOf(value);
-		return idx >= 0 ? idx : 1; // Default to Medium if value not found
+	// Calculate cell value from dimensions (average)
+	function calcCellValueFromDimensions(dimensions: CellDimension[]): number {
+		if (!dimensions || dimensions.length === 0) return 50;
+		const sum = dimensions.reduce((acc, d) => acc + d.value, 0);
+		return Math.round(sum / dimensions.length);
 	}
 
-	// Get the current value for a dimension (local edit or original)
-	function getDimensionValue(row: number, col: number, dimIdx: number): number {
-		const key = `${row}-${col}-${dimIdx}`;
-		if (localDimensionEdits.has(key)) {
-			return localDimensionEdits.get(key)!;
-		}
-		return matrixData[row]?.[col]?.dimensions?.[dimIdx]?.value ?? 50;
+	// Get number of filled segments (0-5) from cell value (0-100)
+	function getFilledSegments(value: number): number {
+		if (value <= 10) return 0;
+		if (value <= 30) return 1;
+		if (value <= 50) return 2;
+		if (value <= 70) return 3;
+		if (value <= 90) return 4;
+		return 5;
 	}
 
-	// Check if cell is a power spot (value >= 75)
-	function isPowerSpot(cell: CellData): boolean {
-		return cell.value >= 75 || cell.isLeveragePoint === true;
+	// Snap to nearest dimension step (0, 50, 100)
+	function snapToStep(value: number): number {
+		if (value < 25) return 0;
+		if (value < 75) return 50;
+		return 100;
 	}
 
-	// Check if cell is high risk (only high risk shown in Risk view)
-	function isRiskCell(cell: CellData): boolean {
-		return cell.riskLevel === 'high';
-	}
+	// When user clicks a cell bar segment, scale all dimensions proportionally
+	function handleCellBarClick(row: number, col: number, segmentIndex: number) {
+		// Target average based on segment clicked (0-4 maps to 10, 30, 50, 70, 90)
+		const targetAvg = (segmentIndex + 1) * 20 - 10; // 10, 30, 50, 70, 90
 
-	// Check if cell should be hidden in filtered views
-	// Hidden cells are completely invisible and non-clickable
-	function shouldHideCell(cell: CellData): boolean {
-		if (showPowerSpotsView && !isPowerSpot(cell)) {
-			return true;
-		}
-		if (showRiskView && !isRiskCell(cell)) {
-			return true;
-		}
-		return false;
-	}
+		const cell = matrixData[row]?.[col];
+		if (!cell?.dimensions) return;
 
-	// Handle dimension step button click - update local state
-	function handleDimensionStepClick(dimIndex: number, stepValue: number) {
-		if (!selectedCell) return;
+		const currentAvg = calcCellValueFromDimensions(cell.dimensions);
 
-		const key = `${selectedCell.row}-${selectedCell.col}-${dimIndex}`;
-		const originalValue = matrixData[selectedCell.row]?.[selectedCell.col]?.dimensions?.[dimIndex]?.value ?? 50;
-
-		// Store original value if not already tracked
-		if (!originalDimensionValues.has(key)) {
-			originalDimensionValues.set(key, originalValue);
-		}
-
-		// If setting back to original value, remove the edit
-		if (stepValue === originalDimensionValues.get(key)) {
-			localDimensionEdits.delete(key);
+		if (currentAvg === 0) {
+			// All dimensions are 0, set all to target
+			const targetStep = snapToStep(targetAvg);
+			cell.dimensions.forEach((_, idx) => {
+				dispatch('dimensionChange', { row, col, dimIndex: idx, value: targetStep });
+			});
 		} else {
-			localDimensionEdits.set(key, stepValue);
+			// Scale proportionally
+			const scaleFactor = targetAvg / currentAvg;
+			cell.dimensions.forEach((dim, idx) => {
+				const newValue = snapToStep(Math.min(100, Math.max(0, dim.value * scaleFactor)));
+				dispatch('dimensionChange', { row, col, dimIndex: idx, value: newValue });
+			});
 		}
+	}
 
-		// Trigger reactivity
-		localDimensionEdits = localDimensionEdits;
-
+	// Handle dimension bar click - cycle through steps or set directly
+	function handleDimensionBarClick(dimIndex: number, stepIndex: number) {
+		if (!selectedCell) return;
+		const stepValue = DIM_STEPS[stepIndex];
 		dispatch('dimensionChange', {
 			row: selectedCell.row,
 			col: selectedCell.col,
 			dimIndex,
 			value: stepValue
 		});
+	}
+
+	// Get dimension bar fill count (0, 1, 2, 3 segments to fill)
+	function getDimFillCount(value: number): number {
+		if (value <= 0) return 0;
+		if (value <= 25) return 1;
+		if (value <= 75) return 2;
+		return 3; // 100
 	}
 
 	function handleCellClick(row: number, col: number) {
@@ -145,11 +147,6 @@
 		selectedCell = { row, col };
 		showCellPopup = true;
 		dispatch('cellClick', { row, col });
-	}
-
-	function handleCellValueChange(row: number, col: number, value: number) {
-		const newValue = Math.max(0, Math.min(100, value));
-		dispatch('cellChange', { row, col, value: newValue });
 	}
 
 	function getCellColor(cell: CellData) {
@@ -321,27 +318,34 @@
 
 			<!-- Data cells -->
 			{#each row as cell, colIdx}
-				{#if shouldHideCell(cell)}
-					<!-- Hidden cell placeholder - preserves grid structure -->
-					<div class="matrix-cell-placeholder"></div>
-				{:else}
+				{@const cellAvg = calcCellValueFromDimensions(cell.dimensions)}
+				{@const filledCount = getFilledSegments(cellAvg)}
+				<div
+					class="matrix-cell {getCellColor(cell)}"
+					class:leverage-point={cell.isLeveragePoint}
+					class:selected={selectedCell?.row === rowIdx && selectedCell?.col === colIdx}
+				>
+					{#if cell.isLeveragePoint}
+						<span class="power-indicator" title="Power Spot">⚡</span>
+					{/if}
+					<!-- Top 50%: click to open dimensions popup -->
 					<button
-						class="matrix-cell {getCellColor(cell)}"
-						class:leverage-point={cell.isLeveragePoint}
-						class:selected={selectedCell?.row === rowIdx && selectedCell?.col === colIdx}
-						class:clickable-highlight={showPowerSpotsView && isPowerSpot(cell) || showRiskView && isRiskCell(cell)}
+						class="cell-top-area"
 						on:click={() => handleCellClick(rowIdx, colIdx)}
-					>
-						{#if cell.isLeveragePoint && !showRiskView}
-							<span class="power-indicator" title="Power Spot">⚡</span>
-						{/if}
-						{#if showRiskView && isRiskCell(cell)}
-							<span class="risk-indicator" title="High Risk">⚠</span>
-						{/if}
-						<span class="cell-value">{cell.value}</span>
-						<div class="confidence-bar" style="width: {cell.confidence * 100}%"></div>
-					</button>
-				{/if}
+						aria-label="Open dimensions"
+					></button>
+					<!-- Bottom 50%: 5-segment bar, clickable -->
+					<div class="cell-bar">
+						{#each Array(CELL_SEGMENTS) as _, segIdx}
+							<button
+								class="cell-bar-segment"
+								class:filled={segIdx < filledCount}
+								on:click={() => handleCellBarClick(rowIdx, colIdx, segIdx)}
+								aria-label="Set level {segIdx + 1}"
+							></button>
+						{/each}
+					</div>
+				</div>
 			{/each}
 		{/each}
 	</div>
@@ -364,80 +368,35 @@
 			</div>
 
 			<div class="popup-body">
-				<div class="value-control">
-					<label for="cell-value">Score</label>
-					<div class="value-input-group">
-						<button
-							class="value-btn"
-							on:click={() => handleCellValueChange(selectedCell.row, selectedCell.col, matrixData[selectedCell.row][selectedCell.col].value - 5)}
-						>
-							-
-						</button>
-						<input
-							id="cell-value"
-							type="number"
-							min="0"
-							max="100"
-							value={matrixData[selectedCell.row][selectedCell.col].value}
-							on:input={(e) => handleCellValueChange(selectedCell.row, selectedCell.col, parseInt(e.currentTarget.value) || 0)}
-						/>
-						<button
-							class="value-btn"
-							on:click={() => handleCellValueChange(selectedCell.row, selectedCell.col, matrixData[selectedCell.row][selectedCell.col].value + 5)}
-						>
-							+
-						</button>
-					</div>
-				</div>
-
-				<div class="dimensions-section">
-					<h4>Dimensions</h4>
-					<div class="dimensions-grid">
-						{#each matrixData[selectedCell.row][selectedCell.col].dimensions as dim, dimIdx}
-							{@const currentValue = getDimensionValue(selectedCell.row, selectedCell.col, dimIdx)}
-							{@const currentStepIdx = getStepIndex(currentValue)}
-							<div class="dimension-item">
-								<span class="dim-name">{dim.name}</span>
-								<div class="level-bars">
-									{#each STEP_VALUES as stepValue, stepIdx}
-										<button
-											class="level-bar"
-											class:filled={currentStepIdx >= stepIdx}
-											class:active={currentStepIdx === stepIdx}
-											on:click={() => handleDimensionStepClick(dimIdx, stepValue)}
-											title={STEP_LABELS[stepIdx]}
-										>
-											<span class="bar-fill" style="width: {currentStepIdx >= stepIdx ? 100 : 0}%"></span>
-										</button>
-									{/each}
-								</div>
+				<!-- Dimensions as visual bars (no labels, no cell value) -->
+				<div class="dimensions-list">
+					{#each matrixData[selectedCell.row][selectedCell.col].dimensions as dim, dimIdx}
+						{@const fillCount = getDimFillCount(dim.value)}
+						<div class="dimension-row">
+							<span class="dim-name">{dim.name}</span>
+							<div class="dim-bar">
+								{#each DIM_STEPS as _, stepIdx}
+									<button
+										class="dim-bar-segment"
+										class:filled={stepIdx < fillCount}
+										on:click={() => handleDimensionBarClick(dimIdx, stepIdx)}
+									></button>
+								{/each}
 							</div>
-						{/each}
-					</div>
+						</div>
+					{/each}
 				</div>
 
 				{#if matrixData[selectedCell.row][selectedCell.col].isLeveragePoint}
 					<div class="power-spot-badge">
 						<span>⚡</span>
-						<span>Power Spot - High Impact Cell</span>
+						<span>Power Spot</span>
 					</div>
 				{/if}
 			</div>
 
 			<div class="popup-footer">
-				<Button variant="ghost" on:click={closeCellPopup} disabled={isSaving}>Close</Button>
-				<Button
-					variant={hasUnsavedChanges ? "primary" : "ghost"}
-					on:click={handleSave}
-					disabled={!hasUnsavedChanges || isSaving}
-				>
-					{#if isSaving}
-						<Spinner size="xs" />
-						<span style="margin-left: 0.5rem">Saving...</span>
-					{:else}
-						Save
-					{/if}
-				</Button>
+				<Button variant="ghost" on:click={closeCellPopup}>Close</Button>
 			</div>
 		</div>
 	</div>
@@ -681,19 +640,15 @@
 		position: relative;
 		display: flex;
 		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		padding: 0.375rem;
+		align-items: stretch;
+		justify-content: stretch;
+		padding: 0;
 		border-radius: 0.25rem;
 		border: none;
 		background: var(--color-field-depth);
-		cursor: pointer;
 		transition: all 0.1s ease;
 		min-height: 0;
-	}
-
-	.compact .matrix-cell {
-		padding: 0.25rem;
+		overflow: hidden;
 	}
 
 	.matrix-cell:hover {
@@ -721,27 +676,73 @@
 		background: rgba(220, 38, 38, 0.08);
 	}
 
-	/* Power spot highlight in power spots view */
-	.matrix-cell.cell-power-spot {
-		background: rgba(251, 191, 36, 0.15);
-		box-shadow: inset 0 0 0 2px rgba(251, 191, 36, 0.5);
-	}
-
-	/* Placeholder for hidden cells - preserves grid structure */
-	.matrix-cell-placeholder {
-		/* Empty placeholder - no visible content, just occupies grid space */
-		pointer-events: none;
-	}
-
-	/* Clickable highlight for relevant cells in filtered views */
-	.matrix-cell.clickable-highlight {
+	/* Top 50% - click to open dimensions popup */
+	.cell-top-area {
+		flex: 1;
+		background: transparent;
+		border: none;
 		cursor: pointer;
-		box-shadow: inset 0 0 0 2px var(--color-primary-400);
+		min-height: 50%;
 	}
 
-	.matrix-cell.clickable-highlight:hover {
-		transform: scale(1.02);
-		box-shadow: inset 0 0 0 2px var(--color-primary-500);
+	.cell-top-area:hover {
+		background: rgba(0, 0, 0, 0.05);
+	}
+
+	[data-theme='dark'] .cell-top-area:hover {
+		background: rgba(255, 255, 255, 0.05);
+	}
+
+	/* Bottom 50% - 5-segment bar */
+	.cell-bar {
+		display: flex;
+		gap: 2px;
+		padding: 0.25rem;
+		min-height: 50%;
+		align-items: stretch;
+	}
+
+	.compact .cell-bar {
+		padding: 0.125rem;
+		gap: 1px;
+	}
+
+	.cell-bar-segment {
+		flex: 1;
+		background: var(--color-veil-thin);
+		border: none;
+		border-radius: 2px;
+		cursor: pointer;
+		transition: all 0.1s ease;
+		min-height: 8px;
+	}
+
+	.cell-bar-segment:hover {
+		background: var(--color-primary-300);
+	}
+
+	.cell-bar-segment.filled {
+		background: var(--color-primary-500);
+	}
+
+	.cell-bar-segment.filled:hover {
+		background: var(--color-primary-600);
+	}
+
+	[data-theme='dark'] .cell-bar-segment {
+		background: rgba(255, 255, 255, 0.1);
+	}
+
+	[data-theme='dark'] .cell-bar-segment:hover {
+		background: var(--color-primary-400);
+	}
+
+	[data-theme='dark'] .cell-bar-segment.filled {
+		background: var(--color-primary-400);
+	}
+
+	[data-theme='dark'] .cell-bar-segment.filled:hover {
+		background: var(--color-primary-300);
 	}
 
 	.power-indicator {
@@ -757,55 +758,13 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		z-index: 1;
 	}
 
 	.compact .power-indicator {
 		width: 10px;
 		height: 10px;
 		font-size: 0.4375rem;
-	}
-
-	.risk-indicator {
-		position: absolute;
-		top: 2px;
-		right: 2px;
-		font-size: 0.5rem;
-		background: rgba(220, 38, 38, 0.9);
-		color: #ffffff;
-		width: 12px;
-		height: 12px;
-		border-radius: 50%;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-weight: 700;
-	}
-
-	.compact .risk-indicator {
-		width: 10px;
-		height: 10px;
-		font-size: 0.4375rem;
-	}
-
-	.cell-value {
-		font-size: 0.875rem;
-		font-weight: 600;
-		color: var(--color-text-source);
-	}
-
-	.compact .cell-value {
-		font-size: 0.75rem;
-	}
-
-	.confidence-bar {
-		position: absolute;
-		bottom: 0;
-		left: 0;
-		height: 2px;
-		background: var(--color-text-source);
-		border-radius: 0 0 0.25rem 0.25rem;
-		transition: width 0.2s ease;
-		opacity: 0.3;
 	}
 
 	/* Popup styles */
@@ -867,147 +826,69 @@
 		padding: 0.75rem 1rem;
 	}
 
-	.value-control {
-		margin-bottom: 0.75rem;
-	}
-
-	.value-control label {
-		display: block;
-		font-size: 0.875rem;
-		font-weight: 500;
-		color: var(--color-text-manifest);
-		margin-bottom: 0.5rem;
-	}
-
-	.value-input-group {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-	}
-
-	.value-btn {
-		width: 32px;
-		height: 32px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		background: var(--color-field-depth);
-		border: none;
-		border-radius: 0.5rem;
-		font-size: 1rem;
-		font-weight: 600;
-		color: var(--color-text-source);
-		cursor: pointer;
-		transition: all 0.15s ease;
-	}
-
-	.value-btn:hover {
-		background: var(--color-primary-50);
-		color: var(--color-primary-600);
-	}
-
-	[data-theme='dark'] .value-btn:hover {
-		background: rgba(15, 76, 117, 0.3);
-		color: var(--color-primary-400);
-	}
-
-	.value-input-group input {
-		flex: 1;
-		text-align: center;
-		padding: 0.5rem;
-		border: none;
-		border-radius: 0.5rem;
-		font-size: 1rem;
-		font-weight: 700;
-		color: var(--color-text-source);
-		background: var(--color-field-depth);
-		transition: all 0.15s ease;
-	}
-
-	.value-input-group input:focus {
-		outline: none;
-		background: var(--color-field-void);
-		box-shadow: var(--shadow-sm);
-	}
-
-	.dimensions-section h4 {
-		font-size: 0.8125rem;
-		font-weight: 500;
-		color: var(--color-text-manifest);
-		margin-bottom: 0.5rem;
-	}
-
-	.dimensions-grid {
+	/* Dimensions list in popup */
+	.dimensions-list {
 		display: flex;
 		flex-direction: column;
-		gap: 0.625rem;
+		gap: 0.75rem;
 	}
 
-	.dimension-item {
+	.dimension-row {
 		display: flex;
 		align-items: center;
-		justify-content: space-between;
-		gap: 0.75rem;
+		gap: 1rem;
 	}
 
 	.dim-name {
 		font-size: 0.8125rem;
-		font-weight: 700;
+		font-weight: 500;
 		color: var(--color-text-source);
 		flex: 1;
 		min-width: 0;
 	}
 
-	/* Horizontal level bars - 3 equally wide bars that fill with color */
-	.level-bars {
+	.dim-bar {
 		display: flex;
-		align-items: center;
 		gap: 4px;
 		flex-shrink: 0;
 	}
 
-	.level-bar {
-		position: relative;
+	.dim-bar-segment {
 		width: 28px;
-		height: 10px;
+		height: 16px;
 		background: var(--color-veil-thin);
-		border: 1px solid var(--color-veil-medium);
+		border: none;
 		border-radius: 3px;
 		cursor: pointer;
-		padding: 0;
-		overflow: hidden;
-		transition: all 0.15s ease;
+		transition: all 0.1s ease;
 	}
 
-	.bar-fill {
-		position: absolute;
-		top: 0;
-		left: 0;
-		height: 100%;
+	.dim-bar-segment:hover {
+		background: var(--color-primary-300);
+	}
+
+	.dim-bar-segment.filled {
 		background: var(--color-primary-500);
-		border-radius: 2px;
-		transition: width 0.15s ease;
 	}
 
-	/* Filled state - bars up to selected level */
-	.level-bar.filled {
-		border-color: var(--color-primary-400);
+	.dim-bar-segment.filled:hover {
+		background: var(--color-primary-600);
 	}
 
-	/* Active state - the currently selected level */
-	.level-bar.active {
-		border-color: var(--color-primary-600);
-		box-shadow: 0 0 0 1px var(--color-primary-300);
+	[data-theme='dark'] .dim-bar-segment {
+		background: rgba(255, 255, 255, 0.15);
 	}
 
-	/* Hover state */
-	.level-bar:hover {
-		border-color: var(--color-primary-400);
-		transform: scale(1.05);
-	}
-
-	.level-bar:hover .bar-fill {
+	[data-theme='dark'] .dim-bar-segment:hover {
 		background: var(--color-primary-400);
+	}
+
+	[data-theme='dark'] .dim-bar-segment.filled {
+		background: var(--color-primary-400);
+	}
+
+	[data-theme='dark'] .dim-bar-segment.filled:hover {
+		background: var(--color-primary-300);
 	}
 
 	.power-spot-badge {
