@@ -1,0 +1,256 @@
+GOAL DISCOVERY OOF REFERENCE
+=============================
+Condensed formula relationships for LLM goal classification.
+Backend computes these from the 25 core operators.
+
+═══════════════════════════════════════════════════════════════
+1. TRANSFORMATION MATRICES (7 matrices, 4 states each)
+═══════════════════════════════════════════════════════════════
+
+TRUTH MATRIX
+  Operators: W_witness, Psi_quality, Co_coherence, M_maya
+  States: Delusion(0-0.25) → Glimpse(0.25-0.5) → Clarity(0.5-0.75) → Revelation(0.75-1.0)
+  Formula: truth_state = W * Psi * Co * (1 - M)
+
+LOVE MATRIX
+  Operators: G_grace, At_attachment, S_surrender, F_fear
+  States: Contracted(0-0.25) → Opening(0.25-0.5) → Flowing(0.5-0.75) → Unconditional(0.75-1.0)
+  Formula: love_state = G * S * (1 - At) * (1 - F)
+
+POWER MATRIX
+  Operators: P_presence, R_resistance, E_ego, A_action
+  States: Powerless(0-0.25) → Emerging(0.25-0.5) → Embodied(0.5-0.75) → Sovereign(0.75-1.0)
+  Formula: power_state = P * A * (1 - R) * (1 - E)
+
+FREEDOM MATRIX
+  Operators: B_being, At_attachment, K_karma, L_liberation
+  States: Bound(0-0.25) → Loosening(0.25-0.5) → Releasing(0.5-0.75) → Liberated(0.75-1.0)
+  Formula: freedom_state = B * L * (1 - At) * (1 - K)
+
+CREATION MATRIX
+  Operators: I_intention, A_action, Co_coherence, R_resistance
+  States: Blocked(0-0.25) → Stirring(0.25-0.5) → Manifesting(0.5-0.75) → Effortless(0.75-1.0)
+  Formula: creation_state = I * A * Co * (1 - R)
+
+TIME MATRIX
+  Operators: P_presence, K_karma, T_time, Aw_awareness
+  States: Past-bound(0-0.25) → Transitioning(0.25-0.5) → Present(0.5-0.75) → Timeless(0.75-1.0)
+  Formula: time_state = P * Aw * (1 - K) * (1 - T)
+
+DEATH MATRIX
+  Operators: S_surrender, At_attachment, E_ego, L_liberation
+  States: Clinging(0-0.25) → Accepting(0.25-0.5) → Releasing(0.5-0.75) → Transcendent(0.75-1.0)
+  Formula: death_state = S * L * (1 - At) * (1 - E)
+
+═══════════════════════════════════════════════════════════════
+2. CASCADE CLEANLINESS (7 levels)
+═══════════════════════════════════════════════════════════════
+
+Level thresholds based on overall_cleanliness score:
+  L7 Liberation:    cleanliness >= 0.90
+  L6 Dharmic:       cleanliness >= 0.70
+  L5 Awakening:     cleanliness >= 0.50
+  L4 Seeking:       cleanliness >= 0.35
+  L3 Confusion:     cleanliness >= 0.20
+  L2 Suffering:     cleanliness >= 0.10
+  L1 Crisis:        cleanliness < 0.10
+
+Cleanliness Formula:
+  base_cleanliness = avg(positive_ops) - avg(negative_ops)
+  positive_ops: G_grace, S_surrender, P_presence, Co_coherence, W_witness, Aw_awareness
+  negative_ops: At_attachment, R_resistance, F_fear, E_ego, M_maya, K_karma
+  overall_cleanliness = base_cleanliness * flow_multiplier * grace_boost
+
+Flow multiplier: 1.0 + (0.3 * flow_score) where flow = P * Co * (1-R)
+Grace boost: 1.0 + (0.2 * G_grace) if G_grace > 0.7
+
+═══════════════════════════════════════════════════════════════
+3. DEATH ARCHITECTURE (D1-D7 triggers)
+═══════════════════════════════════════════════════════════════
+
+D1 Physical Identity Death
+  Trigger: At_attachment(body) > 0.8 AND S_surrender < 0.3
+  Release: body-image, physical-self-concept
+
+D2 Emotional Identity Death
+  Trigger: At_attachment(emotions) > 0.75 AND F_fear > 0.6
+  Release: emotional-patterns, reactive-self
+
+D3 Mental Identity Death
+  Trigger: M_maya > 0.7 AND E_ego(beliefs) > 0.7
+  Release: belief-systems, mental-constructs
+
+D4 Social Identity Death
+  Trigger: At_attachment(roles) > 0.8 AND R_resistance(change) > 0.6
+  Release: social-masks, role-identifications
+
+D5 Spiritual Identity Death
+  Trigger: At_attachment(spiritual-self) > 0.7 AND E_ego(seeker) > 0.6
+  Release: seeker-identity, spiritual-pride
+
+D6 Witness Identity Death
+  Trigger: At_attachment(witness) > 0.6 AND subtle separation present
+  Release: observer-identity, witness-position
+
+D7 Final Identity Death
+  Trigger: any remaining E_ego > 0.1 OR At_attachment > 0.1
+  Release: last-traces-of-separation, complete-dissolution
+
+Death Readiness Formula:
+  readiness = S_surrender * G_grace * (1 - F_fear) * (1 - R_resistance)
+  death_occurs_when: readiness > 0.8 AND trigger_conditions_met
+
+═══════════════════════════════════════════════════════════════
+4. BREAKTHROUGH DYNAMICS
+═══════════════════════════════════════════════════════════════
+
+Quantum Leap Probability:
+  purification = (1 - M_maya) * (1 - K_karma) * Psi_quality
+  catalyst = G_grace * Co_coherence * external_catalyst_factor
+  resistance = At_attachment * R_resistance * F_fear
+  grace_factor = G_grace^2 * S_surrender
+
+  breakthrough_probability = (purification * catalyst * grace_factor) / (1 + resistance)
+
+  Threshold: breakthrough_occurs_when probability > 0.7
+
+Breakthrough Amplifiers:
+  G_grace + Co_coherence → 1.5-2.5x multiplier
+  G_grace + S_surrender → 2.0-5.0x multiplier (highest leverage)
+  P_presence + Aw_awareness → 1.3-2.0x multiplier
+  W_witness + Psi_quality → 1.4-2.2x multiplier
+
+Breakthrough Blockers:
+  At_attachment > 0.75 → blocks all breakthroughs
+  F_fear > 0.8 → prevents quantum leaps
+  R_resistance > 0.7 AND E_ego > 0.7 → creates "spiritual ceiling"
+
+═══════════════════════════════════════════════════════════════
+5. DRIVE PROFILES (5 Sacred Drives)
+═══════════════════════════════════════════════════════════════
+
+LOVE DRIVE
+  Core: G_grace, At_attachment(inverse), S_surrender
+  Formula: love_drive = G * S * (1 - At) * (1 - F)
+  Expression: connection, compassion, devotion
+  Block: At_attachment > 0.7 converts love to need
+
+PEACE DRIVE
+  Core: P_presence, R_resistance(inverse), Co_coherence
+  Formula: peace_drive = P * Co * (1 - R) * (1 - F)
+  Expression: stillness, acceptance, equanimity
+  Block: R_resistance > 0.6 creates inner conflict
+
+BLISS DRIVE
+  Core: Aw_awareness, M_maya(inverse), B_being
+  Formula: bliss_drive = Aw * B * (1 - M) * (1 - At)
+  Expression: joy, ecstasy, fulfillment
+  Block: M_maya > 0.7 substitutes pleasure for bliss
+
+SATISFACTION DRIVE
+  Core: I_intention, A_action, Co_coherence, K_karma(inverse)
+  Formula: satisfaction_drive = I * A * Co * (1 - K)
+  Expression: purpose, accomplishment, meaning
+  Block: K_karma > 0.6 creates "never enough" pattern
+
+FREEDOM DRIVE
+  Core: L_liberation, At_attachment(inverse), E_ego(inverse)
+  Formula: freedom_drive = L * (1 - At) * (1 - E) * S
+  Expression: autonomy, spaciousness, unboundedness
+  Block: E_ego > 0.7 confuses freedom with control
+
+═══════════════════════════════════════════════════════════════
+6. UNITY METRICS
+═══════════════════════════════════════════════════════════════
+
+Unity Score (higher = more unified):
+  unity_positive = avg(G_grace, S_surrender, P_presence, W_witness, Aw_awareness, L_liberation)
+  unity_score = unity_positive * coherence_factor
+  coherence_factor = Co_coherence * (1 - internal_conflict)
+  internal_conflict = abs(positive_ops_variance)
+
+Separation Score (higher = more separated):
+  separation_negative = avg(At_attachment, E_ego, F_fear, R_resistance, M_maya)
+  separation_score = separation_negative * fragmentation_factor
+  fragmentation_factor = 1 + (At * E * 0.5)
+
+Net Unity Index:
+  net_unity = unity_score - separation_score
+  Range: -1.0 (total separation) to +1.0 (total unity)
+
+  Interpretation:
+    > 0.7  : Non-dual awareness stable
+    > 0.4  : Unity glimpses frequent
+    > 0.0  : Transitional/seeking
+    < 0.0  : Separation dominant
+    < -0.5 : Deep fragmentation
+
+═══════════════════════════════════════════════════════════════
+7. BOTTLENECK AND LEVERAGE PATTERNS
+═══════════════════════════════════════════════════════════════
+
+BOTTLENECK DETECTION THRESHOLDS:
+  Attachment bottleneck:    At_attachment > 0.75
+  Flow bottleneck:          flow_score < 0.25 (where flow = P * Co * (1-R))
+  Fear bottleneck:          F_fear > 0.70
+  Resistance bottleneck:    R_resistance > 0.70
+  Maya bottleneck:          M_maya > 0.75
+  Ego bottleneck:           E_ego > 0.70
+
+  Inverse pair imbalance:   |op1 - inverse_op| > 0.40
+    Examples: G_grace vs At_attachment, S_surrender vs R_resistance
+
+LEVERAGE POINT IDENTIFICATION:
+  High-leverage operator = low current value + high potential impact
+
+  Grace Leverage (highest):
+    G_grace < 0.4 AND potential_impact > 0.6
+    → Raising G creates 2-5x cascade effect
+
+  Surrender Leverage:
+    S_surrender < 0.4 AND At_attachment > 0.6
+    → Direct inverse relationship, high ROI
+
+  Presence Leverage:
+    P_presence < 0.5 AND R_resistance > 0.5
+    → Foundation for all other shifts
+
+LEVERAGE MULTIPLIERS:
+  G_grace + Co_coherence synergy:     1.5-2.5x
+  G_grace + S_surrender synergy:      2.0-5.0x (maximum leverage)
+  P_presence + Aw_awareness synergy:  1.3-2.0x
+  Breakthrough state active:          1.5-3.5x
+  Death transition active:            2.0-4.0x (temporary)
+
+INTERVENTION PRIORITY:
+  1. Address bottlenecks first (highest negative impact)
+  2. Activate leverage points (highest positive ROI)
+  3. Support natural cascade (let shifts propagate)
+  4. Grace always amplifies other interventions
+
+═══════════════════════════════════════════════════════════════
+QUICK REFERENCE: 25 CORE OPERATORS
+═══════════════════════════════════════════════════════════════
+
+POSITIVE (raise these):
+  G_grace, S_surrender, P_presence, Co_coherence, W_witness,
+  Aw_awareness, B_being, L_liberation, I_intention, A_action,
+  Psi_quality
+
+NEGATIVE (lower these):
+  At_attachment, R_resistance, F_fear, E_ego, M_maya, K_karma
+
+NEUTRAL (context-dependent):
+  T_time (transcend), D_death (embrace when ready)
+
+OPERATOR PAIRS (inverse relationships):
+  G_grace ↔ At_attachment
+  S_surrender ↔ R_resistance
+  P_presence ↔ F_fear (partially)
+  W_witness ↔ M_maya
+  L_liberation ↔ K_karma
+  Aw_awareness ↔ E_ego
+
+═══════════════════════════════════════════════════════════════
+END OF REFERENCE
+═══════════════════════════════════════════════════════════════
