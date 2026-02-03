@@ -19,6 +19,7 @@ from sse_starlette.sse import EventSourceResponse
 from database import get_db, User, ChatConversation, ChatMessage, ChatSummary, Session, AsyncSessionLocal
 from routers.auth import get_current_user, generate_id
 from utils import get_or_404, paginate, to_response, to_response_list, safe_json_loads, CamelModel
+from logging_config import api_logger
 
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
@@ -426,9 +427,11 @@ async def send_message(
                 conv.title = conversation_title
 
             # Save structured data (documents with matrices, paths) to conversation
+            api_logger.info(f"[CHAT SAVE] structured_data present: {structured_data is not None}")
             if structured_data:
                 # Documents array format - each document has its own matrix_data
                 documents = structured_data.get("documents", [])
+                api_logger.info(f"[CHAT SAVE] documents count: {len(documents)}")
                 # Only update if LLM generated new documents (not empty array for unchanged context)
                 if documents:
                     # Check if this is the FIRST full document (no existing docs) - generate 2 stubs
@@ -466,6 +469,7 @@ async def send_message(
 
                     conv.generated_documents = documents
                     flag_modified(conv, "generated_documents")
+                    api_logger.info(f"[CHAT SAVE] Set generated_documents with {len(documents)} docs for conv {conversation_id}")
                 if structured_data.get("paths"):
                     conv.generated_paths = structured_data["paths"]
                     flag_modified(conv, "generated_paths")
@@ -480,6 +484,7 @@ async def send_message(
                 flag_modified(conv, "question_answers")
 
             await save_db.commit()
+            api_logger.info(f"[CHAT SAVE] Committed changes for conv {conversation_id}")
 
     # Use ping interval to keep connection alive during long operations
     # Without pings, proxies/browsers may close the connection during long LLM responses
