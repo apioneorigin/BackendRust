@@ -337,26 +337,73 @@
 		});
 	}
 
-	function handleShowPowerSpotExplanation(e: CustomEvent<{ row: number; col: number; cell: any }>) {
+	// Explanation loading state
+	let explanationLoading = false;
+	let explanationData: any = null;
+
+	async function handleShowPowerSpotExplanation(e: CustomEvent<{ row: number; col: number; cell: any }>) {
 		explanationPopup = {
 			type: 'powerSpot',
 			row: e.detail.row,
 			col: e.detail.col,
 			cell: e.detail.cell
 		};
+		explanationData = null;
+		explanationLoading = true;
+
+		try {
+			const conversationId = $currentConversation?.id;
+			const docId = $activeDocumentId;
+			if (conversationId && docId) {
+				const response = await fetch(
+					`/api/matrix/${conversationId}/document/${docId}/cell/${e.detail.row}/${e.detail.col}/explain?explanation_type=leverage`,
+					{ method: 'GET', credentials: 'include' }
+				);
+				if (response.ok) {
+					const data = await response.json();
+					explanationData = data.explanation;
+				}
+			}
+		} catch (err) {
+			console.error('Failed to fetch leverage explanation:', err);
+		} finally {
+			explanationLoading = false;
+		}
 	}
 
-	function handleShowRiskExplanation(e: CustomEvent<{ row: number; col: number; cell: any }>) {
+	async function handleShowRiskExplanation(e: CustomEvent<{ row: number; col: number; cell: any }>) {
 		explanationPopup = {
 			type: 'risk',
 			row: e.detail.row,
 			col: e.detail.col,
 			cell: e.detail.cell
 		};
+		explanationData = null;
+		explanationLoading = true;
+
+		try {
+			const conversationId = $currentConversation?.id;
+			const docId = $activeDocumentId;
+			if (conversationId && docId) {
+				const response = await fetch(
+					`/api/matrix/${conversationId}/document/${docId}/cell/${e.detail.row}/${e.detail.col}/explain?explanation_type=risk`,
+					{ method: 'GET', credentials: 'include' }
+				);
+				if (response.ok) {
+					const data = await response.json();
+					explanationData = data.explanation;
+				}
+			}
+		} catch (err) {
+			console.error('Failed to fetch risk explanation:', err);
+		} finally {
+			explanationLoading = false;
+		}
 	}
 
 	function closeExplanationPopup() {
 		explanationPopup = null;
+		explanationData = null;
 	}
 
 	function closeToolbarPopup() {
@@ -700,58 +747,120 @@
 			</div>
 			<div class="popup-body">
 				<div class="cell-info">
-					<span class="cell-label">{$rowHeadersStore[explanationPopup.row]} × {$columnHeadersStore[explanationPopup.col]}</span>
+					<span class="cell-label">{explanationData?.cell_label || `${$rowHeadersStore[explanationPopup.row]} × ${$columnHeadersStore[explanationPopup.col]}`}</span>
 					<span class="cell-score">Score: {explanationPopup.cell.value}</span>
 				</div>
 
-				{#if explanationPopup.type === 'powerSpot'}
-					<div class="explanation-section">
-						<h4>Why is this a Power Spot?</h4>
-						<p>This cell has a high impact score (≥75), indicating it's a strategic leverage point where small changes can create cascading positive effects across your transformation matrix.</p>
-						<div class="impact-details">
-							<div class="impact-item">
-								<span class="impact-label">Impact Score</span>
-								<span class="impact-value high">{explanationPopup.cell.value}</span>
-							</div>
-							<div class="impact-item">
-								<span class="impact-label">Cascade Potential</span>
-								<span class="impact-value">High</span>
-							</div>
-						</div>
-						<h4>Recommended Actions</h4>
-						<ul class="action-list">
-							<li>Prioritize resources and attention to this intersection</li>
-							<li>Monitor changes here for ripple effects</li>
-							<li>Use as anchor point for transformation strategy</li>
-						</ul>
+				{#if explanationLoading}
+					<div class="loading-section">
+						<div class="loading-spinner"></div>
+						<p>Analyzing cell with AI...</p>
 					</div>
-				{:else}
-					<div class="explanation-section">
-						<h4>Risk Assessment</h4>
-						<p>This cell has been flagged as {explanationPopup.cell.riskLevel === 'high' ? 'high' : 'medium'} risk based on its current state and dependencies.</p>
-						<div class="impact-details">
-							<div class="impact-item">
-								<span class="impact-label">Risk Level</span>
-								<span class="impact-value {explanationPopup.cell.riskLevel}">{explanationPopup.cell.riskLevel === 'high' ? 'High' : 'Medium'}</span>
+				{:else if explanationData && !explanationData.message}
+					{#if explanationPopup.type === 'powerSpot'}
+						<div class="explanation-section">
+							<h4>Why is this a Power Spot?</h4>
+							<p>{explanationData.why_leverage || explanationData.description}</p>
+							<div class="impact-details">
+								<div class="impact-item">
+									<span class="impact-label">Impact Score</span>
+									<span class="impact-value high">{explanationData.impact_score || explanationPopup.cell.value}</span>
+								</div>
+								<div class="impact-item">
+									<span class="impact-label">Effort Score</span>
+									<span class="impact-value">{explanationData.effort_score || 'N/A'}</span>
+								</div>
+								<div class="impact-item">
+									<span class="impact-label">ROI Ratio</span>
+									<span class="impact-value high">{explanationData.roi_ratio ? explanationData.roi_ratio.toFixed(2) + 'x' : 'N/A'}</span>
+								</div>
 							</div>
-							<div class="impact-item">
-								<span class="impact-label">Current Score</span>
-								<span class="impact-value">{explanationPopup.cell.value}</span>
-							</div>
-						</div>
-						<h4>Risk Factors</h4>
-						<ul class="action-list">
-							{#if explanationPopup.cell.riskLevel === 'high'}
-								<li>Critical dependency on multiple factors</li>
-								<li>High sensitivity to external changes</li>
-								<li>Potential bottleneck in transformation flow</li>
-							{:else}
-								<li>Moderate sensitivity to changes</li>
-								<li>Some dependencies that need monitoring</li>
-								<li>May require attention if conditions shift</li>
+							{#if explanationData.cascade_effects?.length}
+								<h4>Cascade Effects</h4>
+								<ul class="action-list">
+									{#each explanationData.cascade_effects as effect}
+										<li>{effect}</li>
+									{/each}
+								</ul>
 							{/if}
-						</ul>
-					</div>
+							{#if explanationData.recommended_actions?.length}
+								<h4>Recommended Actions</h4>
+								<ul class="action-list">
+									{#each explanationData.recommended_actions as action}
+										<li>{action}</li>
+									{/each}
+								</ul>
+							{/if}
+						</div>
+					{:else}
+						<div class="explanation-section">
+							<h4>Risk Assessment</h4>
+							<p>{explanationData.description}</p>
+							<div class="impact-details">
+								<div class="impact-item">
+									<span class="impact-label">Risk Level</span>
+									<span class="impact-value {explanationData.risk_level}">{explanationData.risk_level === 'high' ? 'High' : 'Medium'}</span>
+								</div>
+								<div class="impact-item">
+									<span class="impact-label">Current Score</span>
+									<span class="impact-value">{explanationPopup.cell.value}</span>
+								</div>
+							</div>
+							{#if explanationData.risk_factors?.length}
+								<h4>Risk Factors</h4>
+								<ul class="action-list">
+									{#each explanationData.risk_factors as factor}
+										<li>{factor}</li>
+									{/each}
+								</ul>
+							{/if}
+							{#if explanationData.mitigation_strategies?.length}
+								<h4>Mitigation Strategies</h4>
+								<ul class="action-list">
+									{#each explanationData.mitigation_strategies as strategy}
+										<li>{strategy}</li>
+									{/each}
+								</ul>
+							{/if}
+							{#if explanationData.impact_if_ignored}
+								<h4>Impact if Ignored</h4>
+								<p class="warning-text">{explanationData.impact_if_ignored}</p>
+							{/if}
+						</div>
+					{/if}
+				{:else}
+					<!-- Fallback to static content if no API data -->
+					{#if explanationPopup.type === 'powerSpot'}
+						<div class="explanation-section">
+							<h4>Why is this a Power Spot?</h4>
+							<p>{explanationData?.message || 'This cell has a high impact score (≥75), indicating it\'s a strategic leverage point where small changes can create cascading positive effects.'}</p>
+							<div class="impact-details">
+								<div class="impact-item">
+									<span class="impact-label">Impact Score</span>
+									<span class="impact-value high">{explanationPopup.cell.value}</span>
+								</div>
+								<div class="impact-item">
+									<span class="impact-label">Cascade Potential</span>
+									<span class="impact-value">High</span>
+								</div>
+							</div>
+						</div>
+					{:else}
+						<div class="explanation-section">
+							<h4>Risk Assessment</h4>
+							<p>{explanationData?.message || `This cell has been flagged as ${explanationPopup.cell.riskLevel === 'high' ? 'high' : 'medium'} risk based on its current state.`}</p>
+							<div class="impact-details">
+								<div class="impact-item">
+									<span class="impact-label">Risk Level</span>
+									<span class="impact-value {explanationPopup.cell.riskLevel}">{explanationPopup.cell.riskLevel === 'high' ? 'High' : 'Medium'}</span>
+								</div>
+								<div class="impact-item">
+									<span class="impact-label">Current Score</span>
+									<span class="impact-value">{explanationPopup.cell.value}</span>
+								</div>
+							</div>
+						</div>
+					{/if}
 				{/if}
 			</div>
 		</div>
