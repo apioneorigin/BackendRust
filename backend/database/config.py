@@ -136,6 +136,75 @@ async def _run_sqlite_migrations(conn):
                 print(f"[Database] Migration warning: {e}")
 
 
+async def _migrate_articulated_insights():
+    """Migrate articulated_insights to ensure all required fields exist."""
+    from sqlalchemy import text
+    import json
+
+    async with AsyncSessionLocal() as session:
+        # Get all conversations with generated_documents
+        result = await session.execute(
+            text("SELECT id, generated_documents FROM chat_conversations WHERE generated_documents IS NOT NULL")
+        )
+        rows = result.fetchall()
+
+        migrated_count = 0
+        for row in rows:
+            conv_id, docs_json = row
+            if not docs_json:
+                continue
+
+            # Parse JSON (may be string or already parsed depending on driver)
+            docs = json.loads(docs_json) if isinstance(docs_json, str) else docs_json
+            if not isinstance(docs, list):
+                continue
+
+            modified = False
+            for doc in docs:
+                matrix_data = doc.get("matrix_data", {})
+
+                # Fix row_options
+                for opt in matrix_data.get("row_options", []):
+                    insight = opt.get("articulated_insight")
+                    if insight and isinstance(insight, dict):
+                        # Add missing required fields
+                        if "title" not in insight:
+                            insight["title"] = insight.get("the_mark_name", "Insight")
+                            modified = True
+                        if "the_truth_law" not in insight:
+                            insight["the_truth_law"] = insight.get("your_truth", "")[:100]
+                            modified = True
+                        if "your_truth_revelation" not in insight:
+                            insight["your_truth_revelation"] = insight.get("the_mark_identity", "")
+                            modified = True
+
+                # Fix column_options
+                for opt in matrix_data.get("column_options", []):
+                    insight = opt.get("articulated_insight")
+                    if insight and isinstance(insight, dict):
+                        if "title" not in insight:
+                            insight["title"] = insight.get("the_mark_name", "Insight")
+                            modified = True
+                        if "the_truth_law" not in insight:
+                            insight["the_truth_law"] = insight.get("your_truth", "")[:100]
+                            modified = True
+                        if "your_truth_revelation" not in insight:
+                            insight["your_truth_revelation"] = insight.get("the_mark_identity", "")
+                            modified = True
+
+            if modified:
+                # Update the conversation
+                await session.execute(
+                    text("UPDATE chat_conversations SET generated_documents = :docs WHERE id = :id"),
+                    {"docs": json.dumps(docs), "id": conv_id}
+                )
+                migrated_count += 1
+
+        if migrated_count > 0:
+            await session.commit()
+            print(f"[Database] Migrated articulated_insights in {migrated_count} conversations")
+
+
 async def init_db():
     """Initialize database tables and run migrations for SQLite."""
     async with engine.begin() as conn:
@@ -144,6 +213,9 @@ async def init_db():
         # For SQLite, run migrations to add missing columns
         if USE_SQLITE:
             await _run_sqlite_migrations(conn)
+
+    # Run data migrations
+    await _migrate_articulated_insights()
 
 
 async def close_db():
