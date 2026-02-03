@@ -70,6 +70,7 @@ class MessageResponse(CamelModel):
     input_tokens: Optional[int]
     output_tokens: Optional[int]
     total_tokens: Optional[int]
+    feedback: Optional[str]
     created_at: datetime
 
 
@@ -728,3 +729,41 @@ async def answer_question(
     await db.commit()
 
     return {"status": "success", "question_id": question_id, "selected_option": request.selected_option}
+
+
+class MessageFeedbackRequest(BaseModel):
+    feedback: Optional[str] = None  # 'up', 'down', or null to clear
+
+
+@router.patch("/conversations/{conversation_id}/messages/{message_id}/feedback")
+async def set_message_feedback(
+    conversation_id: str,
+    message_id: str,
+    request: MessageFeedbackRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Set or clear feedback (thumbs up/down) for a message."""
+    # Verify conversation access
+    await get_or_404(db, ChatConversation, conversation_id, user_id=current_user.id)
+
+    # Get the message
+    result = await db.execute(
+        select(ChatMessage).where(
+            ChatMessage.id == message_id,
+            ChatMessage.conversation_id == conversation_id
+        )
+    )
+    message = result.scalar_one_or_none()
+
+    if not message:
+        raise HTTPException(status_code=404, detail="Message not found")
+
+    # Validate feedback value
+    if request.feedback is not None and request.feedback not in ('up', 'down'):
+        raise HTTPException(status_code=400, detail="Feedback must be 'up', 'down', or null")
+
+    message.feedback = request.feedback
+    await db.commit()
+
+    return {"status": "success", "message_id": message_id, "feedback": request.feedback}
