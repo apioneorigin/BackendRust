@@ -2479,6 +2479,33 @@ Return ONLY valid JSON:
       }}
     }},
     ... (all 10 column options with articulated_insight)
+  ],
+  "leverage_points": [
+    {{
+      "cell_id": "R0C2",
+      "cell_label": "Row Name × Column Name",
+      "description": "Brief description of what this intersection represents",
+      "why_leverage": "Detailed explanation of why this is a strategic leverage point - where small changes create outsized positive impact",
+      "cascade_effects": ["Effect 1 on other cells", "Effect 2", "Effect 3"],
+      "recommended_actions": ["Action 1", "Action 2", "Action 3"],
+      "impact_score": 85,
+      "effort_score": 35,
+      "roi_ratio": 2.43
+    }},
+    ... (3-5 power spots with impact_score >= 75)
+  ],
+  "risk_analysis": [
+    {{
+      "cell_id": "R1C3",
+      "cell_label": "Row Name × Column Name",
+      "risk_level": "high",
+      "description": "Brief description of the risk",
+      "risk_factors": ["Factor 1", "Factor 2", "Factor 3"],
+      "mitigation_strategies": ["Strategy 1", "Strategy 2"],
+      "dependencies": ["Cell X depends on this", "Cell Y is affected"],
+      "impact_if_ignored": "What happens if this risk is not addressed"
+    }},
+    ... (3-6 medium or high risk points)
   ]
 }}
 
@@ -2489,6 +2516,8 @@ REQUIREMENTS:
 - ALL 20 row/column options MUST have articulated_insight with all 8 fields including title
 - Each insight title should be max 10 words and different from the row/column label
 - Each insight should be 160-250 words total across all fields
+- Generate 3-5 leverage_points for cells with impact_score >= 75 (power spots)
+- Generate 3-6 risk_analysis for cells that are bottlenecks, dependencies, or areas of concern
 - User should think: "I can't unsee this now" """
 
     try:
@@ -2526,14 +2555,19 @@ REQUIREMENTS:
             cells = result.get("cells", {})
             new_row_options = result.get("row_options", [])
             new_col_options = result.get("column_options", [])
+            leverage_points = result.get("leverage_points", [])
+            risk_analysis = result.get("risk_analysis", [])
 
             cell_count = len(cells)
             row_insight_count = sum(1 for r in new_row_options if r.get("articulated_insight"))
             col_insight_count = sum(1 for c in new_col_options if c.get("articulated_insight"))
+            leverage_count = len(leverage_points)
+            risk_count = len(risk_analysis)
 
             api_logger.info(
                 f"[DOC_POPULATE] Generated {cell_count} cells, "
-                f"{row_insight_count} row insights, {col_insight_count} col insights "
+                f"{row_insight_count} row insights, {col_insight_count} col insights, "
+                f"{leverage_count} leverage points, {risk_count} risk points "
                 f"for document '{document_stub.get('name')}'"
             )
 
@@ -2543,11 +2577,17 @@ REQUIREMENTS:
                 api_logger.warning(f"[DOC_POPULATE] Only got {row_insight_count} row insights, expected 10")
             if col_insight_count < 10:
                 api_logger.warning(f"[DOC_POPULATE] Only got {col_insight_count} col insights, expected 10")
+            if leverage_count < 3:
+                api_logger.warning(f"[DOC_POPULATE] Only got {leverage_count} leverage points, expected 3-5")
+            if risk_count < 3:
+                api_logger.warning(f"[DOC_POPULATE] Only got {risk_count} risk points, expected 3-6")
 
             return {
                 "cells": cells,
                 "row_options": new_row_options,
-                "column_options": new_col_options
+                "column_options": new_col_options,
+                "leverage_points": leverage_points,
+                "risk_analysis": risk_analysis
             }
 
     except json.JSONDecodeError as e:

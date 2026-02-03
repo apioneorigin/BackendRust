@@ -2,11 +2,12 @@
 	/**
 	 * MatrixPanel - Embeddable 5x5 transformation matrix
 	 *
-	 * NEW ARCHITECTURE:
+	 * ARCHITECTURE:
 	 * - Shows document tabs at top (each with its own matrix)
-	 * - No "+" button here (only in ContextControlPopup)
 	 * - Displays matrix from currently active document
-	 * - Each cell has 5 contextual dimensions with 5-step button selectors
+	 * - Each cell has 5 contextual dimensions with 3-step signal bar selectors
+	 * - Power Spots View: dims non-leverage cells, clicking shows explanation
+	 * - Risk View: dims low-risk cells, clicking shows explanation
 	 */
 
 	import { createEventDispatcher } from 'svelte';
@@ -17,7 +18,8 @@
 	export let matrixData: CellData[][] = [];
 	export let rowHeaders: string[] = ['Dimension 1', 'Dimension 2', 'Dimension 3', 'Dimension 4', 'Dimension 5'];
 	export let columnHeaders: string[] = ['Stage 1', 'Stage 2', 'Stage 3', 'Stage 4', 'Stage 5'];
-	export let showRiskHeatmap = false;
+	export let showPowerSpotsView = false;
+	export let showRiskView = false;
 	export let compact = false;
 	export let showDocumentTabs = true;
 
@@ -26,6 +28,8 @@
 		cellChange: { row: number; col: number; value: number };
 		dimensionChange: { row: number; col: number; dimIndex: number; value: number };
 		documentChange: { documentId: string };
+		showPowerSpotExplanation: { row: number; col: number; cell: CellData };
+		showRiskExplanation: { row: number; col: number; cell: CellData };
 	}>();
 
 	// The 3 discrete step values for dimensions: Low, Medium, High
@@ -41,6 +45,27 @@
 		return idx >= 0 ? idx : 1; // Default to Medium if value not found
 	}
 
+	// Check if cell is a power spot (value >= 75)
+	function isPowerSpot(cell: CellData): boolean {
+		return cell.value >= 75 || cell.isLeveragePoint === true;
+	}
+
+	// Check if cell is medium or high risk
+	function isRiskCell(cell: CellData): boolean {
+		return cell.riskLevel === 'medium' || cell.riskLevel === 'high';
+	}
+
+	// Check if cell should be dimmed based on active view
+	function shouldDimCell(cell: CellData): boolean {
+		if (showPowerSpotsView && !isPowerSpot(cell)) {
+			return true;
+		}
+		if (showRiskView && !isRiskCell(cell)) {
+			return true;
+		}
+		return false;
+	}
+
 	// Handle dimension step button click
 	function handleDimensionStepClick(dimIndex: number, stepValue: number) {
 		if (!selectedCell) return;
@@ -53,6 +78,25 @@
 	}
 
 	function handleCellClick(row: number, col: number) {
+		const cell = matrixData[row]?.[col];
+		if (!cell) return;
+
+		// In filtered views, clicking relevant cells shows explanation popup
+		if (showPowerSpotsView && isPowerSpot(cell)) {
+			dispatch('showPowerSpotExplanation', { row, col, cell });
+			return;
+		}
+		if (showRiskView && isRiskCell(cell)) {
+			dispatch('showRiskExplanation', { row, col, cell });
+			return;
+		}
+
+		// In filtered views, don't open normal popup for dimmed cells
+		if (shouldDimCell(cell)) {
+			return;
+		}
+
+		// Normal mode: open cell detail popup
 		selectedCell = { row, col };
 		showCellPopup = true;
 		dispatch('cellClick', { row, col });
@@ -64,13 +108,18 @@
 	}
 
 	function getCellColor(cell: CellData) {
-		if (showRiskHeatmap && cell.riskLevel) {
+		// In risk view, show risk colors for relevant cells
+		if (showRiskView && isRiskCell(cell)) {
 			const colors = {
-				low: 'cell-risk-low',
+				low: '',
 				medium: 'cell-risk-medium',
 				high: 'cell-risk-high'
 			};
-			return colors[cell.riskLevel];
+			return colors[cell.riskLevel || 'low'];
+		}
+		// In power spots view, highlight power spots
+		if (showPowerSpotsView && isPowerSpot(cell)) {
+			return 'cell-power-spot';
 		}
 		return '';
 	}
@@ -130,10 +179,17 @@
 					class="matrix-cell {getCellColor(cell)}"
 					class:leverage-point={cell.isLeveragePoint}
 					class:selected={selectedCell?.row === rowIdx && selectedCell?.col === colIdx}
+					class:dimmed={shouldDimCell(cell)}
+					class:clickable-highlight={showPowerSpotsView && isPowerSpot(cell) || showRiskView && isRiskCell(cell)}
 					on:click={() => handleCellClick(rowIdx, colIdx)}
 				>
-					{#if cell.isLeveragePoint}
+					{#if cell.isLeveragePoint && !showRiskView}
 						<span class="power-indicator" title="Power Spot">⚡</span>
+					{/if}
+					{#if showRiskView && isRiskCell(cell)}
+						<span class="risk-indicator" title={cell.riskLevel === 'high' ? 'High Risk' : 'Medium Risk'}>
+							{cell.riskLevel === 'high' ? '⚠' : '!'}
+						</span>
 					{/if}
 					<span class="cell-value">{cell.value}</span>
 					<div class="confidence-bar" style="width: {cell.confidence * 100}%"></div>
@@ -411,6 +467,33 @@
 		background: rgba(220, 38, 38, 0.08);
 	}
 
+	/* Power spot highlight in power spots view */
+	.matrix-cell.cell-power-spot {
+		background: rgba(251, 191, 36, 0.15);
+		box-shadow: inset 0 0 0 2px rgba(251, 191, 36, 0.5);
+	}
+
+	/* Dimmed cells in filtered views */
+	.matrix-cell.dimmed {
+		opacity: 0.25;
+		cursor: default;
+	}
+
+	.matrix-cell.dimmed:hover {
+		background: var(--color-field-depth);
+	}
+
+	/* Clickable highlight for relevant cells in filtered views */
+	.matrix-cell.clickable-highlight {
+		cursor: pointer;
+		box-shadow: inset 0 0 0 2px var(--color-primary-400);
+	}
+
+	.matrix-cell.clickable-highlight:hover {
+		transform: scale(1.02);
+		box-shadow: inset 0 0 0 2px var(--color-primary-500);
+	}
+
 	.power-indicator {
 		position: absolute;
 		top: 2px;
@@ -427,6 +510,28 @@
 	}
 
 	.compact .power-indicator {
+		width: 10px;
+		height: 10px;
+		font-size: 0.4375rem;
+	}
+
+	.risk-indicator {
+		position: absolute;
+		top: 2px;
+		right: 2px;
+		font-size: 0.5rem;
+		background: rgba(220, 38, 38, 0.9);
+		color: #ffffff;
+		width: 12px;
+		height: 12px;
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-weight: 700;
+	}
+
+	.compact .risk-indicator {
 		width: 10px;
 		height: 10px;
 		font-size: 0.4375rem;

@@ -1,11 +1,12 @@
 """
 Matrix data endpoints - backend lookups for generated documents/paths.
-No LLM calls - just retrieves data stored from LLM Call 2.
 
 Architecture: Each document has its own 10x10 matrix stored in generated_documents.
+Leverage points and risk analysis are generated during document population
+(populate_document_cells_llm) and cached per-document - no separate LLM calls needed.
 """
 
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -14,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database import get_db, User, ChatConversation, ChatMessage
 from routers.auth import get_current_user
 from utils import get_or_404
+from logging_config import api_logger
 
 router = APIRouter(prefix="/api/matrix", tags=["matrix"])
 
@@ -269,6 +271,14 @@ async def populate_document_cells(
     if result.get("column_options"):
         documents[doc_index]["matrix_data"]["column_options"] = result["column_options"]
 
+    # Store leverage points and risk analysis (generated with full context during population)
+    if result.get("leverage_points"):
+        documents[doc_index]["leverage_points"] = result["leverage_points"]
+        api_logger.info(f"[POPULATE] Stored {len(result['leverage_points'])} leverage points for doc {doc_id}")
+    if result.get("risk_analysis"):
+        documents[doc_index]["risk_analysis"] = result["risk_analysis"]
+        api_logger.info(f"[POPULATE] Stored {len(result['risk_analysis'])} risk points for doc {doc_id}")
+
     conversation.generated_documents = documents
 
     await db.commit()
@@ -339,3 +349,227 @@ async def update_document_selection(
         "selected_rows": request.selected_rows,
         "selected_columns": request.selected_columns
     }
+
+
+# ============================================================================
+# Leverage Points (Power Spots) and Risk Analysis Services
+# Data is generated during document population (populate_document_cells_llm)
+# and cached in the document. No separate LLM calls needed.
+# ============================================================================
+
+
+class LeveragePointExplanation(BaseModel):
+    """Explanation for why a cell is a power spot"""
+    cell_id: str
+    cell_label: str
+    description: str
+    why_leverage: str
+    cascade_effects: List[str]
+    recommended_actions: List[str]
+    impact_score: int
+    effort_score: int
+    roi_ratio: float
+
+
+class RiskExplanation(BaseModel):
+    """Explanation for why a cell is a risk point"""
+    cell_id: str
+    cell_label: str
+    risk_level: str
+    description: str
+    risk_factors: List[str]
+    mitigation_strategies: List[str]
+    dependencies: List[str]
+    impact_if_ignored: str
+
+
+class LeveragePointsResponse(BaseModel):
+    """Response from leverage points analysis"""
+    document_id: str
+    leverage_points: List[LeveragePointExplanation]
+    cached: bool
+
+
+class RiskAnalysisResponse(BaseModel):
+    """Response from risk analysis"""
+    document_id: str
+    risk_points: List[RiskExplanation]
+    cached: bool
+
+
+class CellExplanationResponse(BaseModel):
+    """Response for a single cell explanation"""
+    cell_id: str
+    explanation: Dict[str, Any]
+    cached: bool
+
+
+@router.get("/{conversation_id}/document/{doc_id}/leverage-points", response_model=LeveragePointsResponse)
+async def get_leverage_points(
+    conversation_id: str,
+    doc_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get leverage points (power spots) for a populated document.
+
+    Leverage points are generated during document population (populate_document_cells).
+    This endpoint returns cached data - populate the document first if not available.
+    """
+    conversation = await get_or_404(db, ChatConversation, conversation_id, user_id=current_user.id)
+
+    if not conversation.generated_documents:
+        raise HTTPException(status_code=400, detail="No documents exist")
+
+    # Find the document
+    doc = None
+    for d in conversation.generated_documents:
+        if d.get("id") == doc_id:
+            doc = d
+            break
+
+    if doc is None:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    # Return cached leverage points
+    cached_leverage = doc.get("leverage_points", [])
+    if not cached_leverage:
+        api_logger.info(f"[LEVERAGE] No leverage points for {doc_id} - document may not be fully populated")
+        return LeveragePointsResponse(
+            document_id=doc_id,
+            leverage_points=[],
+            cached=True
+        )
+
+    api_logger.info(f"[LEVERAGE] Returning {len(cached_leverage)} cached leverage points for {doc_id}")
+    return LeveragePointsResponse(
+        document_id=doc_id,
+        leverage_points=[LeveragePointExplanation(**lp) for lp in cached_leverage],
+        cached=True
+    )
+
+
+@router.get("/{conversation_id}/document/{doc_id}/risk-analysis", response_model=RiskAnalysisResponse)
+async def get_risk_analysis(
+    conversation_id: str,
+    doc_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get risk analysis for a populated document.
+
+    Risk analysis is generated during document population (populate_document_cells).
+    This endpoint returns cached data - populate the document first if not available.
+    """
+    conversation = await get_or_404(db, ChatConversation, conversation_id, user_id=current_user.id)
+
+    if not conversation.generated_documents:
+        raise HTTPException(status_code=400, detail="No documents exist")
+
+    # Find the document
+    doc = None
+    for d in conversation.generated_documents:
+        if d.get("id") == doc_id:
+            doc = d
+            break
+
+    if doc is None:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    # Return cached risk analysis
+    cached_risk = doc.get("risk_analysis", [])
+    if not cached_risk:
+        api_logger.info(f"[RISK] No risk analysis for {doc_id} - document may not be fully populated")
+        return RiskAnalysisResponse(
+            document_id=doc_id,
+            risk_points=[],
+            cached=True
+        )
+
+    api_logger.info(f"[RISK] Returning {len(cached_risk)} cached risk points for {doc_id}")
+    return RiskAnalysisResponse(
+        document_id=doc_id,
+        risk_points=[RiskExplanation(**rp) for rp in cached_risk],
+        cached=True
+    )
+
+
+@router.get("/{conversation_id}/document/{doc_id}/cell/{row}/{col}/explain")
+async def explain_cell(
+    conversation_id: str,
+    doc_id: str,
+    row: int,
+    col: int,
+    explanation_type: str = "leverage",  # "leverage" or "risk"
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get explanation for a specific cell (leverage or risk).
+
+    Returns cached analysis from document population.
+    """
+    conversation = await get_or_404(db, ChatConversation, conversation_id, user_id=current_user.id)
+
+    if not conversation.generated_documents:
+        raise HTTPException(status_code=400, detail="No documents exist")
+
+    # Find the document
+    doc = None
+    for d in conversation.generated_documents:
+        if d.get("id") == doc_id:
+            doc = d
+            break
+
+    if doc is None:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    # Get selected indices to map row/col to actual cell ID
+    matrix_data = doc.get("matrix_data", {})
+    selected_rows = matrix_data.get("selected_rows", list(range(5)))
+    selected_cols = matrix_data.get("selected_columns", list(range(5)))
+
+    if row >= len(selected_rows) or col >= len(selected_cols):
+        raise HTTPException(status_code=400, detail="Invalid row/col index")
+
+    actual_row = selected_rows[row]
+    actual_col = selected_cols[col]
+    cell_id = f"R{actual_row}C{actual_col}"
+
+    # Check cached analysis
+    if explanation_type == "leverage":
+        cached = doc.get("leverage_points", [])
+        for lp in cached:
+            if lp.get("cell_id") == cell_id:
+                return CellExplanationResponse(
+                    cell_id=cell_id,
+                    explanation=lp,
+                    cached=True
+                )
+    else:  # risk
+        cached = doc.get("risk_analysis", [])
+        for rp in cached:
+            if rp.get("cell_id") == cell_id:
+                return CellExplanationResponse(
+                    cell_id=cell_id,
+                    explanation=rp,
+                    cached=True
+                )
+
+    # Cell not found in analysis - return generic response
+    row_options = matrix_data.get("row_options", [])
+    col_options = matrix_data.get("column_options", [])
+    row_label = row_options[actual_row]["label"] if actual_row < len(row_options) else f"Row {actual_row}"
+    col_label = col_options[actual_col]["label"] if actual_col < len(col_options) else f"Col {actual_col}"
+
+    return CellExplanationResponse(
+        cell_id=cell_id,
+        explanation={
+            "cell_id": cell_id,
+            "cell_label": f"{row_label} × {col_label}",
+            "message": f"This cell was not identified as a {explanation_type} point in the analysis."
+        },
+        cached=False
+    )

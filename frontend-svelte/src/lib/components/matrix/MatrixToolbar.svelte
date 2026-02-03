@@ -1,34 +1,60 @@
 <script lang="ts">
 	/**
-	 * MatrixToolbar - Row of 5 popup trigger buttons
+	 * MatrixToolbar - Row of popup trigger buttons
 	 *
-	 * Buttons: Power Spots, Plays, Scenarios, Sensitivity, Risk
-	 * Each opens its own popup modal.
+	 * Buttons: Power Spots (view), Plays, Scenarios, Risk (view), Save
+	 * Power Spots and Risk are filtered views that dim non-relevant cells.
 	 */
 
 	import { createEventDispatcher } from 'svelte';
 
-	export let showRiskHeatmap = false;
+	export let showPowerSpotsView = false;
+	export let showRiskView = false;
 	export let disabled = false;
 
 	const dispatch = createEventDispatcher<{
-		openPopup: { type: 'powerSpots' | 'plays' | 'scenarios' | 'sensitivity' | 'risk' };
+		openPopup: { type: 'plays' | 'scenarios' };
+		togglePowerSpots: { enabled: boolean };
 		toggleRisk: { enabled: boolean };
+		saveScenario: void;
 	}>();
 
-	function handleOpenPopup(type: 'powerSpots' | 'plays' | 'scenarios' | 'sensitivity' | 'risk') {
+	function handleOpenPopup(type: 'plays' | 'scenarios') {
 		if (disabled) return;
 		dispatch('openPopup', { type });
 	}
 
+	function handleTogglePowerSpots() {
+		if (disabled) return;
+		// Turn off risk view when enabling power spots
+		if (!showPowerSpotsView && showRiskView) {
+			dispatch('toggleRisk', { enabled: false });
+		}
+		dispatch('togglePowerSpots', { enabled: !showPowerSpotsView });
+	}
+
 	function handleToggleRisk() {
 		if (disabled) return;
-		dispatch('toggleRisk', { enabled: !showRiskHeatmap });
+		// Turn off power spots view when enabling risk
+		if (!showRiskView && showPowerSpotsView) {
+			dispatch('togglePowerSpots', { enabled: false });
+		}
+		dispatch('toggleRisk', { enabled: !showRiskView });
+	}
+
+	function handleSave() {
+		if (disabled) return;
+		dispatch('saveScenario');
 	}
 </script>
 
 <div class="matrix-toolbar" class:disabled>
-	<button class="toolbar-btn" on:click={() => handleOpenPopup('powerSpots')} title="Power Spots">
+	<button
+		class="toolbar-btn"
+		class:active={showPowerSpotsView}
+		on:click={handleTogglePowerSpots}
+		title="Power Spots View"
+	>
 		<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 			<path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>
 		</svg>
@@ -59,24 +85,9 @@
 		<span>Scenarios</span>
 	</button>
 
-	<button class="toolbar-btn" on:click={() => handleOpenPopup('sensitivity')} title="Sensitivity">
-		<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-			<path d="M12 20v-6"/>
-			<path d="M12 10V4"/>
-			<path d="M4 20v-4"/>
-			<path d="M4 12V4"/>
-			<path d="M20 20v-8"/>
-			<path d="M20 8V4"/>
-			<circle cx="12" cy="14" r="2"/>
-			<circle cx="4" cy="16" r="2"/>
-			<circle cx="20" cy="12" r="2"/>
-		</svg>
-		<span>Sensitivity</span>
-	</button>
-
 	<button
 		class="toolbar-btn"
-		class:active={showRiskHeatmap}
+		class:active={showRiskView}
 		on:click={handleToggleRisk}
 		title="Risk View"
 	>
@@ -86,6 +97,15 @@
 			<path d="M12 17h.01"/>
 		</svg>
 		<span>Risk</span>
+	</button>
+
+	<button class="toolbar-btn save-btn" on:click={handleSave} title="Save Scenario">
+		<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+			<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+			<polyline points="17 21 17 13 7 13 7 21"/>
+			<polyline points="7 3 7 8 15 8"/>
+		</svg>
+		<span>Save</span>
 	</button>
 </div>
 
