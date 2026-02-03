@@ -724,21 +724,6 @@ async def continue_inference(
     )
 
 
-def _should_ask_response_validation(
-    missing_operators: set
-) -> bool:
-    """
-    Determine if response validation question should be asked.
-
-    Ask if:
-    - Significant operators still missing (5+) that prevent higher-tier calculations
-
-    Returns:
-        True if validation question should be asked
-    """
-    return len(missing_operators) >= 5
-
-
 async def inference_stream_continue(
     session_id: str,
     prompt: str,
@@ -895,23 +880,9 @@ especially operators that were uncertain (low confidence) in the initial extract
 
         yield sse_status(f"Analysis complete: {len(bottlenecks)} bottlenecks, {len(leverage_points)} leverage points")
 
-        # Determine if question should be generated (validation logic - BEFORE Call 2)
-        session_data = api_session_store.get(session_id)
-        already_asked_question = session_data.get('_validation_asked') if session_data else False
-
-        extracted_operators = {}
-        for obs in evidence.get('observations', []):
-            if isinstance(obs, dict) and 'var' in obs and 'value' in obs:
-                canonical = SHORT_TO_CANONICAL.get(obs['var'])
-                if canonical in CANONICAL_OPERATOR_NAMES:
-                    extracted_operators[canonical] = obs['value']
-
-        remaining_missing = CANONICAL_OPERATOR_NAMES - set(extracted_operators.keys())
-        should_include_question = (
-            not already_asked_question
-            and _should_ask_response_validation(missing_operators=remaining_missing)
-        )
-        api_logger.info(f"[QUESTION DECISION] Missing operators: {len(remaining_missing)}, Already asked: {already_asked_question}, Include question: {should_include_question}")
+        # Always include exactly 1 mandatory question in every response
+        should_include_question = True
+        api_logger.info("[QUESTION] Including mandatory follow-up question in response")
 
         # Step 4: LLM Call 2 - Articulation via streaming bridge
         api_logger.info("[STEP 4] LLM Call 2 - Articulation (streaming bridge)")
@@ -960,13 +931,6 @@ especially operators that were uncertain (low confidence) in the initial extract
             "total_tokens": total_all,
             "cost": round(cost, 6),
         })
-
-        # Mark question as asked if it was included in Call 2
-        if should_include_question:
-            session_data = api_session_store.get(session_id)
-            if session_data:
-                session_data['_validation_asked'] = True
-                await api_session_store.update(session_id, session_data)
 
         # Cleanup
         await api_session_store.delete(session_id)
