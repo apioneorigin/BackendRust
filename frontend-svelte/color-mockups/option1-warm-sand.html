@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Option 1: Warm Sand</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --color-primary: #0F172A;
+      --color-field-void: #FBF9F3;
+      --color-field-depth: #F7F4EC;
+      --color-field-surface: #FFFFFF;
+      --color-text-primary: #0F172A;
+      --color-text-secondary: #475569;
+      --color-text-tertiary: #94A3B8;
+      --color-border: rgba(0, 0, 0, 0.08);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, system-ui, sans-serif;
+      background: var(--color-field-void);
+      color: var(--color-text-primary);
+      height: 100vh;
+      overflow: hidden;
+    }
+    .app {
+      display: flex;
+      height: 100vh;
+    }
+    .sidebar {
+      width: 280px;
+      background: var(--color-field-surface);
+      border-right: 1px solid var(--color-border);
+      display: flex;
+      flex-direction: column;
+      padding: 16px;
+    }
+    .logo {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--color-primary);
+      padding: 12px 0 24px;
+    }
+    .new-chat-btn {
+      background: var(--color-primary);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      margin-bottom: 16px;
+    }
+    .conversations {
+      flex: 1;
+      overflow-y: auto;
+    }
+    .conv-item {
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 4px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .conv-item:hover {
+      background: var(--color-field-depth);
+    }
+    .conv-item.active {
+      background: rgba(15, 23, 42, 0.06);
+    }
+    .conv-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--color-text-primary);
+      margin-bottom: 4px;
+    }
+    .conv-date {
+      font-size: 12px;
+      color: var(--color-text-tertiary);
+    }
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--color-field-void);
+    }
+    .chat-area {
+      flex: 1;
+      padding: 32px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    .message {
+      max-width: 720px;
+    }
+    .message.user {
+      align-self: flex-end;
+    }
+    .message-bubble {
+      padding: 16px 20px;
+      border-radius: 16px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .message.user .message-bubble {
+      background: var(--color-primary);
+      color: white;
+      border-radius: 16px 16px 4px 16px;
+    }
+    .message.assistant .message-bubble {
+      background: var(--color-field-surface);
+      border: 1px solid var(--color-border);
+      color: var(--color-text-primary);
+    }
+    .input-area {
+      padding: 24px 32px;
+      background: var(--color-field-depth);
+      border-top: 1px solid var(--color-border);
+    }
+    .input-container {
+      background: var(--color-field-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .input-field {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-size: 14px;
+      background: transparent;
+      color: var(--color-text-primary);
+    }
+    .input-field::placeholder {
+      color: var(--color-text-tertiary);
+    }
+    .send-btn {
+      background: var(--color-primary);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .panel {
+      width: 320px;
+      background: var(--color-field-surface);
+      border-left: 1px solid var(--color-border);
+      padding: 24px;
+    }
+    .panel-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--color-text-primary);
+      margin-bottom: 16px;
+    }
+    .card {
+      background: var(--color-field-void);
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+    .card-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--color-text-primary);
+      margin-bottom: 8px;
+    }
+    .card-text {
+      font-size: 12px;
+      color: var(--color-text-secondary);
+      line-height: 1.5;
+    }
+    .badge {
+      display: inline-block;
+      background: rgba(15, 23, 42, 0.08);
+      color: var(--color-primary);
+      font-size: 11px;
+      font-weight: 500;
+      padding: 4px 8px;
+      border-radius: 4px;
+      margin-top: 8px;
+    }
+    .color-label {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: var(--color-primary);
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="logo">Reality Transformer</div>
+      <button class="new-chat-btn">+ New Chat</button>
+      <div class="conversations">
+        <div class="conv-item active">
+          <div class="conv-title">Market expansion strategy</div>
+          <div class="conv-date">Today</div>
+        </div>
+        <div class="conv-item">
+          <div class="conv-title">Q4 financial analysis</div>
+          <div class="conv-date">Yesterday</div>
+        </div>
+        <div class="conv-item">
+          <div class="conv-title">Product roadmap planning</div>
+          <div class="conv-date">3 days ago</div>
+        </div>
+      </div>
+    </aside>
+    <main class="main">
+      <div class="chat-area">
+        <div class="message user">
+          <div class="message-bubble">Help me analyze our market expansion opportunities in Southeast Asia.</div>
+        </div>
+        <div class="message assistant">
+          <div class="message-bubble">I'll help you analyze market expansion opportunities in Southeast Asia. Based on your company profile and the current market dynamics, here are the key factors to consider:<br><br>1. <strong>Market Size & Growth</strong> - The region represents 680M+ consumers with rapidly growing middle class.<br><br>2. <strong>Entry Barriers</strong> - Regulatory requirements vary significantly by country.<br><br>3. <strong>Competition Landscape</strong> - Local players have strong presence but international brands are gaining traction.</div>
+        </div>
+      </div>
+      <div class="input-area">
+        <div class="input-container">
+          <input type="text" class="input-field" placeholder="What's on your mind?">
+          <button class="send-btn">Send</button>
+        </div>
+      </div>
+    </main>
+    <aside class="panel">
+      <div class="panel-title">Insights</div>
+      <div class="card">
+        <div class="card-title">Market Opportunity Score</div>
+        <div class="card-text">Southeast Asia shows 78% alignment with your expansion criteria based on market size, growth rate, and competitive dynamics.</div>
+        <span class="badge">High Potential</span>
+      </div>
+      <div class="card">
+        <div class="card-title">Risk Assessment</div>
+        <div class="card-text">Moderate regulatory complexity in Vietnam and Indonesia. Singapore offers lowest barrier to entry.</div>
+        <span class="badge">Medium Risk</span>
+      </div>
+    </aside>
+  </div>
+  <div class="color-label">Option 1: Warm Sand #FBF9F3</div>
+</body>
+</html>
