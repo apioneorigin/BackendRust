@@ -31,6 +31,19 @@ from .cache import (
     user_cache_key,
     session_cache_key,
 )
+from .framework_translation import (
+    translate_s_level_label,
+    translate_death_code,
+    translate_operator,
+    translate_operator_list,
+    translate_act_name,
+    S_LEVEL_DISPLAY,
+    D_PATTERN_DISPLAY,
+    OPERATOR_DISPLAY,
+    SECTION_HEADER_DISPLAY,
+    META_TERM_DISPLAY,
+    FIVE_ACTS_DISPLAY,
+)
 
 __all__ = [
     # Database utilities
@@ -57,4 +70,16 @@ __all__ = [
     "matrix_cache_key",
     "user_cache_key",
     "session_cache_key",
+    # Framework translation utilities
+    "translate_s_level_label",
+    "translate_death_code",
+    "translate_operator",
+    "translate_operator_list",
+    "translate_act_name",
+    "S_LEVEL_DISPLAY",
+    "D_PATTERN_DISPLAY",
+    "OPERATOR_DISPLAY",
+    "SECTION_HEADER_DISPLAY",
+    "META_TERM_DISPLAY",
+    "FIVE_ACTS_DISPLAY",
 ]

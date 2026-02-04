@@ -865,7 +865,6 @@ No high-multiplier opportunities currently active. Focus on clearing bottlenecks
         """Build generation instructions - FREEDOM-RESPECTING VERSION"""
         logger.debug(
             f"[_build_generation_instructions] style={instructions.articulation_style} "
-            f"concealment={instructions.framework_concealment} "
             f"priorities={instructions.insight_priorities}"
         )
         # Build concealment note
@@ -1274,7 +1273,6 @@ def build_articulation_context(
     consciousness_state: ConsciousnessState,
     web_research_summary: str = "",
     key_facts: Optional[List[str]] = None,
-    framework_concealment: bool = True,
     domain_language: bool = True,
     search_guidance_data: Optional[dict] = None,
     conversation_context: Optional[dict] = None,
@@ -1373,7 +1371,6 @@ def build_articulation_context(
         consciousness_state=consciousness_state,
         instructions=ArticulationInstructions(
             articulation_style="natural",
-            framework_concealment=framework_concealment,
             domain_language=domain_language,
             insight_priorities=[
                 "structural_gaps",

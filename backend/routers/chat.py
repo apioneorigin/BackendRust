@@ -20,6 +20,13 @@ from database import get_db, User, ChatConversation, ChatMessage, ChatSummary, S
 from routers.auth import get_current_user, generate_id
 from utils import get_or_404, paginate, to_response, to_response_list, safe_json_loads, CamelModel
 from logging_config import api_logger
+from security.guardrails import (
+    classify_zone,
+    get_crisis_response,
+    detect_locale_from_context,
+    get_ethical_preamble,
+    get_disclaimer,
+)
 
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
@@ -342,6 +349,57 @@ async def send_message(
     db.add(user_message)
     await db.commit()
 
+    # Sacred Guardrails: Zone classification before inference
+    zone_classification = classify_zone(request.content)
+    api_logger.info(
+        f"[GUARDRAILS] Zone={zone_classification.zone} "
+        f"reason={zone_classification.reason} "
+        f"flag={zone_classification.ethical_flag}"
+    )
+
+    # Zone A: Block - immediate return, no inference
+    if zone_classification.zone == "A":
+        async def blocked_response():
+            block_message = "I'm not able to help with that request."
+            # Save as assistant message
+            async with AsyncSessionLocal() as save_db:
+                assistant_message = ChatMessage(
+                    id=generate_id(),
+                    conversation_id=conversation_id,
+                    role="assistant",
+                    content=block_message,
+                    input_tokens=0,
+                    output_tokens=0,
+                    total_tokens=0,
+                )
+                save_db.add(assistant_message)
+                await save_db.commit()
+            yield {"event": "token", "data": json.dumps({"text": block_message})}
+            yield {"event": "done", "data": "{}"}
+        return EventSourceResponse(blocked_response())
+
+    # Zone B: Crisis - immediate return with resources, no inference
+    if zone_classification.zone == "B":
+        async def crisis_response():
+            locale = detect_locale_from_context()
+            crisis_message = get_crisis_response(locale)
+            # Save as assistant message
+            async with AsyncSessionLocal() as save_db:
+                assistant_message = ChatMessage(
+                    id=generate_id(),
+                    conversation_id=conversation_id,
+                    role="assistant",
+                    content=crisis_message,
+                    input_tokens=0,
+                    output_tokens=0,
+                    total_tokens=0,
+                )
+                save_db.add(assistant_message)
+                await save_db.commit()
+            yield {"event": "token", "data": json.dumps({"text": crisis_message})}
+            yield {"event": "done", "data": "{}"}
+        return EventSourceResponse(crisis_response())
+
     # Import the inference engine from main
     # This will be integrated with the existing consciousness engine
     from main import inference_stream, get_model_config
@@ -356,6 +414,13 @@ async def send_message(
         structured_data = None  # Capture matrix_data, paths, documents
         pending_questions = []  # Capture questions for persistence
         conversation_title = None  # Capture title from LLM Call 1
+
+        # Zone C: Inject ethical preamble before LLM response
+        if zone_classification.zone == "C":
+            preamble = get_ethical_preamble(zone_classification.ethical_flag)
+            if preamble:
+                full_response = preamble
+                yield {"event": "token", "data": json.dumps({"text": preamble})}
 
         async for event in inference_stream(
             request.content,
@@ -395,6 +460,16 @@ async def send_message(
                             "type": event_type,
                             "selected_option": None
                         })
+
+                # Zone D: Append disclaimer before "done" event
+                if event_type == "done" and zone_classification.zone == "D":
+                    disclaimer = get_disclaimer(
+                        ethical_flag=zone_classification.ethical_flag,
+                        user_input=request.content
+                    )
+                    if disclaimer:
+                        full_response += disclaimer
+                        yield {"event": "token", "data": json.dumps({"text": disclaimer})}
 
                 # Yield dict directly - EventSourceResponse handles formatting
                 yield {"event": event_type, "data": data}

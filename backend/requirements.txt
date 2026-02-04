@@ -19,3 +19,4 @@ jsonschema>=4.20.0
 redis>=5.0.0
 # Security
 cryptography>=42.0.0
+pyahocorasick>=2.0.0

@@ -84,6 +84,16 @@ from security.ai_security import (
     check_excessive_agency,
 )
 
+# Sacred Guardrails (requires pyahocorasick)
+from security.guardrails import (
+    classify_zone,
+    ZoneClassification,
+    get_crisis_response,
+    detect_locale_from_context,
+    get_ethical_preamble,
+    get_disclaimer,
+)
+
 # Middleware (requires FastAPI/Starlette - conditional import)
 try:
     from security.headers import SecurityHeadersMiddleware
@@ -145,6 +155,13 @@ __all__ = [
     "detect_bias",
     "moderate_content",
     "check_excessive_agency",
+    # Sacred Guardrails
+    "classify_zone",
+    "ZoneClassification",
+    "get_crisis_response",
+    "detect_locale_from_context",
+    "get_ethical_preamble",
+    "get_disclaimer",
     # Middleware (when available)
     "SecurityHeadersMiddleware",
     "UnifiedSecurityMiddleware",

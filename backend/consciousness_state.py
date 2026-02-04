@@ -814,7 +814,6 @@ class WebResearch:
 class ArticulationInstructions:
     """Instructions for Call 2 articulation"""
     articulation_style: str = "natural"
-    framework_concealment: bool = True
     domain_language: bool = True
     insight_priorities: List[str] = field(default_factory=list)
 
