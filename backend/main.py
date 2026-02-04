@@ -61,7 +61,7 @@ import time
 from pathlib import Path
 from typing import Optional, AsyncGenerator, Dict, Any, Tuple, List
 
-from fastapi import FastAPI, Query, HTTPException
+from fastapi import FastAPI, Query, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, FileResponse
 from sse_starlette.sse import EventSourceResponse
