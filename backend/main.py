@@ -2228,41 +2228,35 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
     raise RuntimeError(f"parse_query_with_web_research failed after {STREAMING_MAX_RETRIES + 1} attempts: {last_error}")
 
 
-# Hardcoded model for additional document generation
-DOCUMENT_GENERATION_MODEL = "gpt-5.2"
-DOCUMENT_GENERATION_ENDPOINT = "https://api.openai.com/v1/chat/completions"
-
-
-async def generate_additional_documents_llm(
+async def generate_document_previews_llm(
     context_messages: List[dict],
     existing_document_names: List[str],
     start_doc_id: int,
+    model_config: dict,
     count: int = 3
 ) -> Optional[List[dict]]:
     """
-    Generate document STUBS using hardcoded gpt-5.2 model.
+    Generate document preview STUBS using user-selected model.
 
     Each stub includes:
     - name: Creative, contextual name
-    - description: ~20 word description
-    - matrix_data: 10 row labels, 10 column labels (NO cells - user generates those separately)
+    - matrix_data: 10 row labels with insight_title, 10 column labels with insight_title
+    - selected_rows/columns: Which 5 to display
 
     Args:
         context_messages: Recent conversation messages for context
         existing_document_names: Names of existing documents to avoid duplication
         start_doc_id: Starting ID for new documents (e.g., 1 if 1 doc exists)
+        model_config: Model configuration from user selection
         count: Number of document stubs to generate (default 3)
 
     Returns:
         List of document stub dicts, or None on failure
     """
-    import os
-
-    # Use OpenAI API key for document generation
-    api_key = os.environ.get("OPENAI_API_KEY")
-    if not api_key:
-        api_logger.error("[DOC_GEN] No OPENAI_API_KEY found for document generation")
-        return None
+    provider = model_config.get("provider")
+    api_key = model_config.get("api_key")
+    model = model_config.get("model")
+    endpoint = model_config.get("endpoint")
 
     # Build context summary from messages
     context_summary = ""
@@ -2292,8 +2286,9 @@ EXISTING DOCUMENTS (avoid similar names): {existing_names_str}
 
 Generate {count} document stubs, each with:
 1. A unique, creative name (different from existing)
-2. A 20-word description explaining its purpose
-3. 10 row labels and 10 column labels (NO cells - those are generated separately)
+2. 10 row labels with insight_title for each
+3. 10 column labels with insight_title for each
+4. Recommend which 5 rows and 5 columns to display
 
 Each document should offer a DIFFERENT perspective:
 {perspectives_str}
@@ -2305,31 +2300,30 @@ Return ONLY valid JSON:
     {{
       "id": "doc-{start_doc_id}",
       "name": "Creative Document Name",
-      "description": "Twenty words explaining what this document represents and how it helps.",
       "matrix_data": {{
         "row_options": [
-          {{"id": "r0", "label": "Driver 1"}},
-          {{"id": "r1", "label": "Driver 2"}},
-          {{"id": "r2", "label": "Driver 3"}},
-          {{"id": "r3", "label": "Driver 4"}},
-          {{"id": "r4", "label": "Driver 5"}},
-          {{"id": "r5", "label": "Driver 6"}},
-          {{"id": "r6", "label": "Driver 7"}},
-          {{"id": "r7", "label": "Driver 8"}},
-          {{"id": "r8", "label": "Driver 9"}},
-          {{"id": "r9", "label": "Driver 10"}}
+          {{"id": "r0", "label": "Driver 1", "insight_title": "The Hidden Lanes of Flow"}},
+          {{"id": "r1", "label": "Driver 2", "insight_title": "Velocity Through Clarity"}},
+          {{"id": "r2", "label": "Driver 3", "insight_title": "The Permission Gap"}},
+          {{"id": "r3", "label": "Driver 4", "insight_title": "Reading the Current"}},
+          {{"id": "r4", "label": "Driver 5", "insight_title": "The Momentum Paradox"}},
+          {{"id": "r5", "label": "Driver 6", "insight_title": "Seeing Through Their Eyes"}},
+          {{"id": "r6", "label": "Driver 7", "insight_title": "The Invisible Architecture"}},
+          {{"id": "r7", "label": "Driver 8", "insight_title": "North Star Navigation"}},
+          {{"id": "r8", "label": "Driver 9", "insight_title": "Multiplier Moments"}},
+          {{"id": "r9", "label": "Driver 10", "insight_title": "Compound Trajectory"}}
         ],
         "column_options": [
-          {{"id": "c0", "label": "Outcome 1"}},
-          {{"id": "c1", "label": "Outcome 2"}},
-          {{"id": "c2", "label": "Outcome 3"}},
-          {{"id": "c3", "label": "Outcome 4"}},
-          {{"id": "c4", "label": "Outcome 5"}},
-          {{"id": "c5", "label": "Outcome 6"}},
-          {{"id": "c6", "label": "Outcome 7"}},
-          {{"id": "c7", "label": "Outcome 8"}},
-          {{"id": "c8", "label": "Outcome 9"}},
-          {{"id": "c9", "label": "Outcome 10"}}
+          {{"id": "c0", "label": "Outcome 1", "insight_title": "The Scaling Pattern"}},
+          {{"id": "c1", "label": "Outcome 2", "insight_title": "Hidden Fault Lines"}},
+          {{"id": "c2", "label": "Outcome 3", "insight_title": "Bandwidth Reality"}},
+          {{"id": "c3", "label": "Outcome 4", "insight_title": "Signal in Noise"}},
+          {{"id": "c4", "label": "Outcome 5", "insight_title": "Acceleration Windows"}},
+          {{"id": "c5", "label": "Outcome 6", "insight_title": "Value Perception Shift"}},
+          {{"id": "c6", "label": "Outcome 7", "insight_title": "Hidden Drag Forces"}},
+          {{"id": "c7", "label": "Outcome 8", "insight_title": "Alignment Geometry"}},
+          {{"id": "c8", "label": "Outcome 9", "insight_title": "Investment Leverage"}},
+          {{"id": "c9", "label": "Outcome 10", "insight_title": "Velocity Vectors"}}
         ],
         "selected_rows": [0, 1, 2, 3, 4],
         "selected_columns": [0, 1, 2, 3, 4]
@@ -2338,97 +2332,115 @@ Return ONLY valid JSON:
     {{
       "id": "doc-{start_doc_id + 1}",
       "name": "Second Document Name",
-      "description": "Twenty word description...",
-      "matrix_data": {{ ... same structure with row_options, column_options, selected_rows, selected_columns ... }}
+      "matrix_data": {{ ... same structure with row_options (with insight_title), column_options (with insight_title), selected_rows, selected_columns ... }}
     }},
     {{
       "id": "doc-{start_doc_id + 2}",
       "name": "Third Document Name",
-      "description": "Twenty word description...",
       "matrix_data": {{ ... same structure ... }}
     }}
   ]
 }}
 
 REQUIREMENTS:
-- Row/column labels: max 4 words each, contextual to user's situation
+- Row/column labels: max 3 words each, contextual to user's situation
+- Insight titles: max 10 words each, compelling phrase different from label
 - NO cells in this response - user generates those separately per document
 - Each document must have a unique perspective"""
 
     try:
         async with httpx.AsyncClient(timeout=300.0) as client:
-            headers = {
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json"
-            }
-            request_body = {
-                "model": DOCUMENT_GENERATION_MODEL,
-                "max_completion_tokens": 2048,  # Stubs only need ~250 tokens
-                "messages": [{"role": "user", "content": prompt_text}],
-                "response_format": {"type": "json_object"}
-            }
+            if provider == "anthropic":
+                headers = {
+                    "x-api-key": api_key,
+                    "anthropic-version": "2023-06-01",
+                    "Content-Type": "application/json"
+                }
+                request_body = {
+                    "model": model,
+                    "max_tokens": 4096,
+                    "messages": [{"role": "user", "content": prompt_text}]
+                }
+                response = await client.post(endpoint, headers=headers, json=request_body)
 
-            response = await client.post(
-                DOCUMENT_GENERATION_ENDPOINT,
-                headers=headers,
-                json=request_body
-            )
+                if response.status_code != 200:
+                    api_logger.error(f"[DOC_PREVIEW] Anthropic error: {response.status_code} - {response.text}")
+                    return None
 
-            if response.status_code != 200:
-                api_logger.error(f"[DOC_GEN] OpenAI error: {response.status_code} - {response.text}")
-                return None
+                data = response.json()
+                response_text = data.get("content", [{}])[0].get("text", "")
+                usage = data.get("usage", {})
+                api_logger.info(f"[DOC_PREVIEW] Tokens - Input: {usage.get('input_tokens')}, Output: {usage.get('output_tokens')}")
+            else:
+                # OpenAI-compatible
+                headers = {
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json"
+                }
+                request_body = {
+                    "model": model,
+                    "max_completion_tokens": 4096,
+                    "messages": [{"role": "user", "content": prompt_text}],
+                    "response_format": {"type": "json_object"}
+                }
+                response = await client.post(endpoint, headers=headers, json=request_body)
 
-            data = response.json()
-            response_text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                if response.status_code != 200:
+                    api_logger.error(f"[DOC_PREVIEW] OpenAI error: {response.status_code} - {response.text}")
+                    return None
 
-            # Extract token usage
-            usage = data.get("usage", {})
-            api_logger.info(f"[DOC_GEN] Tokens - Input: {usage.get('prompt_tokens')}, Output: {usage.get('completion_tokens')}")
+                data = response.json()
+                response_text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                usage = data.get("usage", {})
+                api_logger.info(f"[DOC_PREVIEW] Tokens - Input: {usage.get('prompt_tokens')}, Output: {usage.get('completion_tokens')}")
 
             # Parse JSON response
             result = json.loads(response_text)
             documents = result.get("documents", [])
 
             if len(documents) < count:
-                api_logger.warning(f"[DOC_GEN] Only got {len(documents)} documents, expected {count}")
+                api_logger.warning(f"[DOC_PREVIEW] Only got {len(documents)} documents, expected {count}")
 
-            api_logger.info(f"[DOC_GEN] Generated {len(documents)} documents: {[d.get('name') for d in documents]}")
+            api_logger.info(f"[DOC_PREVIEW] Generated {len(documents)} documents: {[d.get('name') for d in documents]}")
             return documents
 
     except json.JSONDecodeError as e:
-        api_logger.error(f"[DOC_GEN] JSON parse error: {e}")
+        api_logger.error(f"[DOC_PREVIEW] JSON parse error: {e}")
         return None
     except Exception as e:
-        api_logger.error(f"[DOC_GEN] Failed: {type(e).__name__}: {e}")
+        api_logger.error(f"[DOC_PREVIEW] Failed: {type(e).__name__}: {e}")
         return None
 
 
-async def populate_document_cells_llm(
+async def generate_matrix_data_llm(
     document_stub: dict,
-    context_messages: List[dict]
+    context_messages: List[dict],
+    model_config: dict
 ) -> Optional[dict]:
     """
-    Generate full cell data AND articulated insights for a document stub.
+    Generate matrix data for "Design Your Reality" button click.
 
-    Takes a document with rows/columns but no cells, and generates:
-    - 100 cells (10x10 matrix)
-    - Each cell has impact_score, relationship, and 5 dimensions
-    - Dimension values are 0, 50, or 100 (Low, Medium, High)
-    - 20 articulated insights (one per row/column option)
+    Generates:
+    - 100 cells (10x10 matrix) with impact_score, relationship, 5 dimensions
+    - 3-5 leverage points (powerspots)
+    - 3-6 risk analysis points
+    - 3-5 plays (transformation strategies)
+    - 5 presets (strategic paths)
+
+    Does NOT generate articulated insights - those are generated on-demand via generate_insights_batch_llm.
 
     Args:
-        document_stub: Document with id, name, description, row_options, column_options
+        document_stub: Document with id, name, row_options, column_options
         context_messages: Recent conversation messages for context
+        model_config: Model configuration from user selection
 
     Returns:
-        Dict with 'cells' and 'row_options'/'column_options' (with insights), or None on failure
+        Dict with 'cells', 'leverage_points', 'risk_analysis', 'plays', 'presets', or None on failure
     """
-    import os
-
-    api_key = os.environ.get("OPENAI_API_KEY")
-    if not api_key:
-        api_logger.error("[DOC_POPULATE] No OPENAI_API_KEY found")
-        return None
+    provider = model_config.get("provider")
+    api_key = model_config.get("api_key")
+    model = model_config.get("model")
+    endpoint = model_config.get("endpoint")
 
     # Build context summary
     context_summary = ""
@@ -2444,10 +2456,9 @@ async def populate_document_cells_llm(
     row_labels = [r.get("label", f"Row {i}") for i, r in enumerate(row_options)]
     col_labels = [c.get("label", f"Col {i}") for i, c in enumerate(col_options)]
 
-    prompt_text = f"""Generate cell data AND articulated insights for a 10x10 transformation matrix.
+    prompt_text = f"""Generate matrix data for a 10x10 transformation matrix.
 
 DOCUMENT: {document_stub.get("name", "Unknown")}
-DESCRIPTION: {document_stub.get("description", "")}
 
 CONVERSATION CONTEXT:
 {context_summary}
@@ -2457,7 +2468,10 @@ COLUMN LABELS (outcomes/effects): {', '.join(col_labels)}
 
 Generate:
 1. 100 cells for all combinations of rows (0-9) and columns (0-9)
-2. 20 articulated insights (one for each row and column option)
+2. 3-5 leverage points (power spots)
+3. 3-6 risk analysis points
+4. 3-5 plays (transformation strategies)
+5. 5 presets (strategic paths)
 
 === CELL REQUIREMENTS ===
 Each cell needs:
@@ -2475,25 +2489,6 @@ Each cell needs:
 4. RESOURCES - Assets/tools available
 5. INTEGRATION - How well row and column harmonize
 
-=== ARTICULATED INSIGHT REQUIREMENTS ===
-Each row_option and column_option must have an articulated_insight with 8 fields:
-
-**TITLE (max 10 words)**
-- title: A compelling phrase that captures the essence of this insight. NOT the same as the row/column label.
-
-**THE TRUTH (80-120 words)**
-- the_truth: Analogy from OUTSIDE user's domain (if business → use biology, music, architecture, cooking). Immersive present tense, sensory details. Captures the micro-moment where truth reveals.
-- the_truth_law: One-line universal law in **bold** (15-25 words)
-
-**YOUR TRUTH (50-80 words)**
-- your_truth: Opens with "I see you...", includes "never miss again" trigger, compressed causal chain
-- your_truth_revelation: Bold revelation - what's now visible
-
-**THE MARK (30-50 words)**
-- the_mark_name: Memorable concept name, 2-5 words (e.g., "The Permission Gap")
-- the_mark_prediction: Where they'll recognize this pattern
-- the_mark_identity: New capability in **bold**
-
 Return ONLY valid JSON:
 
 {{
@@ -2502,56 +2497,22 @@ Return ONLY valid JSON:
       "impact_score": 75,
       "relationship": "How {row_labels[0] if row_labels else 'row'} affects {col_labels[0] if col_labels else 'column'}",
       "dimensions": [
-        {{"name": "Contextual Clarity Name", "value": 50, "explanation": "Current understanding of this relationship is developing"}},
-        {{"name": "Contextual Capacity Name", "value": 100, "explanation": "Full capability to execute on this intersection"}},
-        {{"name": "Contextual Readiness Name", "value": 0, "explanation": "Not yet prepared to act on this"}},
-        {{"name": "Contextual Resources Name", "value": 50, "explanation": "Some assets available but gaps remain"}},
-        {{"name": "Contextual Integration Name", "value": 100, "explanation": "Row and column fully aligned here"}}
+        {{"name": "Contextual Clarity Name", "value": 50, "explanation": "Current understanding developing"}},
+        {{"name": "Contextual Capacity Name", "value": 100, "explanation": "Full capability here"}},
+        {{"name": "Contextual Readiness Name", "value": 0, "explanation": "Not yet prepared"}},
+        {{"name": "Contextual Resources Name", "value": 50, "explanation": "Some gaps remain"}},
+        {{"name": "Contextual Integration Name", "value": 100, "explanation": "Fully aligned"}}
       ]
     }},
     ... (all 100 cells from "0-0" to "9-9")
   }},
-  "row_options": [
-    {{
-      "id": "r0",
-      "label": "{row_labels[0] if row_labels else 'Row 0'}",
-      "articulated_insight": {{
-        "title": "Reading the Hidden Lanes of Resource Flow",
-        "the_truth": "A river guide stands at dawn...",
-        "the_truth_law": "**The pattern that looks like chaos to newcomers is infrastructure to those who've learned to read it.**",
-        "your_truth": "I see you navigating what others call turbulent...",
-        "your_truth_revelation": "**Your resource scarcity trained you to see flow patterns that abundance would have hidden.**",
-        "the_mark_name": "The Current Reader",
-        "the_mark_prediction": "You'll see this now in every resource conversation...",
-        "the_mark_identity": "**You read resource currents now, not just resource levels.**"
-      }}
-    }},
-    ... (all 10 row options with articulated_insight)
-  ],
-  "column_options": [
-    {{
-      "id": "c0",
-      "label": "{col_labels[0] if col_labels else 'Column 0'}",
-      "articulated_insight": {{
-        "title": "...",
-        "the_truth": "...",
-        "the_truth_law": "**...**",
-        "your_truth": "...",
-        "your_truth_revelation": "**...**",
-        "the_mark_name": "...",
-        "the_mark_prediction": "...",
-        "the_mark_identity": "**...**"
-      }}
-    }},
-    ... (all 10 column options with articulated_insight)
-  ],
   "leverage_points": [
     {{
       "cell_id": "R0C2",
       "cell_label": "Row Name × Column Name",
-      "description": "Brief description of what this intersection represents",
-      "why_leverage": "Detailed explanation of why this is a strategic leverage point - where small changes create outsized positive impact",
-      "cascade_effects": ["Effect 1 on other cells", "Effect 2", "Effect 3"],
+      "description": "Brief description",
+      "why_leverage": "Why this is a strategic leverage point",
+      "cascade_effects": ["Effect 1", "Effect 2", "Effect 3"],
       "recommended_actions": ["Action 1", "Action 2", "Action 3"],
       "impact_score": 85,
       "effort_score": 35,
@@ -2567,8 +2528,8 @@ Return ONLY valid JSON:
       "description": "Brief description of the risk",
       "risk_factors": ["Factor 1", "Factor 2", "Factor 3"],
       "mitigation_strategies": ["Strategy 1", "Strategy 2"],
-      "dependencies": ["Cell X depends on this", "Cell Y is affected"],
-      "impact_if_ignored": "What happens if this risk is not addressed"
+      "dependencies": ["Cell X depends on this"],
+      "impact_if_ignored": "What happens if not addressed"
     }},
     ... (3-6 medium or high risk points)
   ],
@@ -2576,58 +2537,28 @@ Return ONLY valid JSON:
     {{
       "id": "play-quick-wins",
       "name": "Quick Wins First",
-      "description": "Focus on highest-ROI leverage points for rapid, visible progress with minimal risk",
+      "description": "Focus on highest-ROI leverage points",
       "fit_score": 85,
       "risk": "low",
       "timeline": "4-6 weeks",
       "phases": 3,
-      "steps": [
-        "Start with highest-impact, lowest-effort cell",
-        "Implement quick changes to build momentum",
-        "Monitor cascade effects before proceeding"
-      ],
+      "steps": ["Step 1", "Step 2", "Step 3"],
       "leverage_point_ids": ["R0C2", "R1C4"],
       "expected_improvement": 20,
       "category": "quick_wins"
     }},
+    ... (3-5 plays covering quick_wins, balanced, deep_transform, conservative, aggressive)
+  ],
+  "presets": [
     {{
-      "id": "play-balanced",
-      "name": "Balanced Transformation",
-      "description": "Systematic approach addressing multiple leverage points with measured risk",
-      "fit_score": 75,
-      "risk": "medium",
-      "timeline": "2-3 months",
-      "phases": 4,
-      "steps": [
-        "Address foundational dependencies first",
-        "Target primary leverage points",
-        "Implement risk mitigations in parallel",
-        "Validate and iterate"
-      ],
-      "leverage_point_ids": ["R0C2", "R1C4", "R2C3"],
-      "expected_improvement": 40,
-      "category": "balanced"
+      "id": "p0",
+      "name": "Conservative Path",
+      "description": "Low-risk approach focusing on stability",
+      "risk_level": "low",
+      "time_horizon": "6-12 months",
+      "steps": [{{"order": 1, "action": "First step", "rationale": "Why"}}]
     }},
-    {{
-      "id": "play-deep",
-      "name": "Deep Transformation",
-      "description": "Comprehensive overhaul for maximum long-term impact",
-      "fit_score": 65,
-      "risk": "high",
-      "timeline": "4-6 months",
-      "phases": 6,
-      "steps": [
-        "Complete current state assessment",
-        "Address all identified risks",
-        "Transform all leverage points systematically",
-        "Rebuild dependencies",
-        "Optimize cascade effects",
-        "Establish new baseline"
-      ],
-      "leverage_point_ids": ["R0C2", "R1C4", "R2C3", "R3C1"],
-      "expected_improvement": 60,
-      "category": "deep_transform"
-    }}
+    ... (5 total presets with different risk/timeline profiles)
   ]
 }}
 
@@ -2635,97 +2566,280 @@ REQUIREMENTS:
 - Generate ALL 100 cells (0-0 through 9-9)
 - Dimension values MUST be 0, 50, or 100 only
 - Dimension names must be contextual to each specific cell
-- Each dimension MUST have an explanation (max 10 words) describing its state
-- ALL 20 row/column options MUST have articulated_insight with all 8 fields including title
-- Each insight title should be max 10 words and different from the row/column label
-- Each insight should be 160-250 words total across all fields
-- Generate 3-5 leverage_points for cells with impact_score >= 75 (power spots)
-- Generate 3-6 risk_analysis for cells that are bottlenecks, dependencies, or areas of concern
-- Generate 3-5 plays covering different risk/timeline profiles (quick_wins, balanced, deep_transform, conservative, aggressive)
-- Each play must reference actual leverage_point cell_ids from the generated leverage_points
-- User should think: "I can't unsee this now" """
+- Each dimension MUST have an explanation (max 10 words)
+- Generate 3-5 leverage_points for cells with impact_score >= 75
+- Generate 3-6 risk_analysis for bottlenecks/dependencies
+- Generate 3-5 plays covering different risk/timeline profiles
+- Generate 5 presets with steps
+- Each play must reference actual leverage_point cell_ids"""
 
     try:
         async with httpx.AsyncClient(timeout=300.0) as client:
-            headers = {
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json"
-            }
-            request_body = {
-                "model": DOCUMENT_GENERATION_MODEL,
-                "max_completion_tokens": 16384,  # Increased for 100 cells + 20 articulated insights
-                "messages": [{"role": "user", "content": prompt_text}],
-                "response_format": {"type": "json_object"}
-            }
+            if provider == "anthropic":
+                headers = {
+                    "x-api-key": api_key,
+                    "anthropic-version": "2023-06-01",
+                    "Content-Type": "application/json"
+                }
+                request_body = {
+                    "model": model,
+                    "max_tokens": 16384,
+                    "messages": [{"role": "user", "content": prompt_text}]
+                }
+                response = await client.post(endpoint, headers=headers, json=request_body)
 
-            response = await client.post(
-                DOCUMENT_GENERATION_ENDPOINT,
-                headers=headers,
-                json=request_body
-            )
+                if response.status_code != 200:
+                    api_logger.error(f"[MATRIX_GEN] Anthropic error: {response.status_code} - {response.text}")
+                    return None
 
-            if response.status_code != 200:
-                api_logger.error(f"[DOC_POPULATE] OpenAI error: {response.status_code} - {response.text}")
-                return None
+                data = response.json()
+                response_text = data.get("content", [{}])[0].get("text", "")
+                usage = data.get("usage", {})
+                api_logger.info(f"[MATRIX_GEN] Tokens - Input: {usage.get('input_tokens')}, Output: {usage.get('output_tokens')}")
+            else:
+                # OpenAI-compatible
+                headers = {
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json"
+                }
+                request_body = {
+                    "model": model,
+                    "max_completion_tokens": 16384,
+                    "messages": [{"role": "user", "content": prompt_text}],
+                    "response_format": {"type": "json_object"}
+                }
+                response = await client.post(endpoint, headers=headers, json=request_body)
 
-            data = response.json()
-            response_text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                if response.status_code != 200:
+                    api_logger.error(f"[MATRIX_GEN] OpenAI error: {response.status_code} - {response.text}")
+                    return None
 
-            # Extract token usage
-            usage = data.get("usage", {})
-            api_logger.info(f"[DOC_POPULATE] Tokens - Input: {usage.get('prompt_tokens')}, Output: {usage.get('completion_tokens')}")
+                data = response.json()
+                response_text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                usage = data.get("usage", {})
+                api_logger.info(f"[MATRIX_GEN] Tokens - Input: {usage.get('prompt_tokens')}, Output: {usage.get('completion_tokens')}")
 
             # Parse JSON response
             result = json.loads(response_text)
             cells = result.get("cells", {})
-            new_row_options = result.get("row_options", [])
-            new_col_options = result.get("column_options", [])
             leverage_points = result.get("leverage_points", [])
             risk_analysis = result.get("risk_analysis", [])
             plays = result.get("plays", [])
+            presets = result.get("presets", [])
 
             cell_count = len(cells)
-            row_insight_count = sum(1 for r in new_row_options if r.get("articulated_insight"))
-            col_insight_count = sum(1 for c in new_col_options if c.get("articulated_insight"))
             leverage_count = len(leverage_points)
             risk_count = len(risk_analysis)
             plays_count = len(plays)
+            presets_count = len(presets)
 
             api_logger.info(
-                f"[DOC_POPULATE] Generated {cell_count} cells, "
-                f"{row_insight_count} row insights, {col_insight_count} col insights, "
+                f"[MATRIX_GEN] Generated {cell_count} cells, "
                 f"{leverage_count} leverage points, {risk_count} risk points, "
-                f"{plays_count} plays "
+                f"{plays_count} plays, {presets_count} presets "
                 f"for document '{document_stub.get('name')}'"
             )
 
             if cell_count < 100:
-                api_logger.warning(f"[DOC_POPULATE] Only got {cell_count} cells, expected 100")
-            if row_insight_count < 10:
-                api_logger.warning(f"[DOC_POPULATE] Only got {row_insight_count} row insights, expected 10")
-            if col_insight_count < 10:
-                api_logger.warning(f"[DOC_POPULATE] Only got {col_insight_count} col insights, expected 10")
+                api_logger.warning(f"[MATRIX_GEN] Only got {cell_count} cells, expected 100")
             if leverage_count < 3:
-                api_logger.warning(f"[DOC_POPULATE] Only got {leverage_count} leverage points, expected 3-5")
+                api_logger.warning(f"[MATRIX_GEN] Only got {leverage_count} leverage points, expected 3-5")
             if risk_count < 3:
-                api_logger.warning(f"[DOC_POPULATE] Only got {risk_count} risk points, expected 3-6")
+                api_logger.warning(f"[MATRIX_GEN] Only got {risk_count} risk points, expected 3-6")
             if plays_count < 3:
-                api_logger.warning(f"[DOC_POPULATE] Only got {plays_count} plays, expected 3-5")
+                api_logger.warning(f"[MATRIX_GEN] Only got {plays_count} plays, expected 3-5")
+            if presets_count < 5:
+                api_logger.warning(f"[MATRIX_GEN] Only got {presets_count} presets, expected 5")
 
             return {
                 "cells": cells,
-                "row_options": new_row_options,
-                "column_options": new_col_options,
                 "leverage_points": leverage_points,
                 "risk_analysis": risk_analysis,
-                "plays": plays
+                "plays": plays,
+                "presets": presets
             }
 
     except json.JSONDecodeError as e:
-        api_logger.error(f"[DOC_POPULATE] JSON parse error: {e}")
+        api_logger.error(f"[MATRIX_GEN] JSON parse error: {e}")
         return None
     except Exception as e:
-        api_logger.error(f"[DOC_POPULATE] Failed: {type(e).__name__}: {e}")
+        api_logger.error(f"[MATRIX_GEN] Failed: {type(e).__name__}: {e}")
+        return None
+
+
+async def generate_insights_batch_llm(
+    document: dict,
+    missing_indices: List[int],
+    context_messages: List[dict],
+    model_config: dict
+) -> Optional[dict]:
+    """
+    Generate all missing articulated insights for a document in a single call.
+
+    Called when user clicks on any insight title that hasn't been generated yet.
+    Generates ALL missing insights to maximize efficiency of input tokens.
+
+    Args:
+        document: Document with row_options and column_options
+        missing_indices: List of indices (0-19) for missing insights (0-9 = rows, 10-19 = columns)
+        context_messages: Recent conversation messages for context
+        model_config: Model configuration from user selection
+
+    Returns:
+        Dict with 'insights' mapping index to full ArticulatedInsight, or None on failure
+    """
+    provider = model_config.get("provider")
+    api_key = model_config.get("api_key")
+    model = model_config.get("model")
+    endpoint = model_config.get("endpoint")
+
+    # Build context summary
+    context_summary = ""
+    for msg in context_messages[-5:]:
+        role = msg.get("role", "user")
+        content = msg.get("content", "")[:500]
+        context_summary += f"{role.upper()}: {content}\n\n"
+
+    # Extract row and column info
+    matrix_data = document.get("matrix_data", {})
+    row_options = matrix_data.get("row_options", [])
+    col_options = matrix_data.get("column_options", [])
+
+    # Build list of insights to generate
+    insights_to_generate = []
+    for idx in missing_indices:
+        if idx < 10:
+            # Row insight
+            row = row_options[idx] if idx < len(row_options) else {}
+            insights_to_generate.append({
+                "index": idx,
+                "type": "row",
+                "label": row.get("label", f"Row {idx}"),
+                "title": row.get("insight_title", "")
+            })
+        else:
+            # Column insight
+            col_idx = idx - 10
+            col = col_options[col_idx] if col_idx < len(col_options) else {}
+            insights_to_generate.append({
+                "index": idx,
+                "type": "column",
+                "label": col.get("label", f"Column {col_idx}"),
+                "title": col.get("insight_title", "")
+            })
+
+    insights_list = "\n".join([
+        f"- Index {i['index']}: {i['type']} '{i['label']}' with title '{i['title']}'"
+        for i in insights_to_generate
+    ])
+
+    prompt_text = f"""Generate articulated insights for the following row/column options.
+
+DOCUMENT: {document.get("name", "Unknown")}
+
+CONVERSATION CONTEXT:
+{context_summary}
+
+INSIGHTS TO GENERATE:
+{insights_list}
+
+For each insight, generate the full 8-field ArticulatedInsight structure:
+
+**TITLE**: Use the provided title exactly
+**THE TRUTH (80-120 words)**: Analogy from OUTSIDE user's domain. Immersive present tense, sensory details.
+**THE TRUTH LAW**: One-line universal law in **bold** (15-25 words)
+**YOUR TRUTH (50-80 words)**: Opens with "I see you...", includes "never miss again" trigger
+**YOUR TRUTH REVELATION**: Bold revelation - what's now visible
+**THE MARK NAME**: Memorable concept name, 2-5 words
+**THE MARK PREDICTION**: Where they'll recognize this pattern
+**THE MARK IDENTITY**: New capability in **bold**
+
+Return ONLY valid JSON:
+
+{{
+  "insights": {{
+    "0": {{
+      "title": "The title provided",
+      "the_truth": "...",
+      "the_truth_law": "**...**",
+      "your_truth": "I see you...",
+      "your_truth_revelation": "**...**",
+      "the_mark_name": "...",
+      "the_mark_prediction": "...",
+      "the_mark_identity": "**...**"
+    }},
+    ... (one entry per missing index)
+  }}
+}}
+
+REQUIREMENTS:
+- Generate insights for ALL indices listed above
+- Each insight should be 160-250 words total across all fields
+- User should think: "I can't unsee this now"
+- Use the exact title provided for each insight"""
+
+    try:
+        async with httpx.AsyncClient(timeout=300.0) as client:
+            if provider == "anthropic":
+                headers = {
+                    "x-api-key": api_key,
+                    "anthropic-version": "2023-06-01",
+                    "Content-Type": "application/json"
+                }
+                request_body = {
+                    "model": model,
+                    "max_tokens": 8192,
+                    "messages": [{"role": "user", "content": prompt_text}]
+                }
+                response = await client.post(endpoint, headers=headers, json=request_body)
+
+                if response.status_code != 200:
+                    api_logger.error(f"[INSIGHT_GEN] Anthropic error: {response.status_code} - {response.text}")
+                    return None
+
+                data = response.json()
+                response_text = data.get("content", [{}])[0].get("text", "")
+                usage = data.get("usage", {})
+                api_logger.info(f"[INSIGHT_GEN] Tokens - Input: {usage.get('input_tokens')}, Output: {usage.get('output_tokens')}")
+            else:
+                # OpenAI-compatible
+                headers = {
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json"
+                }
+                request_body = {
+                    "model": model,
+                    "max_completion_tokens": 8192,
+                    "messages": [{"role": "user", "content": prompt_text}],
+                    "response_format": {"type": "json_object"}
+                }
+                response = await client.post(endpoint, headers=headers, json=request_body)
+
+                if response.status_code != 200:
+                    api_logger.error(f"[INSIGHT_GEN] OpenAI error: {response.status_code} - {response.text}")
+                    return None
+
+                data = response.json()
+                response_text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                usage = data.get("usage", {})
+                api_logger.info(f"[INSIGHT_GEN] Tokens - Input: {usage.get('prompt_tokens')}, Output: {usage.get('completion_tokens')}")
+
+            # Parse JSON response
+            result = json.loads(response_text)
+            insights = result.get("insights", {})
+
+            api_logger.info(f"[INSIGHT_GEN] Generated {len(insights)} insights for document '{document.get('name')}'")
+
+            if len(insights) < len(missing_indices):
+                api_logger.warning(f"[INSIGHT_GEN] Only got {len(insights)} insights, expected {len(missing_indices)}")
+
+            return {"insights": insights}
+
+    except json.JSONDecodeError as e:
+        api_logger.error(f"[INSIGHT_GEN] JSON parse error: {e}")
+        return None
+    except Exception as e:
+        api_logger.error(f"[INSIGHT_GEN] Failed: {type(e).__name__}: {e}")
         return None
 
 

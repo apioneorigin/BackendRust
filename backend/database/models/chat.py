@@ -39,8 +39,8 @@ class ChatConversation(Base):
     # REMOVED: matrix_data column - now using generated_documents instead
     # Each document in generated_documents has its own matrix_data
 
-    # Generated strategic paths (5 paths from LLM Call 2)
-    generated_paths: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+    # Generated strategic presets (5 presets from LLM Call 2)
+    generated_presets: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
 
     # Generated documents (array of document objects from LLM Call 2)
     generated_documents: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)

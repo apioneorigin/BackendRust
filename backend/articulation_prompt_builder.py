@@ -1000,7 +1000,7 @@ When inner state values are calculated, ground them in observable reality:
 
 After your main articulation, generate structured data in JSON format.
 
-**OUTPUT**: 1 complete document with full matrix data (100 cells + 20 articulated insights).
+**OUTPUT**: 1 document with row/column labels and insight titles only. NO cells, NO full insights.
 
 ```json
 ===STRUCTURED_DATA_START===
@@ -1009,64 +1009,37 @@ After your main articulation, generate structured data in JSON format.
     {{
       "id": "doc-0",
       "name": "Strategic Framework",
-      "description": "Twenty-word description of this document's perspective.",
       "matrix_data": {{
         "row_options": [
-          {{
-            "id": "r0",
-            "label": "Resource Flow",
-            "articulated_insight": {{
-              "title": "The Hidden Lanes in Resource Chaos",
-              "the_truth": "You're staring at the resource allocation spreadsheet, the numbers swimming slightly. Three projects need the same team, the same budget window, the same quarter. That familiar tightness in your chest—not quite frustration, more like trying to solve a puzzle with missing pieces. Everyone keeps saying 'prioritize' as if the answer were obvious.",
-              "the_truth_law": "A river guide stands at dawn, watching tourists photograph the rapids. They see chaos—white foam, unpredictable currents. She sees lanes. Twenty years of reading water taught her that turbulence follows rules invisible to observers. The dangerous spots aren't the loud ones. They're the quiet pools where undertow hides beneath stillness.",
-              "your_truth": "**The pattern that looks like chaos to newcomers is infrastructure to those who've learned to read it.**",
-              "your_truth_revelation": "I see you navigating what others call turbulent—and you've been reading these currents longer than you realize. You'll never miss this again: whenever resources feel chaotic, you'll recognize you're seeing lanes that others can't. **Your resource scarcity trained you to see flow patterns that abundance would have hidden.**",
-              "the_mark_name": "The Current Reader",
-              "the_mark_prediction": "You'll spot this now in every resource conversation where others see shortage and you see routing.",
-              "the_mark_identity": "**You read resource currents now, not just resource levels.**"
-            }}
-          }},
-          {{"id": "r1", "label": "Time Investment", "articulated_insight": {{...}}}},
-          ... (10 total rows, each with articulated_insight)
+          {{"id": "r0", "label": "Resource Flow", "insight_title": "The Hidden Lanes in Resource Chaos"}},
+          {{"id": "r1", "label": "Time Investment", "insight_title": "Velocity Through Clarity"}},
+          {{"id": "r2", "label": "Team Dynamics", "insight_title": "The Permission Gap"}},
+          {{"id": "r3", "label": "Market Position", "insight_title": "Reading the Current"}},
+          {{"id": "r4", "label": "Innovation Pace", "insight_title": "The Momentum Paradox"}},
+          {{"id": "r5", "label": "Customer Focus", "insight_title": "Seeing Through Their Eyes"}},
+          {{"id": "r6", "label": "Operational Flow", "insight_title": "The Invisible Architecture"}},
+          {{"id": "r7", "label": "Strategic Clarity", "insight_title": "North Star Navigation"}},
+          {{"id": "r8", "label": "Resource Leverage", "insight_title": "Multiplier Moments"}},
+          {{"id": "r9", "label": "Growth Vectors", "insight_title": "Compound Trajectory"}}
         ],
         "column_options": [
-          {{
-            "id": "c0",
-            "label": "Growth Impact",
-            "articulated_insight": {{
-              "title": "...",
-              "the_truth": "...",
-              "the_truth_law": "**...**",
-              "your_truth": "...",
-              "your_truth_revelation": "**...**",
-              "the_mark_name": "...",
-              "the_mark_prediction": "...",
-              "the_mark_identity": "**...**"
-            }}
-          }},
-          ... (10 total columns, each with articulated_insight)
+          {{"id": "c0", "label": "Growth Impact", "insight_title": "The Scaling Pattern"}},
+          {{"id": "c1", "label": "Risk Exposure", "insight_title": "Hidden Fault Lines"}},
+          {{"id": "c2", "label": "Team Capacity", "insight_title": "Bandwidth Reality"}},
+          {{"id": "c3", "label": "Market Response", "insight_title": "Signal in Noise"}},
+          {{"id": "c4", "label": "Innovation Speed", "insight_title": "Acceleration Windows"}},
+          {{"id": "c5", "label": "Customer Value", "insight_title": "Value Perception Shift"}},
+          {{"id": "c6", "label": "Operational Cost", "insight_title": "Hidden Drag Forces"}},
+          {{"id": "c7", "label": "Strategic Fit", "insight_title": "Alignment Geometry"}},
+          {{"id": "c8", "label": "Resource Needs", "insight_title": "Investment Leverage"}},
+          {{"id": "c9", "label": "Time to Impact", "insight_title": "Velocity Vectors"}}
         ],
         "selected_rows": [0, 1, 2, 3, 4],
-        "selected_columns": [0, 1, 2, 3, 4],
-        "cells": {{
-          "0-0": {{
-            "impact_score": 75,
-            "relationship": "How this row drives this column outcome",
-            "dimensions": [
-              {{"name": "Vision Clarity", "value": 50, "explanation": "Partial view of how these connect"}},
-              {{"name": "Action Capacity", "value": 100, "explanation": "Fully capable of executing here"}},
-              {{"name": "Change Readiness", "value": 0, "explanation": "Not yet prepared for this shift"}},
-              {{"name": "Resource Access", "value": 50, "explanation": "Some tools available, gaps remain"}},
-              {{"name": "System Integration", "value": 100, "explanation": "Seamless alignment between elements"}}
-            ]
-          }},
-          "0-1": {{...}},
-          ... (100 cells total, keys "0-0" to "9-9")
-        }}
+        "selected_columns": [0, 1, 2, 3, 4]
       }}
     }}
   ],
-  "paths": [
+  "presets": [
     {{
       "id": "p0",
       "name": "Conservative Path",
@@ -1075,87 +1048,20 @@ After your main articulation, generate structured data in JSON format.
       "time_horizon": "6-12 months",
       "steps": [{{"order": 1, "action": "First step", "rationale": "Why"}}]
     }},
-    ... (5 total paths)
+    ... (5 total presets)
   ]{question_schema}
 }}
 ===STRUCTURED_DATA_END===
 ```
 
 REQUIREMENTS:
-1. **1 DOCUMENT**: Generate exactly 1 complete document with all 100 cells AND 20 articulated insights
-2. **CELL FORMAT**: Keys are "row-col" format: "0-0", "0-1", ... "9-9"
-3. **DIMENSIONS**: Each cell has exactly 5 dimensions with contextual names and explanations
-4. **VALUES**: Dimension values are 0 (Low), 50 (Medium), or 100 (High) only
-5. **EXPLANATIONS**: Each dimension MUST have an explanation (max 10 words) describing its state
-6. **ARTICULATED INSIGHTS**: Every row_option and column_option MUST have an articulated_insight{question_requirement}
-
-### 5-DIMENSION FRAMEWORK:
-| # | Meaning | Generate contextual name for |
-|---|---------|------------------------------|
-| 1 | CLARITY | Understanding/vision of this intersection |
-| 2 | CAPACITY | Ability/bandwidth to act |
-| 3 | READINESS | Preparedness/timing |
-| 4 | RESOURCES | Assets/tools available |
-| 5 | INTEGRATION | How well row and column harmonize |
-
-Dimension names must be CONTEXTUAL to the specific row×column intersection.
-Do NOT use literal names like "Clarity" or "Capacity".
-Each dimension MUST include an explanation (max 10 words) describing its current state.
-
-### ARTICULATED INSIGHT FRAMEWORK (for each of 20 row/column options):
-
-Each insight is CONTINUOUS PROSE with NO visible headers (~200-300 words total).
-The structure exists in your mind, but the user reads flowing narrative.
-
-**STRUCTURE (invisible to user):**
-
-**1. THE MICRO-MOMENT (Fly on the Wall) - 50-70 words**
-Ground user in THEIR specific context FIRST. Use these rules:
-- IMMERSIVE PRESENT TENSE: "You're sitting at..." not "You might be..."
-- SENSORY ACTIVATION: Engage sight, sound, touch, emotion simultaneously
-- SPECIFICITY OVER GENERALITY: Concrete details, not abstract concepts
-- EMOTIONAL TRUTH FIRST: Lead with feeling, support with fact
-- SHOW THE MICRO-MOMENT: Capture precise instant where tension lives
-FEEL: Intimate, observant, like watching themselves in a movie. Reader should think "how do they know?"
-Example: "You're staring at the proposal draft, cursor blinking. The deadline is tomorrow but something feels off—not wrong exactly, but incomplete. That slight tightness in your chest isn't about the work itself..."
-
-**2. THE DISTANT ANCHOR - 60-80 words**
-Pivot to maximally different domain (if business → use biology, music, sailing, cooking).
-Same immersive present tense. Same pattern, alien context.
-Make the universal visible through the particular.
-FEEL: Unexpected yet instantly recognizable. Do NOT explain the connection—let it land.
-The more alien the domain, the more powerful the recognition when they see the pattern.
-Example: "A jazz pianist faces the same moment differently. She's learned that the note she's avoiding—the one that feels risky—is usually the one the piece needs..."
-
-**3. THE PRINCIPLE - 20-30 words**
-Extract the universal law both moments share. One sentence in **bold**.
-FEEL: Inevitable truth. Reader should feel "of course" not "interesting point."
-Write like a proverb discovered, not a lesson taught.
-Example: "**The resistance you feel is usually pointing at exactly what needs to happen next.**"
-
-**4. THE INSTALLATION (The Mark) - 60-80 words**
-Return to user's context with recognition and equipment:
-- "I see you..." acknowledgment (compressed causal chain: how past created present)
-- "You'll never miss this again" trigger for future pattern recognition
-- THE NAME: Memorable 2-5 word concept name
-- THE PREDICTION: Where they'll spot this pattern
-- THE IDENTITY: New capability in **bold**
-TONE: Witness, not judge. Equip, not blame.
-FEEL: Empowering revelation—they've been given sight, not corrected.
-
-OUTPUT FORMAT: Write as continuous prose. Each JSON field contains COMPLETE text.
-- `the_truth`: Full micro-moment paragraph (user's context)
-- `the_truth_law`: Full distant anchor paragraph (far domain analogy)
-- `your_truth`: The principle as a complete sentence (bold markdown)
-- `your_truth_revelation`: Full installation paragraph (recognition + never miss again + revelation)
-- `the_mark_name`: Just the concept name (2-5 words)
-- `the_mark_prediction`: Complete prediction sentence
-- `the_mark_identity`: Complete identity statement with bold markdown
-
-Each field is displayed as-is. NO template text is added by the frontend.
-Content must flow naturally when paragraphs are joined.
-
-User should think: "I can't unsee this now."
+1. **1 DOCUMENT**: Generate exactly 1 document with 10 rows and 10 columns
+2. **ROW/COLUMN LABELS**: Max 3 words each, contextual to user's situation
+3. **INSIGHT TITLES**: Max 10 words each, compelling phrase capturing essence (different from label)
+4. **SELECTED**: Recommend which 5 rows and 5 columns to display via selected_rows/selected_columns indices
+5. **NO CELLS**: Do NOT generate cells - those are generated separately on user action
+6. **NO FULL INSIGHTS**: Only generate insight_title, not the full articulated_insight object
+7. **5 PRESETS**: Generate 5 strategic presets with steps{question_requirement}
 {question_instructions}"""
 
     def _build_question_instructions(self, question_context: Optional[Dict[str, Any]]) -> str:

@@ -228,16 +228,16 @@ ARTICULATED_INSIGHT_SCHEMA: Dict[str, Any] = {
     "additionalProperties": False
 }
 
-# Row/Column option schema with optional articulated insight
+# Row/Column option schema with insight_title (minimal) or full articulated_insight (after generation)
 ROW_COLUMN_OPTION_SCHEMA: Dict[str, Any] = {
     "type": "object",
     "properties": {
         "id": {"type": "string"},
         "label": {"type": "string"},
-        "articulated_insight": ARTICULATED_INSIGHT_SCHEMA
+        "insight_title": {"type": "string"},  # Always present - title only from Call 2
+        "articulated_insight": ARTICULATED_INSIGHT_SCHEMA  # Optional - full insight after user generates
     },
-    "required": ["id", "label"]
-    # articulated_insight is optional - only present when document has full cell data
+    "required": ["id", "label", "insight_title"]
 }
 
 # Cell schema (used in document matrix_data)
@@ -263,39 +263,38 @@ CELL_SCHEMA: Dict[str, Any] = {
     "required": ["impact_score", "dimensions"]
 }
 
-# Document schema
+# Document schema - minimal from Call 2, expanded after matrix button generation
 DOCUMENT_SCHEMA: Dict[str, Any] = {
     "type": "object",
     "properties": {
         "id": {"type": "string"},
         "name": {"type": "string"},
-        "description": {"type": "string"},
         "matrix_data": {
             "type": "object",
             "properties": {
                 "row_options": {
                     "type": "array",
-                    "items": ROW_COLUMN_OPTION_SCHEMA  # Now includes optional articulated_insight
+                    "items": ROW_COLUMN_OPTION_SCHEMA
                 },
                 "column_options": {
                     "type": "array",
-                    "items": ROW_COLUMN_OPTION_SCHEMA  # Now includes optional articulated_insight
+                    "items": ROW_COLUMN_OPTION_SCHEMA
                 },
                 "selected_rows": {"type": "array", "items": {"type": "integer"}},
                 "selected_columns": {"type": "array", "items": {"type": "integer"}},
                 "cells": {
                     "type": "object",
                     "additionalProperties": CELL_SCHEMA
-                }
+                }  # Optional - only present after matrix button generation
             },
-            "required": ["row_options", "column_options", "selected_rows", "selected_columns", "cells"]
+            "required": ["row_options", "column_options", "selected_rows", "selected_columns"]
         }
     },
-    "required": ["id", "name", "description", "matrix_data"]
+    "required": ["id", "name", "matrix_data"]
 }
 
-# Path schema
-PATH_SCHEMA: Dict[str, Any] = {
+# Preset schema
+PRESET_SCHEMA: Dict[str, Any] = {
     "type": "object",
     "properties": {
         "id": {"type": "string"},
@@ -347,9 +346,9 @@ CALL2_SCHEMA: Dict[str, Any] = {
             "items": DOCUMENT_SCHEMA,
             "minItems": 1
         },
-        "paths": {
+        "presets": {
             "type": "array",
-            "items": PATH_SCHEMA
+            "items": PRESET_SCHEMA
         },
         "follow_up_question": QUESTION_SCHEMA
     },
@@ -399,11 +398,11 @@ def validate_and_log_call2(data: Dict[str, Any], provider: str) -> Dict[str, Any
     else:
         # Log validation success with summary
         doc_count = len(data.get("documents", []))
-        path_count = len(data.get("paths", []))
+        preset_count = len(data.get("presets", []))
         has_question = "follow_up_question" in data
         api_logger.info(
             f"[SCHEMA] {provider} Call 2 validated: "
-            f"{doc_count} docs, {path_count} paths, question={'yes' if has_question else 'no'}"
+            f"{doc_count} docs, {preset_count} presets, question={'yes' if has_question else 'no'}"
         )
 
     return data

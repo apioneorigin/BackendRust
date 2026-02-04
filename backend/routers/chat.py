@@ -504,50 +504,45 @@ async def send_message(
             # Save structured data (documents with matrices, paths) to conversation
             api_logger.info(f"[CHAT SAVE] structured_data present: {structured_data is not None}")
             if structured_data:
-                # Documents array format - each document has its own matrix_data
+                # Documents array format - doc-0 with labels + titles only (no cells, no full insights)
                 documents = structured_data.get("documents", [])
                 api_logger.info(f"[CHAT SAVE] documents count: {len(documents)}")
-                # Only update if LLM generated new documents (not empty array for unchanged context)
+
+                # Update doc-0 with latest context on every response
+                # Additional docs are added via Control Popup [+] button
                 if documents:
-                    # Check if this is the FIRST full document (no existing docs) - generate 2 stubs
                     existing_docs = conv.generated_documents or []
-                    full_doc = documents[0] if documents else None
-                    is_first_full_doc = (
-                        full_doc and
-                        full_doc.get("matrix_data", {}).get("cells") and
-                        len(existing_docs) == 0
-                    )
+                    new_doc = documents[0] if documents else None
 
-                    if is_first_full_doc:
-                        # First Call 2 response with a full document - generate 2 stubs alongside
-                        from main import generate_additional_documents_llm
+                    if new_doc:
+                        if len(existing_docs) == 0:
+                            # First response - save doc-0
+                            conv.generated_documents = [new_doc]
+                        else:
+                            # Update doc-0 with new labels/titles, preserve user-generated data
+                            updated_docs = existing_docs.copy()
+                            # Update doc-0's matrix_data (row/col labels, titles, selected indices)
+                            # but preserve any generated cells, insights, powerspots, etc.
+                            if updated_docs[0].get("id") == "doc-0":
+                                old_matrix = updated_docs[0].get("matrix_data", {})
+                                new_matrix = new_doc.get("matrix_data", {})
 
-                        # Build context messages for stub generation
-                        context_msgs = [
-                            {"role": m.role, "content": m.content[:500]}
-                            for m in previous_messages
-                            if m.role in ("user", "assistant")
-                        ]
-                        # Add current user message
-                        context_msgs.append({"role": "user", "content": request.content[:500]})
+                                # Update labels and titles, keep generated data
+                                updated_docs[0]["name"] = new_doc.get("name", updated_docs[0].get("name"))
+                                updated_docs[0]["matrix_data"]["row_options"] = new_matrix.get("row_options", old_matrix.get("row_options", []))
+                                updated_docs[0]["matrix_data"]["column_options"] = new_matrix.get("column_options", old_matrix.get("column_options", []))
+                                updated_docs[0]["matrix_data"]["selected_rows"] = new_matrix.get("selected_rows", old_matrix.get("selected_rows", [0,1,2,3,4]))
+                                updated_docs[0]["matrix_data"]["selected_columns"] = new_matrix.get("selected_columns", old_matrix.get("selected_columns", [0,1,2,3,4]))
+                                # Note: cells, leverage_points, etc. are preserved from existing
 
-                        # Generate 2 stubs
-                        stubs = await generate_additional_documents_llm(
-                            context_messages=context_msgs,
-                            existing_document_names=[full_doc.get("name", "")],
-                            start_doc_id=1,  # doc-0 is the full doc, stubs are doc-1 and doc-2
-                            count=2
-                        )
+                            conv.generated_documents = updated_docs
 
-                        if stubs:
-                            documents.extend(stubs)
+                        flag_modified(conv, "generated_documents")
+                        api_logger.info(f"[CHAT SAVE] Updated generated_documents for conv {conversation_id}")
 
-                    conv.generated_documents = documents
-                    flag_modified(conv, "generated_documents")
-                    api_logger.info(f"[CHAT SAVE] Set generated_documents with {len(documents)} docs for conv {conversation_id}")
-                if structured_data.get("paths"):
-                    conv.generated_paths = structured_data["paths"]
-                    flag_modified(conv, "generated_paths")
+                if structured_data.get("presets"):
+                    conv.generated_presets = structured_data["presets"]
+                    flag_modified(conv, "generated_presets")
 
             # Save/update questions to conversation
             if pending_questions:

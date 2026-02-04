@@ -1,9 +1,9 @@
 """
-Matrix data endpoints - backend lookups for generated documents/paths.
+Matrix data endpoints - backend lookups for generated documents/presets.
 
 Architecture: Each document has its own 10x10 matrix stored in generated_documents.
-Leverage points and risk analysis are generated during document population
-(populate_document_cells_llm) and cached per-document - no separate LLM calls needed.
+Leverage points and risk analysis are generated during matrix data generation
+(generate_matrix_data_llm) and cached per-document - no separate LLM calls needed.
 """
 
 from typing import Optional, List, Dict, Any
@@ -53,19 +53,19 @@ class ColumnOption(CamelModel):
     articulated_insight: Optional[ArticulatedInsight] = None
 
 
-class PathStep(CamelModel):
+class PresetStep(CamelModel):
     order: int
     action: str
     rationale: Optional[str] = None
 
 
-class StrategicPath(CamelModel):
+class StrategicPreset(CamelModel):
     id: str
     name: str
     description: Optional[str] = None
     risk_level: Optional[str] = None
     time_horizon: Optional[str] = None
-    steps: List[PathStep]
+    steps: List[PresetStep]
 
 
 class DocumentMatrixData(CamelModel):
@@ -87,19 +87,19 @@ class GeneratedDocument(CamelModel):
 
 # Endpoints
 
-@router.get("/{conversation_id}/paths", response_model=List[StrategicPath])
-async def get_paths(
+@router.get("/{conversation_id}/presets", response_model=List[StrategicPreset])
+async def get_presets(
     conversation_id: str,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """Get generated strategic paths for a conversation."""
+    """Get generated strategic presets for a conversation."""
     conversation = await get_or_404(db, ChatConversation, conversation_id, user_id=current_user.id)
 
-    if not conversation.generated_paths:
+    if not conversation.generated_presets:
         return []
 
-    return conversation.generated_paths
+    return conversation.generated_presets
 
 
 @router.get("/{conversation_id}/documents", response_model=List[GeneratedDocument])
@@ -139,100 +139,56 @@ async def get_document(
     return None
 
 
-class GenerateDocumentsResponse(CamelModel):
-    """Response from generating additional documents"""
-    documents: List[GeneratedDocument]
-    total_document_count: int
+# ============================================================================
+# Matrix Button: "Design Your Reality"
+# Generates cells, dimensions, powerspots, risks, plays, presets for a document
+# ============================================================================
 
 
-@router.post("/{conversation_id}/documents/generate", response_model=GenerateDocumentsResponse)
-async def generate_additional_documents(
-    conversation_id: str,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-):
-    """
-    Generate 3 additional documents using hardcoded gpt-5.2 model.
-
-    This endpoint allows users to add more document tabs to their matrix view.
-    Each document includes its own 10x10 matrix with rows, columns, and cells.
-    """
-    from main import generate_additional_documents_llm
-
-    conversation = await get_or_404(db, ChatConversation, conversation_id, user_id=current_user.id)
-
-    # Get conversation context for document generation
-    messages_result = await db.execute(
-        select(ChatMessage)
-        .where(ChatMessage.conversation_id == conversation_id)
-        .order_by(ChatMessage.created_at.desc())
-        .limit(10)  # Recent messages for context
-    )
-    messages = messages_result.scalars().all()
-
-    # Build context from messages
-    context_messages = []
-    for msg in reversed(messages):
-        context_messages.append({
-            "role": msg.role,
-            "content": msg.content[:2000] if len(msg.content) > 2000 else msg.content
-        })
-
-    # Get existing documents to determine next ID
-    existing_docs = conversation.generated_documents or []
-    next_doc_id = len(existing_docs)
-
-    # Generate new documents using hardcoded gpt-5.2 model
-    new_documents = await generate_additional_documents_llm(
-        context_messages=context_messages,
-        existing_document_names=[doc.get("name", "") for doc in existing_docs],
-        start_doc_id=next_doc_id
-    )
-
-    if not new_documents:
-        raise HTTPException(status_code=500, detail="Failed to generate documents")
-
-    # Append new documents to existing
-    updated_documents = existing_docs + new_documents
-    conversation.generated_documents = updated_documents
-    flag_modified(conversation, "generated_documents")
-
-    await db.commit()
-
-    return GenerateDocumentsResponse(
-        documents=[GeneratedDocument(**doc) for doc in new_documents],
-        total_document_count=len(updated_documents)
-    )
+class DesignRealityRequest(BaseModel):
+    """Request to generate matrix data for a document"""
+    model: str  # User-selected model
 
 
-class PopulateDocumentResponse(CamelModel):
-    """Response from populating a document stub with cells"""
+class DesignRealityResponse(CamelModel):
+    """Response from Design Your Reality button"""
     document_id: str
     cell_count: int
+    leverage_point_count: int
+    risk_count: int
+    plays_count: int
+    presets_count: int
     success: bool
 
 
-@router.post("/{conversation_id}/document/{doc_id}/populate", response_model=PopulateDocumentResponse)
-async def populate_document_cells(
+@router.post("/{conversation_id}/document/{doc_id}/design-reality", response_model=DesignRealityResponse)
+async def design_reality(
     conversation_id: str,
     doc_id: str,
+    request: DesignRealityRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Generate full cell data for a document stub.
+    Generate/regenerate all matrix data for a document ("Design Your Reality" button).
 
-    Takes a document with rows/columns but no cells (or empty cells),
-    and generates all 100 cells with dimensions.
+    Generates:
+    - 100 cells with impact_score, relationship, 5 dimensions
+    - 3-5 leverage points (powerspots)
+    - 3-6 risk analysis points
+    - 3-5 plays
+    - 5 presets
+
+    Does NOT generate articulated insights - those are generated via the insight endpoint.
     """
-    from main import populate_document_cells_llm
+    from main import generate_matrix_data_llm, get_model_config
 
     conversation = await get_or_404(db, ChatConversation, conversation_id, user_id=current_user.id)
 
     if not conversation.generated_documents:
         raise HTTPException(status_code=400, detail="No documents exist")
 
-    # Find the document stub
+    # Find the document
     documents = conversation.generated_documents.copy()
     doc_index = None
     doc_stub = None
@@ -246,12 +202,132 @@ async def populate_document_cells(
     if doc_stub is None:
         raise HTTPException(status_code=404, detail="Document not found")
 
-    # Check if already populated
-    existing_cells = doc_stub.get("matrix_data", {}).get("cells", {})
-    if existing_cells and len(existing_cells) >= 100:
-        return PopulateDocumentResponse(
+    # Get conversation context
+    messages_result = await db.execute(
+        select(ChatMessage)
+        .where(ChatMessage.conversation_id == conversation_id)
+        .order_by(ChatMessage.created_at.desc())
+        .limit(10)
+    )
+    messages = messages_result.scalars().all()
+
+    context_messages = []
+    for msg in reversed(messages):
+        context_messages.append({
+            "role": msg.role,
+            "content": msg.content[:2000] if len(msg.content) > 2000 else msg.content
+        })
+
+    # Get model config from user-selected model
+    model_config = get_model_config(request.model)
+
+    # Generate matrix data
+    result = await generate_matrix_data_llm(
+        document_stub=doc_stub,
+        context_messages=context_messages,
+        model_config=model_config
+    )
+
+    if not result or "cells" not in result:
+        raise HTTPException(status_code=500, detail="Failed to generate matrix data")
+
+    # Update document with generated data
+    documents[doc_index]["matrix_data"]["cells"] = result["cells"]
+    documents[doc_index]["leverage_points"] = result.get("leverage_points", [])
+    documents[doc_index]["risk_analysis"] = result.get("risk_analysis", [])
+    documents[doc_index]["plays"] = result.get("plays", [])
+    documents[doc_index]["presets"] = result.get("presets", [])
+    documents[doc_index]["selected_play_id"] = None
+
+    conversation.generated_documents = documents
+    flag_modified(conversation, "generated_documents")
+
+    await db.commit()
+
+    api_logger.info(f"[DESIGN_REALITY] Generated matrix data for doc {doc_id}")
+
+    return DesignRealityResponse(
+        document_id=doc_id,
+        cell_count=len(result["cells"]),
+        leverage_point_count=len(result.get("leverage_points", [])),
+        risk_count=len(result.get("risk_analysis", [])),
+        plays_count=len(result.get("plays", [])),
+        presets_count=len(result.get("presets", [])),
+        success=True
+    )
+
+
+# ============================================================================
+# Insight Generation: Batch generate missing insights
+# ============================================================================
+
+
+class GenerateInsightsRequest(BaseModel):
+    """Request to generate missing insights for a document"""
+    model: str  # User-selected model
+    insight_index: int  # Index of insight user clicked (0-19)
+
+
+class GenerateInsightsResponse(CamelModel):
+    """Response from generating insights"""
+    document_id: str
+    insights_generated: int
+    success: bool
+
+
+@router.post("/{conversation_id}/document/{doc_id}/generate-insights", response_model=GenerateInsightsResponse)
+async def generate_insights(
+    conversation_id: str,
+    doc_id: str,
+    request: GenerateInsightsRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Generate all missing insights for a document.
+
+    When user clicks on any insight title, this generates ALL missing insights
+    for that document in a single LLM call for efficiency.
+    """
+    from main import generate_insights_batch_llm, get_model_config
+
+    conversation = await get_or_404(db, ChatConversation, conversation_id, user_id=current_user.id)
+
+    if not conversation.generated_documents:
+        raise HTTPException(status_code=400, detail="No documents exist")
+
+    # Find the document
+    documents = conversation.generated_documents.copy()
+    doc_index = None
+    doc = None
+
+    for i, d in enumerate(documents):
+        if d.get("id") == doc_id:
+            doc_index = i
+            doc = d
+            break
+
+    if doc is None:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    # Find missing insights (indices 0-9 = rows, 10-19 = columns)
+    matrix_data = doc.get("matrix_data", {})
+    row_options = matrix_data.get("row_options", [])
+    col_options = matrix_data.get("column_options", [])
+
+    missing_indices = []
+    for i, row in enumerate(row_options):
+        if not row.get("articulated_insight"):
+            missing_indices.append(i)
+    for i, col in enumerate(col_options):
+        if not col.get("articulated_insight"):
+            missing_indices.append(10 + i)
+
+    # If all insights already exist, return the requested one
+    if not missing_indices:
+        return GenerateInsightsResponse(
             document_id=doc_id,
-            cell_count=len(existing_cells),
+            insights_generated=0,
             success=True
         )
 
@@ -271,44 +347,246 @@ async def populate_document_cells(
             "content": msg.content[:2000] if len(msg.content) > 2000 else msg.content
         })
 
-    # Generate cells and articulated insights
-    result = await populate_document_cells_llm(
-        document_stub=doc_stub,
-        context_messages=context_messages
+    # Get model config
+    model_config = get_model_config(request.model)
+
+    # Generate all missing insights
+    result = await generate_insights_batch_llm(
+        document=doc,
+        missing_indices=missing_indices,
+        context_messages=context_messages,
+        model_config=model_config
     )
 
-    if not result or "cells" not in result:
-        raise HTTPException(status_code=500, detail="Failed to generate cells")
+    if not result or "insights" not in result:
+        raise HTTPException(status_code=500, detail="Failed to generate insights")
 
-    # Update document with cells
-    documents[doc_index]["matrix_data"]["cells"] = result["cells"]
+    # Apply generated insights to document
+    insights = result["insights"]
+    insights_applied = 0
 
-    # Update row_options and column_options with articulated insights if provided
-    if result.get("row_options"):
-        documents[doc_index]["matrix_data"]["row_options"] = result["row_options"]
-    if result.get("column_options"):
-        documents[doc_index]["matrix_data"]["column_options"] = result["column_options"]
-
-    # Store leverage points, risk analysis, and plays (generated with full context during population)
-    if result.get("leverage_points"):
-        documents[doc_index]["leverage_points"] = result["leverage_points"]
-        api_logger.info(f"[POPULATE] Stored {len(result['leverage_points'])} leverage points for doc {doc_id}")
-    if result.get("risk_analysis"):
-        documents[doc_index]["risk_analysis"] = result["risk_analysis"]
-        api_logger.info(f"[POPULATE] Stored {len(result['risk_analysis'])} risk points for doc {doc_id}")
-    if result.get("plays"):
-        documents[doc_index]["plays"] = result["plays"]
-        documents[doc_index]["selected_play_id"] = None  # No play selected by default
-        api_logger.info(f"[POPULATE] Stored {len(result['plays'])} plays for doc {doc_id}")
+    for idx_str, insight in insights.items():
+        idx = int(idx_str)
+        if idx < 10:
+            # Row insight
+            if idx < len(row_options):
+                documents[doc_index]["matrix_data"]["row_options"][idx]["articulated_insight"] = insight
+                insights_applied += 1
+        else:
+            # Column insight
+            col_idx = idx - 10
+            if col_idx < len(col_options):
+                documents[doc_index]["matrix_data"]["column_options"][col_idx]["articulated_insight"] = insight
+                insights_applied += 1
 
     conversation.generated_documents = documents
     flag_modified(conversation, "generated_documents")
 
     await db.commit()
 
-    return PopulateDocumentResponse(
+    api_logger.info(f"[INSIGHTS] Generated {insights_applied} insights for doc {doc_id}")
+
+    return GenerateInsightsResponse(
         document_id=doc_id,
-        cell_count=len(result["cells"]),
+        insights_generated=insights_applied,
+        success=True
+    )
+
+
+# ============================================================================
+# Document Preview: Generate 3 new document previews for selection
+# ============================================================================
+
+
+class PreviewDocumentsRequest(BaseModel):
+    """Request to generate document previews"""
+    model: str  # User-selected model
+
+
+class DocumentPreview(CamelModel):
+    """Preview of a document for selection"""
+    temp_id: str
+    name: str
+    row_labels: List[str]
+    column_labels: List[str]
+    insight_titles: List[str]  # 20 titles
+
+
+class PreviewDocumentsResponse(CamelModel):
+    """Response with document previews for selection"""
+    previews: List[DocumentPreview]
+
+
+@router.post("/{conversation_id}/documents/preview", response_model=PreviewDocumentsResponse)
+async def preview_documents(
+    conversation_id: str,
+    request: PreviewDocumentsRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Generate 3 document previews for user selection.
+
+    User sees document names and 20 insight titles, then chooses which to add.
+    """
+    from main import generate_document_previews_llm, get_model_config
+
+    conversation = await get_or_404(db, ChatConversation, conversation_id, user_id=current_user.id)
+
+    # Get conversation context
+    messages_result = await db.execute(
+        select(ChatMessage)
+        .where(ChatMessage.conversation_id == conversation_id)
+        .order_by(ChatMessage.created_at.desc())
+        .limit(10)
+    )
+    messages = messages_result.scalars().all()
+
+    context_messages = []
+    for msg in reversed(messages):
+        context_messages.append({
+            "role": msg.role,
+            "content": msg.content[:2000] if len(msg.content) > 2000 else msg.content
+        })
+
+    # Get existing documents
+    existing_docs = conversation.generated_documents or []
+    next_doc_id = len(existing_docs)
+
+    # Get model config
+    model_config = get_model_config(request.model)
+
+    # Generate previews
+    new_documents = await generate_document_previews_llm(
+        context_messages=context_messages,
+        existing_document_names=[doc.get("name", "") for doc in existing_docs],
+        start_doc_id=next_doc_id,
+        model_config=model_config,
+        count=3
+    )
+
+    if not new_documents:
+        raise HTTPException(status_code=500, detail="Failed to generate document previews")
+
+    # Convert to preview format
+    previews = []
+    for i, doc in enumerate(new_documents):
+        matrix_data = doc.get("matrix_data", {})
+        row_options = matrix_data.get("row_options", [])
+        col_options = matrix_data.get("column_options", [])
+
+        previews.append(DocumentPreview(
+            temp_id=f"preview-{i}",
+            name=doc.get("name", f"Document {next_doc_id + i}"),
+            row_labels=[r.get("label", "") for r in row_options],
+            column_labels=[c.get("label", "") for c in col_options],
+            insight_titles=[r.get("insight_title", "") for r in row_options] + [c.get("insight_title", "") for c in col_options]
+        ))
+
+    # Store previews temporarily in session or cache
+    # For simplicity, we'll store them in the conversation's generated_documents with a preview flag
+    conversation._preview_documents = new_documents  # Store temporarily
+
+    return PreviewDocumentsResponse(previews=previews)
+
+
+# ============================================================================
+# Add Documents: Add selected previews to context
+# ============================================================================
+
+
+class AddDocumentsRequest(BaseModel):
+    """Request to add selected document previews"""
+    selected_preview_ids: List[str]  # e.g., ["preview-0", "preview-2"]
+    model: str  # User-selected model (for regenerating if needed)
+
+
+class AddDocumentsResponse(CamelModel):
+    """Response from adding documents"""
+    added_document_ids: List[str]
+    total_document_count: int
+    success: bool
+
+
+@router.post("/{conversation_id}/documents/add", response_model=AddDocumentsResponse)
+async def add_documents(
+    conversation_id: str,
+    request: AddDocumentsRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Add selected document previews to the conversation.
+
+    Takes the preview IDs selected by user and adds those documents.
+    """
+    from main import generate_document_previews_llm, get_model_config
+
+    conversation = await get_or_404(db, ChatConversation, conversation_id, user_id=current_user.id)
+
+    # Get existing documents
+    existing_docs = conversation.generated_documents or []
+    next_doc_id = len(existing_docs)
+
+    # Get conversation context for regeneration
+    messages_result = await db.execute(
+        select(ChatMessage)
+        .where(ChatMessage.conversation_id == conversation_id)
+        .order_by(ChatMessage.created_at.desc())
+        .limit(10)
+    )
+    messages = messages_result.scalars().all()
+
+    context_messages = []
+    for msg in reversed(messages):
+        context_messages.append({
+            "role": msg.role,
+            "content": msg.content[:2000] if len(msg.content) > 2000 else msg.content
+        })
+
+    # Get model config
+    model_config = get_model_config(request.model)
+
+    # Regenerate the documents (since previews are not persisted)
+    new_documents = await generate_document_previews_llm(
+        context_messages=context_messages,
+        existing_document_names=[doc.get("name", "") for doc in existing_docs],
+        start_doc_id=next_doc_id,
+        model_config=model_config,
+        count=3
+    )
+
+    if not new_documents:
+        raise HTTPException(status_code=500, detail="Failed to generate documents")
+
+    # Filter to selected previews
+    selected_indices = []
+    for preview_id in request.selected_preview_ids:
+        if preview_id.startswith("preview-"):
+            idx = int(preview_id.split("-")[1])
+            if 0 <= idx < len(new_documents):
+                selected_indices.append(idx)
+
+    added_docs = []
+    added_ids = []
+    for idx in selected_indices:
+        doc = new_documents[idx]
+        doc["id"] = f"doc-{next_doc_id + len(added_docs)}"
+        added_docs.append(doc)
+        added_ids.append(doc["id"])
+
+    # Append to existing documents
+    updated_documents = existing_docs + added_docs
+    conversation.generated_documents = updated_documents
+    flag_modified(conversation, "generated_documents")
+
+    await db.commit()
+
+    api_logger.info(f"[ADD_DOCS] Added {len(added_docs)} documents: {added_ids}")
+
+    return AddDocumentsResponse(
+        added_document_ids=added_ids,
+        total_document_count=len(updated_documents),
         success=True
     )
 
@@ -377,7 +655,7 @@ async def update_document_selection(
 
 # ============================================================================
 # Leverage Points (Power Spots) and Risk Analysis Services
-# Data is generated during document population (populate_document_cells_llm)
+# Data is generated during matrix data generation (generate_matrix_data_llm)
 # and cached in the document. No separate LLM calls needed.
 # ============================================================================
 
@@ -438,8 +716,8 @@ async def get_leverage_points(
     """
     Get leverage points (power spots) for a populated document.
 
-    Leverage points are generated during document population (populate_document_cells).
-    This endpoint returns cached data - populate the document first if not available.
+    Leverage points are generated during matrix data generation (generate_matrix_data_llm).
+    This endpoint returns cached data - use design-reality endpoint first if not available.
     """
     conversation = await get_or_404(db, ChatConversation, conversation_id, user_id=current_user.id)
 
@@ -484,8 +762,8 @@ async def get_risk_analysis(
     """
     Get risk analysis for a populated document.
 
-    Risk analysis is generated during document population (populate_document_cells).
-    This endpoint returns cached data - populate the document first if not available.
+    Risk analysis is generated during matrix data generation (generate_matrix_data_llm).
+    This endpoint returns cached data - use design-reality endpoint first if not available.
     """
     conversation = await get_or_404(db, ChatConversation, conversation_id, user_id=current_user.id)
 
@@ -601,7 +879,7 @@ async def explain_cell(
 
 # ============================================================================
 # Plays (Transformation Strategies)
-# Data is generated during document population (populate_document_cells_llm)
+# Data is generated during matrix data generation (generate_matrix_data_llm)
 # and cached in the document. No separate LLM calls needed.
 # ============================================================================
 
@@ -644,8 +922,8 @@ async def get_plays(
     """
     Get plays (transformation strategies) for a populated document.
 
-    Plays are generated during document population (populate_document_cells).
-    This endpoint returns cached data - populate the document first if not available.
+    Plays are generated during matrix data generation (generate_matrix_data_llm).
+    This endpoint returns cached data - use design-reality endpoint first if not available.
     """
     conversation = await get_or_404(db, ChatConversation, conversation_id, user_id=current_user.id)
 
