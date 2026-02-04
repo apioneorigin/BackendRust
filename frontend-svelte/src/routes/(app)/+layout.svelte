@@ -1,31 +1,23 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { goto } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { auth, isAuthenticated, user, theme, addToast, chat, conversations, currentConversation, messages } from '$lib/stores';
-	import { Spinner } from '$lib/components/ui';
+	import { theme, addToast, chat, conversations, currentConversation, messages } from '$lib/stores';
+	import type { LayoutData } from './$types';
 
-	// Accept SvelteKit props to avoid "unknown prop" warnings
-	export let data: Record<string, unknown> = {};
-	// Suppress unused variable warning
-	void data;
+	export let data: LayoutData;
 
-	let isLoading = true;
 	let mobileMenuOpen = false;
 	let userMenuOpen = false;
 	let sidebarCollapsed = false;
-	let isSelectingConversation = false; // Guard against rapid clicks
-	let activeOptionsMenu: string | null = null; // Track which conversation has options open
+	let isSelectingConversation = false;
+	let activeOptionsMenu: string | null = null;
 
-	onMount(async () => {
-		const currentUser = await auth.loadUser();
-		if (!currentUser) {
-			goto('/login');
-			return;
+	// Initialize conversations from server data
+	onMount(() => {
+		if (data.conversations) {
+			chat.setConversations(data.conversations);
 		}
-		isLoading = false;
-		// Load conversations for sidebar
-		await chat.loadConversations();
 	});
 
 	// Close menus on navigation
@@ -35,7 +27,8 @@
 	}
 
 	async function handleLogout() {
-		await auth.logout();
+		// Call logout endpoint to clear cookie
+		await fetch('/logout', { method: 'POST' });
 		addToast('info', 'Signed out', 'You have been logged out');
 		goto('/login');
 	}
@@ -149,15 +142,7 @@
 	}
 </script>
 
-{#if isLoading}
-	<div class="loading-container">
-		<div class="flex flex-col items-center gap-4">
-			<Spinner size="lg" />
-			<p class="text-text-whisper text-sm">Loading...</p>
-		</div>
-	</div>
-{:else}
-	<div class="app-layout">
+<div class="app-layout">
 		<!-- Mobile header -->
 		<header class="mobile-header">
 			<button class="hamburger-btn" on:click={toggleMobileMenu} aria-label="Toggle menu">
@@ -292,7 +277,7 @@
 
 			<!-- Navigation (Admin only - other links in user menu) -->
 			<nav class="sidebar-nav">
-				{#if $user?.isGlobalAdmin}
+				{#if data.user?.isGlobalAdmin}
 					<a href="/admin" class="nav-item" class:active={$page.url.pathname.startsWith('/admin')} title="Admin">
 						<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 							<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
@@ -304,12 +289,12 @@
 
 			<!-- User menu section at bottom -->
 			<div class="sidebar-footer">
-				<button class="user-avatar-btn" on:click={toggleUserMenu} class:active={userMenuOpen} title={$user?.name || 'User menu'}>
+				<button class="user-avatar-btn" on:click={toggleUserMenu} class:active={userMenuOpen} title={data.user?.name || 'User menu'}>
 					<div class="user-avatar">
-						{$user?.name?.[0] || $user?.email?.[0] || 'U'}
+						{data.user?.name?.[0] || data.user?.email?.[0] || 'U'}
 					</div>
 					{#if !sidebarCollapsed}
-						<span class="user-first-name">{$user?.name?.trim().split(/\s+/)[0] || 'User'}</span>
+						<span class="user-first-name">{data.user?.name?.trim().split(/\s+/)[0] || 'User'}</span>
 						<svg class="chevron" class:rotated={userMenuOpen} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 							<path d="m6 15 6-6 6 6" />
 						</svg>
@@ -373,22 +358,13 @@
 			</div>
 		</aside>
 
-		<!-- Main content (shifts with sidebar) -->
-		<main class="main-content">
-			<slot />
-		</main>
-	</div>
-{/if}
+	<!-- Main content (shifts with sidebar) -->
+	<main class="main-content">
+		<slot />
+	</main>
+</div>
 
 <style>
-	.loading-container {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		min-height: 100dvh;
-		background-color: var(--color-field-void);
-	}
-
 	.app-layout {
 		display: flex;
 		height: 100dvh;

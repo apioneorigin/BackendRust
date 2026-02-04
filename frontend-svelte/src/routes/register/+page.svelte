@@ -1,44 +1,11 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
-	import { auth, addToast } from '$lib/stores';
+	import { enhance } from '$app/forms';
 	import { Button } from '$lib/components/ui';
+	import type { ActionData } from './$types';
 
-	let name = '';
-	let email = '';
-	let password = '';
-	let confirmPassword = '';
+	export let form: ActionData;
+
 	let isLoading = false;
-	let error = '';
-
-	async function handleSubmit() {
-		error = '';
-
-		if (password !== confirmPassword) {
-			error = 'Passwords do not match';
-			return;
-		}
-
-		if (password.length < 8) {
-			error = 'Password must be at least 8 characters';
-			return;
-		}
-
-		isLoading = true;
-
-		try {
-			const success = await auth.register(email, password, name || undefined);
-			if (success) {
-				addToast('success', 'Your account has been created');
-				goto('/add-credits');  // New users need to add credits first
-			} else {
-				error = 'Registration failed';
-			}
-		} catch (e: any) {
-			error = e.message || 'Registration failed';
-		} finally {
-			isLoading = false;
-		}
-	}
 </script>
 
 <svelte:head>
@@ -71,8 +38,18 @@
 			<p>Start your transformation journey today</p>
 		</div>
 
-		<form on:submit|preventDefault={handleSubmit} class="auth-form">
-			{#if error}
+		<form
+			method="POST"
+			class="auth-form"
+			use:enhance={() => {
+				isLoading = true;
+				return async ({ update }) => {
+					await update();
+					isLoading = false;
+				};
+			}}
+		>
+			{#if form?.error}
 				<div class="error-message" role="alert">
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
@@ -89,7 +66,7 @@
 						<line x1="12" x2="12" y1="8" y2="12" />
 						<line x1="12" x2="12.01" y1="16" y2="16" />
 					</svg>
-					{error}
+					{form.error}
 				</div>
 			{/if}
 
@@ -98,7 +75,8 @@
 				<input
 					type="text"
 					id="name"
-					bind:value={name}
+					name="name"
+					value={form?.name ?? ''}
 					placeholder="Your name"
 					disabled={isLoading}
 					class="input-field"
@@ -110,7 +88,8 @@
 				<input
 					type="email"
 					id="email"
-					bind:value={email}
+					name="email"
+					value={form?.email ?? ''}
 					placeholder="you@example.com"
 					required
 					disabled={isLoading}
@@ -123,7 +102,7 @@
 				<input
 					type="password"
 					id="password"
-					bind:value={password}
+					name="password"
 					placeholder="At least 8 characters"
 					required
 					disabled={isLoading}
@@ -136,7 +115,7 @@
 				<input
 					type="password"
 					id="confirmPassword"
-					bind:value={confirmPassword}
+					name="confirmPassword"
 					placeholder="Confirm your password"
 					required
 					disabled={isLoading}
@@ -298,7 +277,6 @@
 		text-decoration: underline;
 	}
 
-	/* Mobile responsive */
 	@media (max-width: 767px) {
 		.auth-card {
 			padding: 1.5rem;
