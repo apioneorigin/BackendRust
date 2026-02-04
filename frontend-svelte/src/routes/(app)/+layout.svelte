@@ -1,24 +1,19 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { goto, invalidateAll } from '$app/navigation';
+	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { theme, addToast, chat, conversations, currentConversation, messages } from '$lib/stores';
 	import type { LayoutData } from './$types';
 
 	export let data: LayoutData;
 
+	// User guaranteed by hooks.server.ts guard - no fallback
+	$: user = data.user;
+
 	let mobileMenuOpen = false;
 	let userMenuOpen = false;
 	let sidebarCollapsed = false;
 	let isSelectingConversation = false;
 	let activeOptionsMenu: string | null = null;
-
-	// Initialize conversations from server data
-	onMount(() => {
-		if (data.conversations) {
-			chat.setConversations(data.conversations);
-		}
-	});
 
 	// Close menus on navigation
 	$: if ($page.url.pathname) {
@@ -277,7 +272,7 @@
 
 			<!-- Navigation (Admin only - other links in user menu) -->
 			<nav class="sidebar-nav">
-				{#if data.user?.isGlobalAdmin}
+				{#if user?.isGlobalAdmin}
 					<a href="/admin" class="nav-item" class:active={$page.url.pathname.startsWith('/admin')} title="Admin">
 						<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 							<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
@@ -289,12 +284,12 @@
 
 			<!-- User menu section at bottom -->
 			<div class="sidebar-footer">
-				<button class="user-avatar-btn" on:click={toggleUserMenu} class:active={userMenuOpen} title={data.user?.name || 'User menu'}>
+				<button class="user-avatar-btn" on:click={toggleUserMenu} class:active={userMenuOpen} title={user?.name || 'User menu'}>
 					<div class="user-avatar">
-						{data.user?.name?.[0] || data.user?.email?.[0] || 'U'}
+						{user?.name?.[0] || user?.email?.[0] || 'U'}
 					</div>
 					{#if !sidebarCollapsed}
-						<span class="user-first-name">{data.user?.name?.trim().split(/\s+/)[0] || 'User'}</span>
+						<span class="user-first-name">{user?.name?.trim().split(/\s+/)[0] || 'User'}</span>
 						<svg class="chevron" class:rotated={userMenuOpen} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 							<path d="m6 15 6-6 6 6" />
 						</svg>
