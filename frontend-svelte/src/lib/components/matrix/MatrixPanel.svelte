@@ -11,8 +11,8 @@
 
 	import { createEventDispatcher } from 'svelte';
 	import { Button, Spinner } from '$lib/components/ui';
-	import { matrix, documents, activeDocumentId, activeDocument, isGeneratingMoreDocuments } from '$lib/stores';
-	import type { CellData, CellDimension, Document } from '$lib/stores';
+	import { matrix, matrixDocuments as documents, activeDocumentId, activeDocument, isGeneratingMoreDocuments } from '$lib/stores';
+	import type { CellData, CellDimension, MatrixDocument as Document } from '$lib/stores';
 
 	export let matrixData: CellData[][] = [];
 	export let rowHeaders: string[] = ['Dimension 1', 'Dimension 2', 'Dimension 3', 'Dimension 4', 'Dimension 5'];
@@ -52,6 +52,23 @@
 	function hasFullData(doc: Document): boolean {
 		const cells = doc.matrix_data?.cells || {};
 		return Object.keys(cells).length >= 100;
+	}
+
+	// Check if cell is a power spot (leverage point)
+	function isPowerSpot(cell: CellData): boolean {
+		return cell.isLeveragePoint;
+	}
+
+	// Check if cell has risk (medium or high)
+	function isRiskCell(cell: CellData): boolean {
+		return cell.riskLevel === 'medium' || cell.riskLevel === 'high';
+	}
+
+	// Check if cell should be hidden in filtered views
+	function shouldHideCell(cell: CellData): boolean {
+		if (showPowerSpotsView && !isPowerSpot(cell)) return true;
+		if (showRiskView && !isRiskCell(cell)) return true;
+		return false;
 	}
 
 	// Calculate cell value from dimensions (average)

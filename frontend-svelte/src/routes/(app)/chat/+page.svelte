@@ -118,9 +118,9 @@
 	async function copyToClipboard(text: string) {
 		try {
 			await navigator.clipboard.writeText(text);
-			addToast({ type: 'success', message: 'Copied to clipboard' });
+			addToast('success', 'Copied to clipboard');
 		} catch (err) {
-			addToast({ type: 'error', message: 'Failed to copy' });
+			addToast('error', 'Failed to copy');
 		}
 	}
 
@@ -364,10 +364,7 @@
 
 	function handleSaveScenario() {
 		// TODO: Implement backend persistence
-		addToast({
-			type: 'info',
-			message: 'Scenario save will be implemented with backend integration'
-		});
+		addToast('info', 'Scenario save will be implemented with backend integration');
 	}
 
 	// Explanation loading state
