@@ -31,9 +31,9 @@ class ArticulatedInsight(CamelModel):
     """Full 3-component insight structure (THE TRUTH -> YOUR TRUTH -> THE MARK)"""
     title: str
     the_truth: str
-    the_truth_law: Optional[str] = None  # May be missing in older data
+    the_truth_law: str
     your_truth: str
-    your_truth_revelation: Optional[str] = None  # May be missing in older data
+    your_truth_revelation: str
     the_mark_name: str
     the_mark_prediction: str
     the_mark_identity: str
