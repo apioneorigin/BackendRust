@@ -10,7 +10,7 @@
 
    Design Philosophy:
    - Single primary color: Deep Navy #0F172A (trust, authority, institutional)
-   - Warm cream backgrounds for alive, premium feel
+   - Slate Premium backgrounds (#FAFAFA) - professional, sophisticated
    - Inter font throughout (clean, modern, professional)
    - Maximum restraint - color appears only where it matters
 
@@ -49,14 +49,14 @@
 	--color-primary-100: rgba(15, 23, 42, 0.12);
 	--color-primary-50: rgba(15, 23, 42, 0.06);
 
-	/* Ambient glow - subtle navy accent on warm cream surface */
+	/* Ambient glow - subtle navy accent on slate surface */
 	--gradient-ambient: radial-gradient(ellipse at 50% 30%, rgba(15, 23, 42, 0.02) 0%, transparent 60%);
 
 	/* ─────────────────────────────────────────────────────────────────────────────
-	   SURFACES - Warm Cream (alive, premium, inviting)
+	   SURFACES - Slate Premium (professional, sophisticated)
 	   ───────────────────────────────────────────────────────────────────────────── */
-	--color-field-void: #FDFCF9;      /* Warm cream - main bg */
-	--color-field-depth: #FAF9F5;     /* Slightly deeper warm */
+	--color-field-void: #FAFAFA;      /* Slate premium - main bg */
+	--color-field-depth: #F4F4F5;     /* Slightly deeper slate */
 	--color-field-surface: #FFFFFF;   /* Pure white for cards/elevated */
 	--color-field-elevated: #FFFFFF;  /* Pure white elevated */
 	--color-field-solid: #FFFFFF;     /* Solid white for inputs */
