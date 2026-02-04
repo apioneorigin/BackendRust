@@ -172,6 +172,7 @@
 		role="presentation"
 		tabindex="-1"
 	>
+		<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 		<div
 			class="context-popup"
 			on:click|stopPropagation

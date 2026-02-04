@@ -52,6 +52,7 @@
 		role="presentation"
 		tabindex="-1"
 	>
+		<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 		<div
 			class="insight-popup"
 			on:click|stopPropagation

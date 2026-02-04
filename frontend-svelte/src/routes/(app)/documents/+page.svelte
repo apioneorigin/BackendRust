@@ -479,6 +479,7 @@
 		color: var(--color-text-source);
 		margin-bottom: 0.375rem;
 		display: -webkit-box;
+		line-clamp: 2;
 		-webkit-line-clamp: 2;
 		-webkit-box-orient: vertical;
 		overflow: hidden;
@@ -488,6 +489,7 @@
 		font-size: 0.8125rem;
 		color: var(--color-text-whisper);
 		display: -webkit-box;
+		line-clamp: 2;
 		-webkit-line-clamp: 2;
 		-webkit-box-orient: vertical;
 		overflow: hidden;

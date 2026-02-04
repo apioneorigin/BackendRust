@@ -378,7 +378,9 @@
 
 <!-- Cell detail popup -->
 {#if showCellPopup && selectedCell && matrixData[selectedCell.row]}
+	<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 	<div class="popup-overlay" on:click={closeCellPopup} on:keydown={(e) => e.key === 'Escape' && closeCellPopup()} role="presentation" tabindex="-1">
+		<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 		<div class="cell-popup" on:click|stopPropagation on:keydown|stopPropagation role="dialog" aria-modal="true">
 			<div class="popup-header">
 				<h3>
@@ -619,6 +621,7 @@
 		word-spacing: 100vw; /* Forces each word to its own line */
 		overflow: visible;
 		display: -webkit-box;
+		line-clamp: 3;
 		-webkit-line-clamp: 3;
 		-webkit-box-orient: vertical;
 	}
@@ -635,6 +638,7 @@
 		word-spacing: 100vw; /* Forces each word to its own line */
 		overflow: visible;
 		display: -webkit-box;
+		line-clamp: 3;
 		-webkit-line-clamp: 3;
 		-webkit-box-orient: vertical;
 	}

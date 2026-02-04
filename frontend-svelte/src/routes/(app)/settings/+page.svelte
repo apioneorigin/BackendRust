@@ -676,7 +676,9 @@
 
 <!-- Upgrade Modal -->
 {#if showUpgradeModal}
+	<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 	<div class="modal-overlay" on:click={() => (showUpgradeModal = false)} on:keydown={(e) => e.key === 'Escape' && (showUpgradeModal = false)} role="dialog" aria-modal="true" tabindex="-1">
+		<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 		<div class="modal" on:click|stopPropagation on:keydown|stopPropagation role="document">
 			<h2>Upgrade to Org Admin</h2>
 			<div class="modal-content">
@@ -714,7 +716,9 @@
 
 <!-- Create User Modal -->
 {#if showCreateUserModal}
+	<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 	<div class="modal-overlay" on:click={() => (showCreateUserModal = false)} on:keydown={(e) => e.key === 'Escape' && (showCreateUserModal = false)} role="dialog" aria-modal="true" tabindex="-1">
+		<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 		<div class="modal" on:click|stopPropagation on:keydown|stopPropagation role="document">
 			<h2>Add Team Member</h2>
 			<form class="modal-form" on:submit={handleCreateUser}>
@@ -750,7 +754,9 @@
 
 <!-- Change Password Modal -->
 {#if showPasswordModal}
+	<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 	<div class="modal-overlay" on:click={closePasswordModal} on:keydown={(e) => e.key === 'Escape' && closePasswordModal()} role="dialog" aria-modal="true" tabindex="-1">
+		<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 		<div class="modal" on:click|stopPropagation on:keydown|stopPropagation role="document">
 			<h2>Change Password</h2>
 			<form class="modal-form" on:submit={handleChangePassword}>

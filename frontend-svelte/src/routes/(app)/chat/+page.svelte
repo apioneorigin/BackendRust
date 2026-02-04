@@ -46,11 +46,6 @@
 	import MatrixToolbar from '$lib/components/matrix/MatrixToolbar.svelte';
 	import ContextControlPopup from '$lib/components/matrix/ContextControlPopup.svelte';
 
-	// Accept SvelteKit props to avoid "unknown prop" warnings
-	export let data: Record<string, unknown> = {};
-	// Suppress unused variable warning
-	void data;
-
 	// Chat state
 	let messageInput = '';
 	let messagesContainer: HTMLElement;
@@ -754,7 +749,9 @@
 
 <!-- Toolbar Popups (Plays and Scenarios only) -->
 {#if activeToolbarPopup}
+	<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 	<div class="popup-overlay" on:click={closeToolbarPopup} on:keydown={(e) => e.key === 'Escape' && closeToolbarPopup()} role="presentation" tabindex="-1">
+		<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 		<div class="toolbar-popup" on:click|stopPropagation on:keydown|stopPropagation role="dialog" aria-modal="true">
 			<div class="popup-header">
 				<h3>
@@ -820,7 +817,9 @@
 
 <!-- Explanation Popup (Power Spot or Risk) -->
 {#if explanationPopup}
+	<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 	<div class="popup-overlay" on:click={closeExplanationPopup} on:keydown={(e) => e.key === 'Escape' && closeExplanationPopup()} role="presentation" tabindex="-1">
+		<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 		<div class="toolbar-popup explanation-popup" on:click|stopPropagation on:keydown|stopPropagation role="dialog" aria-modal="true">
 			<div class="popup-header">
 				<h3>
