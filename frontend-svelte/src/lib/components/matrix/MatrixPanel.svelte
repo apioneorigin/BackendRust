@@ -40,6 +40,10 @@
 	let selectedCell: { row: number; col: number } | null = null;
 	let showCellPopup = false;
 	let isPopulatingDoc: string | null = null;  // Track which doc is being populated
+	let isPopulatingMatrix = false;  // Track matrix population state
+
+	// Check if active document has populated cells (not just stubs)
+	$: hasCells = $activeDocument?.matrix_data?.cells && Object.keys($activeDocument.matrix_data.cells).length > 0;
 
 	// Track local edits and original values for change detection
 	let localDimensionEdits: Map<string, number> = new Map(); // key: "row-col-dimIdx", value: edited value
@@ -243,6 +247,19 @@
 			isPopulatingDoc = null;
 		}
 	}
+
+	// Populate the currently active document's matrix
+	async function handlePopulateActiveMatrix() {
+		if (!$activeDocumentId) return;
+		isPopulatingMatrix = true;
+		try {
+			await matrix.populateDocument($activeDocumentId);
+		} catch (error) {
+			console.error('Failed to populate matrix:', error);
+		} finally {
+			isPopulatingMatrix = false;
+		}
+	}
 </script>
 
 <div class="matrix-panel" class:compact>
@@ -306,56 +323,84 @@
 	{/if}
 
 	<!-- Matrix Grid -->
-	<div class="matrix-grid">
-		<!-- Top-left corner (empty) -->
-		<div class="grid-corner"></div>
+	<div class="matrix-grid-wrapper">
+		<div class="matrix-grid" class:ghost={!hasCells}>
+			<!-- Top-left corner (empty) -->
+			<div class="grid-corner"></div>
 
-		<!-- Column headers -->
-		{#each columnHeaders as header}
-			<div class="col-header">
-				<span class="header-text">{header}</span>
-			</div>
-		{/each}
-
-		<!-- Matrix body -->
-		{#each matrixData as row, rowIdx}
-			<!-- Row header -->
-			<div class="row-header">
-				<span class="header-text">{rowHeaders[rowIdx]}</span>
-			</div>
-
-			<!-- Data cells -->
-			{#each row as cell, colIdx}
-				{@const cellAvg = calcCellValueFromDimensions(cell.dimensions)}
-				{@const filledCount = getFilledSegments(cellAvg)}
-				<div
-					class="matrix-cell {getCellColor(cell)}"
-					class:leverage-point={cell.isLeveragePoint}
-					class:selected={selectedCell?.row === rowIdx && selectedCell?.col === colIdx}
-				>
-					{#if cell.isLeveragePoint}
-						<span class="power-indicator" title="Power Spot">⚡</span>
-					{/if}
-					<!-- Top 50%: click to open dimensions popup -->
-					<button
-						class="cell-top-area"
-						on:click={() => handleCellClick(rowIdx, colIdx)}
-						aria-label="Open dimensions"
-					></button>
-					<!-- Bottom 50%: 5-segment bar, clickable -->
-					<div class="cell-bar">
-						{#each Array(CELL_SEGMENTS) as _, segIdx}
-							<button
-								class="cell-bar-segment"
-								class:filled={segIdx < filledCount}
-								on:click={() => handleCellBarClick(rowIdx, colIdx, segIdx)}
-								aria-label="Set level {segIdx + 1}"
-							></button>
-						{/each}
-					</div>
+			<!-- Column headers -->
+			{#each columnHeaders as header}
+				<div class="col-header">
+					<span class="header-text">{header}</span>
 				</div>
 			{/each}
-		{/each}
+
+			<!-- Matrix body -->
+			{#each matrixData as row, rowIdx}
+				<!-- Row header -->
+				<div class="row-header">
+					<span class="header-text">{rowHeaders[rowIdx]}</span>
+				</div>
+
+				<!-- Data cells -->
+				{#each row as cell, colIdx}
+					{@const cellAvg = hasCells ? calcCellValueFromDimensions(cell.dimensions) : 0}
+					{@const filledCount = hasCells ? getFilledSegments(cellAvg) : 0}
+					<div
+						class="matrix-cell {hasCells ? getCellColor(cell) : ''}"
+						class:leverage-point={hasCells && cell.isLeveragePoint}
+						class:selected={hasCells && selectedCell?.row === rowIdx && selectedCell?.col === colIdx}
+						class:ghost-cell={!hasCells}
+					>
+						{#if hasCells && cell.isLeveragePoint}
+							<span class="power-indicator" title="Power Spot">⚡</span>
+						{/if}
+						{#if hasCells}
+							<!-- Top 50%: click to open dimensions popup -->
+							<button
+								class="cell-top-area"
+								on:click={() => handleCellClick(rowIdx, colIdx)}
+								aria-label="Open dimensions"
+							></button>
+							<!-- Bottom 50%: 5-segment bar, clickable -->
+							<div class="cell-bar">
+								{#each Array(CELL_SEGMENTS) as _, segIdx}
+									<button
+										class="cell-bar-segment"
+										class:filled={segIdx < filledCount}
+										on:click={() => handleCellBarClick(rowIdx, colIdx, segIdx)}
+										aria-label="Set level {segIdx + 1}"
+									></button>
+								{/each}
+							</div>
+						{/if}
+					</div>
+				{/each}
+			{/each}
+		</div>
+
+		<!-- Ghost state overlay with central button -->
+		{#if !hasCells && $activeDocumentId}
+			<div class="ghost-overlay">
+				<button
+					class="populate-matrix-btn"
+					on:click={handlePopulateActiveMatrix}
+					disabled={isPopulatingMatrix}
+				>
+					{#if isPopulatingMatrix}
+						<Spinner size="sm" />
+						<span>Analyzing Reality...</span>
+					{:else}
+						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<circle cx="12" cy="12" r="10"/>
+							<path d="M12 16v-4"/>
+							<path d="M12 8h.01"/>
+						</svg>
+						<span>Design Reality</span>
+					{/if}
+				</button>
+			</div>
+		{/if}
 	</div>
 </div>
 
@@ -574,6 +619,15 @@
 		cursor: wait;
 	}
 
+	/* Grid wrapper for overlay positioning */
+	.matrix-grid-wrapper {
+		position: relative;
+		flex: 1;
+		min-height: 0;
+		display: flex;
+		flex-direction: column;
+	}
+
 	.matrix-grid {
 		display: grid;
 		grid-template-columns: 100px repeat(5, 1fr);
@@ -582,6 +636,16 @@
 		flex: 1;
 		min-height: 0;
 		overflow: hidden;
+	}
+
+	/* Ghost state - faint grid when cells not populated */
+	.matrix-grid.ghost {
+		opacity: 0.4;
+	}
+
+	.matrix-grid.ghost .col-header .header-text,
+	.matrix-grid.ghost .row-header .header-text {
+		opacity: 0.6;
 	}
 
 	.compact .matrix-grid {
@@ -664,8 +728,23 @@
 		overflow: hidden;
 	}
 
+	/* Ghost cell - very faint when no data */
+	.matrix-cell.ghost-cell {
+		background: var(--color-field-depth);
+		opacity: 0.5;
+		pointer-events: none;
+	}
+
+	[data-theme='dark'] .matrix-cell.ghost-cell {
+		background: rgba(255, 255, 255, 0.03);
+	}
+
 	.matrix-cell:hover {
 		background: var(--color-accent-subtle);
+	}
+
+	.matrix-cell.ghost-cell:hover {
+		background: var(--color-field-depth);
 	}
 
 	.matrix-cell.selected {
@@ -937,5 +1016,61 @@
 		padding: 0.75rem 1rem;
 		background: var(--color-field-depth);
 		border-radius: 0 0 1rem 1rem;
+	}
+
+	/* Ghost overlay with central action button */
+	.ghost-overlay {
+		position: absolute;
+		inset: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		pointer-events: none;
+		z-index: 10;
+	}
+
+	.populate-matrix-btn {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		padding: 1rem 1.5rem;
+		background: var(--color-primary-500);
+		color: white;
+		border: none;
+		border-radius: 0.75rem;
+		font-size: 0.9375rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.2s ease;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+		pointer-events: auto;
+	}
+
+	.populate-matrix-btn:hover:not(:disabled) {
+		background: var(--color-primary-600);
+		transform: translateY(-1px);
+		box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+	}
+
+	.populate-matrix-btn:active:not(:disabled) {
+		transform: translateY(0);
+	}
+
+	.populate-matrix-btn:disabled {
+		opacity: 0.8;
+		cursor: wait;
+	}
+
+	.populate-matrix-btn svg {
+		flex-shrink: 0;
+	}
+
+	[data-theme='dark'] .populate-matrix-btn {
+		background: var(--color-primary-400);
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+	}
+
+	[data-theme='dark'] .populate-matrix-btn:hover:not(:disabled) {
+		background: var(--color-primary-300);
 	}
 </style>
