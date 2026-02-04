@@ -34,7 +34,8 @@ export {
 	changedRowIndices,
 	changedColumnIndices,
 	previousRowOptions,
-	previousColumnOptions
+	previousColumnOptions,
+	autoRefresh
 } from './matrix';
 
 // Re-export types

@@ -132,6 +132,10 @@ interface MatrixState {
 
 	// Conversation ID for API calls
 	conversationId: string | null;
+
+	// Auto refresh - when enabled, matrix auto-updates on context change
+	// and LLM can add 1 extra document at its discretion
+	autoRefresh: boolean;
 }
 
 // Create placeholder 5x5 matrix for initial render
@@ -183,7 +187,10 @@ const initialState: MatrixState = {
 
 	isLoadingOptions: false,
 	error: null,
-	conversationId: null
+	conversationId: null,
+
+	// Auto refresh disabled by default
+	autoRefresh: false
 };
 
 function createMatrixStore() {
@@ -653,6 +660,17 @@ function createMatrixStore() {
 			}));
 		},
 
+		// Toggle auto refresh - when enabled, matrix auto-updates on context change
+		// and LLM can add 1 extra document at its discretion
+		toggleAutoRefresh() {
+			update(state => ({ ...state, autoRefresh: !state.autoRefresh }));
+		},
+
+		// Set auto refresh state directly
+		setAutoRefresh(enabled: boolean) {
+			update(state => ({ ...state, autoRefresh: enabled }));
+		},
+
 		// Reset matrix
 		reset() {
 			set(initialState);
@@ -679,6 +697,10 @@ export const isMatrixGenerated = derived(matrix, ($matrix) => $matrix.isGenerate
 export const isGeneratingMoreDocuments = derived(matrix, ($matrix) => $matrix.isGeneratingMoreDocuments);
 export const showRiskHeatmap = derived(matrix, ($matrix) => $matrix.showRiskHeatmap);
 export const isLoadingOptions = derived(matrix, ($matrix) => $matrix.isLoadingOptions);
+
+// Auto refresh - when enabled, matrix auto-updates on context change
+// and LLM can add 1 extra document at its discretion
+export const autoRefresh = derived(matrix, ($matrix) => $matrix.autoRefresh);
 
 // Change tracking derived stores - shows which options changed between context updates
 export const changedRowIndices = derived(matrix, ($matrix) => $matrix.changedRowIndices);
