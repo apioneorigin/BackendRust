@@ -1,33 +1,19 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { theme, addToast, chat, conversations, currentConversation, messages } from '$lib/stores';
-	import { api } from '$lib/utils/api';
 	import type { LayoutData } from './$types';
 
 	export let data: LayoutData;
+
+	// User guaranteed by hooks.server.ts guard - no fallback
+	$: user = data.user;
 
 	let mobileMenuOpen = false;
 	let userMenuOpen = false;
 	let sidebarCollapsed = false;
 	let isSelectingConversation = false;
 	let activeOptionsMenu: string | null = null;
-
-	// Reactive user from data with fallback
-	$: user = data?.user ?? null;
-
-	// Initialize from server data
-	onMount(() => {
-		// Set token for API calls
-		if (data?.token) {
-			api.setToken(data.token);
-		}
-		// Initialize conversations from server data
-		if (data?.conversations && Array.isArray(data.conversations)) {
-			chat.setConversations(data.conversations);
-		}
-	});
 
 	// Close menus on navigation
 	$: if ($page.url.pathname) {
@@ -230,7 +216,7 @@
 					</div>
 				{/if}
 				<div class="conversations-list">
-					{#each $conversations || [] as conversation (conversation.id)}
+					{#each $conversations as conversation (conversation.id)}
 						<div class="conversation-row" class:active={$currentConversation?.id === conversation.id}>
 							<button
 								type="button"
