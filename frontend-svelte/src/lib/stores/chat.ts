@@ -107,12 +107,16 @@ const initialState: ChatState = {
 	error: null,
 };
 
+// Message cache for instant conversation switching
+const messageCache = new Map<string, { messages: Message[]; questions: Question[]; timestamp: number }>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache validity
+
 function createChatStore() {
 	const { subscribe, set, update } = writable<ChatState>(initialState);
 
-	// Guard flags to prevent concurrent operations that could cause reactive loops
-	let isSelectingConversation = false;
-	let isLoadingConversations = false;
+	// AbortControllers for cancellable operations (SvelteKit-native pattern)
+	let selectConversationController: AbortController | null = null;
+	let loadConversationsController: AbortController | null = null;
 
 	return {
 		subscribe,
@@ -126,9 +130,11 @@ function createChatStore() {
 		},
 
 		async loadConversations() {
-			// Prevent duplicate concurrent loads
-			if (isLoadingConversations) return;
-			isLoadingConversations = true;
+			// Cancel any in-flight request
+			if (loadConversationsController) {
+				loadConversationsController.abort();
+			}
+			loadConversationsController = new AbortController();
 
 			update(state => ({ ...state, isLoading: true }));
 			try {
@@ -139,13 +145,15 @@ function createChatStore() {
 					isLoading: false,
 				}));
 			} catch (error: any) {
+				// Ignore abort errors (expected when cancelling)
+				if (error.name === 'AbortError') return;
 				update(state => ({
 					...state,
 					error: error.message,
 					isLoading: false,
 				}));
 			} finally {
-				isLoadingConversations = false;
+				loadConversationsController = null;
 			}
 		},
 
@@ -178,10 +186,10 @@ function createChatStore() {
 		},
 
 		async selectConversation(conversationId: string) {
-			// Guard against invalid ID or concurrent selection
-			if (!conversationId || isSelectingConversation) return;
+			// Guard against invalid ID
+			if (!conversationId) return;
 
-			// Check and set loading in single update to avoid get() subscription
+			// Check if already viewing this conversation
 			let shouldProceed = false;
 			update(state => {
 				if (state.currentConversation?.id === conversationId) {
@@ -193,7 +201,26 @@ function createChatStore() {
 
 			if (!shouldProceed) return;
 
-			isSelectingConversation = true;
+			// Cancel any in-flight selection request (allows rapid clicks)
+			if (selectConversationController) {
+				selectConversationController.abort();
+			}
+			selectConversationController = new AbortController();
+			const { signal } = selectConversationController;
+
+			// Check cache for instant display
+			const cached = messageCache.get(conversationId);
+			const isCacheValid = cached && (Date.now() - cached.timestamp) < CACHE_TTL;
+
+			if (isCacheValid) {
+				// Instant display from cache
+				update(state => ({
+					...state,
+					messages: cached.messages,
+					questions: cached.questions,
+					isLoading: false,
+				}));
+			}
 
 			try {
 				// Load conversation and messages (required), documents and questions (optional with error handling)
@@ -202,6 +229,9 @@ function createChatStore() {
 					api.get<Message[]>(`/api/chat/conversations/${conversationId}/messages`),
 				]);
 
+				// Check if request was aborted (user clicked different conversation)
+				if (signal.aborted) return;
+
 				// Load optional data with proper error handling (don't block on failure)
 				let documentsResponse: any[] = [];
 				let questionsResponse: Question[] = [];
@@ -209,16 +239,23 @@ function createChatStore() {
 				try {
 					documentsResponse = await api.get<any[]>(`/api/matrix/${conversationId}/documents`);
 				} catch (docError: any) {
-					console.error('Failed to load documents:', docError);
-					addToast({ type: 'error', message: 'Failed to load matrix documents', duration: 3000 });
+					if (docError.name !== 'AbortError') {
+						console.error('Failed to load documents:', docError);
+						addToast({ type: 'error', message: 'Failed to load matrix documents', duration: 3000 });
+					}
 				}
 
 				try {
 					questionsResponse = await api.get<Question[]>(`/api/chat/conversations/${conversationId}/questions`);
 				} catch (qError: any) {
-					console.error('Failed to load questions:', qError);
-					addToast({ type: 'error', message: 'Failed to load questions', duration: 3000 });
+					if (qError.name !== 'AbortError') {
+						console.error('Failed to load questions:', qError);
+						addToast({ type: 'error', message: 'Failed to load questions', duration: 3000 });
+					}
 				}
+
+				// Check again if aborted before updating state
+				if (signal.aborted) return;
 
 				// Transform questions from API format to store format
 				const questions: Question[] = (Array.isArray(questionsResponse) ? questionsResponse : []).map(q => ({
@@ -228,10 +265,19 @@ function createChatStore() {
 					selectedOption: q.selectedOption
 				}));
 
+				const messages = Array.isArray(messagesResponse) ? messagesResponse : [];
+
+				// Update cache
+				messageCache.set(conversationId, {
+					messages,
+					questions,
+					timestamp: Date.now()
+				});
+
 				update(state => ({
 					...state,
 					currentConversation: conversation,
-					messages: Array.isArray(messagesResponse) ? messagesResponse : [],
+					messages,
 					questions,
 					isLoading: false,
 				}));
@@ -248,13 +294,15 @@ function createChatStore() {
 				// Set conversation ID in matrix store for API calls
 				matrix.setConversationId(conversationId);
 			} catch (error: any) {
+				// Ignore abort errors (expected when user clicks rapidly)
+				if (error.name === 'AbortError') return;
 				update(state => ({
 					...state,
 					error: error.message,
 					isLoading: false,
 				}));
 			} finally {
-				isSelectingConversation = false;
+				selectConversationController = null;
 			}
 		},
 

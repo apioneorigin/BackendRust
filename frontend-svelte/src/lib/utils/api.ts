@@ -9,11 +9,12 @@
  * - Error handling
  */
 
-import { browser, dev } from '$app/environment';
+import { browser } from '$app/environment';
 import { goto } from '$app/navigation';
 
-const API_BASE_URL = '';  // Uses Vite proxy in dev, same origin in prod
-const SSE_BASE_URL = dev ? 'http://localhost:8000' : '';  // Direct backend for SSE (bypasses proxy buffering)
+// All API calls go through SvelteKit (same origin)
+// SSE endpoints use SvelteKit server routes for native streaming
+const API_BASE_URL = '';
 
 interface RequestOptions {
 	headers?: Record<string, string>;
@@ -178,14 +179,8 @@ export const api = {
 	},
 
 	/**
-	 * Get SSE base URL for direct backend connection
-	 */
-	getSSEBaseURL(): string {
-		return SSE_BASE_URL;
-	},
-
-	/**
-	 * SSE stream - uses direct backend with Bearer token
+	 * SSE stream - uses SvelteKit server endpoints for native streaming
+	 * All requests go through same-origin SvelteKit routes (no CORS, no buffering issues)
 	 */
 	async sseStream(endpoint: string, data?: any): Promise<Response> {
 		const token = getToken();
@@ -196,10 +191,8 @@ export const api = {
 			headers['Authorization'] = `Bearer ${token}`;
 		}
 
-		// Use direct backend URL in dev for SSE (avoids proxy buffering issues)
-		const baseUrl = dev ? SSE_BASE_URL : API_BASE_URL;
-
-		return fetch(`${baseUrl}${endpoint}`, {
+		// Use SvelteKit server endpoint (same origin, native streaming)
+		return fetch(`${API_BASE_URL}${endpoint}`, {
 			method: 'POST',
 			headers,
 			body: data ? JSON.stringify(data) : undefined,

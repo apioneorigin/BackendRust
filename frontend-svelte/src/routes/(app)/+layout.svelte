@@ -12,7 +12,6 @@
 	let mobileMenuOpen = false;
 	let userMenuOpen = false;
 	let sidebarCollapsed = false;
-	let isSelectingConversation = false;
 	let activeOptionsMenu: string | null = null;
 
 	// Close menus on navigation
@@ -45,24 +44,14 @@
 	}
 
 	async function handleSelectConversation(conversationId: string) {
-		// Guard against rapid clicks or selecting same conversation
-		if (isSelectingConversation || $currentConversation?.id === conversationId) {
-			return;
-		}
+		// Store handles cancellation of in-flight requests (no guard needed)
+		if ($currentConversation?.id === conversationId) return;
 
-		isSelectingConversation = true;
-		try {
-			await chat.selectConversation(conversationId);
-			// Only navigate if not already on chat page
-			if (!$page.url.pathname.startsWith('/chat')) {
-				goto('/chat');
-			}
-		} finally {
-			// Use setTimeout to ensure state is cleared after any reactive updates complete
-			setTimeout(() => {
-				isSelectingConversation = false;
-			}, 100);
+		// Navigate first for instant feedback, then load data
+		if (!$page.url.pathname.startsWith('/chat')) {
+			goto('/chat');
 		}
+		await chat.selectConversation(conversationId);
 	}
 
 	function formatConversationDate(date: Date | string | undefined): string {
