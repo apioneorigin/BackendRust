@@ -78,13 +78,13 @@ export interface ColumnOption {
 export interface Document {
 	id: string;
 	name: string;
-	description: string;  // ~20 word description
+	description?: string;  // ~20 word description (optional from LLM)
 	matrix_data: {
 		row_options: RowOption[];
 		column_options: ColumnOption[];
 		selected_rows: number[];
 		selected_columns: number[];
-		cells: Record<string, {
+		cells?: Record<string, {  // Optional - generated after "design-reality" action
 			impact_score: number;
 			relationship?: string;
 			dimensions: {
@@ -190,7 +190,7 @@ function createMatrixStore() {
 			value: 50  // Medium
 		}));
 
-		const { row_options, column_options, selected_rows, selected_columns, cells } = doc.matrix_data;
+		const { row_options, column_options, selected_rows, selected_columns, cells = {} } = doc.matrix_data;
 
 		const rowHeaders = selected_rows.map(i => row_options[i]?.label || `Row ${i + 1}`);
 		const columnHeaders = selected_columns.map(i => column_options[i]?.label || `Column ${i + 1}`);
@@ -253,9 +253,15 @@ function createMatrixStore() {
 			if (!data || !data.documents || data.documents.length === 0) return;
 
 			const documents = data.documents;
-
-			const activeDocumentId = documents[0].id;
 			const activeDoc = documents[0];
+
+			// Validate document has required matrix_data structure
+			if (!activeDoc.matrix_data || !activeDoc.matrix_data.row_options || !activeDoc.matrix_data.column_options) {
+				console.error('[Matrix] Document missing required matrix_data structure');
+				return;
+			}
+
+			const activeDocumentId = activeDoc.id;
 			const displayed = buildDisplayedMatrix(activeDoc);
 
 			update(state => ({
