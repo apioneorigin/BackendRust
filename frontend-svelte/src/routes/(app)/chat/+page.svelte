@@ -1025,7 +1025,6 @@
 	.welcome-logo {
 		width: 48px;
 		height: 48px;
-		opacity: 0.8;
 	}
 
 	.welcome-logo .logo-circle {
