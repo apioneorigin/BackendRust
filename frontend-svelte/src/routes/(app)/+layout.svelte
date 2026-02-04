@@ -13,6 +13,7 @@
 	let userMenuOpen = false;
 	let sidebarCollapsed = false;
 	let activeOptionsMenu: string | null = null;
+	let isSelectingConversation = false;
 
 	// Close menus on navigation
 	$: if ($page.url.pathname) {
