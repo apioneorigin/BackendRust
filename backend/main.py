@@ -72,6 +72,7 @@ from security.middleware import UnifiedSecurityMiddleware
 from security.rate_limiter import RateLimiter, set_rate_limiter
 from security.audit_logger import AuditLogger, set_audit_logger
 from security.guardrails import classify_zone, get_crisis_response, detect_locale_from_context
+from security.types import SecurityConfig
 
 from formulas import OOFInferenceEngine, CANONICAL_OPERATOR_NAMES, SHORT_TO_CANONICAL
 from value_organizer import ValueOrganizer
@@ -211,7 +212,10 @@ app.add_middleware(
 )
 
 # Add unified security middleware (single-pass for all security checks)
-app.add_middleware(UnifiedSecurityMiddleware, rate_limiter=_rate_limiter)
+# Disable rate limiting for local development
+_is_production = os.getenv("ENVIRONMENT") == "production"
+_security_config = SecurityConfig(rate_limit_enabled=_is_production)
+app.add_middleware(UnifiedSecurityMiddleware, rate_limiter=_rate_limiter, config=_security_config)
 
 api_logger.info("Security middleware initialized")
 
