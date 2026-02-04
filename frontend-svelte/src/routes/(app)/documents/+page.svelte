@@ -332,7 +332,7 @@
 	}
 
 	[data-theme='dark'] .search-box:focus-within {
-		box-shadow: 0 0 0 3px rgba(15, 76, 117, 0.3);
+		box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.3);
 	}
 
 	.search-box svg {

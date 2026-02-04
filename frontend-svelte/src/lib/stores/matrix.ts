@@ -128,11 +128,32 @@ interface MatrixState {
 	conversationId: string | null;
 }
 
+// Create placeholder 5x5 matrix for initial render
+function createPlaceholderMatrix(): CellData[][] {
+	const placeholderDimensions: CellDimension[] = Array.from({ length: 5 }, (_, i) => ({
+		name: `Dimension ${i + 1}`,
+		value: 50
+	}));
+
+	const placeholderCell: CellData = {
+		value: 50,
+		dimensions: placeholderDimensions,
+		confidence: 0.5,
+		description: '',
+		isLeveragePoint: false,
+		riskLevel: 'low'
+	};
+
+	return Array.from({ length: 5 }, () =>
+		Array.from({ length: 5 }, () => ({ ...placeholderCell, dimensions: placeholderDimensions.map(d => ({ ...d })) }))
+	);
+}
+
 const initialState: MatrixState = {
 	documents: [],
 	activeDocumentId: null,
 
-	displayedMatrixData: [],
+	displayedMatrixData: createPlaceholderMatrix(),
 	displayedRowHeaders: ['Row 1', 'Row 2', 'Row 3', 'Row 4', 'Row 5'],
 	displayedColumnHeaders: ['Column 1', 'Column 2', 'Column 3', 'Column 4', 'Column 5'],
 	displayedRowInsights: ['', '', '', '', ''],

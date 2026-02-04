@@ -504,7 +504,7 @@
 	}
 
 	[data-theme='dark'] .option-item.selected {
-		background: rgba(15, 76, 117, 0.2);
+		background: rgba(15, 23, 42, 0.2);
 	}
 
 	.option-item.disabled {
@@ -581,7 +581,7 @@
 	}
 
 	[data-theme='dark'] .generate-more-btn:hover:not(:disabled) {
-		background: rgba(15, 76, 117, 0.2);
+		background: rgba(15, 23, 42, 0.2);
 	}
 
 	.options-limit-notice {

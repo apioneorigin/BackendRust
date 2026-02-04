@@ -968,7 +968,7 @@
 	}
 
 	[data-theme='dark'] .card-icon {
-		background: rgba(15, 76, 117, 0.3);
+		background: rgba(15, 23, 42, 0.3);
 		color: var(--color-primary-400);
 	}
 
@@ -1090,7 +1090,7 @@
 	}
 
 	[data-theme='dark'] .credits-balance {
-		background: rgba(15, 76, 117, 0.15);
+		background: rgba(15, 23, 42, 0.15);
 		border-color: var(--color-primary-800);
 	}
 
@@ -1171,7 +1171,7 @@
 	}
 
 	[data-theme='dark'] .purchase-option.featured {
-		background: rgba(15, 76, 117, 0.1);
+		background: rgba(15, 23, 42, 0.1);
 	}
 
 	.purchase-label {
@@ -1266,12 +1266,12 @@
 	/* Upgrade Card */
 	.card-upgrade {
 		border-color: var(--color-primary-200);
-		background: rgba(15, 76, 117, 0.03);
+		background: rgba(15, 23, 42, 0.03);
 	}
 
 	[data-theme='dark'] .card-upgrade {
 		border-color: var(--color-primary-800);
-		background: rgba(15, 76, 117, 0.1);
+		background: rgba(15, 23, 42, 0.1);
 	}
 
 	.upgrade-content {
@@ -1637,7 +1637,7 @@
 	}
 
 	[data-theme='dark'] .upgrade-benefits {
-		background: rgba(15, 76, 117, 0.15);
+		background: rgba(15, 23, 42, 0.15);
 	}
 
 	.upgrade-benefits p {

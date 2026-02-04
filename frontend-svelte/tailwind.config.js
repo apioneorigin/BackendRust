@@ -90,7 +90,7 @@ export default {
 			},
 			fontFamily: {
 				sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
-				heading: ['Source Serif 4', 'Georgia', 'Times New Roman', 'serif'],
+				heading: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
 				mono: ['JetBrains Mono', 'Fira Code', 'monospace']
 			},
 			fontSize: {

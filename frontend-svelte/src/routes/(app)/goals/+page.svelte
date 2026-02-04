@@ -601,7 +601,7 @@
 
 	[data-theme='dark'] .drop-zone:hover,
 	[data-theme='dark'] .drop-zone.drag-over {
-		background: rgba(15, 76, 117, 0.1);
+		background: rgba(15, 23, 42, 0.1);
 	}
 
 	.drop-zone-content {
