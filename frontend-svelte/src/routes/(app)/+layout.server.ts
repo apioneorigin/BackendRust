@@ -50,6 +50,7 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 
 	return {
 		user,
+		token,  // Pass token to client for API calls
 		organization,
 		conversations
 	};

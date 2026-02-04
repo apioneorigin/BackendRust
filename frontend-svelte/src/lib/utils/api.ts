@@ -32,8 +32,17 @@ class ApiError extends Error {
 	}
 }
 
-// Token management removed - using HttpOnly cookies via SvelteKit
-// Cookies are automatically included in same-origin requests
+// Token stored in memory for client-side API calls
+// Token is passed from server via page data (from HttpOnly cookie)
+let authToken: string | null = null;
+
+function setToken(token: string | null): void {
+	authToken = token;
+}
+
+function getToken(): string | null {
+	return authToken;
+}
 
 async function request<T>(
 	method: string,
@@ -43,11 +52,17 @@ async function request<T>(
 ): Promise<T> {
 	const { headers = {}, timeout = 30000, retries = 3 } = options;
 
+	const token = getToken();
+	const authHeaders: Record<string, string> = {};
+	if (token) {
+		authHeaders['Authorization'] = `Bearer ${token}`;
+	}
+
 	const config: RequestInit = {
 		method,
-		credentials: 'include', // Include cookies for auth
 		headers: {
 			'Content-Type': 'application/json',
+			...authHeaders,
 			...headers,
 		},
 	};
@@ -70,6 +85,7 @@ async function request<T>(
 			if (!response.ok) {
 				// Handle 401 - redirect to login
 				if (response.status === 401 && browser) {
+					authToken = null;
 					goto('/login');
 				}
 				const errorData = await response.json().catch(() => ({}));
@@ -125,16 +141,38 @@ export const api = {
 	},
 
 	/**
+	 * Set auth token for API calls
+	 */
+	setToken,
+
+	/**
+	 * Get current auth token
+	 */
+	getToken,
+
+	/**
+	 * Clear auth token
+	 */
+	clearToken(): void {
+		authToken = null;
+	},
+
+	/**
 	 * Raw fetch for streaming responses (SSE)
 	 */
 	async stream(endpoint: string, data?: any, options?: RequestOptions): Promise<Response> {
+		const token = getToken();
+		const headers: Record<string, string> = {
+			'Content-Type': 'application/json',
+			...options?.headers,
+		};
+		if (token) {
+			headers['Authorization'] = `Bearer ${token}`;
+		}
+
 		return fetch(`${API_BASE_URL}${endpoint}`, {
 			method: 'POST',
-			credentials: 'include',
-			headers: {
-				'Content-Type': 'application/json',
-				...options?.headers,
-			},
+			headers,
 			body: data ? JSON.stringify(data) : undefined,
 		});
 	},
@@ -147,20 +185,23 @@ export const api = {
 	},
 
 	/**
-	 * SSE stream - uses same-origin for cookie auth, or direct backend in dev
-	 * In production, uses same-origin proxy. In dev, uses direct backend with credentials.
+	 * SSE stream - uses direct backend with Bearer token
 	 */
 	async sseStream(endpoint: string, data?: any): Promise<Response> {
+		const token = getToken();
+		const headers: Record<string, string> = {
+			'Content-Type': 'application/json',
+		};
+		if (token) {
+			headers['Authorization'] = `Bearer ${token}`;
+		}
+
 		// Use direct backend URL in dev for SSE (avoids proxy buffering issues)
-		// Use same-origin in production (cookies work automatically)
 		const baseUrl = dev ? SSE_BASE_URL : API_BASE_URL;
 
 		return fetch(`${baseUrl}${endpoint}`, {
 			method: 'POST',
-			credentials: 'include',
-			headers: {
-				'Content-Type': 'application/json',
-			},
+			headers,
 			body: data ? JSON.stringify(data) : undefined,
 		});
 	},
