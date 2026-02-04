@@ -205,7 +205,7 @@
 					</div>
 				{/if}
 				<div class="conversations-list">
-					{#each $conversations as conversation (conversation.id)}
+					{#each ($conversations || []) as conversation (conversation.id)}
 						<div class="conversation-row" class:active={$currentConversation?.id === conversation.id}>
 							<button
 								type="button"
