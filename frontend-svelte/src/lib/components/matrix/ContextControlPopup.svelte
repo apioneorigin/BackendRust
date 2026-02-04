@@ -509,60 +509,16 @@
 		border-color: var(--color-primary-200);
 	}
 
-	[data-theme='dark'] .document-tab:hover {
-		background: rgba(15, 23, 42, 0.2);
-		border-color: var(--color-primary-700);
-	}
-
 	.document-tab.active {
 		background: var(--color-primary-100);
 		border-color: var(--color-primary-400);
 		color: var(--color-primary-700);
 	}
 
-	[data-theme='dark'] .document-tab.active {
-		background: rgba(15, 23, 42, 0.3);
-		color: var(--color-primary-300);
-	}
-
 	.tab-name {
 		max-width: 150px;
 		overflow: hidden;
 		text-overflow: ellipsis;
-	}
-
-	.add-document-btn {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 36px;
-		height: 36px;
-		background: var(--color-field-depth);
-		border: 1px dashed var(--color-veil-thin);
-		border-radius: 0.5rem;
-		color: var(--color-primary-600);
-		cursor: pointer;
-		transition: all 0.15s ease;
-		flex-shrink: 0;
-	}
-
-	.add-document-btn:hover:not(:disabled) {
-		background: var(--color-primary-50);
-		border-color: var(--color-primary-400);
-		border-style: solid;
-	}
-
-	[data-theme='dark'] .add-document-btn {
-		color: var(--color-primary-400);
-	}
-
-	[data-theme='dark'] .add-document-btn:hover:not(:disabled) {
-		background: rgba(15, 23, 42, 0.2);
-	}
-
-	.add-document-btn:disabled {
-		opacity: 0.7;
-		cursor: wait;
 	}
 
 	.document-description {
@@ -595,10 +551,6 @@
 
 	.selection-count.complete {
 		color: #059669;
-	}
-
-	[data-theme='dark'] .selection-count.complete {
-		color: #34d399;
 	}
 
 	.selection-hint {
@@ -655,14 +607,6 @@
 		border-style: solid;
 	}
 
-	[data-theme='dark'] .show-more-btn {
-		color: var(--color-primary-400);
-	}
-
-	[data-theme='dark'] .show-more-btn:hover {
-		background: rgba(15, 23, 42, 0.2);
-	}
-
 	.title-item-wrapper {
 		display: flex;
 		align-items: stretch;
@@ -689,11 +633,6 @@
 		color: var(--color-primary-600);
 	}
 
-	[data-theme='dark'] .insight-expand-btn:hover {
-		background: rgba(15, 23, 42, 0.2);
-		color: var(--color-primary-300);
-	}
-
 	.title-item {
 		display: flex;
 		align-items: flex-start;
@@ -716,10 +655,6 @@
 	.title-item.selected {
 		background: var(--color-primary-50);
 		border-color: var(--color-primary-400);
-	}
-
-	[data-theme='dark'] .title-item.selected {
-		background: rgba(15, 23, 42, 0.2);
 	}
 
 	.title-item.disabled {

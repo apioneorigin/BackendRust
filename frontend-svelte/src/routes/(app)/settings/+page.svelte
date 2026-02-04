@@ -967,19 +967,9 @@
 		height: 14px;
 	}
 
-	[data-theme='dark'] .card-icon {
-		background: rgba(15, 23, 42, 0.3);
-		color: var(--color-primary-400);
-	}
-
 	.card-icon-green {
 		background: rgba(5, 150, 105, 0.1);
 		color: #059669;
-	}
-
-	[data-theme='dark'] .card-icon-green {
-		background: rgba(5, 150, 105, 0.2);
-		color: #34d399;
 	}
 
 	.card-icon-muted {
@@ -1089,19 +1079,9 @@
 		border: 1px solid var(--color-primary-200);
 	}
 
-	[data-theme='dark'] .credits-balance {
-		background: rgba(15, 23, 42, 0.15);
-		border-color: var(--color-primary-800);
-	}
-
 	.credits-balance.low-balance {
 		background: rgba(239, 68, 68, 0.05);
 		border-color: rgba(239, 68, 68, 0.2);
-	}
-
-	[data-theme='dark'] .credits-balance.low-balance {
-		background: rgba(239, 68, 68, 0.1);
-		border-color: rgba(239, 68, 68, 0.3);
 	}
 
 	.credits-amount {
@@ -1127,10 +1107,6 @@
 		margin-top: 0.5rem;
 		color: #dc2626;
 		font-size: 0.75rem;
-	}
-
-	[data-theme='dark'] .low-balance-warning {
-		color: #f87171;
 	}
 
 	/* Purchase Section */
@@ -1170,19 +1146,11 @@
 		background: var(--color-primary-50);
 	}
 
-	[data-theme='dark'] .purchase-option.featured {
-		background: rgba(15, 23, 42, 0.1);
-	}
-
 	.purchase-label {
 		font-size: 0.625rem;
 		font-weight: 600;
 		color: var(--color-primary-600);
 		margin-bottom: 0.125rem;
-	}
-
-	[data-theme='dark'] .purchase-label {
-		color: var(--color-primary-400);
 	}
 
 	.purchase-credits {
@@ -1197,18 +1165,10 @@
 		color: var(--color-primary-600);
 	}
 
-	[data-theme='dark'] .purchase-price {
-		color: var(--color-primary-400);
-	}
-
 	.purchase-discount {
 		font-size: 0.625rem;
 		font-weight: 500;
 		color: #059669;
-	}
-
-	[data-theme='dark'] .purchase-discount {
-		color: #34d399;
 	}
 
 	/* Promo Section */
@@ -1231,10 +1191,6 @@
 	.promo-header svg {
 		width: 14px;
 		height: 14px;
-	}
-
-	[data-theme='dark'] .promo-header {
-		color: var(--color-primary-400);
 	}
 
 	.promo-form {
@@ -1267,11 +1223,6 @@
 	.card-upgrade {
 		border-color: var(--color-primary-200);
 		background: rgba(15, 23, 42, 0.03);
-	}
-
-	[data-theme='dark'] .card-upgrade {
-		border-color: var(--color-primary-800);
-		background: rgba(15, 23, 42, 0.1);
 	}
 
 	.upgrade-content {
@@ -1325,24 +1276,12 @@
 		color: #d97706;
 	}
 
-	[data-theme='dark'] .stat-amber {
-		color: #fbbf24;
-	}
-
 	.stat-red {
 		color: #dc2626;
 	}
 
-	[data-theme='dark'] .stat-red {
-		color: #f87171;
-	}
-
 	.stat-green {
 		color: #059669;
-	}
-
-	[data-theme='dark'] .stat-green {
-		color: #34d399;
 	}
 
 	/* Team List */
@@ -1389,10 +1328,6 @@
 		font-size: 0.8125rem;
 		font-weight: 600;
 		color: var(--color-primary-600);
-	}
-
-	[data-theme='dark'] .quota-value {
-		color: var(--color-primary-400);
 	}
 
 	.quota-label {
@@ -1508,16 +1443,8 @@
 		color: #059669;
 	}
 
-	[data-theme='dark'] .cost-value.positive {
-		color: #34d399;
-	}
-
 	.cost-value.negative {
 		color: #dc2626;
-	}
-
-	[data-theme='dark'] .cost-value.negative {
-		color: #f87171;
 	}
 
 	.cost-balance {
@@ -1539,19 +1466,9 @@
 		color: #059669;
 	}
 
-	[data-theme='dark'] .txn-badge.earned {
-		background: rgba(5, 150, 105, 0.2);
-		color: #34d399;
-	}
-
 	.txn-badge.spent {
 		background: rgba(220, 38, 38, 0.1);
 		color: #dc2626;
-	}
-
-	[data-theme='dark'] .txn-badge.spent {
-		background: rgba(220, 38, 38, 0.2);
-		color: #f87171;
 	}
 
 	.txn-amount {
@@ -1563,16 +1480,8 @@
 		color: #059669;
 	}
 
-	[data-theme='dark'] .txn-amount.positive {
-		color: #34d399;
-	}
-
 	.txn-amount.negative {
 		color: #dc2626;
-	}
-
-	[data-theme='dark'] .txn-amount.negative {
-		color: #f87171;
 	}
 
 	/* Modal */
@@ -1636,10 +1545,6 @@
 		background: var(--color-primary-50);
 	}
 
-	[data-theme='dark'] .upgrade-benefits {
-		background: rgba(15, 23, 42, 0.15);
-	}
-
 	.upgrade-benefits p {
 		font-size: 0.75rem;
 		color: var(--color-text-whisper);
@@ -1668,10 +1573,6 @@
 		flex-shrink: 0;
 		width: 14px;
 		height: 14px;
-	}
-
-	[data-theme='dark'] .upgrade-benefits li svg {
-		color: #34d399;
 	}
 
 	/* Form Group */
@@ -1721,10 +1622,6 @@
 		font-size: 0.6875rem;
 		color: #dc2626;
 		margin: 0;
-	}
-
-	[data-theme='dark'] .form-error {
-		color: #f87171;
 	}
 
 	/* Password Input */

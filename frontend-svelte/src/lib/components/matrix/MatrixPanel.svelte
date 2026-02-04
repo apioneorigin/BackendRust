@@ -466,10 +466,6 @@
 		color: var(--color-primary-600);
 	}
 
-	[data-theme='dark'] .document-name {
-		color: var(--color-primary-400);
-	}
-
 	.document-tabs {
 		display: flex;
 		align-items: center;
@@ -498,20 +494,10 @@
 		border-color: var(--color-primary-200);
 	}
 
-	[data-theme='dark'] .document-tab:hover {
-		background: rgba(15, 23, 42, 0.2);
-		border-color: var(--color-primary-700);
-	}
-
 	.document-tab.active {
 		background: var(--color-primary-100);
 		border-color: var(--color-primary-400);
 		color: var(--color-primary-700);
-	}
-
-	[data-theme='dark'] .document-tab.active {
-		background: rgba(15, 23, 42, 0.3);
-		color: var(--color-primary-300);
 	}
 
 	.tab-name {
@@ -582,10 +568,6 @@
 		border-style: solid;
 	}
 
-	[data-theme='dark'] .add-document-btn:hover:not(:disabled) {
-		background: rgba(15, 23, 42, 0.2);
-	}
-
 	.add-document-btn:disabled {
 		opacity: 0.7;
 		cursor: wait;
@@ -605,10 +587,6 @@
 		grid-template-columns: 90px repeat(5, 1fr);
 		grid-template-rows: 52px repeat(5, minmax(0, 1fr));
 		gap: 2px;
-	}
-
-	.grid-corner {
-		/* Empty corner cell */
 	}
 
 	.col-header {
@@ -719,10 +697,6 @@
 		background: rgba(0, 0, 0, 0.05);
 	}
 
-	[data-theme='dark'] .cell-top-area:hover {
-		background: rgba(255, 255, 255, 0.05);
-	}
-
 	/* Bottom 50% - 5-segment bar */
 	.cell-bar {
 		display: flex;
@@ -759,22 +733,6 @@
 		background: var(--color-primary-600);
 	}
 
-	[data-theme='dark'] .cell-bar-segment {
-		background: rgba(255, 255, 255, 0.1);
-	}
-
-	[data-theme='dark'] .cell-bar-segment:hover {
-		background: var(--color-primary-400);
-	}
-
-	[data-theme='dark'] .cell-bar-segment.filled {
-		background: var(--color-primary-400);
-	}
-
-	[data-theme='dark'] .cell-bar-segment.filled:hover {
-		background: var(--color-primary-300);
-	}
-
 	.power-indicator {
 		position: absolute;
 		top: 2px;
@@ -808,10 +766,6 @@
 		justify-content: center;
 		z-index: 100;
 		padding: 1rem;
-	}
-
-	[data-theme='dark'] .popup-overlay {
-		background: rgba(0, 0, 0, 0.8);
 	}
 
 	.cell-popup {
@@ -916,22 +870,6 @@
 
 	.dim-bar-segment.filled:hover {
 		background: var(--color-primary-600);
-	}
-
-	[data-theme='dark'] .dim-bar-segment {
-		background: rgba(255, 255, 255, 0.15);
-	}
-
-	[data-theme='dark'] .dim-bar-segment:hover {
-		background: var(--color-primary-400);
-	}
-
-	[data-theme='dark'] .dim-bar-segment.filled {
-		background: var(--color-primary-400);
-	}
-
-	[data-theme='dark'] .dim-bar-segment.filled:hover {
-		background: var(--color-primary-300);
 	}
 
 	.power-spot-badge {

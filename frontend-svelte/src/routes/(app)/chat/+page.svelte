@@ -1209,10 +1209,6 @@
 		color: var(--color-text-source);
 	}
 
-	[data-theme='dark'] .question-option:hover:not(:disabled) {
-		border-color: var(--color-primary-600);
-	}
-
 	.question-option.selected {
 		background: var(--color-primary-500);
 		border-color: var(--color-primary-500);
@@ -1486,10 +1482,6 @@
 		transition: opacity 0.2s ease;
 	}
 
-	[data-theme='dark'] .welcome-overlay {
-		background: rgba(0, 0, 0, 0.9);
-	}
-
 	.welcome-overlay:hover {
 		opacity: 0.3;
 	}
@@ -1545,10 +1537,6 @@
 		justify-content: center;
 		z-index: 100;
 		padding: 1rem;
-	}
-
-	[data-theme='dark'] .popup-overlay {
-		background: rgba(0, 0, 0, 0.8);
 	}
 
 	.toolbar-popup {
@@ -1649,11 +1637,6 @@
 		font-weight: 600;
 	}
 
-	[data-theme='dark'] .document-name-badge {
-		background: rgba(15, 23, 42, 0.3);
-		color: var(--color-primary-300);
-	}
-
 	/* Plays list */
 	.plays-list {
 		display: flex;
@@ -1692,10 +1675,6 @@
 	.play-item.selected {
 		background: var(--color-primary-50);
 		border-color: var(--color-primary-500);
-	}
-
-	[data-theme='dark'] .play-item.selected {
-		background: rgba(15, 23, 42, 0.2);
 	}
 
 	.play-info {
@@ -1744,10 +1723,6 @@
 		font-size: 11px;
 		font-weight: 600;
 		color: var(--color-primary-600);
-	}
-
-	[data-theme='dark'] .play-fit {
-		color: var(--color-primary-400);
 	}
 
 	.play-risk {

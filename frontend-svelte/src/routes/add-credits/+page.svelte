@@ -212,15 +212,6 @@
 		);
 	}
 
-	[data-theme='dark'] .add-credits-page {
-		background: linear-gradient(
-			135deg,
-			var(--color-background) 0%,
-			var(--color-field-void) 50%,
-			var(--color-background) 100%
-		);
-	}
-
 	.loading-container {
 		display: flex;
 		align-items: center;
@@ -366,18 +357,10 @@
 		border-radius: 0.75rem;
 	}
 
-	[data-theme='dark'] .info-box {
-		background: var(--color-field-depth);
-	}
-
 	.info-icon {
 		flex-shrink: 0;
 		color: var(--color-primary-600);
 		margin-top: 0.125rem;
-	}
-
-	[data-theme='dark'] .info-icon {
-		color: var(--color-primary-400);
 	}
 
 	.info-content {

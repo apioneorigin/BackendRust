@@ -599,11 +599,6 @@
 		background: var(--color-primary-50);
 	}
 
-	[data-theme='dark'] .drop-zone:hover,
-	[data-theme='dark'] .drop-zone.drag-over {
-		background: rgba(15, 23, 42, 0.1);
-	}
-
 	.drop-zone-content {
 		display: flex;
 		flex-direction: column;
@@ -660,11 +655,6 @@
 		color: var(--color-success-700);
 		border-radius: 9999px;
 		font-weight: 600;
-	}
-
-	[data-theme='dark'] .multi-file-badge {
-		background: rgba(34, 197, 94, 0.15);
-		color: var(--color-success-400);
 	}
 
 	.files-grid {
@@ -794,11 +784,6 @@
 	.confidence-medium { color: #ca8a04; }
 	.confidence-low { color: #dc2626; }
 
-	:global([data-theme='dark']) .confidence-high { color: #4ade80; }
-	:global([data-theme='dark']) .confidence-good { color: #60a5fa; }
-	:global([data-theme='dark']) .confidence-medium { color: #facc15; }
-	:global([data-theme='dark']) .confidence-low { color: #f87171; }
-
 	/* Goal type colors */
 	.type-optimize { background: #dcfce7; color: #15803d; }
 	.type-transform { background: #dbeafe; color: #1d4ed8; }
@@ -812,19 +797,6 @@
 	.type-reconciliation { background: #ccfbf1; color: #0f766e; }
 	.type-arbitrage { background: #fef3c7; color: #b45309; }
 	.type-default { background: #f3f4f6; color: #374151; }
-
-	:global([data-theme='dark']) .type-optimize { background: rgba(34, 197, 94, 0.2); color: #86efac; }
-	:global([data-theme='dark']) .type-transform { background: rgba(59, 130, 246, 0.2); color: #93c5fd; }
-	:global([data-theme='dark']) .type-discover { background: rgba(139, 92, 246, 0.2); color: #c4b5fd; }
-	:global([data-theme='dark']) .type-quantum { background: rgba(234, 179, 8, 0.2); color: #fde047; }
-	:global([data-theme='dark']) .type-hidden { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
-	:global([data-theme='dark']) .type-integration { background: rgba(6, 182, 212, 0.2); color: #67e8f9; }
-	:global([data-theme='dark']) .type-differentiation { background: rgba(249, 115, 22, 0.2); color: #fdba74; }
-	:global([data-theme='dark']) .type-anti-siloing { background: rgba(236, 72, 153, 0.2); color: #f9a8d4; }
-	:global([data-theme='dark']) .type-synthesis { background: rgba(99, 102, 241, 0.2); color: #a5b4fc; }
-	:global([data-theme='dark']) .type-reconciliation { background: rgba(20, 184, 166, 0.2); color: #5eead4; }
-	:global([data-theme='dark']) .type-arbitrage { background: rgba(245, 158, 11, 0.2); color: #fcd34d; }
-	:global([data-theme='dark']) .type-default { background: rgba(107, 114, 128, 0.2); color: #d1d5db; }
 
 	.goal-identity {
 		font-size: 1rem;

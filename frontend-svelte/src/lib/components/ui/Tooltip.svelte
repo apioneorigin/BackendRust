@@ -57,10 +57,6 @@
 		pointer-events: none;
 	}
 
-	:global([data-theme='dark']) .tooltip {
-		background: #374151;
-	}
-
 	/* Position variants */
 	.tooltip-top {
 		bottom: 100%;
@@ -126,19 +122,4 @@
 		border-right-color: #1f2937;
 	}
 
-	:global([data-theme='dark']) .arrow-top {
-		border-top-color: #374151;
-	}
-
-	:global([data-theme='dark']) .arrow-bottom {
-		border-bottom-color: #374151;
-	}
-
-	:global([data-theme='dark']) .arrow-left {
-		border-left-color: #374151;
-	}
-
-	:global([data-theme='dark']) .arrow-right {
-		border-right-color: #374151;
-	}
 </style>

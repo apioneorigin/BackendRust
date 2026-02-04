@@ -517,16 +517,6 @@
 		color: #059669;
 	}
 
-	[data-theme='dark'] .stat-icon.users {
-		background: var(--color-primary-900);
-		color: var(--color-primary-300);
-	}
-
-	[data-theme='dark'] .stat-icon.active {
-		background: rgba(5, 150, 105, 0.2);
-		color: #34d399;
-	}
-
 	.stat-content {
 		display: flex;
 		flex-direction: column;
@@ -614,11 +604,6 @@
 	.role-badge.admin {
 		background: var(--color-primary-100);
 		color: var(--color-primary-700);
-	}
-
-	[data-theme='dark'] .role-badge.admin {
-		background: var(--color-primary-900);
-		color: var(--color-primary-300);
 	}
 
 	.placeholder-content {
