@@ -1,92 +1,120 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* ═══════════════════════════════════════════════════════════════════════════════
-   SVELTEKIT-NATIVE GLOBAL STYLES
+   PREMIUM B2B DESIGN SYSTEM - Fortune 500 Positioning
    ═══════════════════════════════════════════════════════════════════════════════
 
-   Only truly global concerns belong here:
-   - CSS Custom Properties (design tokens)
-   - Base element resets
-   - Keyframe animations
+   Design Philosophy:
+   - Single primary color: Deep Navy #0F172A (trust, authority, institutional)
+   - Slate Premium backgrounds (#FAFAFA) - professional, sophisticated
+   - Inter font throughout (clean, modern, professional)
+   - Maximum restraint - color appears only where it matters
 
-   Component styles belong in <style> blocks within .svelte files
-   ═══════════════════════════════════════════════════════════════════════════════ */
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   CSS CUSTOM PROPERTIES - Light Mode (Default)
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 :root {
-	/* Mobile Safe Areas */
+	/* ─────────────────────────────────────────────────────────────────────────────
+	   MOBILE-FIRST TOKENS
+	   ───────────────────────────────────────────────────────────────────────────── */
 	--safe-area-top: env(safe-area-inset-top, 0px);
 	--safe-area-bottom: env(safe-area-inset-bottom, 0px);
 	--safe-area-left: env(safe-area-inset-left, 0px);
 	--safe-area-right: env(safe-area-inset-right, 0px);
 
-	/* Touch Targets */
 	--touch-target-min: 44px;
 	--touch-target-comfortable: 48px;
 
-	/* Primary - Deep Navy */
+	/* ─────────────────────────────────────────────────────────────────────────────
+	   PRIMARY - Deep Navy (trust, authority, institutional)
+	   The ONLY prominent color in the entire UI
+	   ───────────────────────────────────────────────────────────────────────────── */
 	--color-accent: #0F172A;
 	--color-accent-subtle: rgba(15, 23, 42, 0.06);
 	--color-accent-hover: rgba(15, 23, 42, 0.10);
 
-	--color-primary-950: #020617;
-	--color-primary-900: #0F172A;
-	--color-primary-800: #1E293B;
+	/* Primary palette - Deep Navy family */
+	--color-primary-950: #020617;  /* Deepest */
+	--color-primary-900: #0F172A;  /* Main - Deep Navy */
+	--color-primary-800: #1E293B;  /* Hover state */
 	--color-primary-700: #334155;
 	--color-primary-600: #475569;
-	--color-primary-500: #0F172A;
+	--color-primary-500: #0F172A;  /* Main - Deep Navy */
 	--color-primary-400: #94A3B8;
 	--color-primary-300: #CBD5E1;
 	--color-primary-200: #E2E8F0;
 	--color-primary-100: rgba(15, 23, 42, 0.12);
 	--color-primary-50: rgba(15, 23, 42, 0.06);
 
-	/* Surfaces */
-	--color-field-void: #FDFCF9;
-	--color-field-depth: #FAF9F5;
-	--color-field-surface: #FFFFFF;
-	--color-field-elevated: #FFFFFF;
-	--color-field-solid: #FFFFFF;
+	/* Ambient glow - subtle navy accent on slate surface */
+	--gradient-ambient: radial-gradient(ellipse at 50% 30%, rgba(15, 23, 42, 0.02) 0%, transparent 60%);
 
-	/* Text */
-	--color-text-source: #0F172A;
-	--color-text-manifest: #475569;
-	--color-text-flow: #1E293B;
-	--color-text-whisper: #94A3B8;
-	--color-text-hint: #CBD5E1;
+	/* ─────────────────────────────────────────────────────────────────────────────
+	   SURFACES - Slate Premium (professional, sophisticated)
+	   ───────────────────────────────────────────────────────────────────────────── */
+	--color-field-void: #FAFAFA;      /* Slate premium - main bg */
+	--color-field-depth: #F4F4F5;     /* Slightly deeper slate */
+	--color-field-surface: #FFFFFF;   /* Pure white for cards/elevated */
+	--color-field-elevated: #FFFFFF;  /* Pure white elevated */
+	--color-field-solid: #FFFFFF;     /* Solid white for inputs */
 
-	/* Borders */
+	/* ─────────────────────────────────────────────────────────────────────────────
+	   TEXT - Navy-based hierarchy (primary color carries through)
+	   ───────────────────────────────────────────────────────────────────────────── */
+	--color-text-source: #0F172A;     /* Deep Navy - primary text */
+	--color-text-manifest: #475569;   /* Slate 600 - secondary */
+	--color-text-flow: #1E293B;       /* Slate 800 - body */
+	--color-text-whisper: #94A3B8;    /* Slate 400 - tertiary */
+	--color-text-hint: #CBD5E1;       /* Slate 300 - hint */
+
+	/* ─────────────────────────────────────────────────────────────────────────────
+	   BORDERS - Clean neutral lines
+	   ───────────────────────────────────────────────────────────────────────────── */
 	--color-veil-thin: rgba(0, 0, 0, 0.05);
 	--color-veil-present: rgba(0, 0, 0, 0.08);
 	--color-veil-clear: rgba(0, 0, 0, 0.12);
 
-	/* Shadows */
+	/* ─────────────────────────────────────────────────────────────────────────────
+	   SHADOWS - Pure neutral depth
+	   ───────────────────────────────────────────────────────────────────────────── */
 	--shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
 	--shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
 	--shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
 	--shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
 	--shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.16);
+
+	/* Panel - subtle border definition */
 	--shadow-panel: 0 0 0 1px rgba(0, 0, 0, 0.05);
 	--shadow-panel-hover: 0 0 0 1px rgba(0, 0, 0, 0.1);
+
+	/* Elevated - for modals/dropdowns */
 	--shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.05);
 
-	/* Typography */
+	/* Glassmorphism tokens */
+	--glass-blur: 20px;
+	--glass-blur-subtle: 12px;
+
+	/* ─────────────────────────────────────────────────────────────────────────────
+	   TYPOGRAPHY - Inter only
+	   ───────────────────────────────────────────────────────────────────────────── */
 	--font-ui: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 	--font-heading: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
-	--font-size-xs: 12px;
-	--font-size-sm: 13px;
-	--font-size-base: 14px;
-	--font-size-md: 15px;
-	--font-size-lg: 16px;
-	--font-size-xl: 18px;
-	--font-size-2xl: 20px;
-	--font-size-3xl: 24px;
+	--font-size-xs: 12px;    /* Tiny labels, badges */
+	--font-size-sm: 13px;    /* Small secondary text */
+	--font-size-base: 14px;  /* Body text, messages, buttons */
+	--font-size-md: 15px;    /* Slightly emphasized */
+	--font-size-lg: 16px;    /* Section titles */
+	--font-size-xl: 18px;    /* Large headers */
+	--font-size-2xl: 20px;   /* Page headers */
+	--font-size-3xl: 24px;   /* Main titles */
 
-	/* Timing */
+	/* ─────────────────────────────────────────────────────────────────────────────
+	   TIMING
+	   ───────────────────────────────────────────────────────────────────────────── */
 	--duration-instant: 50ms;
 	--duration-fast: 100ms;
 	--duration-normal: 150ms;
@@ -95,12 +123,13 @@
 	--ease-out: cubic-bezier(0.33, 1, 0.68, 1);
 	--ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 
-	/* Gradients */
+	/* ─────────────────────────────────────────────────────────────────────────────
+	   GRADIENTS - Deep Navy (institutional authority)
+	   ───────────────────────────────────────────────────────────────────────────── */
 	--gradient-primary: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
 	--gradient-subtle: linear-gradient(180deg, rgba(15, 23, 42, 0.03) 0%, transparent 100%);
-	--gradient-ambient: radial-gradient(ellipse at 50% 30%, rgba(15, 23, 42, 0.02) 0%, transparent 60%);
 
-	/* Semantic Colors */
+	/* Semantic colors */
 	--color-error-500: #dc2626;
 	--color-error-600: #b91c1c;
 	--color-error-50: rgba(220, 38, 38, 0.05);
@@ -108,23 +137,25 @@
 	--color-success-600: #15803d;
 	--color-warning-500: #d97706;
 	--color-warning-600: #b45309;
+
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   CSS CUSTOM PROPERTIES - Dark Mode
+   DARK MODE - Premium Dark with Navy Primary (inverted)
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 [data-theme='dark'] {
-	--color-accent: #F8FAFC;
+	/* In dark mode, primary buttons/accents become light (inverted) */
+	--color-accent: #F8FAFC;  /* Light for dark mode visibility */
 	--color-accent-subtle: rgba(248, 250, 252, 0.08);
 	--color-accent-hover: rgba(248, 250, 252, 0.12);
 
-	--color-primary-950: #F8FAFC;
+	--color-primary-950: #F8FAFC;  /* Inverted - lightest */
 	--color-primary-900: #F1F5F9;
 	--color-primary-800: #E2E8F0;
 	--color-primary-700: #CBD5E1;
 	--color-primary-600: #94A3B8;
-	--color-primary-500: #F8FAFC;
+	--color-primary-500: #F8FAFC;  /* Main - Light for dark mode */
 	--color-primary-400: #64748B;
 	--color-primary-300: #475569;
 	--color-primary-200: #334155;
@@ -134,17 +165,20 @@
 	--gradient-primary: linear-gradient(135deg, #E2E8F0 0%, #F8FAFC 100%);
 	--gradient-ambient: radial-gradient(ellipse at 50% 30%, rgba(248, 250, 252, 0.04) 0%, transparent 60%);
 
-	--color-field-void: #0A0D12;
-	--color-field-depth: #0F1318;
-	--color-field-surface: #141920;
-	--color-field-elevated: #1A2028;
+	/* Premium dark navy surfaces */
+	--color-field-void: #0A0D12;      /* Deep navy black - main bg */
+	--color-field-depth: #0F1318;     /* Slightly elevated navy */
+	--color-field-surface: #141920;   /* Card surfaces */
+	--color-field-elevated: #1A2028;  /* Elevated elements */
 
-	--color-text-source: #F8FAFC;
-	--color-text-manifest: #94A3B8;
-	--color-text-flow: #E2E8F0;
-	--color-text-whisper: #64748B;
-	--color-text-hint: #475569;
+	/* Text on dark - slate family */
+	--color-text-source: #F8FAFC;     /* Slate 50 - primary */
+	--color-text-manifest: #94A3B8;   /* Slate 400 - secondary */
+	--color-text-flow: #E2E8F0;       /* Slate 200 - body */
+	--color-text-whisper: #64748B;    /* Slate 500 - tertiary */
+	--color-text-hint: #475569;       /* Slate 600 - hint */
 
+	/* Slate borders for dark mode */
 	--color-veil-thin: rgba(148, 163, 184, 0.08);
 	--color-veil-present: rgba(148, 163, 184, 0.12);
 	--color-veil-clear: rgba(148, 163, 184, 0.18);
@@ -154,7 +188,7 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   BASE RESETS
+   BASE STYLES
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 * {
@@ -180,22 +214,44 @@ body {
 	background: transparent;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
-	font-feature-settings: 'cv01', 'cv02', 'cv03', 'cv04', 'ss01';
+	font-feature-settings: 'cv01', 'cv02', 'cv03', 'cv04', 'ss01';  /* Inter's modern alternates */
 	height: 100%;
 	overflow: hidden;
 	letter-spacing: -0.011em;
 }
 
-h1, h2, h3, h4, h5, h6 {
+/* Typography Scale - Source Serif Pro for headings */
+h1 {
 	font-family: var(--font-heading);
+	font-size: 1.5rem;    /* 24px */
 	font-weight: 600;
+	letter-spacing: -0.02em;
 	color: var(--color-text-source);
 }
 
-h1 { font-size: 1.5rem; letter-spacing: -0.02em; }
-h2 { font-size: 1.25rem; letter-spacing: -0.02em; }
-h3 { font-size: 1rem; letter-spacing: -0.01em; }
-h4, h5, h6 { font-size: 0.9375rem; letter-spacing: -0.01em; }
+h2 {
+	font-family: var(--font-heading);
+	font-size: 1.25rem;   /* 20px */
+	font-weight: 600;
+	letter-spacing: -0.02em;
+	color: var(--color-text-source);
+}
+
+h3 {
+	font-family: var(--font-heading);
+	font-size: 1rem;      /* 16px */
+	font-weight: 600;
+	letter-spacing: -0.01em;
+	color: var(--color-text-source);
+}
+
+h4, h5, h6 {
+	font-family: var(--font-heading);
+	font-size: 0.9375rem; /* 15px */
+	font-weight: 600;
+	letter-spacing: -0.01em;
+	color: var(--color-text-source);
+}
 
 ::selection {
 	background-color: rgba(0, 0, 0, 0.1);
@@ -206,7 +262,7 @@ h4, h5, h6 { font-size: 0.9375rem; letter-spacing: -0.01em; }
 	background-color: rgba(255, 255, 255, 0.2);
 }
 
-/* Focus */
+/* Focus - subtle ring */
 *:focus-visible {
 	outline: 2px solid var(--color-text-source);
 	outline-offset: 2px;
@@ -217,19 +273,10 @@ textarea:focus-visible {
 	outline: none !important;
 }
 
-/* Buttons base reset */
-button:not(:disabled):active,
-[role='button']:not(:disabled):active {
-	transform: scale(0.98);
-}
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SCROLLBARS - Nearly invisible
+   ═══════════════════════════════════════════════════════════════════════════════ */
 
-button:disabled,
-[role='button']:disabled {
-	cursor: not-allowed;
-	opacity: 0.4;
-}
-
-/* Scrollbars */
 ::-webkit-scrollbar {
 	width: 6px;
 	height: 6px;
@@ -248,15 +295,18 @@ button:disabled,
 	background: var(--color-veil-present);
 }
 
-/* Mobile input zoom prevention */
-@media (max-width: 767px) {
-	input, textarea, select {
-		font-size: 16px !important;
-	}
+/* Hide scrollbar utility */
+.scrollbar-hide::-webkit-scrollbar {
+	display: none;
+}
+
+.scrollbar-hide {
+	-ms-overflow-style: none;
+	scrollbar-width: none;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   KEYFRAME ANIMATIONS
+   ANIMATIONS
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 @keyframes spin {
@@ -278,7 +328,258 @@ button:disabled,
 	to { opacity: 1; transform: translateY(0); }
 }
 
+.animate-spin { animation: spin 1s linear infinite; }
+.animate-fade-in { animation: fadeIn 0.15s ease-out; }
+.animate-slide-up { animation: slideUp 0.15s ease-out; }
+
+/* Typing indicator */
 @keyframes typing-pulse {
 	0%, 80%, 100% { opacity: 0.3; }
 	40% { opacity: 1; }
 }
+
+.typing-dot {
+	width: 4px;
+	height: 4px;
+	border-radius: 50%;
+	background: var(--color-text-whisper);
+	animation: typing-pulse 1.2s ease-in-out infinite;
+}
+
+.typing-dot:nth-child(1) { animation-delay: 0s; }
+.typing-dot:nth-child(2) { animation-delay: 0.15s; }
+.typing-dot:nth-child(3) { animation-delay: 0.3s; }
+
+.typing-dots {
+	display: flex;
+	gap: 4px;
+	align-items: center;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   BUTTONS - Ghost by default, minimal chrome
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+button:not(:disabled):active,
+[role='button']:not(:disabled):active {
+	transform: scale(0.98);
+}
+
+button:disabled,
+[role='button']:disabled {
+	cursor: not-allowed;
+	opacity: 0.4;
+}
+
+/* Primary - solid, used sparingly */
+.btn-primary {
+	background: var(--color-primary-500);
+	color: #ffffff;
+	border: none;
+	border-radius: 6px;
+	padding: 8px 16px;
+	font-weight: 500;
+	font-size: 14px;
+	transition: all var(--duration-fast) ease;
+}
+
+.btn-primary:hover:not(:disabled) {
+	background: var(--color-primary-600);
+}
+
+/* Ghost - default for most controls */
+.btn-ghost {
+	background: transparent;
+	border: none;
+	color: var(--color-text-manifest);
+	border-radius: 6px;
+	padding: 6px 10px;
+	font-size: 14px;
+	transition: all var(--duration-fast) ease;
+}
+
+.btn-ghost:hover:not(:disabled) {
+	background: var(--color-accent-subtle);
+	color: var(--color-text-source);
+}
+
+/* Outline - secondary actions */
+.btn-outline {
+	background: transparent;
+	border: 1px solid var(--color-veil-present);
+	color: var(--color-text-manifest);
+	border-radius: 6px;
+	padding: 6px 12px;
+	font-size: 14px;
+	transition: all var(--duration-fast) ease;
+}
+
+.btn-outline:hover:not(:disabled) {
+	border-color: var(--color-text-source);
+	color: var(--color-text-source);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   CARDS & CONTAINERS - Barely there
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.card-subtle {
+	background: var(--color-field-surface);
+	border-radius: 8px;
+}
+
+.card-bordered {
+	background: var(--color-field-surface);
+	border: 1px solid var(--color-veil-thin);
+	border-radius: 8px;
+}
+
+.card-elevated {
+	background: var(--color-field-surface);
+	box-shadow: var(--shadow-elevated);
+	border-radius: 12px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MESSAGE BUBBLES - Clean, minimal
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.bubble-user {
+	background: var(--color-text-source);
+	color: var(--color-field-void);
+	border-radius: 16px 16px 4px 16px;
+}
+
+.bubble-assistant {
+	background: transparent;
+	color: var(--color-text-source);
+	border-radius: 16px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MOBILE UTILITIES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.pt-safe { padding-top: env(safe-area-inset-top, 0px); }
+.pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+.h-dvh { height: 100dvh; }
+.min-h-dvh { min-height: 100dvh; }
+
+.touch-target {
+	min-width: var(--touch-target-min);
+	min-height: var(--touch-target-min);
+}
+
+@media (max-width: 767px) {
+	input, textarea, select {
+		font-size: 16px !important;
+	}
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   UTILITY CLASSES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.text-primary { color: var(--color-text-source); }
+.text-secondary { color: var(--color-text-manifest); }
+.text-tertiary { color: var(--color-text-whisper); }
+
+.bg-surface { background: var(--color-field-surface); }
+.bg-subtle { background: var(--color-field-depth); }
+
+.border-subtle { border-color: var(--color-veil-thin); }
+.border-default { border-color: var(--color-veil-present); }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   GLASSMORPHISM UTILITIES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.glass {
+	background: rgba(255, 255, 255, 0.6);
+	backdrop-filter: blur(var(--glass-blur));
+	-webkit-backdrop-filter: blur(var(--glass-blur));
+	border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.glass-subtle {
+	background: rgba(255, 255, 255, 0.4);
+	backdrop-filter: blur(var(--glass-blur-subtle));
+	-webkit-backdrop-filter: blur(var(--glass-blur-subtle));
+}
+
+.glass-strong {
+	background: rgba(255, 255, 255, 0.8);
+	backdrop-filter: blur(var(--glass-blur));
+	-webkit-backdrop-filter: blur(var(--glass-blur));
+	border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.glass-card {
+	background: var(--color-field-surface);
+	backdrop-filter: blur(var(--glass-blur));
+	-webkit-backdrop-filter: blur(var(--glass-blur));
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	box-shadow: var(--shadow-lg);
+	border-radius: 16px;
+}
+
+.glass-panel {
+	background: var(--color-field-surface);
+	backdrop-filter: blur(var(--glass-blur-subtle));
+	-webkit-backdrop-filter: blur(var(--glass-blur-subtle));
+	border-right: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+[data-theme='dark'] .glass {
+	background: rgba(15, 17, 21, 0.8);
+	border-color: rgba(148, 163, 184, 0.1);
+}
+
+[data-theme='dark'] .glass-subtle {
+	background: rgba(15, 17, 21, 0.6);
+}
+
+[data-theme='dark'] .glass-strong {
+	background: rgba(15, 17, 21, 0.9);
+	border-color: rgba(148, 163, 184, 0.15);
+}
+
+[data-theme='dark'] .glass-card {
+	background: rgba(28, 33, 39, 0.8);
+	border-color: rgba(148, 163, 184, 0.1);
+}
+
+[data-theme='dark'] .glass-panel {
+	background: rgba(22, 26, 31, 0.9);
+	border-right-color: rgba(148, 163, 184, 0.08);
+}
+
+/* Hover reveal */
+.hover-reveal {
+	opacity: 0;
+	transition: opacity var(--duration-fast) ease;
+}
+
+.group:hover .hover-reveal,
+*:hover > .hover-reveal {
+	opacity: 1;
+}
+
+/* Input premium - simplified */
+.input-premium {
+	background: var(--color-field-surface);
+	border: 1px solid var(--color-veil-thin);
+	border-radius: 8px;
+	transition: border-color var(--duration-fast) ease;
+}
+
+.input-premium:focus-within {
+	border-color: var(--color-text-source);
+}
+
+/* Radius scale */
+.radius-sm { border-radius: 4px; }
+.radius-md { border-radius: 6px; }
+.radius-lg { border-radius: 8px; }
+.radius-xl { border-radius: 12px; }
+.radius-full { border-radius: 9999px; }
