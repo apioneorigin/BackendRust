@@ -67,6 +67,11 @@ from fastapi.responses import HTMLResponse, FileResponse
 from sse_starlette.sse import EventSourceResponse
 from dotenv import load_dotenv
 
+# Security imports
+from security.middleware import UnifiedSecurityMiddleware
+from security.rate_limiter import RateLimiter, set_rate_limiter
+from security.audit_logger import AuditLogger, set_audit_logger
+
 from formulas import OOFInferenceEngine, CANONICAL_OPERATOR_NAMES, SHORT_TO_CANONICAL
 from value_organizer import ValueOrganizer
 from bottleneck_detector import BottleneckDetector
@@ -117,15 +122,32 @@ app = FastAPI(title="Reality Transformer", version="4.1.0")
 from contextlib import asynccontextmanager
 
 async def _session_cleanup_task():
-    """Background task to periodically clean up expired API sessions."""
+    """Background task to periodically clean up expired API sessions and security state."""
+    from security.rate_limiter import get_rate_limiter
+    from security.session_security import get_session_security
+
     while True:
         await asyncio.sleep(300)  # Run every 5 minutes
         try:
+            # Clean up API sessions
             expired = await api_session_store.cleanup_expired(max_age_seconds=3600)
             if expired > 0:
                 api_logger.info(f"[SESSION CLEANUP] Removed {expired} expired sessions, {api_session_store.session_count()} active")
+
+            # Clean up rate limiter state
+            rate_limiter = get_rate_limiter()
+            rl_cleaned = await rate_limiter.cleanup()
+            if rl_cleaned > 0:
+                api_logger.info(f"[RATE LIMIT CLEANUP] Removed {rl_cleaned} expired entries")
+
+            # Clean up session security fingerprints
+            session_security = get_session_security()
+            ss_cleaned = session_security.cleanup_expired()
+            if ss_cleaned > 0:
+                api_logger.info(f"[SESSION SECURITY CLEANUP] Removed {ss_cleaned} expired fingerprints")
+
         except Exception as e:
-            api_logger.error(f"[SESSION CLEANUP] Error: {e}")
+            api_logger.error(f"[CLEANUP] Error: {e}")
 
 
 @asynccontextmanager
@@ -157,15 +179,40 @@ async def lifespan(app: FastAPI):
 # Re-create app with lifespan
 app = FastAPI(title="Reality Transformer", version="4.1.0", lifespan=lifespan)
 
-# Add CORS middleware for cross-origin requests
+# =====================================================================
+# SECURITY MIDDLEWARE STACK (Single-pass processing)
+# =====================================================================
+
+# Allowed origins for CORS (production-safe)
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "").split(",") if os.getenv("CORS_ORIGINS") else [
+    "http://localhost:5173",  # SvelteKit dev
+    "http://localhost:3000",  # Alternative dev port
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:3000",
+]
+# Filter out empty strings
+CORS_ORIGINS = [origin.strip() for origin in CORS_ORIGINS if origin.strip()]
+
+# Initialize security components
+_rate_limiter = RateLimiter()
+set_rate_limiter(_rate_limiter)
+_audit_logger = AuditLogger()
+set_audit_logger(_audit_logger)
+
+# Add CORS middleware (must be added before security middleware)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify allowed origins
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-    expose_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-CSRF-Token", "X-Request-ID"],
+    expose_headers=["X-Request-ID", "X-RateLimit-Limit", "X-RateLimit-Remaining"],
 )
+
+# Add unified security middleware (single-pass for all security checks)
+app.add_middleware(UnifiedSecurityMiddleware, rate_limiter=_rate_limiter)
+
+api_logger.info("Security middleware initialized")
 
 # Include routers
 from routers import (
