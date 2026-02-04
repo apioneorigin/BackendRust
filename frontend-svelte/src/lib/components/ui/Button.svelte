@@ -15,52 +15,27 @@
 			dispatch('click', e);
 		}
 	}
-
-	$: variantClasses = {
-		primary:
-			'bg-primary-500 text-white hover:bg-primary-600 active:bg-primary-700 shadow-btn-primary hover:shadow-btn-primary-hover',
-		secondary:
-			'bg-field-elevated text-text-manifest border border-veil-thin hover:bg-field-depth active:bg-field-surface',
-		ghost:
-			'bg-transparent text-text-flow hover:bg-field-depth hover:text-text-manifest active:bg-field-elevated',
-		outline:
-			'bg-transparent border border-veil-present text-text-manifest hover:bg-field-depth hover:border-veil-clear active:bg-field-elevated',
-		danger:
-			'bg-error-500 text-white hover:bg-error-600 active:bg-error-700'
-	}[variant];
-
-	$: sizeClasses = {
-		sm: 'h-8 px-3 text-xs rounded-lg gap-1.5',
-		md: 'h-10 px-4 text-sm rounded-lg gap-2',
-		lg: 'h-12 px-6 text-base rounded-lg gap-2.5'
-	}[size];
 </script>
 
 <button
 	{type}
 	{disabled}
-	class="
-		inline-flex items-center justify-center font-medium
-		transition-all duration-swift ease-out
-		touch-target
-		{variantClasses}
-		{sizeClasses}
-		{fullWidth ? 'w-full' : ''}
-		{disabled || loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-	"
-	class:pointer-events-none={loading}
+	class="btn btn-{variant} btn-{size}"
+	class:full-width={fullWidth}
+	class:is-loading={loading}
+	class:is-disabled={disabled || loading}
 	on:click={handleClick}
 >
 	{#if loading}
 		<svg
-			class="animate-spin h-4 w-4"
+			class="spinner"
 			xmlns="http://www.w3.org/2000/svg"
 			fill="none"
 			viewBox="0 0 24 24"
 		>
-			<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+			<circle class="spinner-track" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
 			<path
-				class="opacity-75"
+				class="spinner-head"
 				fill="currentColor"
 				d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
 			/>
@@ -68,3 +43,137 @@
 	{/if}
 	<slot />
 </button>
+
+<style>
+	.btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		font-weight: 500;
+		border: none;
+		cursor: pointer;
+		transition: all var(--duration-fast) var(--ease-out);
+		min-width: var(--touch-target-min);
+		min-height: var(--touch-target-min);
+	}
+
+	/* Sizes */
+	.btn-sm {
+		height: 32px;
+		padding: 0 12px;
+		font-size: 12px;
+		border-radius: 8px;
+		gap: 6px;
+	}
+
+	.btn-md {
+		height: 40px;
+		padding: 0 16px;
+		font-size: 14px;
+		border-radius: 8px;
+		gap: 8px;
+	}
+
+	.btn-lg {
+		height: 48px;
+		padding: 0 24px;
+		font-size: 16px;
+		border-radius: 8px;
+		gap: 10px;
+	}
+
+	/* Variants */
+	.btn-primary {
+		background: var(--color-primary-500);
+		color: #ffffff;
+	}
+
+	.btn-primary:hover:not(:disabled) {
+		background: var(--color-primary-600);
+	}
+
+	.btn-primary:active:not(:disabled) {
+		background: var(--color-primary-700);
+	}
+
+	.btn-secondary {
+		background: var(--color-field-elevated);
+		color: var(--color-text-manifest);
+		border: 1px solid var(--color-veil-thin);
+	}
+
+	.btn-secondary:hover:not(:disabled) {
+		background: var(--color-field-depth);
+	}
+
+	.btn-secondary:active:not(:disabled) {
+		background: var(--color-field-surface);
+	}
+
+	.btn-ghost {
+		background: transparent;
+		color: var(--color-text-flow);
+	}
+
+	.btn-ghost:hover:not(:disabled) {
+		background: var(--color-field-depth);
+		color: var(--color-text-manifest);
+	}
+
+	.btn-ghost:active:not(:disabled) {
+		background: var(--color-field-elevated);
+	}
+
+	.btn-outline {
+		background: transparent;
+		border: 1px solid var(--color-veil-present);
+		color: var(--color-text-manifest);
+	}
+
+	.btn-outline:hover:not(:disabled) {
+		background: var(--color-field-depth);
+		border-color: var(--color-veil-clear);
+	}
+
+	.btn-outline:active:not(:disabled) {
+		background: var(--color-field-elevated);
+	}
+
+	.btn-danger {
+		background: var(--color-error-500);
+		color: #ffffff;
+	}
+
+	.btn-danger:hover:not(:disabled) {
+		background: var(--color-error-600);
+	}
+
+	/* States */
+	.full-width {
+		width: 100%;
+	}
+
+	.is-disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	.is-loading {
+		pointer-events: none;
+	}
+
+	/* Spinner */
+	.spinner {
+		width: 16px;
+		height: 16px;
+		animation: spin 1s linear infinite;
+	}
+
+	.spinner-track {
+		opacity: 0.25;
+	}
+
+	.spinner-head {
+		opacity: 0.75;
+	}
+</style>

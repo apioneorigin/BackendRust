@@ -35,17 +35,17 @@
 	let dragOver = false;
 
 	const goalTypeColors: Record<string, string> = {
-		OPTIMIZE: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
-		TRANSFORM: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
-		DISCOVER: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
-		QUANTUM: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300',
-		HIDDEN: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
-		INTEGRATION: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900 dark:text-cyan-300',
-		DIFFERENTIATION: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300',
-		ANTI_SILOING: 'bg-pink-100 text-pink-700 dark:bg-pink-900 dark:text-pink-300',
-		SYNTHESIS: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300',
-		RECONCILIATION: 'bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-300',
-		ARBITRAGE: 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300'
+		OPTIMIZE: 'type-optimize',
+		TRANSFORM: 'type-transform',
+		DISCOVER: 'type-discover',
+		QUANTUM: 'type-quantum',
+		HIDDEN: 'type-hidden',
+		INTEGRATION: 'type-integration',
+		DIFFERENTIATION: 'type-differentiation',
+		ANTI_SILOING: 'type-anti-siloing',
+		SYNTHESIS: 'type-synthesis',
+		RECONCILIATION: 'type-reconciliation',
+		ARBITRAGE: 'type-arbitrage'
 	};
 
 	onMount(async () => {
@@ -191,10 +191,10 @@
 	}
 
 	function getConfidenceColor(confidence: number): string {
-		if (confidence >= 90) return 'text-green-600 dark:text-green-400';
-		if (confidence >= 70) return 'text-blue-600 dark:text-blue-400';
-		if (confidence >= 50) return 'text-yellow-600 dark:text-yellow-400';
-		return 'text-red-600 dark:text-red-400';
+		if (confidence >= 90) return 'confidence-high';
+		if (confidence >= 70) return 'confidence-good';
+		if (confidence >= 50) return 'confidence-medium';
+		return 'confidence-low';
 	}
 
 	function clearDiscoveredGoals() {
@@ -360,9 +360,9 @@
 				</div>
 				<div class="goals-grid">
 					{#each discoveredGoals as goal (goal.id)}
-						<div class="goal-card card-elevated">
+						<div class="goal-card">
 							<div class="goal-header">
-								<span class="goal-type {goalTypeColors[goal.type] || 'bg-gray-100 text-gray-700'}">
+								<span class="goal-type {goalTypeColors[goal.type] || 'type-default'}">
 									{goal.type.replace('_', ' ')}
 								</span>
 								<span class="goal-confidence {getConfidenceColor(goal.confidence)}">
@@ -430,9 +430,9 @@
 			{:else}
 				<div class="goals-grid">
 					{#each savedGoals as goal (goal.id)}
-						<div class="goal-card card-elevated">
+						<div class="goal-card">
 							<div class="goal-header">
-								<span class="goal-type {goalTypeColors[goal.type] || 'bg-gray-100 text-gray-700'}">
+								<span class="goal-type {goalTypeColors[goal.type] || 'type-default'}">
 									{goal.type.replace('_', ' ')}
 								</span>
 								<span class="goal-confidence {getConfidenceColor(goal.confidence)}">
@@ -763,6 +763,9 @@
 		flex-direction: column;
 		gap: 0.75rem;
 		min-height: 220px;
+		background: var(--color-field-surface);
+		box-shadow: var(--shadow-elevated);
+		border-radius: 12px;
 	}
 
 	.goal-header {
@@ -784,6 +787,44 @@
 		font-size: 0.8125rem;
 		font-weight: 600;
 	}
+
+	/* Confidence colors */
+	.confidence-high { color: #16a34a; }
+	.confidence-good { color: #2563eb; }
+	.confidence-medium { color: #ca8a04; }
+	.confidence-low { color: #dc2626; }
+
+	:global([data-theme='dark']) .confidence-high { color: #4ade80; }
+	:global([data-theme='dark']) .confidence-good { color: #60a5fa; }
+	:global([data-theme='dark']) .confidence-medium { color: #facc15; }
+	:global([data-theme='dark']) .confidence-low { color: #f87171; }
+
+	/* Goal type colors */
+	.type-optimize { background: #dcfce7; color: #15803d; }
+	.type-transform { background: #dbeafe; color: #1d4ed8; }
+	.type-discover { background: #f3e8ff; color: #7c3aed; }
+	.type-quantum { background: #fef9c3; color: #a16207; }
+	.type-hidden { background: #fee2e2; color: #b91c1c; }
+	.type-integration { background: #cffafe; color: #0e7490; }
+	.type-differentiation { background: #ffedd5; color: #c2410c; }
+	.type-anti-siloing { background: #fce7f3; color: #be185d; }
+	.type-synthesis { background: #e0e7ff; color: #4338ca; }
+	.type-reconciliation { background: #ccfbf1; color: #0f766e; }
+	.type-arbitrage { background: #fef3c7; color: #b45309; }
+	.type-default { background: #f3f4f6; color: #374151; }
+
+	:global([data-theme='dark']) .type-optimize { background: rgba(34, 197, 94, 0.2); color: #86efac; }
+	:global([data-theme='dark']) .type-transform { background: rgba(59, 130, 246, 0.2); color: #93c5fd; }
+	:global([data-theme='dark']) .type-discover { background: rgba(139, 92, 246, 0.2); color: #c4b5fd; }
+	:global([data-theme='dark']) .type-quantum { background: rgba(234, 179, 8, 0.2); color: #fde047; }
+	:global([data-theme='dark']) .type-hidden { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+	:global([data-theme='dark']) .type-integration { background: rgba(6, 182, 212, 0.2); color: #67e8f9; }
+	:global([data-theme='dark']) .type-differentiation { background: rgba(249, 115, 22, 0.2); color: #fdba74; }
+	:global([data-theme='dark']) .type-anti-siloing { background: rgba(236, 72, 153, 0.2); color: #f9a8d4; }
+	:global([data-theme='dark']) .type-synthesis { background: rgba(99, 102, 241, 0.2); color: #a5b4fc; }
+	:global([data-theme='dark']) .type-reconciliation { background: rgba(20, 184, 166, 0.2); color: #5eead4; }
+	:global([data-theme='dark']) .type-arbitrage { background: rgba(245, 158, 11, 0.2); color: #fcd34d; }
+	:global([data-theme='dark']) .type-default { background: rgba(107, 114, 128, 0.2); color: #d1d5db; }
 
 	.goal-identity {
 		font-size: 1rem;

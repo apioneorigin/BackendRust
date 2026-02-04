@@ -13,7 +13,7 @@
 </svelte:head>
 
 <div class="auth-container">
-	<div class="auth-card card-elevated">
+	<div class="auth-card">
 		<div class="auth-logo">
 			<div class="logo-icon">
 				<svg
@@ -126,6 +126,9 @@
 		width: 100%;
 		max-width: 420px;
 		padding: 2.5rem;
+		background: var(--color-field-surface);
+		box-shadow: var(--shadow-elevated);
+		border-radius: 12px;
 	}
 
 	.auth-logo {

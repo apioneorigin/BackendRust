@@ -161,7 +161,7 @@
 	{:else}
 		<div class="documents-grid">
 			{#each filteredDocs as doc (doc.id)}
-				<div class="document-card card-elevated">
+				<div class="document-card">
 					<div class="card-header">
 						<div class="document-icon">
 							<svg
@@ -433,6 +433,9 @@
 		display: flex;
 		flex-direction: column;
 		padding: 1.25rem;
+		background: var(--color-field-surface);
+		box-shadow: var(--shadow-elevated);
+		border-radius: 12px;
 		transition: transform 0.15s ease, box-shadow 0.15s ease;
 	}
 

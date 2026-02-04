@@ -16,26 +16,10 @@
 		clearTimeout(timeout);
 		visible = false;
 	}
-
-	$: positionClasses = {
-		top: 'bottom-full left-1/2 -translate-x-1/2 mb-2',
-		bottom: 'top-full left-1/2 -translate-x-1/2 mt-2',
-		left: 'right-full top-1/2 -translate-y-1/2 mr-2',
-		right: 'left-full top-1/2 -translate-y-1/2 ml-2'
-	}[position];
-
-	$: arrowClasses = {
-		top: 'top-full left-1/2 -translate-x-1/2 border-t-gray-900 border-x-transparent border-b-transparent',
-		bottom:
-			'bottom-full left-1/2 -translate-x-1/2 border-b-gray-900 border-x-transparent border-t-transparent',
-		left: 'left-full top-1/2 -translate-y-1/2 border-l-gray-900 border-y-transparent border-r-transparent',
-		right:
-			'right-full top-1/2 -translate-y-1/2 border-r-gray-900 border-y-transparent border-l-transparent'
-	}[position];
 </script>
 
 <div
-	class="relative inline-flex"
+	class="tooltip-wrapper"
 	on:mouseenter={show}
 	on:mouseleave={hide}
 	on:focus={show}
@@ -45,22 +29,116 @@
 	<slot />
 
 	{#if visible && content}
-		<div
-			class="
-				absolute z-50 {positionClasses}
-				px-2.5 py-1.5
-				text-xs font-medium text-white
-				bg-gray-900 dark:bg-gray-800
-				rounded-md shadow-lg
-				whitespace-nowrap
-				animate-fade-in
-				pointer-events-none
-			"
-		>
+		<div class="tooltip tooltip-{position}">
 			{content}
-			<div
-				class="absolute w-0 h-0 border-4 {arrowClasses}"
-			/>
+			<div class="arrow arrow-{position}" />
 		</div>
 	{/if}
 </div>
+
+<style>
+	.tooltip-wrapper {
+		position: relative;
+		display: inline-flex;
+	}
+
+	.tooltip {
+		position: absolute;
+		z-index: 50;
+		padding: 6px 10px;
+		font-size: 12px;
+		font-weight: 500;
+		color: #ffffff;
+		background: #1f2937;
+		border-radius: 6px;
+		box-shadow: var(--shadow-lg);
+		white-space: nowrap;
+		animation: fadeIn 0.15s ease-out;
+		pointer-events: none;
+	}
+
+	:global([data-theme='dark']) .tooltip {
+		background: #374151;
+	}
+
+	/* Position variants */
+	.tooltip-top {
+		bottom: 100%;
+		left: 50%;
+		transform: translateX(-50%);
+		margin-bottom: 8px;
+	}
+
+	.tooltip-bottom {
+		top: 100%;
+		left: 50%;
+		transform: translateX(-50%);
+		margin-top: 8px;
+	}
+
+	.tooltip-left {
+		right: 100%;
+		top: 50%;
+		transform: translateY(-50%);
+		margin-right: 8px;
+	}
+
+	.tooltip-right {
+		left: 100%;
+		top: 50%;
+		transform: translateY(-50%);
+		margin-left: 8px;
+	}
+
+	/* Arrow */
+	.arrow {
+		position: absolute;
+		width: 0;
+		height: 0;
+		border: 4px solid transparent;
+	}
+
+	.arrow-top {
+		top: 100%;
+		left: 50%;
+		transform: translateX(-50%);
+		border-top-color: #1f2937;
+	}
+
+	.arrow-bottom {
+		bottom: 100%;
+		left: 50%;
+		transform: translateX(-50%);
+		border-bottom-color: #1f2937;
+	}
+
+	.arrow-left {
+		left: 100%;
+		top: 50%;
+		transform: translateY(-50%);
+		border-left-color: #1f2937;
+	}
+
+	.arrow-right {
+		right: 100%;
+		top: 50%;
+		transform: translateY(-50%);
+		border-right-color: #1f2937;
+	}
+
+	:global([data-theme='dark']) .arrow-top {
+		border-top-color: #374151;
+	}
+
+	:global([data-theme='dark']) .arrow-bottom {
+		border-bottom-color: #374151;
+	}
+
+	:global([data-theme='dark']) .arrow-left {
+		border-left-color: #374151;
+	}
+
+	:global([data-theme='dark']) .arrow-right {
+		border-right-color: #374151;
+	}
+</style>

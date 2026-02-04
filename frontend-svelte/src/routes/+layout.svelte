@@ -44,13 +44,14 @@
 </script>
 
 
-<div class="app h-dvh" data-theme={$theme.isDark ? 'dark' : 'light'}>
+<div class="app" data-theme={$theme.isDark ? 'dark' : 'light'}>
 	<slot />
 	<ToastContainer />
 </div>
 
 <style>
 	.app {
+		height: 100dvh;
 		min-height: 100dvh;
 		background-color: var(--color-field-void);
 		color: var(--color-text-manifest);
