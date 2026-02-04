@@ -30,7 +30,11 @@ export {
 	documents as matrixDocuments,
 	plays,
 	selectedPlayId,
-	isLoadingPlays
+	isLoadingPlays,
+	changedRowIndices,
+	changedColumnIndices,
+	previousRowOptions,
+	previousColumnOptions
 } from './matrix';
 
 // Re-export types

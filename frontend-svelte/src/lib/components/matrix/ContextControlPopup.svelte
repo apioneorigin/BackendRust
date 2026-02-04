@@ -18,11 +18,20 @@
 		activeDocumentId,
 		activeDocument,
 		isGeneratingMoreDocuments,
-		chat
+		chat,
+		changedRowIndices,
+		changedColumnIndices
 	} from '$lib/stores';
 	import type { ArticulatedInsight, RowOption, ColumnOption, Document } from '$lib/stores/matrix';
 	import { Button, Spinner } from '$lib/components/ui';
 	import InsightPopup from './InsightPopup.svelte';
+
+	// Sets for quick lookup of changed indices
+	$: changedRowSet = new Set($changedRowIndices);
+	$: changedColSet = new Set($changedColumnIndices);
+
+	// Check if any options changed
+	$: hasChanges = $changedRowIndices.length > 0 || $changedColumnIndices.length > 0;
 
 	export let open = false;
 
@@ -249,12 +258,14 @@
 									{@const canSelect = selectedRows.length < 5}
 									{@const canToggle = isSelected ? canDeselect : canSelect}
 									{@const hasInsight = !!opt?.articulated_insight}
+									{@const isChanged = changedRowSet.has(idx)}
 									{#if opt}
-										<div class="title-item-wrapper">
+										<div class="title-item-wrapper" class:changed={isChanged}>
 											<button
 												class="title-item"
 												class:selected={isSelected}
 												class:disabled={!canToggle}
+												class:changed={isChanged}
 												on:click={() => handleToggleRow(idx)}
 											>
 												<div class="title-checkbox" class:checked={isSelected}>
@@ -273,7 +284,10 @@
 													{/if}
 												</div>
 												<div class="title-content">
-													<span class="title-text">{opt.label}</span>
+													<span class="title-text">
+														{#if isChanged}<span class="change-badge">UPDATED</span>{/if}
+														{opt.label}
+													</span>
 													{#if opt.articulated_insight?.title}
 														<span class="title-insight">{opt.articulated_insight.title}</span>
 													{/if}
@@ -327,12 +341,14 @@
 									{@const canSelect = selectedColumns.length < 5}
 									{@const canToggle = isSelected ? canDeselect : canSelect}
 									{@const hasInsight = !!opt?.articulated_insight}
+									{@const isChanged = changedColSet.has(idx)}
 									{#if opt}
-										<div class="title-item-wrapper">
+										<div class="title-item-wrapper" class:changed={isChanged}>
 											<button
 												class="title-item"
 												class:selected={isSelected}
 												class:disabled={!canToggle}
+												class:changed={isChanged}
 												on:click={() => handleToggleColumn(idx)}
 											>
 												<div class="title-checkbox" class:checked={isSelected}>
@@ -351,7 +367,10 @@
 													{/if}
 												</div>
 												<div class="title-content">
-													<span class="title-text">{opt.label}</span>
+													<span class="title-text">
+														{#if isChanged}<span class="change-badge">UPDATED</span>{/if}
+														{opt.label}
+													</span>
 													{#if opt.articulated_insight?.title}
 														<span class="title-insight">{opt.articulated_insight.title}</span>
 													{/if}
@@ -782,5 +801,33 @@
 		padding: 1rem 1.25rem;
 		border-top: 1px solid var(--color-veil-thin);
 		flex-shrink: 0;
+	}
+
+	/* Changed option indicator */
+	.title-item.changed {
+		border-color: var(--color-primary-400);
+		background: var(--color-primary-50);
+	}
+
+	[data-theme='dark'] .title-item.changed {
+		background: rgba(59, 130, 246, 0.1);
+	}
+
+	.change-badge {
+		display: inline-block;
+		padding: 0.125rem 0.375rem;
+		margin-right: 0.5rem;
+		background: var(--color-primary-500);
+		color: white;
+		font-size: 0.625rem;
+		font-weight: 700;
+		border-radius: 0.25rem;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		vertical-align: middle;
+	}
+
+	[data-theme='dark'] .change-badge {
+		background: var(--color-primary-400);
 	}
 </style>

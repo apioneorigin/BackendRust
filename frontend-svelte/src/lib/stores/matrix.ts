@@ -107,6 +107,12 @@ interface MatrixState {
 	displayedRowInsights: string[];
 	displayedColumnInsights: string[];
 
+	// Change tracking - shows which options changed between updates
+	previousRowOptions: RowOption[];
+	previousColumnOptions: RowOption[];
+	changedRowIndices: number[];  // Indices of rows that changed
+	changedColumnIndices: number[];  // Indices of columns that changed
+
 	// Generation state
 	isGenerated: boolean;
 	isGenerating: boolean;
@@ -158,6 +164,12 @@ const initialState: MatrixState = {
 	displayedColumnHeaders: ['Column 1', 'Column 2', 'Column 3', 'Column 4', 'Column 5'],
 	displayedRowInsights: ['', '', '', '', ''],
 	displayedColumnInsights: ['', '', '', '', ''],
+
+	// Change tracking
+	previousRowOptions: [],
+	previousColumnOptions: [],
+	changedRowIndices: [],
+	changedColumnIndices: [],
 
 	isGenerated: false,
 	isGenerating: false,
@@ -264,18 +276,51 @@ function createMatrixStore() {
 			const activeDocumentId = activeDoc.id;
 			const displayed = buildDisplayedMatrix(activeDoc);
 
-			update(state => ({
-				...state,
-				documents,
-				activeDocumentId,
-				displayedMatrixData: displayed.matrixData,
-				displayedRowHeaders: displayed.rowHeaders,
-				displayedColumnHeaders: displayed.columnHeaders,
-				displayedRowInsights: displayed.rowInsights,
-				displayedColumnInsights: displayed.columnInsights,
-				isGenerated: true,
-				isGenerating: false
-			}));
+			// Detect which options changed by comparing with previous
+			const newRowOptions = activeDoc.matrix_data.row_options;
+			const newColOptions = activeDoc.matrix_data.column_options;
+
+			update(state => {
+				// Compare labels to detect changes
+				const changedRowIndices: number[] = [];
+				const changedColumnIndices: number[] = [];
+
+				if (state.previousRowOptions.length > 0) {
+					newRowOptions.forEach((opt, idx) => {
+						const prevOpt = state.previousRowOptions[idx];
+						if (!prevOpt || prevOpt.label !== opt.label) {
+							changedRowIndices.push(idx);
+						}
+					});
+				}
+
+				if (state.previousColumnOptions.length > 0) {
+					newColOptions.forEach((opt, idx) => {
+						const prevOpt = state.previousColumnOptions[idx];
+						if (!prevOpt || prevOpt.label !== opt.label) {
+							changedColumnIndices.push(idx);
+						}
+					});
+				}
+
+				return {
+					...state,
+					documents,
+					activeDocumentId,
+					displayedMatrixData: displayed.matrixData,
+					displayedRowHeaders: displayed.rowHeaders,
+					displayedColumnHeaders: displayed.columnHeaders,
+					displayedRowInsights: displayed.rowInsights,
+					displayedColumnInsights: displayed.columnInsights,
+					// Store current as previous for next comparison
+					previousRowOptions: [...newRowOptions],
+					previousColumnOptions: [...newColOptions],
+					changedRowIndices,
+					changedColumnIndices,
+					isGenerated: true,
+					isGenerating: false
+				};
+			});
 		},
 
 		// Switch active document tab
@@ -599,6 +644,15 @@ function createMatrixStore() {
 			}));
 		},
 
+		// Clear change indicators (after user has seen the changes)
+		clearChangeIndicators() {
+			update(state => ({
+				...state,
+				changedRowIndices: [],
+				changedColumnIndices: []
+			}));
+		},
+
 		// Reset matrix
 		reset() {
 			set(initialState);
@@ -625,6 +679,12 @@ export const isMatrixGenerated = derived(matrix, ($matrix) => $matrix.isGenerate
 export const isGeneratingMoreDocuments = derived(matrix, ($matrix) => $matrix.isGeneratingMoreDocuments);
 export const showRiskHeatmap = derived(matrix, ($matrix) => $matrix.showRiskHeatmap);
 export const isLoadingOptions = derived(matrix, ($matrix) => $matrix.isLoadingOptions);
+
+// Change tracking derived stores - shows which options changed between context updates
+export const changedRowIndices = derived(matrix, ($matrix) => $matrix.changedRowIndices);
+export const changedColumnIndices = derived(matrix, ($matrix) => $matrix.changedColumnIndices);
+export const previousRowOptions = derived(matrix, ($matrix) => $matrix.previousRowOptions);
+export const previousColumnOptions = derived(matrix, ($matrix) => $matrix.previousColumnOptions);
 
 // Plays derived stores
 export const plays = derived(matrix, ($matrix) => $matrix.plays);

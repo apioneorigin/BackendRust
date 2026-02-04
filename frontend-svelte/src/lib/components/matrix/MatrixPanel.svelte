@@ -11,7 +11,7 @@
 
 	import { createEventDispatcher } from 'svelte';
 	import { Button, Spinner } from '$lib/components/ui';
-	import { matrix, documents, activeDocumentId, activeDocument, isGeneratingMoreDocuments } from '$lib/stores';
+	import { matrix, documents, activeDocumentId, activeDocument, isGeneratingMoreDocuments, changedRowIndices, changedColumnIndices } from '$lib/stores';
 	import type { CellData, CellDimension, Document } from '$lib/stores';
 
 	export let matrixData: CellData[][] = [];
@@ -44,6 +44,21 @@
 
 	// Check if active document has populated cells (not just stubs)
 	$: hasCells = $activeDocument?.matrix_data?.cells && Object.keys($activeDocument.matrix_data.cells).length > 0;
+
+	// Map changed option indices to displayed header positions
+	// selected_rows/cols are indices into the 10 options, changedRowIndices are also indices into 10 options
+	$: displayedRowChanges = (() => {
+		const selectedRows = $activeDocument?.matrix_data?.selected_rows || [];
+		const changes = new Set($changedRowIndices);
+		// For each displayed position (0-4), check if its source option index is in the changed set
+		return selectedRows.map((optionIdx, displayIdx) => changes.has(optionIdx));
+	})();
+
+	$: displayedColumnChanges = (() => {
+		const selectedCols = $activeDocument?.matrix_data?.selected_columns || [];
+		const changes = new Set($changedColumnIndices);
+		return selectedCols.map((optionIdx, displayIdx) => changes.has(optionIdx));
+	})();
 
 	// Track local edits and original values for change detection
 	let localDimensionEdits: Map<string, number> = new Map(); // key: "row-col-dimIdx", value: edited value
@@ -329,8 +344,11 @@
 			<div class="grid-corner"></div>
 
 			<!-- Column headers -->
-			{#each columnHeaders as header}
-				<div class="col-header">
+			{#each columnHeaders as header, colIdx}
+				<div class="col-header" class:changed={displayedColumnChanges[colIdx]}>
+					{#if displayedColumnChanges[colIdx]}
+						<span class="change-indicator" title="Updated from context">*</span>
+					{/if}
 					<span class="header-text">{header}</span>
 				</div>
 			{/each}
@@ -338,8 +356,11 @@
 			<!-- Matrix body -->
 			{#each matrixData as row, rowIdx}
 				<!-- Row header -->
-				<div class="row-header">
+				<div class="row-header" class:changed={displayedRowChanges[rowIdx]}>
 					<span class="header-text">{rowHeaders[rowIdx]}</span>
+					{#if displayedRowChanges[rowIdx]}
+						<span class="change-indicator" title="Updated from context">*</span>
+					{/if}
 				</div>
 
 				<!-- Data cells -->
@@ -711,6 +732,40 @@
 	.compact .col-header .header-text,
 	.compact .row-header .header-text {
 		font-size: 0.6875rem;
+	}
+
+	/* Changed header indicator - shows when option updated from context */
+	.col-header.changed,
+	.row-header.changed {
+		position: relative;
+	}
+
+	.col-header.changed .header-text,
+	.row-header.changed .header-text {
+		color: var(--color-primary-600);
+		font-weight: 700;
+	}
+
+	[data-theme='dark'] .col-header.changed .header-text,
+	[data-theme='dark'] .row-header.changed .header-text {
+		color: var(--color-primary-400);
+	}
+
+	.change-indicator {
+		color: var(--color-primary-500);
+		font-weight: 700;
+		font-size: 0.875rem;
+		line-height: 1;
+	}
+
+	.col-header .change-indicator {
+		position: absolute;
+		top: 0;
+		right: 2px;
+	}
+
+	.row-header .change-indicator {
+		margin-left: 0.25rem;
 	}
 
 	.matrix-cell {
