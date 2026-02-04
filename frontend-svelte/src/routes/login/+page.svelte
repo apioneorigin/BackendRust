@@ -1,31 +1,11 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
-	import { auth, addToast } from '$lib/stores';
-	import { Button, Spinner } from '$lib/components/ui';
+	import { enhance } from '$app/forms';
+	import { Button } from '$lib/components/ui';
+	import type { ActionData } from './$types';
 
-	let email = '';
-	let password = '';
+	export let form: ActionData;
+
 	let isLoading = false;
-	let error = '';
-
-	async function handleSubmit() {
-		error = '';
-		isLoading = true;
-
-		try {
-			const success = await auth.login(email, password);
-			if (success) {
-				addToast('success', 'Welcome back!');
-				goto('/');  // Root will check credits and redirect appropriately
-			} else {
-				error = 'Invalid email or password';
-			}
-		} catch (e: any) {
-			error = e.message || 'Login failed';
-		} finally {
-			isLoading = false;
-		}
-	}
 </script>
 
 <svelte:head>
@@ -58,8 +38,18 @@
 			<p>Sign in to continue your transformation journey</p>
 		</div>
 
-		<form on:submit|preventDefault={handleSubmit} class="auth-form">
-			{#if error}
+		<form
+			method="POST"
+			class="auth-form"
+			use:enhance={() => {
+				isLoading = true;
+				return async ({ update }) => {
+					await update();
+					isLoading = false;
+				};
+			}}
+		>
+			{#if form?.error}
 				<div class="error-message" role="alert">
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
@@ -76,7 +66,7 @@
 						<line x1="12" x2="12" y1="8" y2="12" />
 						<line x1="12" x2="12.01" y1="16" y2="16" />
 					</svg>
-					{error}
+					{form.error}
 				</div>
 			{/if}
 
@@ -85,7 +75,8 @@
 				<input
 					type="email"
 					id="email"
-					bind:value={email}
+					name="email"
+					value={form?.email ?? ''}
 					placeholder="you@example.com"
 					required
 					disabled={isLoading}
@@ -98,7 +89,7 @@
 				<input
 					type="password"
 					id="password"
-					bind:value={password}
+					name="password"
 					placeholder="Enter your password"
 					required
 					disabled={isLoading}
@@ -260,7 +251,6 @@
 		text-decoration: underline;
 	}
 
-	/* Mobile responsive */
 	@media (max-width: 767px) {
 		.auth-card {
 			padding: 1.5rem;

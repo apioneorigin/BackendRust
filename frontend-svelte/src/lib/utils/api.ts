@@ -9,12 +9,11 @@
  * - Error handling
  */
 
-import { browser } from '$app/environment';
+import { browser, dev } from '$app/environment';
 import { goto } from '$app/navigation';
 
 const API_BASE_URL = '';  // Uses Vite proxy in dev, same origin in prod
-const SSE_BASE_URL = import.meta.env.DEV ? 'http://localhost:8000' : '';  // Direct backend for SSE (bypasses proxy buffering)
-const TOKEN_KEY = 'auth_token';
+const SSE_BASE_URL = dev ? 'http://localhost:8000' : '';  // Direct backend for SSE (bypasses proxy buffering)
 
 interface RequestOptions {
 	headers?: Record<string, string>;
@@ -33,20 +32,8 @@ class ApiError extends Error {
 	}
 }
 
-function getToken(): string | null {
-	if (typeof window === 'undefined') return null;
-	return localStorage.getItem(TOKEN_KEY);
-}
-
-function setToken(token: string): void {
-	if (typeof window === 'undefined') return;
-	localStorage.setItem(TOKEN_KEY, token);
-}
-
-function clearToken(): void {
-	if (typeof window === 'undefined') return;
-	localStorage.removeItem(TOKEN_KEY);
-}
+// Token management removed - using HttpOnly cookies via SvelteKit
+// Cookies are automatically included in same-origin requests
 
 async function request<T>(
 	method: string,
@@ -56,17 +43,11 @@ async function request<T>(
 ): Promise<T> {
 	const { headers = {}, timeout = 30000, retries = 3 } = options;
 
-	const token = getToken();
-	const authHeaders: Record<string, string> = {};
-	if (token) {
-		authHeaders['Authorization'] = `Bearer ${token}`;
-	}
-
 	const config: RequestInit = {
 		method,
+		credentials: 'include', // Include cookies for auth
 		headers: {
 			'Content-Type': 'application/json',
-			...authHeaders,
 			...headers,
 		},
 	};
@@ -88,11 +69,8 @@ async function request<T>(
 
 			if (!response.ok) {
 				// Handle 401 - redirect to login
-				if (response.status === 401) {
-					clearToken();
-					if (browser) {
-						goto('/login');
-					}
+				if (response.status === 401 && browser) {
+					goto('/login');
 				}
 				const errorData = await response.json().catch(() => ({}));
 				throw new ApiError(
@@ -150,31 +128,16 @@ export const api = {
 	 * Raw fetch for streaming responses (SSE)
 	 */
 	async stream(endpoint: string, data?: any, options?: RequestOptions): Promise<Response> {
-		const token = getToken();
-		const authHeaders: Record<string, string> = {};
-		if (token) {
-			authHeaders['Authorization'] = `Bearer ${token}`;
-		}
-
-		const config: RequestInit = {
+		return fetch(`${API_BASE_URL}${endpoint}`, {
 			method: 'POST',
+			credentials: 'include',
 			headers: {
 				'Content-Type': 'application/json',
-				...authHeaders,
 				...options?.headers,
 			},
-		};
-
-		if (data) {
-			config.body = JSON.stringify(data);
-		}
-
-		return fetch(`${API_BASE_URL}${endpoint}`, config);
+			body: data ? JSON.stringify(data) : undefined,
+		});
 	},
-
-	setToken,
-	clearToken,
-	getToken,
 
 	/**
 	 * Get SSE base URL for direct backend connection
@@ -184,20 +147,20 @@ export const api = {
 	},
 
 	/**
-	 * SSE stream that connects directly to backend (bypasses Vite proxy)
+	 * SSE stream - uses same-origin for cookie auth, or direct backend in dev
+	 * In production, uses same-origin proxy. In dev, uses direct backend with credentials.
 	 */
 	async sseStream(endpoint: string, data?: any): Promise<Response> {
-		const token = getToken();
-		const headers: Record<string, string> = {
-			'Content-Type': 'application/json',
-		};
-		if (token) {
-			headers['Authorization'] = `Bearer ${token}`;
-		}
+		// Use direct backend URL in dev for SSE (avoids proxy buffering issues)
+		// Use same-origin in production (cookies work automatically)
+		const baseUrl = dev ? SSE_BASE_URL : API_BASE_URL;
 
-		return fetch(`${SSE_BASE_URL}${endpoint}`, {
+		return fetch(`${baseUrl}${endpoint}`, {
 			method: 'POST',
-			headers,
+			credentials: 'include',
+			headers: {
+				'Content-Type': 'application/json',
+			},
 			body: data ? JSON.stringify(data) : undefined,
 		});
 	},

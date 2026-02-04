@@ -117,6 +117,14 @@ function createChatStore() {
 	return {
 		subscribe,
 
+		// Set conversations from server data (SSR)
+		setConversations(convs: Conversation[]) {
+			update(state => ({
+				...state,
+				conversations: convs
+			}));
+		},
+
 		async loadConversations() {
 			// Prevent duplicate concurrent loads
 			if (isLoadingConversations) return;
