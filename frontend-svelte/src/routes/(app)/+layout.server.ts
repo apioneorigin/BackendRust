@@ -41,7 +41,8 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 				}
 			});
 			if (response.ok) {
-				conversations = await response.json();
+				const data = await response.json();
+				conversations = data.conversations || [];
 			}
 		} catch {
 			// Conversations fetch failed - continue without them
