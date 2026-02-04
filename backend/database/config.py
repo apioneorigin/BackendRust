@@ -118,6 +118,8 @@ async def _run_sqlite_migrations(conn):
     # Define columns that may need to be added (table, column, type, default)
     migrations = [
         ("chat_messages", "feedback", "TEXT", None),
+        ("chat_conversations", "generated_presets", "TEXT", None),
+        ("chat_conversations", "generated_documents", "TEXT", None),
     ]
 
     for table, column, col_type, default in migrations:
