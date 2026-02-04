@@ -123,7 +123,7 @@ ZONE_B_REGEX_PATTERNS: List[Tuple[str, str]] = [
 
     # Mental health crisis patterns
     (r"(hear|hearing) voices", "mental_health"),
-    (r"voices tell(ing)? me", "mental_health"),
+    (r"voices\s+(?:are\s+)?tell(ing)?\s+me", "mental_health"),
     (r"people are controlling my (mind|thoughts)", "mental_health"),
     (r"everyone is (against|watching) me", "mental_health"),
     (r"they('re| are) (watching|following|after) me", "mental_health"),
@@ -201,7 +201,7 @@ ZONE_C_SPIRITUAL_BYPASSING_LITERALS: List[Tuple[str, str]] = [
 ]
 
 ZONE_C_SPIRITUAL_BYPASSING_REGEX: List[Tuple[str, str]] = [
-    (r"i'?ve transcended (that|this|it)", "spiritual_bypassing"),
+    (r"i'?ve\s+(?:\w+\s+)?transcended\s+(that|this|it)", "spiritual_bypassing"),
     (r"i'?m beyond (that|this|those|emotions)", "spiritual_bypassing"),
     (r"beyond (that|this|those feelings|emotions)", "spiritual_bypassing"),
     (r"already past (that|this)", "spiritual_bypassing"),

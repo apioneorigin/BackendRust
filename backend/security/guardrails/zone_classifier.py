@@ -122,7 +122,7 @@ def classify_zone(text: str) -> ZoneClassification:
             zone="B",
             reason="Crisis indicators detected",
             confidence=0.9,
-            ethical_flag=tag if tag == "mental_health" else "crisis",
+            ethical_flag=tag,  # Preserve original tag (suicide, self_harm, mental_health)
             matched_pattern=keyword,
         )
 
