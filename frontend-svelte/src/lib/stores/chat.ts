@@ -652,10 +652,10 @@ function createChatStore() {
 
 export const chat = createChatStore();
 
-// Derived stores
+// Derived stores - always return valid types, never undefined
 export const currentConversation = derived(chat, $chat => $chat.currentConversation);
-export const conversations = derived(chat, $chat => $chat.conversations);
-export const messages = derived(chat, $chat => $chat.messages);
+export const conversations = derived(chat, $chat => $chat.conversations ?? []);
+export const messages = derived(chat, $chat => $chat.messages ?? []);
 export const goals = derived(chat, $chat => $chat.goals);
 export const insights = derived(chat, $chat => $chat.insights);
 export const questions = derived(chat, $chat => $chat.questions);

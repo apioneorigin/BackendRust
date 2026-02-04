@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
+	import { browser } from '$app/environment';
 	import { theme, addToast, chat, conversations, currentConversation, messages } from '$lib/stores';
 	import type { LayoutData } from './$types';
 
@@ -8,6 +9,11 @@
 
 	// User guaranteed by hooks.server.ts guard - no fallback
 	$: user = data.user;
+
+	// Sync SSR conversations to store on initial load
+	$: if (browser && data.conversations) {
+		chat.setConversations(data.conversations);
+	}
 
 	let mobileMenuOpen = false;
 	let userMenuOpen = false;
@@ -206,7 +212,7 @@
 					</div>
 				{/if}
 				<div class="conversations-list">
-					{#each ($conversations || []) as conversation (conversation.id)}
+					{#each $conversations as conversation (conversation.id)}
 						<div class="conversation-row" class:active={$currentConversation?.id === conversation.id}>
 							<button
 								type="button"
