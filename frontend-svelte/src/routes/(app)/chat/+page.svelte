@@ -119,9 +119,9 @@
 	async function copyToClipboard(text: string) {
 		try {
 			await navigator.clipboard.writeText(text);
-			addToast({ type: 'success', message: 'Copied to clipboard' });
+			addToast('success', 'Copied to clipboard');
 		} catch (err) {
-			addToast({ type: 'error', message: 'Failed to copy' });
+			addToast('error', 'Failed to copy');
 		}
 	}
 
@@ -335,8 +335,8 @@
 	}
 
 	function handleCellChange(e: CustomEvent<{ row: number; col: number; value: number }>) {
-		const { row, col, value } = e.detail;
-		matrix.updateCellValue(row, col, value);
+		// Cell value changes are handled via dimension updates in MatrixPanel
+		// This handler is kept for backward compatibility with events
 	}
 
 	async function handleToolbarPopup(e: CustomEvent<{ type: 'plays' | 'scenarios' }>) {
@@ -365,10 +365,7 @@
 
 	function handleSaveScenario() {
 		// TODO: Implement backend persistence
-		addToast({
-			type: 'info',
-			message: 'Scenario save will be implemented with backend integration'
-		});
+		addToast('info', 'Scenario save will be implemented with backend integration');
 	}
 
 	// Explanation loading state

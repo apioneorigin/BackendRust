@@ -11,8 +11,8 @@
 
 	import { createEventDispatcher } from 'svelte';
 	import { Button, Spinner } from '$lib/components/ui';
-	import { matrix, documents, activeDocumentId, activeDocument, isGeneratingMoreDocuments, changedRowIndices, changedColumnIndices } from '$lib/stores';
-	import type { CellData, CellDimension, Document } from '$lib/stores';
+	import { matrix, matrixDocuments, activeDocumentId, activeDocument, isGeneratingMoreDocuments, changedRowIndices, changedColumnIndices } from '$lib/stores';
+	import type { CellData, CellDimension, Document as MatrixDocument } from '$lib/stores/matrix';
 
 	export let matrixData: CellData[][] = [];
 	export let rowHeaders: string[] = ['Dimension 1', 'Dimension 2', 'Dimension 3', 'Dimension 4', 'Dimension 5'];
@@ -68,9 +68,26 @@
 	$: hasUnsavedChanges = localDimensionEdits.size > 0;
 
 	// Check if a document has full data (100 cells)
-	function hasFullData(doc: Document): boolean {
+	function hasFullData(doc: MatrixDocument): boolean {
 		const cells = doc.matrix_data?.cells || {};
 		return Object.keys(cells).length >= 100;
+	}
+
+	// Check if cell is a power spot (leverage point)
+	function isPowerSpot(cell: CellData): boolean {
+		return cell.isLeveragePoint;
+	}
+
+	// Check if cell is high risk
+	function isRiskCell(cell: CellData): boolean {
+		return cell.riskLevel === 'high' || cell.riskLevel === 'medium';
+	}
+
+	// Check if cell should be hidden in filtered views
+	function shouldHideCell(cell: CellData): boolean {
+		if (showPowerSpotsView && !isPowerSpot(cell)) return true;
+		if (showRiskView && !isRiskCell(cell)) return true;
+		return false;
 	}
 
 	// Calculate cell value from dimensions (average)
@@ -235,7 +252,7 @@
 		}
 	}
 
-	function handleDocumentTabClick(docId: string, doc: Document) {
+	function handleDocumentTabClick(docId: string, doc: MatrixDocument) {
 		// Only allow clicking on documents with full data
 		if (!hasFullData(doc)) return;
 		matrix.setActiveDocument(docId);
@@ -279,10 +296,10 @@
 
 <div class="matrix-panel" class:compact>
 	<!-- Document Tabs with Plus Button -->
-	{#if showDocumentTabs && $documents.length > 0}
+	{#if showDocumentTabs && $matrixDocuments.length > 0}
 		<div class="document-tabs-container">
 			<div class="document-tabs">
-				{#each $documents as doc (doc.id)}
+				{#each $matrixDocuments as doc (doc.id)}
 					{@const isFullData = hasFullData(doc)}
 					{@const isActive = doc.id === $activeDocumentId}
 					{@const isPopulating = isPopulatingDoc === doc.id}
@@ -307,7 +324,7 @@
 								title="Generate full matrix data"
 							>
 								{#if isPopulating}
-									<Spinner size="xs" />
+									<Spinner size="sm" />
 								{:else}
 									<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 										<path d="M12 3v3m6.366-.366-2.12 2.12M21 12h-3m.366 6.366-2.12-2.12M12 21v-3m-6.366.366 2.12-2.12M3 12h3m-.366-6.366 2.12 2.12"/>
@@ -326,7 +343,7 @@
 					title="Generate 3 more documents"
 				>
 					{#if $isGeneratingMoreDocuments}
-						<Spinner size="xs" />
+						<Spinner size="sm" />
 					{:else}
 						<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 							<path d="M12 5v14M5 12h14"/>

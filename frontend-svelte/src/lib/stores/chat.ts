@@ -241,7 +241,7 @@ function createChatStore() {
 				} catch (docError: any) {
 					if (docError.name !== 'AbortError') {
 						console.error('Failed to load documents:', docError);
-						addToast({ type: 'error', message: 'Failed to load matrix documents', duration: 3000 });
+						addToast('error', 'Failed to load matrix documents');
 					}
 				}
 
@@ -250,7 +250,7 @@ function createChatStore() {
 				} catch (qError: any) {
 					if (qError.name !== 'AbortError') {
 						console.error('Failed to load questions:', qError);
-						addToast({ type: 'error', message: 'Failed to load questions', duration: 3000 });
+						addToast('error', 'Failed to load questions');
 					}
 				}
 

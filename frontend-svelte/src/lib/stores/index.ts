@@ -18,8 +18,6 @@ export {
 	isMatrixGenerated,
 	isGeneratingMoreDocuments,
 	showRiskHeatmap,
-	documentTabs,
-	activeTab,
 	isLoadingOptions,
 	coherence,
 	population,

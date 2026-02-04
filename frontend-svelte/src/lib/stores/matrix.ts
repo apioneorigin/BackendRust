@@ -90,6 +90,7 @@ export interface Document {
 			dimensions: {
 				name: string;
 				value: number;  // 0 (Low), 50 (Medium), or 100 (High)
+				explanation?: string;  // Max 10-word phrase explaining this dimension's state
 			}[];
 		}>;
 	};
@@ -407,8 +408,10 @@ function createMatrixStore() {
 			update(s => ({ ...s, isGeneratingMoreDocuments: true, error: null }));
 
 			try {
-				const response = await api.post(`/matrix/${state.conversationId}/documents/generate`);
-				const { documents: newDocs, total_document_count } = response;
+				const response = await api.post<{ documents: Document[]; total_document_count: number }>(
+					`/matrix/${state.conversationId}/documents/generate`
+				);
+				const { documents: newDocs } = response;
 
 				update(s => ({
 					...s,
@@ -436,7 +439,9 @@ function createMatrixStore() {
 			}
 
 			try {
-				const response = await api.post(`/matrix/${state.conversationId}/document/${docId}/populate`);
+				const response = await api.post<{ success: boolean }>(
+					`/matrix/${state.conversationId}/document/${docId}/populate`
+				);
 
 				if (response.success) {
 					// Refresh documents to get the populated data
@@ -480,7 +485,7 @@ function createMatrixStore() {
 			update(s => ({ ...s, isLoadingPlays: true, error: null }));
 
 			try {
-				const response = await api.get(
+				const response = await api.get<{ plays: Play[]; selectedPlayId: string | null }>(
 					`/matrix/${state.conversationId}/document/${state.activeDocumentId}/plays`
 				);
 				const plays = response.plays || [];
@@ -582,7 +587,7 @@ function createMatrixStore() {
 				});
 
 				// Persist to backend
-				const response = await api.patch(
+				const response = await api.patch<{ success?: boolean; changes_saved?: number; changesSaved?: number }>(
 					`/matrix/${state.conversationId}/document/${state.activeDocumentId}/cells`,
 					{
 						changes: changes.map(ch => ({
@@ -605,11 +610,7 @@ function createMatrixStore() {
 				update(s => ({ ...s, displayedMatrixData: originalMatrixData }));
 
 				// Notify user of failure
-				addToast({
-					type: 'error',
-					message: 'Failed to save changes. Please try again.',
-					duration: 4000
-				});
+				addToast('error', 'Failed to save changes. Please try again.');
 
 				return { success: false, changesSaved: 0 };
 			}
@@ -737,28 +738,3 @@ export const powerSpots = derived(matrix, ($matrix) => {
 	return $matrix.displayedMatrixData.flat().filter((c) => c.isLeveragePoint).length;
 });
 
-// Document tabs interface - used by CausationPopup and EffectPopup components
-export const documentTabs = derived(matrix, ($matrix) =>
-	$matrix.documents.map(d => ({
-		id: d.id,
-		name: d.name,
-		type: 'primary' as const,
-		causationOptions: [],
-		effectOptions: [],
-		selectedCausations: [],
-		selectedEffects: []
-	}))
-);
-
-export const activeTab = derived(matrix, ($matrix) => {
-	const doc = $matrix.documents.find(d => d.id === $matrix.activeDocumentId);
-	return doc ? {
-		id: doc.id,
-		name: doc.name,
-		type: 'primary' as const,
-		causationOptions: [],
-		effectOptions: [],
-		selectedCausations: [],
-		selectedEffects: []
-	} : null;
-});
