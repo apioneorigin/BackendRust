@@ -14,6 +14,12 @@ from consciousness_state import (
     ConversationHistoryContext,
 )
 from logging_config import articulation_logger as logger
+from utils.framework_translation import (
+    translate_s_level_label,
+    translate_act_name,
+    translate_operator,
+    translate_death_code,
+)
 
 
 def _fmt(value: Optional[float], as_percent: bool = True, decimals: int = 0) -> str:
@@ -124,9 +130,9 @@ class ArticulationPromptBuilder:
             sections.append("")
 
         sections.append("""**Evidence Integration Instructions:**
-When web search is enabled, use these search queries to find CITED PROOF for the calculated consciousness values.
+When web search is enabled, use these search queries to find CITED PROOF for the calculated inner state values.
 Ground evidence searches in calculated values; if a suggested search targets a blocked calculation, skip it or adapt to a related calculated value.
-Each major insight should connect: Consciousness Pattern → Observable Reality → Cited Evidence.""")
+Each major insight should connect: Inner Pattern → Observable Reality → Cited Evidence.""")
 
         return '\n'.join(sections)
 
@@ -238,26 +244,26 @@ Each major insight should connect: Consciousness Pattern → Observable Reality 
 
     def _build_header(self) -> str:
         """Build the prompt header"""
-        return """# REALITY TRANSFORMER: CONSCIOUSNESS ARTICULATION
+        return """# REALITY TRANSFORMER: INSIGHT ARTICULATION
 
-You are receiving a complete consciousness analysis based on the One Origin Framework (OOF).
+You are receiving a complete deep pattern analysis based on our analytical methodology.
 
 Your task is to articulate these insights in natural language that the user can understand and act upon.
 
-CRITICAL: You must CONCEAL framework terminology. Never say "Maya operator" or "S-level" - translate everything into natural, domain-appropriate language."""
+Express all insights using natural, domain-appropriate language that feels like wisdom from a trusted advisor."""
 
     def _build_framework_section(self) -> str:
         """Build framework reference section - FREEDOM-RESPECTING VERSION"""
-        return """## FRAMEWORK REFERENCE
+        return """## METHODOLOGY REFERENCE
 
-You are receiving pre-calculated consciousness values from the backend inference engine.
+You are receiving pre-calculated inner state values from the backend inference engine.
 These values are your source of truth - interpret and articulate them naturally.
 
 Express insights as if speaking to a trusted friend or client.
 
 ## VALUE SELECTION PROTOCOL
 
-You are receiving ALL calculated consciousness values (~1,500-2,500 values).
+You are receiving ALL calculated inner state values (~1,500-2,500 values).
 Your task is to SELECT which values to articulate based on context.
 
 ### SELECTION PRINCIPLES:
@@ -276,12 +282,12 @@ Include these if relevant to the query.
 
 **4. CAUSAL CHAIN COMPLETENESS**
 If articulating bottleneck X, include ALL values in its causal chain.
-Show the full consciousness → reality connection.
+Show the full inner pattern → reality connection.
 Don't leave causal gaps.
 
 **5. TRANSFORMATION CONTEXT**
 If discussing transformation, include transformation-related values
-(S-level, matrices, death architecture, grace availability).
+(growth phase, matrices, dissolution patterns, flow availability).
 
 ### ARTICULATION EFFICIENCY:
 
@@ -299,13 +305,13 @@ ones into breakthrough insights.
 ### CALCULATED VS NON-CALCULATED VALUES:
 
 - Values showing actual numbers = successfully calculated from user's data
-- Values showing "N/A" or "Not calculated" = blocked due to missing input operators
+- Values showing "N/A" or "Not calculated" = blocked due to missing input factors
 - Base your insights ONLY on calculated values
 - Never fabricate or estimate blocked values
 
 **Two types of non-calculated values:**
 1. **Question-addressable gaps** (listed in DATA QUALITY section): These are blocked because
-   specific input operators weren't extracted from the user's query. A follow-up question can
+   specific input factors weren't extracted from the user's query. A follow-up question can
    fill these. Reference them as: "to assess X, I'd need to understand more about Y in your experience"
 2. **Context-addressable gaps** (listed in DATA QUALITY section): These are blocked because
    upstream calculations they depend on couldn't complete. These cannot be filled by asking
@@ -471,28 +477,28 @@ to articulate. Don't list all values - synthesize the relevant ones.
             f"dominant_act={five_acts.dominant} dominant_guna={gunas.dominant}"
         )
 
-        return f"""## CALCULATED CONSCIOUSNESS STATE
+        return f"""## CALCULATED INNER STATE
 
 {context_guidance}{data_quality_section}
 ### CORE CONFIGURATION
 
-**S-Level:** {_fmt_score(s_level.current)} ({s_level.label or 'Unknown'})
+**Growth Phase:** {_fmt_score(s_level.current)} ({translate_s_level_label(s_level.current)})
 - Evolution rate: {_fmt(s_level.transition_rate, decimals=1)} per month
 
 **Primary Operating Mode:**
-- Dominant Act: {(five_acts.dominant or 'unknown').replace('_', ' ').title()} ({_fmt(dominant_act_value)})
-- Dominant Guna: {(gunas.dominant or 'unknown').title()} ({_fmt(dominant_guna_value)})
+- Dominant Phase: {translate_act_name(five_acts.dominant)} ({_fmt(dominant_act_value)})
+- Dominant Energy: {(gunas.dominant or 'unknown').title()} ({_fmt(dominant_guna_value)})
 - Temporal Focus: {_fmt(ops.T_time_past)} past, {_fmt(ops.T_time_present)} present, {_fmt(ops.T_time_future)} future
 
-**Key Operators:**
-- Presence (now-moment): {_fmt(ops.P_presence)}
-- Awareness: {_fmt(ops.A_aware)}
-- Maya (illusion): {_fmt(ops.M_maya)}
-- Attachment: {_fmt(ops.At_attachment)}
-- Grace flow: {_fmt(ops.G_grace)}
-- Witness: {_fmt(ops.W_witness)}
-- Surrender: {_fmt(ops.S_surrender)}
-- Coherence: {_fmt(ops.Co_coherence)}
+**Key Factors:**
+- Present-moment awareness: {_fmt(ops.P_presence)}
+- Self-awareness: {_fmt(ops.A_aware)}
+- Blind spots: {_fmt(ops.M_maya)}
+- Clinging patterns: {_fmt(ops.At_attachment)}
+- Flow and breakthroughs: {_fmt(ops.G_grace)}
+- Objective perspective: {_fmt(ops.W_witness)}
+- Letting go capacity: {_fmt(ops.S_surrender)}
+- Inner alignment: {_fmt(ops.Co_coherence)}
 - Resistance: {_fmt(ops.R_resistance)}
 - Fear: {_fmt(ops.F_fear)}
 
@@ -505,21 +511,21 @@ to articulate. Don't list all values - synthesize the relevant ones.
 - Freedom: {matrices.freedom_position or 'Unknown'} ({_fmt(matrices.freedom_score)})
 - Creation: {matrices.creation_position or 'Unknown'} ({_fmt(matrices.creation_score)})
 - Time: {matrices.time_position or 'Unknown'} ({_fmt(matrices.time_score)})
-- Death: {matrices.death_position or 'Unknown'} ({_fmt(matrices.death_score)})
+- Dissolution: {matrices.death_position or 'Unknown'} ({_fmt(matrices.death_score)})
 
-**Active Death Processes:**
-{f"- {death.active_process} (depth: {_fmt(death.depth)})" if death.active_process else "- None currently active"}
+**Active Dissolution Processes:**
+{f"- {translate_death_code(death.active_process)} (depth: {_fmt(death.depth)})" if death.active_process else "- None currently active"}
 
 ### ENERGY DISTRIBUTION
 
-**Chakra Activation:**
-- Root (survival): {_fmt(chakras.muladhara)}
+**Energy Centers:**
+- Root (stability): {_fmt(chakras.muladhara)}
 - Sacral (creativity): {_fmt(chakras.svadhisthana)}
-- Solar Plexus (power): {_fmt(chakras.manipura)}
-- Heart (love): {_fmt(chakras.anahata)}
+- Solar Plexus (drive): {_fmt(chakras.manipura)}
+- Heart (connection): {_fmt(chakras.anahata)}
 - Throat (expression): {_fmt(chakras.vishuddha)}
-- Third Eye (intuition): {_fmt(chakras.ajna)}
-- Crown (connection): {_fmt(chakras.sahasrara)}
+- Insight center: {_fmt(chakras.ajna)}
+- Higher connection: {_fmt(chakras.sahasrara)}
 
 **Drive Fulfillment:**
 - Love: {_fmt(drives_int.love_internal_pct)} internal, {_fmt(drives_int.love_external_pct)} seeking externally
@@ -531,31 +537,31 @@ to articulate. Don't list all values - synthesize the relevant ones.
 **Breakthrough Dynamics:**
 - Breakthrough probability: {_fmt(breakthrough.probability)}
 - Distance to tipping point: {_fmt(breakthrough.tipping_point_distance)}
-- Quantum jump possibility: {_fmt(breakthrough.quantum_jump_prob)}
-{f"- Operators at breakthrough threshold: {', '.join(breakthrough.operators_at_threshold)}" if breakthrough.operators_at_threshold else ""}
+- Breakthrough jump possibility: {_fmt(breakthrough.quantum_jump_prob)}
+{f"- Factors at breakthrough threshold: {', '.join(translate_operator(op) for op in breakthrough.operators_at_threshold)}" if breakthrough.operators_at_threshold else ""}
 
 **Timeline Predictions:**
 - To stated goal: {timeline.to_goal or 'Not calculated'}
-- To next S-level: {timeline.to_next_s_level or 'Not calculated'}
+- To next growth phase: {timeline.to_next_s_level or 'Not calculated'}
 - Evolution rate: {_fmt(timeline.evolution_rate, decimals=1)} per month
 
 **Manifestation Capacity:**
 - Pipeline flow rate: {_fmt(pipeline.flow_rate)}
 - Typical manifestation time: {pipeline.manifestation_time or 'Not calculated'}
 
-**Grace Mechanics:**
+**Flow Mechanics:**
 - Availability: {_fmt(grace_mech.availability)}
 - Effectiveness: {_fmt(grace_mech.effectiveness)}
-- Multiplication factor: {f'{grace_mech.multiplication_factor:.2f}x' if grace_mech.multiplication_factor else 'N/A'}
+- Amplification factor: {f'{grace_mech.multiplication_factor:.2f}x' if grace_mech.multiplication_factor else 'N/A'}
 
-### COHERENCE & GAPS
+### ALIGNMENT & GAPS
 
-**Coherence Metrics:**
-- Overall coherence: {_fmt(coherence.overall)}
+**Alignment Metrics:**
+- Overall alignment: {_fmt(coherence.overall)}
 - Fundamental: {_fmt(coherence.fundamental)}
 - Specification: {_fmt(coherence.specification)}
 
-**POMDP Gaps (Reality Perception):**
+**Reality Perception Gaps:**
 - Reality gap (what's real vs what you believe): {_fmt(pomdp.reality_gap)}
 - Observation gap (what's real vs what you see): {_fmt(pomdp.observation_gap)}
 - Belief gap (what you believe vs what you see): {_fmt(pomdp.belief_gap)}
@@ -867,10 +873,9 @@ No high-multiplier opportunities currently active. Focus on clearing bottlenecks
             f"[_build_generation_instructions] style={instructions.articulation_style} "
             f"priorities={instructions.insight_priorities}"
         )
-        # Build concealment note
-        concealment_note = """- **Framework Concealment:** Never use technical terms
-like "Maya operator", "S-level", "transformation matrix". Translate everything
-into natural, domain-appropriate language."""
+        # Build style note
+        style_note = """- **Natural Language:** Express all insights using natural,
+domain-appropriate language that feels like wisdom from a trusted advisor."""
 
         # Build domain note if available
         domain_note = ""
@@ -893,10 +898,10 @@ domain. Use appropriate terminology and examples."""
 Your response should accomplish these goals (structure naturally based on context):
 
 **Show Current Reality:** Express where the user actually is vs where they think
-they are. Ground this in web research and consciousness analysis. Point out any
-perception gaps (POMDP).
+they are. Ground this in web research and deep pattern analysis. Point out any
+perception gaps.
 
-**Explain Consciousness Patterns:** Identify which consciousness patterns are
+**Explain Inner Patterns:** Identify which inner patterns are
 creating the current situation. Explain HOW these patterns interact to produce
 observable results. Make the invisible visible.
 
@@ -905,10 +910,10 @@ internally to enable external results. Reference transformation vectors and
 leverage points.
 
 **Provide Practical Leverage:** Offer concrete next actions aligned with their
-consciousness state and current capacity.
+inner state and current capacity.
 
 ### STYLE REQUIREMENTS
-{concealment_note}
+{style_note}
 {domain_note}
 
 - **Natural Flow:** Write as a wise advisor who sees patterns they cannot see,
@@ -918,7 +923,7 @@ not as a calculation system reporting numbers.
 communicate everything - focus on what matters most for their transformation.
 
 - **Grounded in Data:** Ground major claims in either web research findings or
-calculated consciousness values. Express these naturally, not as citations.
+calculated inner state values. Express these naturally, not as citations.
 
 - **NO SEPARATORS:** NEVER use "---" or horizontal rules in your response text.
 Your prose should flow naturally without visual dividers between sections.
@@ -932,7 +937,7 @@ insights and context of THIS conversation - never use templated or formulaic phr
 
 **Requirements:**
 - The bridge must be UNIQUE to the user's specific situation and what you've just shared
-- Draw directly from the consciousness patterns, insights, or discoveries revealed
+- Draw directly from the inner patterns, insights, or discoveries revealed
 - Reference specific details from their context (their domain, challenges, opportunities)
 - Let the bridge arise naturally from the logical flow of your articulation
 
@@ -948,10 +953,10 @@ Do NOT use "---" before the bridge.
 
 ## EVIDENCE GROUNDING PROTOCOL
 
-When consciousness values are calculated, ground them in observable reality:
+When inner state values are calculated, ground them in observable reality:
 
 **Process:**
-1. Translate consciousness patterns into measurable behaviors/outcomes
+1. Translate inner patterns into measurable behaviors/outcomes
 2. Formulate search queries to find observable proof
 3. Cite evidence naturally in your articulation
 4. Include "Sources:" section at the end listing all web sources used
@@ -960,7 +965,7 @@ When consciousness values are calculated, ground them in observable reality:
 
 **Quality Standards:**
 - Focus on major insights (not every value)
-- Show consciousness pattern → observable reality → cited proof
+- Show inner pattern → observable reality → cited proof
 - Integrate evidence into narrative flow naturally
 - Let evidence strengthen insights, not replace them"""
 
@@ -1186,30 +1191,30 @@ Each option should reveal different aspects of the user's inner experience."""
             missing_list += f"\n  ... and {len(missing_with_desc) - 15} more"
 
         return f"""
-### FOLLOW-UP QUESTION (MANDATORY) - PRIORITY 1: OPERATOR EXTRACTION
+### FOLLOW-UP QUESTION (MANDATORY) - PRIORITY 1: FACTOR EXTRACTION
 
-**SITUATION:** {missing_count} core consciousness operators are still missing.
+**SITUATION:** {missing_count} core inner factors are still missing.
 
-**MISSING OPERATORS TO EXTRACT:**
+**MISSING FACTORS TO EXTRACT:**
 {missing_list}
 
 **YOUR TASK:** Generate a question + 4 answer options designed so that ANY answer
-the user chooses reveals values for MAXIMUM missing operators.
+the user chooses reveals values for MAXIMUM missing factors.
 
 **DESIGN REQUIREMENTS:**
 1. **Question Bridge:** Create a natural bridge sentence that flows from your response
    into a question about the user's inner experience
 2. **4 Mutually Exclusive Options:** Each option represents a DIFFERENT inner state/experience
 3. **Maximum Extraction:** Each option, if chosen, should allow extraction of 5-10 different
-   operator values (not the same ones across options)
+   factor values (not the same ones across options)
 4. **Natural Language:** Use user's domain language, not technical terms
 5. **Diagnostic Power:** Options should span the spectrum of possible experiences
 
 **OPTION DESIGN EXAMPLE:**
-- Option 1: Represents high attachment + fear-driven state → extracts At, F, R values
-- Option 2: Represents surrender + trust state → extracts S, Tr, G values
-- Option 3: Represents analytical detachment → extracts W, Bu, E values
-- Option 4: Represents active engagement → extracts I, Sh, P values
+- Option 1: Represents high clinging + fear-driven state → extracts attachment, fear, resistance values
+- Option 2: Represents letting go + trust state → extracts surrender, trust, flow values
+- Option 3: Represents analytical detachment → extracts perspective, discernment, balance values
+- Option 4: Represents active engagement → extracts intention, energy, presence values
 
 **REMEMBER:** User can only choose ONE answer. Make every option count for extraction."""
 
@@ -1221,7 +1226,7 @@ the user chooses reveals values for MAXIMUM missing operators.
         return f"""
 ### FOLLOW-UP QUESTION (MANDATORY) - PRIORITY 2: INTERPRETATION + HIGHER TIERS
 
-**SITUATION:** All 25 core operators are available. Now we need:
+**SITUATION:** All 25 core factors are available. Now we need:
 1. User's interpretation of the insights shared
 2. Data to calculate higher-tier derived values
 
@@ -1230,7 +1235,7 @@ the user chooses reveals values for MAXIMUM missing operators.
 
 **YOUR TASK:** Generate a question + 4 answer options that reveal:
 - How the user relates to/interprets what you've shared
-- Information to refine consciousness state calculations
+- Information to refine inner state calculations
 
 **DESIGN REQUIREMENTS:**
 1. **Question Bridge:** Natural transition asking how insights landed/resonate

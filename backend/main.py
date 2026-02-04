@@ -2833,7 +2833,6 @@ async def format_results_streaming_bridge(
         consciousness_state=consciousness_state,
         web_research_summary=evidence.get('web_research_summary'),
         key_facts=evidence.get('key_facts'),
-        framework_concealment=True,  # Hide OOF terminology in output
         domain_language=True,  # Use natural domain language
         search_guidance_data=search_guidance_data,  # Pass search guidance for evidence grounding
         conversation_context=conversation_context,  # Pass conversation history and files
