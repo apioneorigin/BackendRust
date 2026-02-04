@@ -71,6 +71,7 @@ from dotenv import load_dotenv
 from security.middleware import UnifiedSecurityMiddleware
 from security.rate_limiter import RateLimiter, set_rate_limiter
 from security.audit_logger import AuditLogger, set_audit_logger
+from security.guardrails import classify_zone, get_crisis_response, detect_locale_from_context
 
 from formulas import OOFInferenceEngine, CANONICAL_OPERATOR_NAMES, SHORT_TO_CANONICAL
 from value_organizer import ValueOrganizer
@@ -690,6 +691,7 @@ async def serve_frontend():
 
 @app.get("/api/run")
 async def run_inference(
+    request: Request,
     prompt: str = Query(..., description="User query"),
     model: str = Query(DEFAULT_MODEL, description="Model to use for inference"),
     web_search_data: bool = Query(True, description="Enable web search for data gathering (Get Data)"),
@@ -699,6 +701,52 @@ async def run_inference(
     Main SSE endpoint for running inference
     Flow: Web Research + Parse Query -> Run Inference -> Format Results -> Stream Response
     """
+    from security.rate_limiter import get_rate_limiter
+
+    # Get client identifier for rate limiting
+    rate_limiter = get_rate_limiter()
+    client_ip = request.client.host if request.client else "unknown"
+    identifier = await rate_limiter.get_client_identifier(client_ip)
+
+    # Check if user is in guardrail cooldown
+    in_cooldown_a, retry_a = await rate_limiter.check_guardrail_cooldown(identifier, "A")
+    if in_cooldown_a:
+        async def cooldown_stream():
+            yield {"event": "token", "data": json.dumps({"text": "You've made too many requests that I can't help with. Please wait before trying again."})}
+            yield {"event": "done", "data": "{}"}
+        return EventSourceResponse(cooldown_stream(), media_type="text/event-stream")
+
+    # Sacred Guardrails: Zone classification before inference
+    zone_classification = classify_zone(prompt)
+    api_logger.info(
+        f"[GUARDRAILS] Zone={zone_classification.zone} "
+        f"reason={zone_classification.reason}"
+    )
+
+    # Zone A: Block - immediate return, no inference + record violation
+    if zone_classification.zone == "A":
+        result = await rate_limiter.record_guardrail_violation(identifier, "A")
+        async def blocked_stream():
+            if not result.allowed:
+                yield {"event": "token", "data": json.dumps({"text": "I'm not able to help with that request. You've exceeded the limit for such requests."})}
+            else:
+                yield {"event": "token", "data": json.dumps({"text": "I'm not able to help with that request."})}
+            yield {"event": "done", "data": "{}"}
+        return EventSourceResponse(blocked_stream(), media_type="text/event-stream")
+
+    # Zone B: Crisis - immediate return with resources + record (for monitoring, not blocking)
+    if zone_classification.zone == "B":
+        await rate_limiter.record_guardrail_violation(identifier, "B")
+        async def crisis_stream():
+            user_context = {
+                "accept_language": request.headers.get("Accept-Language", ""),
+            }
+            locale = detect_locale_from_context(user_context)
+            crisis_message = get_crisis_response(locale)
+            yield {"event": "token", "data": json.dumps({"text": crisis_message})}
+            yield {"event": "done", "data": "{}"}
+        return EventSourceResponse(crisis_stream(), media_type="text/event-stream")
+
     model_config = get_model_config(model)
     api_logger.info(f"[MODEL] Using {model_config['model']} ({model_config['provider']})")
     api_logger.info(f"[WEB SEARCH] Get Data: {web_search_data}, Mine Insights: {web_search_insights}")

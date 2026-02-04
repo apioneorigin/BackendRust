@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import Optional, List, AsyncGenerator
 import json
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy import select, desc
@@ -188,6 +188,7 @@ async def get_conversation_messages(
 async def send_message(
     conversation_id: str,
     request: SendMessageRequest,
+    http_request: Request,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -349,6 +350,33 @@ async def send_message(
     db.add(user_message)
     await db.commit()
 
+    # Guardrail rate limiting
+    from security.rate_limiter import get_rate_limiter
+    rate_limiter = get_rate_limiter()
+    client_ip = http_request.client.host if http_request.client else "unknown"
+    identifier = await rate_limiter.get_client_identifier(client_ip, current_user.id)
+
+    # Check if user is in guardrail cooldown
+    in_cooldown_a, retry_a = await rate_limiter.check_guardrail_cooldown(identifier, "A")
+    if in_cooldown_a:
+        async def cooldown_response():
+            cooldown_message = "You've made too many requests that I can't help with. Please wait before trying again."
+            async with AsyncSessionLocal() as save_db:
+                assistant_message = ChatMessage(
+                    id=generate_id(),
+                    conversation_id=conversation_id,
+                    role="assistant",
+                    content=cooldown_message,
+                    input_tokens=0,
+                    output_tokens=0,
+                    total_tokens=0,
+                )
+                save_db.add(assistant_message)
+                await save_db.commit()
+            yield {"event": "token", "data": json.dumps({"text": cooldown_message})}
+            yield {"event": "done", "data": "{}"}
+        return EventSourceResponse(cooldown_response())
+
     # Sacred Guardrails: Zone classification before inference
     zone_classification = classify_zone(request.content)
     api_logger.info(
@@ -357,10 +385,14 @@ async def send_message(
         f"flag={zone_classification.ethical_flag}"
     )
 
-    # Zone A: Block - immediate return, no inference
+    # Zone A: Block - immediate return, no inference + record violation
     if zone_classification.zone == "A":
+        result = await rate_limiter.record_guardrail_violation(identifier, "A")
         async def blocked_response():
-            block_message = "I'm not able to help with that request."
+            if not result.allowed:
+                block_message = "I'm not able to help with that request. You've exceeded the limit for such requests."
+            else:
+                block_message = "I'm not able to help with that request."
             # Save as assistant message
             async with AsyncSessionLocal() as save_db:
                 assistant_message = ChatMessage(
@@ -378,10 +410,17 @@ async def send_message(
             yield {"event": "done", "data": "{}"}
         return EventSourceResponse(blocked_response())
 
-    # Zone B: Crisis - immediate return with resources, no inference
+    # Zone B: Crisis - immediate return with resources, no inference + record (for monitoring)
     if zone_classification.zone == "B":
+        await rate_limiter.record_guardrail_violation(identifier, "B")
         async def crisis_response():
-            locale = detect_locale_from_context()
+            # Build user context for locale detection
+            user_context = {
+                "accept_language": http_request.headers.get("Accept-Language", ""),
+                "timezone": getattr(current_user, "timezone", None),
+                "country_code": getattr(current_user, "country_code", None),
+            }
+            locale = detect_locale_from_context(user_context)
             crisis_message = get_crisis_response(locale)
             # Save as assistant message
             async with AsyncSessionLocal() as save_db:

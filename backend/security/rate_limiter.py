@@ -34,6 +34,12 @@ class RateLimitPresets:
     # File upload: 10/minute
     FILE_UPLOAD = RateLimitConfig(requests=10, window_seconds=60)
 
+    # Guardrail Zone A violations: 3 blocked attempts per hour before cooldown
+    GUARDRAIL_ZONE_A = RateLimitConfig(requests=3, window_seconds=3600)
+
+    # Guardrail Zone B (crisis): 5 attempts per hour (less strict, these users need help)
+    GUARDRAIL_ZONE_B = RateLimitConfig(requests=5, window_seconds=3600)
+
 
 class RateLimiter:
     """
@@ -184,6 +190,104 @@ class RateLimiter:
         if user_id:
             return f"user:{user_id}"
         return f"ip:{ip}"
+
+    async def record_guardrail_violation(
+        self,
+        identifier: str,
+        zone: str
+    ) -> RateLimitResult:
+        """
+        Record a guardrail zone violation (A or B).
+        Returns rate limit result - if not allowed, user is in cooldown.
+        """
+        if zone == "A":
+            config = RateLimitPresets.GUARDRAIL_ZONE_A
+            prefix = "guardrail_zone_a"
+        elif zone == "B":
+            config = RateLimitPresets.GUARDRAIL_ZONE_B
+            prefix = "guardrail_zone_b"
+        else:
+            # Other zones don't get tracked
+            return RateLimitResult(
+                allowed=True,
+                remaining=999,
+                limit=999,
+                reset_at=datetime.utcnow(),
+                retry_after=None
+            )
+
+        return await self.check(identifier, config, prefix)
+
+    async def check_guardrail_cooldown(
+        self,
+        identifier: str,
+        zone: str
+    ) -> tuple[bool, Optional[int]]:
+        """
+        Check if user is in guardrail cooldown for a zone.
+        Returns (is_in_cooldown, retry_after_seconds).
+        """
+        if zone == "A":
+            config = RateLimitPresets.GUARDRAIL_ZONE_A
+            prefix = "guardrail_zone_a"
+        elif zone == "B":
+            config = RateLimitPresets.GUARDRAIL_ZONE_B
+            prefix = "guardrail_zone_b"
+        else:
+            return (False, None)
+
+        key = f"{prefix}:{identifier}"
+        now = time.time()
+        window_start = now - config.window_seconds
+
+        # Check current count without incrementing
+        if self._redis:
+            await self._redis.zremrangebyscore(key, 0, window_start)
+            count = await self._redis.zcard(key)
+        else:
+            async with self._lock:
+                if key in self._memory_store:
+                    self._memory_store[key] = [
+                        ts for ts in self._memory_store[key] if ts > window_start
+                    ]
+                    count = len(self._memory_store[key])
+                else:
+                    count = 0
+
+        if count >= config.requests:
+            return (True, config.window_seconds)
+        return (False, None)
+
+    async def get_violation_count(
+        self,
+        identifier: str,
+        zone: str
+    ) -> int:
+        """Get current violation count for a zone."""
+        if zone == "A":
+            config = RateLimitPresets.GUARDRAIL_ZONE_A
+            prefix = "guardrail_zone_a"
+        elif zone == "B":
+            config = RateLimitPresets.GUARDRAIL_ZONE_B
+            prefix = "guardrail_zone_b"
+        else:
+            return 0
+
+        key = f"{prefix}:{identifier}"
+        now = time.time()
+        window_start = now - config.window_seconds
+
+        if self._redis:
+            await self._redis.zremrangebyscore(key, 0, window_start)
+            return await self._redis.zcard(key)
+        else:
+            async with self._lock:
+                if key in self._memory_store:
+                    self._memory_store[key] = [
+                        ts for ts in self._memory_store[key] if ts > window_start
+                    ]
+                    return len(self._memory_store[key])
+                return 0
 
     async def cleanup(self) -> int:
         """Clean up expired entries (for in-memory store)."""

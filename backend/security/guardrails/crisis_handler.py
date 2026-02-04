@@ -81,13 +81,78 @@ def get_crisis_response(locale: str = "US") -> str:
 
 def detect_locale_from_context(user_context: Optional[Dict] = None) -> str:
     """
-    Attempt to detect user's locale from context.
+    Detect user's locale from context using multiple signals.
 
     Args:
-        user_context: Optional dict with user information
+        user_context: Optional dict with user information containing:
+            - locale: Explicit locale preference
+            - country_code: Country code from user profile
+            - accept_language: Accept-Language header value
+            - timezone: User's timezone
+            - ip_country: Country detected from IP geolocation
 
     Returns:
-        Two-letter country code, defaults to "AE" for this deployment
+        Two-letter country code (US, UK, AU, IN, AE) or INTL
     """
-    # Default to AE (UAE) for this deployment
-    return "AE"
+    if not user_context:
+        return "INTL"
+
+    # Priority 1: Explicit locale preference
+    if user_context.get("locale"):
+        locale = user_context["locale"].upper()
+        if locale in CRISIS_RESOURCES:
+            return locale
+
+    # Priority 2: Country code from user profile
+    if user_context.get("country_code"):
+        country = user_context["country_code"].upper()
+        if country in CRISIS_RESOURCES:
+            return country
+        # Map common country codes
+        country_mapping = {
+            "USA": "US", "GBR": "UK", "AUS": "AU", "IND": "IN", "ARE": "AE",
+            "GB": "UK", "UAE": "AE",
+        }
+        if country in country_mapping:
+            return country_mapping[country]
+
+    # Priority 3: IP-based country detection
+    if user_context.get("ip_country"):
+        ip_country = user_context["ip_country"].upper()
+        if ip_country in CRISIS_RESOURCES:
+            return ip_country
+
+    # Priority 4: Accept-Language header parsing
+    if user_context.get("accept_language"):
+        lang = user_context["accept_language"].lower()
+        # Map language codes to countries
+        if "en-us" in lang or "en_us" in lang:
+            return "US"
+        elif "en-gb" in lang or "en_gb" in lang:
+            return "UK"
+        elif "en-au" in lang or "en_au" in lang:
+            return "AU"
+        elif "hi" in lang or "en-in" in lang:
+            return "IN"
+        elif "ar-ae" in lang or "ar_ae" in lang:
+            return "AE"
+
+    # Priority 5: Timezone-based inference
+    if user_context.get("timezone"):
+        tz = user_context["timezone"].lower()
+        tz_mapping = {
+            "america/": "US",
+            "us/": "US",
+            "europe/london": "UK",
+            "gb": "UK",
+            "australia/": "AU",
+            "asia/kolkata": "IN",
+            "asia/mumbai": "IN",
+            "asia/dubai": "AE",
+        }
+        for tz_prefix, country in tz_mapping.items():
+            if tz_prefix in tz:
+                return country
+
+    # Default to international resources
+    return "INTL"
