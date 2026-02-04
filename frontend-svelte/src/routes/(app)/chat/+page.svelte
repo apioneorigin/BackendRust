@@ -47,11 +47,6 @@
 	import MatrixToolbar from '$lib/components/matrix/MatrixToolbar.svelte';
 	import ContextControlPopup from '$lib/components/matrix/ContextControlPopup.svelte';
 
-	// Accept SvelteKit props to avoid "unknown prop" warnings
-	export let data: Record<string, unknown> = {};
-	// Suppress unused variable warning
-	void data;
-
 	// Chat state
 	let messageInput = '';
 	let messagesContainer: HTMLElement;
@@ -766,7 +761,9 @@
 
 <!-- Toolbar Popups (Plays and Scenarios only) -->
 {#if activeToolbarPopup}
+	<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 	<div class="popup-overlay" on:click={closeToolbarPopup} on:keydown={(e) => e.key === 'Escape' && closeToolbarPopup()} role="presentation" tabindex="-1">
+		<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 		<div class="toolbar-popup" on:click|stopPropagation on:keydown|stopPropagation role="dialog" aria-modal="true">
 			<div class="popup-header">
 				<h3>
@@ -832,7 +829,9 @@
 
 <!-- Explanation Popup (Power Spot or Risk) -->
 {#if explanationPopup}
+	<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 	<div class="popup-overlay" on:click={closeExplanationPopup} on:keydown={(e) => e.key === 'Escape' && closeExplanationPopup()} role="presentation" tabindex="-1">
+		<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 		<div class="toolbar-popup explanation-popup" on:click|stopPropagation on:keydown|stopPropagation role="dialog" aria-modal="true">
 			<div class="popup-header">
 				<h3>
@@ -1221,10 +1220,6 @@
 		color: var(--color-text-source);
 	}
 
-	[data-theme='dark'] .question-option:hover:not(:disabled) {
-		border-color: var(--color-primary-600);
-	}
-
 	.question-option.selected {
 		background: var(--color-primary-500);
 		border-color: var(--color-primary-500);
@@ -1540,10 +1535,6 @@
 		transition: opacity 0.2s ease;
 	}
 
-	[data-theme='dark'] .welcome-overlay {
-		background: rgba(0, 0, 0, 0.9);
-	}
-
 	.welcome-overlay:hover {
 		opacity: 0.3;
 	}
@@ -1599,10 +1590,6 @@
 		justify-content: center;
 		z-index: 100;
 		padding: 1rem;
-	}
-
-	[data-theme='dark'] .popup-overlay {
-		background: rgba(0, 0, 0, 0.8);
 	}
 
 	.toolbar-popup {
@@ -1703,11 +1690,6 @@
 		font-weight: 600;
 	}
 
-	[data-theme='dark'] .document-name-badge {
-		background: rgba(15, 23, 42, 0.3);
-		color: var(--color-primary-300);
-	}
-
 	/* Plays list */
 	.plays-list {
 		display: flex;
@@ -1746,10 +1728,6 @@
 	.play-item.selected {
 		background: var(--color-primary-50);
 		border-color: var(--color-primary-500);
-	}
-
-	[data-theme='dark'] .play-item.selected {
-		background: rgba(15, 23, 42, 0.2);
 	}
 
 	.play-info {
@@ -1798,10 +1776,6 @@
 		font-size: 11px;
 		font-weight: 600;
 		color: var(--color-primary-600);
-	}
-
-	[data-theme='dark'] .play-fit {
-		color: var(--color-primary-400);
 	}
 
 	.play-risk {

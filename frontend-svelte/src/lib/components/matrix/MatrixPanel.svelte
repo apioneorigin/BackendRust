@@ -11,8 +11,8 @@
 
 	import { createEventDispatcher } from 'svelte';
 	import { Button, Spinner } from '$lib/components/ui';
-	import { matrix, matrixDocuments, activeDocumentId, activeDocument, isGeneratingMoreDocuments, changedRowIndices, changedColumnIndices } from '$lib/stores';
-	import type { CellData, CellDimension, Document as MatrixDocument } from '$lib/stores/matrix';
+	import { matrix, matrixDocuments as documents, activeDocumentId, activeDocument, isGeneratingMoreDocuments } from '$lib/stores';
+	import type { CellData, CellDimension, MatrixDocument as Document } from '$lib/stores';
 
 	export let matrixData: CellData[][] = [];
 	export let rowHeaders: string[] = ['Dimension 1', 'Dimension 2', 'Dimension 3', 'Dimension 4', 'Dimension 5'];
@@ -40,25 +40,6 @@
 	let selectedCell: { row: number; col: number } | null = null;
 	let showCellPopup = false;
 	let isPopulatingDoc: string | null = null;  // Track which doc is being populated
-	let isPopulatingMatrix = false;  // Track matrix population state
-
-	// Check if active document has populated cells (not just stubs)
-	$: hasCells = $activeDocument?.matrix_data?.cells && Object.keys($activeDocument.matrix_data.cells).length > 0;
-
-	// Map changed option indices to displayed header positions
-	// selected_rows/cols are indices into the 10 options, changedRowIndices are also indices into 10 options
-	$: displayedRowChanges = (() => {
-		const selectedRows = $activeDocument?.matrix_data?.selected_rows || [];
-		const changes = new Set($changedRowIndices);
-		// For each displayed position (0-4), check if its source option index is in the changed set
-		return selectedRows.map((optionIdx, displayIdx) => changes.has(optionIdx));
-	})();
-
-	$: displayedColumnChanges = (() => {
-		const selectedCols = $activeDocument?.matrix_data?.selected_columns || [];
-		const changes = new Set($changedColumnIndices);
-		return selectedCols.map((optionIdx, displayIdx) => changes.has(optionIdx));
-	})();
 
 	// Track local edits and original values for change detection
 	let localDimensionEdits: Map<string, number> = new Map(); // key: "row-col-dimIdx", value: edited value
@@ -68,7 +49,7 @@
 	$: hasUnsavedChanges = localDimensionEdits.size > 0;
 
 	// Check if a document has full data (100 cells)
-	function hasFullData(doc: MatrixDocument): boolean {
+	function hasFullData(doc: Document): boolean {
 		const cells = doc.matrix_data?.cells || {};
 		return Object.keys(cells).length >= 100;
 	}
@@ -78,9 +59,9 @@
 		return cell.isLeveragePoint;
 	}
 
-	// Check if cell is high risk
+	// Check if cell has risk (medium or high)
 	function isRiskCell(cell: CellData): boolean {
-		return cell.riskLevel === 'high' || cell.riskLevel === 'medium';
+		return cell.riskLevel === 'medium' || cell.riskLevel === 'high';
 	}
 
 	// Check if cell should be hidden in filtered views
@@ -252,7 +233,7 @@
 		}
 	}
 
-	function handleDocumentTabClick(docId: string, doc: MatrixDocument) {
+	function handleDocumentTabClick(docId: string, doc: Document) {
 		// Only allow clicking on documents with full data
 		if (!hasFullData(doc)) return;
 		matrix.setActiveDocument(docId);
@@ -279,27 +260,14 @@
 			isPopulatingDoc = null;
 		}
 	}
-
-	// Populate the currently active document's matrix
-	async function handlePopulateActiveMatrix() {
-		if (!$activeDocumentId) return;
-		isPopulatingMatrix = true;
-		try {
-			await matrix.populateDocument($activeDocumentId);
-		} catch (error) {
-			console.error('Failed to populate matrix:', error);
-		} finally {
-			isPopulatingMatrix = false;
-		}
-	}
 </script>
 
 <div class="matrix-panel" class:compact>
 	<!-- Document Tabs with Plus Button -->
-	{#if showDocumentTabs && $matrixDocuments.length > 0}
+	{#if showDocumentTabs && $documents.length > 0}
 		<div class="document-tabs-container">
 			<div class="document-tabs">
-				{#each $matrixDocuments as doc (doc.id)}
+				{#each $documents as doc (doc.id)}
 					{@const isFullData = hasFullData(doc)}
 					{@const isActive = doc.id === $activeDocumentId}
 					{@const isPopulating = isPopulatingDoc === doc.id}
@@ -324,7 +292,7 @@
 								title="Generate full matrix data"
 							>
 								{#if isPopulating}
-									<Spinner size="sm" />
+									<Spinner size="xs" />
 								{:else}
 									<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 										<path d="M12 3v3m6.366-.366-2.12 2.12M21 12h-3m.366 6.366-2.12-2.12M12 21v-3m-6.366.366 2.12-2.12M3 12h3m-.366-6.366 2.12 2.12"/>
@@ -343,7 +311,7 @@
 					title="Generate 3 more documents"
 				>
 					{#if $isGeneratingMoreDocuments}
-						<Spinner size="sm" />
+						<Spinner size="xs" />
 					{:else}
 						<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 							<path d="M12 5v14M5 12h14"/>
@@ -355,96 +323,64 @@
 	{/if}
 
 	<!-- Matrix Grid -->
-	<div class="matrix-grid-wrapper">
-		<div class="matrix-grid" class:ghost={!hasCells}>
-			<!-- Top-left corner (empty) -->
-			<div class="grid-corner"></div>
+	<div class="matrix-grid">
+		<!-- Top-left corner (empty) -->
+		<div class="grid-corner"></div>
 
-			<!-- Column headers -->
-			{#each columnHeaders as header, colIdx}
-				<div class="col-header" class:changed={displayedColumnChanges[colIdx]}>
-					{#if displayedColumnChanges[colIdx]}
-						<span class="change-indicator" title="Updated from context">*</span>
-					{/if}
-					<span class="header-text">{header}</span>
-				</div>
-			{/each}
-
-			<!-- Matrix body -->
-			{#each matrixData as row, rowIdx}
-				<!-- Row header -->
-				<div class="row-header" class:changed={displayedRowChanges[rowIdx]}>
-					<span class="header-text">{rowHeaders[rowIdx]}</span>
-					{#if displayedRowChanges[rowIdx]}
-						<span class="change-indicator" title="Updated from context">*</span>
-					{/if}
-				</div>
-
-				<!-- Data cells -->
-				{#each row as cell, colIdx}
-					{@const cellAvg = hasCells ? calcCellValueFromDimensions(cell.dimensions) : 0}
-					{@const filledCount = hasCells ? getFilledSegments(cellAvg) : 0}
-					<div
-						class="matrix-cell {hasCells ? getCellColor(cell) : ''}"
-						class:leverage-point={hasCells && cell.isLeveragePoint}
-						class:selected={hasCells && selectedCell?.row === rowIdx && selectedCell?.col === colIdx}
-						class:ghost-cell={!hasCells}
-					>
-						{#if hasCells && cell.isLeveragePoint}
-							<span class="power-indicator" title="Power Spot">⚡</span>
-						{/if}
-						{#if hasCells}
-							<!-- Top 50%: click to open dimensions popup -->
-							<button
-								class="cell-top-area"
-								on:click={() => handleCellClick(rowIdx, colIdx)}
-								aria-label="Open dimensions"
-							></button>
-							<!-- Bottom 50%: 5-segment bar, clickable -->
-							<div class="cell-bar">
-								{#each Array(CELL_SEGMENTS) as _, segIdx}
-									<button
-										class="cell-bar-segment"
-										class:filled={segIdx < filledCount}
-										on:click={() => handleCellBarClick(rowIdx, colIdx, segIdx)}
-										aria-label="Set level {segIdx + 1}"
-									></button>
-								{/each}
-							</div>
-						{/if}
-					</div>
-				{/each}
-			{/each}
-		</div>
-
-		<!-- Ghost state overlay with central button -->
-		{#if !hasCells && $activeDocumentId}
-			<div class="ghost-overlay">
-				<button
-					class="populate-matrix-btn"
-					on:click={handlePopulateActiveMatrix}
-					disabled={isPopulatingMatrix}
-				>
-					{#if isPopulatingMatrix}
-						<Spinner size="sm" />
-						<span>Analyzing Reality...</span>
-					{:else}
-						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-							<circle cx="12" cy="12" r="10"/>
-							<path d="M12 16v-4"/>
-							<path d="M12 8h.01"/>
-						</svg>
-						<span>Design Reality</span>
-					{/if}
-				</button>
+		<!-- Column headers -->
+		{#each columnHeaders as header}
+			<div class="col-header">
+				<span class="header-text">{header}</span>
 			</div>
-		{/if}
+		{/each}
+
+		<!-- Matrix body -->
+		{#each matrixData as row, rowIdx}
+			<!-- Row header -->
+			<div class="row-header">
+				<span class="header-text">{rowHeaders[rowIdx]}</span>
+			</div>
+
+			<!-- Data cells -->
+			{#each row as cell, colIdx}
+				{@const cellAvg = calcCellValueFromDimensions(cell.dimensions)}
+				{@const filledCount = getFilledSegments(cellAvg)}
+				<div
+					class="matrix-cell {getCellColor(cell)}"
+					class:leverage-point={cell.isLeveragePoint}
+					class:selected={selectedCell?.row === rowIdx && selectedCell?.col === colIdx}
+				>
+					{#if cell.isLeveragePoint}
+						<span class="power-indicator" title="Power Spot">⚡</span>
+					{/if}
+					<!-- Top 50%: click to open dimensions popup -->
+					<button
+						class="cell-top-area"
+						on:click={() => handleCellClick(rowIdx, colIdx)}
+						aria-label="Open dimensions"
+					></button>
+					<!-- Bottom 50%: 5-segment bar, clickable -->
+					<div class="cell-bar">
+						{#each Array(CELL_SEGMENTS) as _, segIdx}
+							<button
+								class="cell-bar-segment"
+								class:filled={segIdx < filledCount}
+								on:click={() => handleCellBarClick(rowIdx, colIdx, segIdx)}
+								aria-label="Set level {segIdx + 1}"
+							></button>
+						{/each}
+					</div>
+				</div>
+			{/each}
+		{/each}
 	</div>
 </div>
 
 <!-- Cell detail popup -->
 {#if showCellPopup && selectedCell && matrixData[selectedCell.row]}
+	<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 	<div class="popup-overlay" on:click={closeCellPopup} on:keydown={(e) => e.key === 'Escape' && closeCellPopup()} role="presentation" tabindex="-1">
+		<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 		<div class="cell-popup" on:click|stopPropagation on:keydown|stopPropagation role="dialog" aria-modal="true">
 			<div class="popup-header">
 				<h3>
@@ -532,10 +468,6 @@
 		color: var(--color-primary-600);
 	}
 
-	[data-theme='dark'] .document-name {
-		color: var(--color-primary-400);
-	}
-
 	.document-tabs {
 		display: flex;
 		align-items: center;
@@ -564,20 +496,10 @@
 		border-color: var(--color-primary-200);
 	}
 
-	[data-theme='dark'] .document-tab:hover {
-		background: rgba(15, 23, 42, 0.2);
-		border-color: var(--color-primary-700);
-	}
-
 	.document-tab.active {
 		background: var(--color-primary-100);
 		border-color: var(--color-primary-400);
 		color: var(--color-primary-700);
-	}
-
-	[data-theme='dark'] .document-tab.active {
-		background: rgba(15, 23, 42, 0.3);
-		color: var(--color-primary-300);
 	}
 
 	.tab-name {
@@ -648,22 +570,9 @@
 		border-style: solid;
 	}
 
-	[data-theme='dark'] .add-document-btn:hover:not(:disabled) {
-		background: rgba(15, 23, 42, 0.2);
-	}
-
 	.add-document-btn:disabled {
 		opacity: 0.7;
 		cursor: wait;
-	}
-
-	/* Grid wrapper for overlay positioning */
-	.matrix-grid-wrapper {
-		position: relative;
-		flex: 1;
-		min-height: 0;
-		display: flex;
-		flex-direction: column;
 	}
 
 	.matrix-grid {
@@ -676,24 +585,10 @@
 		overflow: hidden;
 	}
 
-	/* Ghost state - faint grid when cells not populated */
-	.matrix-grid.ghost {
-		opacity: 0.4;
-	}
-
-	.matrix-grid.ghost .col-header .header-text,
-	.matrix-grid.ghost .row-header .header-text {
-		opacity: 0.6;
-	}
-
 	.compact .matrix-grid {
 		grid-template-columns: 90px repeat(5, 1fr);
 		grid-template-rows: 52px repeat(5, minmax(0, 1fr));
 		gap: 2px;
-	}
-
-	.grid-corner {
-		/* Empty corner cell */
 	}
 
 	.col-header {
@@ -726,6 +621,7 @@
 		word-spacing: 100vw; /* Forces each word to its own line */
 		overflow: visible;
 		display: -webkit-box;
+		line-clamp: 3;
 		-webkit-line-clamp: 3;
 		-webkit-box-orient: vertical;
 	}
@@ -742,6 +638,7 @@
 		word-spacing: 100vw; /* Forces each word to its own line */
 		overflow: visible;
 		display: -webkit-box;
+		line-clamp: 3;
 		-webkit-line-clamp: 3;
 		-webkit-box-orient: vertical;
 	}
@@ -749,40 +646,6 @@
 	.compact .col-header .header-text,
 	.compact .row-header .header-text {
 		font-size: 0.6875rem;
-	}
-
-	/* Changed header indicator - shows when option updated from context */
-	.col-header.changed,
-	.row-header.changed {
-		position: relative;
-	}
-
-	.col-header.changed .header-text,
-	.row-header.changed .header-text {
-		color: var(--color-primary-600);
-		font-weight: 700;
-	}
-
-	[data-theme='dark'] .col-header.changed .header-text,
-	[data-theme='dark'] .row-header.changed .header-text {
-		color: var(--color-primary-400);
-	}
-
-	.change-indicator {
-		color: var(--color-primary-500);
-		font-weight: 700;
-		font-size: 0.875rem;
-		line-height: 1;
-	}
-
-	.col-header .change-indicator {
-		position: absolute;
-		top: 0;
-		right: 2px;
-	}
-
-	.row-header .change-indicator {
-		margin-left: 0.25rem;
 	}
 
 	.matrix-cell {
@@ -800,23 +663,8 @@
 		overflow: hidden;
 	}
 
-	/* Ghost cell - very faint when no data */
-	.matrix-cell.ghost-cell {
-		background: var(--color-field-depth);
-		opacity: 0.5;
-		pointer-events: none;
-	}
-
-	[data-theme='dark'] .matrix-cell.ghost-cell {
-		background: rgba(255, 255, 255, 0.03);
-	}
-
 	.matrix-cell:hover {
 		background: var(--color-accent-subtle);
-	}
-
-	.matrix-cell.ghost-cell:hover {
-		background: var(--color-field-depth);
 	}
 
 	.matrix-cell.selected {
@@ -851,10 +699,6 @@
 
 	.cell-top-area:hover {
 		background: rgba(0, 0, 0, 0.05);
-	}
-
-	[data-theme='dark'] .cell-top-area:hover {
-		background: rgba(255, 255, 255, 0.05);
 	}
 
 	/* Bottom 50% - 5-segment bar */
@@ -893,22 +737,6 @@
 		background: var(--color-primary-600);
 	}
 
-	[data-theme='dark'] .cell-bar-segment {
-		background: rgba(255, 255, 255, 0.1);
-	}
-
-	[data-theme='dark'] .cell-bar-segment:hover {
-		background: var(--color-primary-400);
-	}
-
-	[data-theme='dark'] .cell-bar-segment.filled {
-		background: var(--color-primary-400);
-	}
-
-	[data-theme='dark'] .cell-bar-segment.filled:hover {
-		background: var(--color-primary-300);
-	}
-
 	.power-indicator {
 		position: absolute;
 		top: 2px;
@@ -942,10 +770,6 @@
 		justify-content: center;
 		z-index: 100;
 		padding: 1rem;
-	}
-
-	[data-theme='dark'] .popup-overlay {
-		background: rgba(0, 0, 0, 0.8);
 	}
 
 	.cell-popup {
@@ -1052,22 +876,6 @@
 		background: var(--color-primary-600);
 	}
 
-	[data-theme='dark'] .dim-bar-segment {
-		background: rgba(255, 255, 255, 0.15);
-	}
-
-	[data-theme='dark'] .dim-bar-segment:hover {
-		background: var(--color-primary-400);
-	}
-
-	[data-theme='dark'] .dim-bar-segment.filled {
-		background: var(--color-primary-400);
-	}
-
-	[data-theme='dark'] .dim-bar-segment.filled:hover {
-		background: var(--color-primary-300);
-	}
-
 	.power-spot-badge {
 		display: flex;
 		align-items: center;
@@ -1088,61 +896,5 @@
 		padding: 0.75rem 1rem;
 		background: var(--color-field-depth);
 		border-radius: 0 0 1rem 1rem;
-	}
-
-	/* Ghost overlay with central action button */
-	.ghost-overlay {
-		position: absolute;
-		inset: 0;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		pointer-events: none;
-		z-index: 10;
-	}
-
-	.populate-matrix-btn {
-		display: flex;
-		align-items: center;
-		gap: 0.75rem;
-		padding: 1rem 1.5rem;
-		background: var(--color-primary-500);
-		color: white;
-		border: none;
-		border-radius: 0.75rem;
-		font-size: 0.9375rem;
-		font-weight: 600;
-		cursor: pointer;
-		transition: all 0.2s ease;
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-		pointer-events: auto;
-	}
-
-	.populate-matrix-btn:hover:not(:disabled) {
-		background: var(--color-primary-600);
-		transform: translateY(-1px);
-		box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
-	}
-
-	.populate-matrix-btn:active:not(:disabled) {
-		transform: translateY(0);
-	}
-
-	.populate-matrix-btn:disabled {
-		opacity: 0.8;
-		cursor: wait;
-	}
-
-	.populate-matrix-btn svg {
-		flex-shrink: 0;
-	}
-
-	[data-theme='dark'] .populate-matrix-btn {
-		background: var(--color-primary-400);
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-	}
-
-	[data-theme='dark'] .populate-matrix-btn:hover:not(:disabled) {
-		background: var(--color-primary-300);
 	}
 </style>

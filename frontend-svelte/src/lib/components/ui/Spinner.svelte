@@ -1,5 +1,5 @@
 <script lang="ts">
-	export let size: 'sm' | 'md' | 'lg' = 'md';
+	export let size: 'xs' | 'sm' | 'md' | 'lg' = 'md';
 	export let color: 'primary' | 'white' | 'current' = 'primary';
 </script>
 
@@ -23,6 +23,11 @@
 	}
 
 	/* Sizes */
+	.size-xs {
+		width: 12px;
+		height: 12px;
+	}
+
 	.size-sm {
 		width: 16px;
 		height: 16px;

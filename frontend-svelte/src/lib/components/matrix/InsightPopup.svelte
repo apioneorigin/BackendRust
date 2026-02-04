@@ -52,6 +52,7 @@
 		role="presentation"
 		tabindex="-1"
 	>
+		<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 		<div
 			class="insight-popup"
 			on:click|stopPropagation
@@ -180,16 +181,6 @@
 		color: #92400e;
 	}
 
-	[data-theme='dark'] .option-type-badge.driver {
-		background: rgba(15, 23, 42, 0.3);
-		color: var(--color-primary-300);
-	}
-
-	[data-theme='dark'] .option-type-badge.outcome {
-		background: rgba(146, 64, 14, 0.3);
-		color: #fcd34d;
-	}
-
 	.popup-header h3 {
 		font-size: 1.125rem;
 		font-weight: 600;
@@ -239,10 +230,6 @@
 		font-weight: 600;
 	}
 
-	[data-theme='dark'] .insight-prose :global(strong) {
-		color: var(--color-primary-300);
-	}
-
 	/* Mark name styling - subtle emphasis */
 	.insight-prose .mark-name {
 		font-style: italic;
@@ -276,8 +263,4 @@
 		color: var(--color-primary-700);
 	}
 
-	[data-theme='dark'] .close-text-btn:hover {
-		background: rgba(15, 23, 42, 0.2);
-		color: var(--color-primary-300);
-	}
 </style>

@@ -820,10 +820,6 @@
 		color: var(--color-error-600);
 	}
 
-	[data-theme='dark'] .user-menu-item.logout:hover {
-		background: rgba(239, 68, 68, 0.1);
-	}
-
 	.user-menu-divider {
 		height: 1px;
 		background: var(--color-field-void);

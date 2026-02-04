@@ -331,10 +331,6 @@
 		box-shadow: 0 0 0 3px var(--color-primary-100);
 	}
 
-	[data-theme='dark'] .search-box:focus-within {
-		box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.3);
-	}
-
 	.search-box svg {
 		color: var(--color-text-hint);
 		flex-shrink: 0;
@@ -461,11 +457,6 @@
 		color: var(--color-primary-500);
 	}
 
-	[data-theme='dark'] .document-icon {
-		background: var(--color-primary-900);
-		color: var(--color-primary-300);
-	}
-
 	.document-domain {
 		padding: 0.25rem 0.75rem;
 		background: var(--color-accent);
@@ -488,6 +479,7 @@
 		color: var(--color-text-source);
 		margin-bottom: 0.375rem;
 		display: -webkit-box;
+		line-clamp: 2;
 		-webkit-line-clamp: 2;
 		-webkit-box-orient: vertical;
 		overflow: hidden;
@@ -497,6 +489,7 @@
 		font-size: 0.8125rem;
 		color: var(--color-text-whisper);
 		display: -webkit-box;
+		line-clamp: 2;
 		-webkit-line-clamp: 2;
 		-webkit-box-orient: vertical;
 		overflow: hidden;
@@ -553,10 +546,6 @@
 		border-color: var(--color-error-400);
 		color: var(--color-error-500);
 		background: var(--color-error-50);
-	}
-
-	[data-theme='dark'] .delete-btn:hover {
-		background: rgba(239, 68, 68, 0.1);
 	}
 
 	/* Mobile responsive */

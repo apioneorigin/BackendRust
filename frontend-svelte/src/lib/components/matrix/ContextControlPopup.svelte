@@ -18,20 +18,11 @@
 		activeDocumentId,
 		activeDocument,
 		isGeneratingMoreDocuments,
-		chat,
-		changedRowIndices,
-		changedColumnIndices
+		chat
 	} from '$lib/stores';
 	import type { ArticulatedInsight, RowOption, ColumnOption, Document } from '$lib/stores/matrix';
 	import { Button, Spinner } from '$lib/components/ui';
 	import InsightPopup from './InsightPopup.svelte';
-
-	// Sets for quick lookup of changed indices
-	$: changedRowSet = new Set($changedRowIndices);
-	$: changedColSet = new Set($changedColumnIndices);
-
-	// Check if any options changed
-	$: hasChanges = $changedRowIndices.length > 0 || $changedColumnIndices.length > 0;
 
 	export let open = false;
 
@@ -41,18 +32,7 @@
 		return Object.keys(cells).length >= 100;
 	}
 
-	// Check if a document has 20 titles (row + column options)
-	function hasTitles(doc: Document): boolean {
-		const rows = doc.matrix_data?.row_options?.length || 0;
-		const cols = doc.matrix_data?.column_options?.length || 0;
-		return rows > 0 && cols > 0;
-	}
-
-	// Show all documents with titles (20 titles = 10 rows + 10 columns)
-	// This includes both full data docs and new stub docs from auto-refresh
-	$: allDocumentsWithTitles = $matrixDocuments.filter(hasTitles);
-
-	// For backward compatibility
+	// Only show documents with full data
 	$: fullDataDocuments = $matrixDocuments.filter(hasFullData);
 
 	// Insight popup state
@@ -192,6 +172,7 @@
 		role="presentation"
 		tabindex="-1"
 	>
+		<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 		<div
 			class="context-popup"
 			on:click|stopPropagation
@@ -221,23 +202,18 @@
 			</div>
 
 			<!-- Document Tabs -->
-			<!-- Show all documents with 20 titles (includes stub docs from auto-refresh) -->
-			{#if allDocumentsWithTitles.length > 0}
+			<!-- Only show documents with full data (100 cells) -->
+			{#if fullDataDocuments.length > 0}
 				<div class="document-tabs-container">
 					<div class="document-tabs">
-						{#each allDocumentsWithTitles as doc (doc.id)}
-							{@const isFullData = hasFullData(doc)}
+						{#each fullDataDocuments as doc (doc.id)}
 							<button
 								class="document-tab"
 								class:active={doc.id === $activeDocumentId}
-								class:stub={!isFullData}
 								on:click={() => handleDocumentTabClick(doc.id)}
-								title={doc.description || (isFullData ? 'View document' : 'New document - browse 20 titles')}
+								title={doc.description}
 							>
 								<span class="tab-name">{doc.name}</span>
-								{#if !isFullData}
-									<span class="stub-badge">NEW</span>
-								{/if}
 							</button>
 						{/each}
 
@@ -249,13 +225,6 @@
 				{#if $activeDocument?.description}
 					<div class="document-description">
 						{$activeDocument.description}
-					</div>
-				{/if}
-
-				<!-- Stub document notice -->
-				{#if $activeDocument && !hasFullData($activeDocument)}
-					<div class="stub-notice">
-						This is a new document from auto-refresh. Browse the 20 titles below, then generate full matrix data from the Matrix tab.
 					</div>
 				{/if}
 			{/if}
@@ -281,14 +250,12 @@
 									{@const canSelect = selectedRows.length < 5}
 									{@const canToggle = isSelected ? canDeselect : canSelect}
 									{@const hasInsight = !!opt?.articulated_insight}
-									{@const isChanged = changedRowSet.has(idx)}
 									{#if opt}
-										<div class="title-item-wrapper" class:changed={isChanged}>
+										<div class="title-item-wrapper">
 											<button
 												class="title-item"
 												class:selected={isSelected}
 												class:disabled={!canToggle}
-												class:changed={isChanged}
 												on:click={() => handleToggleRow(idx)}
 											>
 												<div class="title-checkbox" class:checked={isSelected}>
@@ -307,10 +274,7 @@
 													{/if}
 												</div>
 												<div class="title-content">
-													<span class="title-text">
-														{#if isChanged}<span class="change-badge">UPDATED</span>{/if}
-														{opt.label}
-													</span>
+													<span class="title-text">{opt.label}</span>
 													{#if opt.articulated_insight?.title}
 														<span class="title-insight">{opt.articulated_insight.title}</span>
 													{/if}
@@ -364,14 +328,12 @@
 									{@const canSelect = selectedColumns.length < 5}
 									{@const canToggle = isSelected ? canDeselect : canSelect}
 									{@const hasInsight = !!opt?.articulated_insight}
-									{@const isChanged = changedColSet.has(idx)}
 									{#if opt}
-										<div class="title-item-wrapper" class:changed={isChanged}>
+										<div class="title-item-wrapper">
 											<button
 												class="title-item"
 												class:selected={isSelected}
 												class:disabled={!canToggle}
-												class:changed={isChanged}
 												on:click={() => handleToggleColumn(idx)}
 											>
 												<div class="title-checkbox" class:checked={isSelected}>
@@ -390,10 +352,7 @@
 													{/if}
 												</div>
 												<div class="title-content">
-													<span class="title-text">
-														{#if isChanged}<span class="change-badge">UPDATED</span>{/if}
-														{opt.label}
-													</span>
+													<span class="title-text">{opt.label}</span>
 													{#if opt.articulated_insight?.title}
 														<span class="title-insight">{opt.articulated_insight.title}</span>
 													{/if}
@@ -551,101 +510,16 @@
 		border-color: var(--color-primary-200);
 	}
 
-	[data-theme='dark'] .document-tab:hover {
-		background: rgba(15, 23, 42, 0.2);
-		border-color: var(--color-primary-700);
-	}
-
 	.document-tab.active {
 		background: var(--color-primary-100);
 		border-color: var(--color-primary-400);
 		color: var(--color-primary-700);
 	}
 
-	[data-theme='dark'] .document-tab.active {
-		background: rgba(15, 23, 42, 0.3);
-		color: var(--color-primary-300);
-	}
-
 	.tab-name {
 		max-width: 150px;
 		overflow: hidden;
 		text-overflow: ellipsis;
-	}
-
-	/* Stub document tab (no full data yet) */
-	.document-tab.stub {
-		border-style: dashed;
-		border-color: var(--color-primary-300);
-	}
-
-	.document-tab.stub:hover {
-		border-style: dashed;
-	}
-
-	.stub-badge {
-		display: inline-block;
-		padding: 0.125rem 0.375rem;
-		margin-left: 0.375rem;
-		background: var(--color-primary-500);
-		color: white;
-		font-size: 0.5625rem;
-		font-weight: 700;
-		border-radius: 0.25rem;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-		vertical-align: middle;
-	}
-
-	[data-theme='dark'] .stub-badge {
-		background: var(--color-primary-400);
-	}
-
-	.stub-notice {
-		padding: 0.625rem 1.25rem;
-		font-size: 0.75rem;
-		color: var(--color-primary-600);
-		background: var(--color-primary-50);
-		border-bottom: 1px solid var(--color-veil-thin);
-	}
-
-	[data-theme='dark'] .stub-notice {
-		color: var(--color-primary-400);
-		background: rgba(59, 130, 246, 0.1);
-	}
-
-	.add-document-btn {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 36px;
-		height: 36px;
-		background: var(--color-field-depth);
-		border: 1px dashed var(--color-veil-thin);
-		border-radius: 0.5rem;
-		color: var(--color-primary-600);
-		cursor: pointer;
-		transition: all 0.15s ease;
-		flex-shrink: 0;
-	}
-
-	.add-document-btn:hover:not(:disabled) {
-		background: var(--color-primary-50);
-		border-color: var(--color-primary-400);
-		border-style: solid;
-	}
-
-	[data-theme='dark'] .add-document-btn {
-		color: var(--color-primary-400);
-	}
-
-	[data-theme='dark'] .add-document-btn:hover:not(:disabled) {
-		background: rgba(15, 23, 42, 0.2);
-	}
-
-	.add-document-btn:disabled {
-		opacity: 0.7;
-		cursor: wait;
 	}
 
 	.document-description {
@@ -678,10 +552,6 @@
 
 	.selection-count.complete {
 		color: #059669;
-	}
-
-	[data-theme='dark'] .selection-count.complete {
-		color: #34d399;
 	}
 
 	.selection-hint {
@@ -738,14 +608,6 @@
 		border-style: solid;
 	}
 
-	[data-theme='dark'] .show-more-btn {
-		color: var(--color-primary-400);
-	}
-
-	[data-theme='dark'] .show-more-btn:hover {
-		background: rgba(15, 23, 42, 0.2);
-	}
-
 	.title-item-wrapper {
 		display: flex;
 		align-items: stretch;
@@ -772,11 +634,6 @@
 		color: var(--color-primary-600);
 	}
 
-	[data-theme='dark'] .insight-expand-btn:hover {
-		background: rgba(15, 23, 42, 0.2);
-		color: var(--color-primary-300);
-	}
-
 	.title-item {
 		display: flex;
 		align-items: flex-start;
@@ -799,10 +656,6 @@
 	.title-item.selected {
 		background: var(--color-primary-50);
 		border-color: var(--color-primary-400);
-	}
-
-	[data-theme='dark'] .title-item.selected {
-		background: rgba(15, 23, 42, 0.2);
 	}
 
 	.title-item.disabled {
@@ -865,33 +718,5 @@
 		padding: 1rem 1.25rem;
 		border-top: 1px solid var(--color-veil-thin);
 		flex-shrink: 0;
-	}
-
-	/* Changed option indicator */
-	.title-item.changed {
-		border-color: var(--color-primary-400);
-		background: var(--color-primary-50);
-	}
-
-	[data-theme='dark'] .title-item.changed {
-		background: rgba(59, 130, 246, 0.1);
-	}
-
-	.change-badge {
-		display: inline-block;
-		padding: 0.125rem 0.375rem;
-		margin-right: 0.5rem;
-		background: var(--color-primary-500);
-		color: white;
-		font-size: 0.625rem;
-		font-weight: 700;
-		border-radius: 0.25rem;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-		vertical-align: middle;
-	}
-
-	[data-theme='dark'] .change-badge {
-		background: var(--color-primary-400);
 	}
 </style>
