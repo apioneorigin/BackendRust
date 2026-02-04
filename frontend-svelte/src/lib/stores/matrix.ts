@@ -78,18 +78,19 @@ export interface ColumnOption {
 export interface Document {
 	id: string;
 	name: string;
-	description: string;  // ~20 word description
+	description?: string;  // ~20 word description (optional from LLM)
 	matrix_data: {
 		row_options: RowOption[];
 		column_options: ColumnOption[];
 		selected_rows: number[];
 		selected_columns: number[];
-		cells: Record<string, {
+		cells?: Record<string, {  // Optional - generated after "design-reality" action
 			impact_score: number;
 			relationship?: string;
 			dimensions: {
 				name: string;
 				value: number;  // 0 (Low), 50 (Medium), or 100 (High)
+				explanation?: string;  // Max 10-word phrase explaining this dimension's state
 			}[];
 		}>;
 	};
@@ -106,6 +107,12 @@ interface MatrixState {
 	displayedColumnHeaders: string[];
 	displayedRowInsights: string[];
 	displayedColumnInsights: string[];
+
+	// Change tracking - shows which options changed between updates
+	previousRowOptions: RowOption[];
+	previousColumnOptions: RowOption[];
+	changedRowIndices: number[];  // Indices of rows that changed
+	changedColumnIndices: number[];  // Indices of columns that changed
 
 	// Generation state
 	isGenerated: boolean;
@@ -126,6 +133,10 @@ interface MatrixState {
 
 	// Conversation ID for API calls
 	conversationId: string | null;
+
+	// Auto refresh - when enabled, matrix auto-updates on context change
+	// and LLM can add 1 extra document at its discretion
+	autoRefresh: boolean;
 }
 
 // Create placeholder 5x5 matrix for initial render
@@ -159,6 +170,12 @@ const initialState: MatrixState = {
 	displayedRowInsights: ['', '', '', '', ''],
 	displayedColumnInsights: ['', '', '', '', ''],
 
+	// Change tracking
+	previousRowOptions: [],
+	previousColumnOptions: [],
+	changedRowIndices: [],
+	changedColumnIndices: [],
+
 	isGenerated: false,
 	isGenerating: false,
 	isGeneratingMoreDocuments: false,
@@ -171,7 +188,10 @@ const initialState: MatrixState = {
 
 	isLoadingOptions: false,
 	error: null,
-	conversationId: null
+	conversationId: null,
+
+	// Auto refresh disabled by default
+	autoRefresh: false
 };
 
 function createMatrixStore() {
@@ -190,7 +210,7 @@ function createMatrixStore() {
 			value: 50  // Medium
 		}));
 
-		const { row_options, column_options, selected_rows, selected_columns, cells } = doc.matrix_data;
+		const { row_options, column_options, selected_rows, selected_columns, cells = {} } = doc.matrix_data;
 
 		const rowHeaders = selected_rows.map(i => row_options[i]?.label || `Row ${i + 1}`);
 		const columnHeaders = selected_columns.map(i => column_options[i]?.label || `Column ${i + 1}`);
@@ -253,23 +273,62 @@ function createMatrixStore() {
 			if (!data || !data.documents || data.documents.length === 0) return;
 
 			const documents = data.documents;
-
-			const activeDocumentId = documents[0].id;
 			const activeDoc = documents[0];
+
+			// Validate document has required matrix_data structure
+			if (!activeDoc.matrix_data || !activeDoc.matrix_data.row_options || !activeDoc.matrix_data.column_options) {
+				console.error('[Matrix] Document missing required matrix_data structure');
+				return;
+			}
+
+			const activeDocumentId = activeDoc.id;
 			const displayed = buildDisplayedMatrix(activeDoc);
 
-			update(state => ({
-				...state,
-				documents,
-				activeDocumentId,
-				displayedMatrixData: displayed.matrixData,
-				displayedRowHeaders: displayed.rowHeaders,
-				displayedColumnHeaders: displayed.columnHeaders,
-				displayedRowInsights: displayed.rowInsights,
-				displayedColumnInsights: displayed.columnInsights,
-				isGenerated: true,
-				isGenerating: false
-			}));
+			// Detect which options changed by comparing with previous
+			const newRowOptions = activeDoc.matrix_data.row_options;
+			const newColOptions = activeDoc.matrix_data.column_options;
+
+			update(state => {
+				// Compare labels to detect changes
+				const changedRowIndices: number[] = [];
+				const changedColumnIndices: number[] = [];
+
+				if (state.previousRowOptions.length > 0) {
+					newRowOptions.forEach((opt, idx) => {
+						const prevOpt = state.previousRowOptions[idx];
+						if (!prevOpt || prevOpt.label !== opt.label) {
+							changedRowIndices.push(idx);
+						}
+					});
+				}
+
+				if (state.previousColumnOptions.length > 0) {
+					newColOptions.forEach((opt, idx) => {
+						const prevOpt = state.previousColumnOptions[idx];
+						if (!prevOpt || prevOpt.label !== opt.label) {
+							changedColumnIndices.push(idx);
+						}
+					});
+				}
+
+				return {
+					...state,
+					documents,
+					activeDocumentId,
+					displayedMatrixData: displayed.matrixData,
+					displayedRowHeaders: displayed.rowHeaders,
+					displayedColumnHeaders: displayed.columnHeaders,
+					displayedRowInsights: displayed.rowInsights,
+					displayedColumnInsights: displayed.columnInsights,
+					// Store current as previous for next comparison
+					previousRowOptions: [...newRowOptions],
+					previousColumnOptions: [...newColOptions],
+					changedRowIndices,
+					changedColumnIndices,
+					isGenerated: true,
+					isGenerating: false
+				};
+			});
 		},
 
 		// Switch active document tab
@@ -349,8 +408,10 @@ function createMatrixStore() {
 			update(s => ({ ...s, isGeneratingMoreDocuments: true, error: null }));
 
 			try {
-				const response = await api.post(`/matrix/${state.conversationId}/documents/generate`);
-				const { documents: newDocs, total_document_count } = response;
+				const response = await api.post<{ documents: Document[]; total_document_count: number }>(
+					`/matrix/${state.conversationId}/documents/generate`
+				);
+				const { documents: newDocs } = response;
 
 				update(s => ({
 					...s,
@@ -378,7 +439,9 @@ function createMatrixStore() {
 			}
 
 			try {
-				const response = await api.post(`/matrix/${state.conversationId}/document/${docId}/populate`);
+				const response = await api.post<{ success: boolean }>(
+					`/matrix/${state.conversationId}/document/${docId}/populate`
+				);
 
 				if (response.success) {
 					// Refresh documents to get the populated data
@@ -422,7 +485,7 @@ function createMatrixStore() {
 			update(s => ({ ...s, isLoadingPlays: true, error: null }));
 
 			try {
-				const response = await api.get(
+				const response = await api.get<{ plays: Play[]; selectedPlayId: string | null }>(
 					`/matrix/${state.conversationId}/document/${state.activeDocumentId}/plays`
 				);
 				const plays = response.plays || [];
@@ -524,7 +587,7 @@ function createMatrixStore() {
 				});
 
 				// Persist to backend
-				const response = await api.patch(
+				const response = await api.patch<{ success?: boolean; changes_saved?: number; changesSaved?: number }>(
 					`/matrix/${state.conversationId}/document/${state.activeDocumentId}/cells`,
 					{
 						changes: changes.map(ch => ({
@@ -547,11 +610,7 @@ function createMatrixStore() {
 				update(s => ({ ...s, displayedMatrixData: originalMatrixData }));
 
 				// Notify user of failure
-				addToast({
-					type: 'error',
-					message: 'Failed to save changes. Please try again.',
-					duration: 4000
-				});
+				addToast('error', 'Failed to save changes. Please try again.');
 
 				return { success: false, changesSaved: 0 };
 			}
@@ -593,6 +652,26 @@ function createMatrixStore() {
 			}));
 		},
 
+		// Clear change indicators (after user has seen the changes)
+		clearChangeIndicators() {
+			update(state => ({
+				...state,
+				changedRowIndices: [],
+				changedColumnIndices: []
+			}));
+		},
+
+		// Toggle auto refresh - when enabled, matrix auto-updates on context change
+		// and LLM can add 1 extra document at its discretion
+		toggleAutoRefresh() {
+			update(state => ({ ...state, autoRefresh: !state.autoRefresh }));
+		},
+
+		// Set auto refresh state directly
+		setAutoRefresh(enabled: boolean) {
+			update(state => ({ ...state, autoRefresh: enabled }));
+		},
+
 		// Reset matrix
 		reset() {
 			set(initialState);
@@ -619,6 +698,16 @@ export const isMatrixGenerated = derived(matrix, ($matrix) => $matrix.isGenerate
 export const isGeneratingMoreDocuments = derived(matrix, ($matrix) => $matrix.isGeneratingMoreDocuments);
 export const showRiskHeatmap = derived(matrix, ($matrix) => $matrix.showRiskHeatmap);
 export const isLoadingOptions = derived(matrix, ($matrix) => $matrix.isLoadingOptions);
+
+// Auto refresh - when enabled, matrix auto-updates on context change
+// and LLM can add 1 extra document at its discretion
+export const autoRefresh = derived(matrix, ($matrix) => $matrix.autoRefresh);
+
+// Change tracking derived stores - shows which options changed between context updates
+export const changedRowIndices = derived(matrix, ($matrix) => $matrix.changedRowIndices);
+export const changedColumnIndices = derived(matrix, ($matrix) => $matrix.changedColumnIndices);
+export const previousRowOptions = derived(matrix, ($matrix) => $matrix.previousRowOptions);
+export const previousColumnOptions = derived(matrix, ($matrix) => $matrix.previousColumnOptions);
 
 // Plays derived stores
 export const plays = derived(matrix, ($matrix) => $matrix.plays);
@@ -649,28 +738,3 @@ export const powerSpots = derived(matrix, ($matrix) => {
 	return $matrix.displayedMatrixData.flat().filter((c) => c.isLeveragePoint).length;
 });
 
-// Document tabs interface - used by CausationPopup and EffectPopup components
-export const documentTabs = derived(matrix, ($matrix) =>
-	$matrix.documents.map(d => ({
-		id: d.id,
-		name: d.name,
-		type: 'primary' as const,
-		causationOptions: [],
-		effectOptions: [],
-		selectedCausations: [],
-		selectedEffects: []
-	}))
-);
-
-export const activeTab = derived(matrix, ($matrix) => {
-	const doc = $matrix.documents.find(d => d.id === $matrix.activeDocumentId);
-	return doc ? {
-		id: doc.id,
-		name: doc.name,
-		type: 'primary' as const,
-		causationOptions: [],
-		effectOptions: [],
-		selectedCausations: [],
-		selectedEffects: []
-	} : null;
-});

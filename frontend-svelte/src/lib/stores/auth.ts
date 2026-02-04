@@ -13,6 +13,7 @@ export interface User {
 	organization_id: string;
 	credits_enabled: boolean;
 	credit_quota: number | null;
+	isGlobalAdmin?: boolean;  // Admin users with global access
 }
 
 export interface Organization {

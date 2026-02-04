@@ -18,8 +18,6 @@ export {
 	isMatrixGenerated,
 	isGeneratingMoreDocuments,
 	showRiskHeatmap,
-	documentTabs,
-	activeTab,
 	isLoadingOptions,
 	coherence,
 	population,
@@ -30,7 +28,12 @@ export {
 	documents as matrixDocuments,
 	plays,
 	selectedPlayId,
-	isLoadingPlays
+	isLoadingPlays,
+	changedRowIndices,
+	changedColumnIndices,
+	previousRowOptions,
+	previousColumnOptions,
+	autoRefresh
 } from './matrix';
 
 // Re-export types

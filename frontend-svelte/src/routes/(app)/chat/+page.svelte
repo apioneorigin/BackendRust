@@ -38,7 +38,8 @@
 		activeDocument,
 		plays as playsStore,
 		selectedPlayId as selectedPlayIdStore,
-		isLoadingPlays as isLoadingPlaysStore
+		isLoadingPlays as isLoadingPlaysStore,
+		autoRefresh as autoRefreshStore
 	} from '$lib/stores';
 	import { Button, Spinner, TypingIndicator } from '$lib/components/ui';
 	import MatrixPanel from '$lib/components/matrix/MatrixPanel.svelte';
@@ -118,9 +119,9 @@
 	async function copyToClipboard(text: string) {
 		try {
 			await navigator.clipboard.writeText(text);
-			addToast({ type: 'success', message: 'Copied to clipboard' });
+			addToast('success', 'Copied to clipboard');
 		} catch (err) {
-			addToast({ type: 'error', message: 'Failed to copy' });
+			addToast('error', 'Failed to copy');
 		}
 	}
 
@@ -334,8 +335,8 @@
 	}
 
 	function handleCellChange(e: CustomEvent<{ row: number; col: number; value: number }>) {
-		const { row, col, value } = e.detail;
-		matrix.updateCellValue(row, col, value);
+		// Cell value changes are handled via dimension updates in MatrixPanel
+		// This handler is kept for backward compatibility with events
 	}
 
 	async function handleToolbarPopup(e: CustomEvent<{ type: 'plays' | 'scenarios' }>) {
@@ -364,10 +365,7 @@
 
 	function handleSaveScenario() {
 		// TODO: Implement backend persistence
-		addToast({
-			type: 'info',
-			message: 'Scenario save will be implemented with backend integration'
-		});
+		addToast('info', 'Scenario save will be implemented with backend integration');
 	}
 
 	// Explanation loading state
@@ -642,6 +640,17 @@
 							</svg>
 							<span>Context Control</span>
 						</button>
+
+						<label class="auto-refresh-toggle" title="Auto-update matrix when context changes. LLM may add 1 new document per update.">
+							<input type="checkbox" checked={$autoRefreshStore} on:change={() => matrix.toggleAutoRefresh()} />
+							<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+								<path d="M3 3v5h5"/>
+								<path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+								<path d="M16 16h5v5"/>
+							</svg>
+							<span>Auto Refresh</span>
+						</label>
 					{/if}
 				</div>
 
@@ -1424,6 +1433,48 @@
 
 	.web-search-toggle svg {
 		flex-shrink: 0;
+	}
+
+	/* Auto refresh toggle - similar to web search but in controls-left */
+	.auto-refresh-toggle {
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
+		padding: 0.375rem 0.5rem;
+		border: none;
+		border-radius: 0.375rem;
+		background: transparent;
+		color: var(--color-text-whisper);
+		font-size: 0.75rem;
+		cursor: pointer;
+		transition: all 0.1s ease;
+	}
+
+	.auto-refresh-toggle:hover {
+		background: var(--color-accent-subtle);
+		color: var(--color-text-source);
+	}
+
+	.auto-refresh-toggle:has(input:checked) {
+		background: var(--color-primary-50);
+		color: var(--color-primary-600);
+	}
+
+	[data-theme='dark'] .auto-refresh-toggle:has(input:checked) {
+		background: rgba(59, 130, 246, 0.15);
+		color: var(--color-primary-400);
+	}
+
+	.auto-refresh-toggle input {
+		display: none;
+	}
+
+	.auto-refresh-toggle svg {
+		flex-shrink: 0;
+	}
+
+	.auto-refresh-toggle span {
+		white-space: nowrap;
 	}
 
 	.send-btn {
