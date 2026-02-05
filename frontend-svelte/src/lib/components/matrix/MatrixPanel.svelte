@@ -234,9 +234,7 @@
 		}
 	}
 
-	function handleDocumentTabClick(docId: string, doc: Document) {
-		// Only allow clicking on documents with full data
-		if (!hasFullData(doc)) return;
+	function handleDocumentTabClick(docId: string) {
 		matrix.setActiveDocument(docId);
 		dispatch('documentChange', { documentId: docId });
 	}
@@ -261,25 +259,17 @@
 		<div class="document-tabs-container">
 			<div class="document-tabs">
 				{#each $documents as doc (doc.id)}
-					{@const isFullData = hasFullData(doc)}
 					{@const isActive = doc.id === $activeDocumentId}
-					{@const isPopulating = isPopulatingDoc === doc.id}
-					{#if isFullData}
-						<!-- Full data document: clickable tab -->
-						<button
-							class="document-tab"
-							class:active={isActive}
-							on:click={() => handleDocumentTabClick(doc.id, doc)}
-							title={doc.description}
-						>
-							<span class="tab-name">{doc.name}</span>
-						</button>
-					{:else}
-						<!-- Stub document: name only, generation handled by overlay button -->
-						<div class="document-tab stub" class:active={isActive} title={doc.description}>
-							<span class="tab-name">{doc.name}</span>
-						</div>
-					{/if}
+					{@const isStub = !hasFullData(doc)}
+					<button
+						class="document-tab"
+						class:active={isActive}
+						class:stub={isStub}
+						on:click={() => handleDocumentTabClick(doc.id)}
+						title={doc.description}
+					>
+						<span class="tab-name">{doc.name}</span>
+					</button>
 				{/each}
 			</div>
 		</div>
