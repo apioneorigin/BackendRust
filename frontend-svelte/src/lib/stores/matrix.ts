@@ -129,6 +129,9 @@ interface MatrixState {
 
 	// Conversation ID for API calls
 	conversationId: string | null;
+
+	// Auto refresh - when enabled, matrix auto-updates on next query
+	autoRefresh: boolean;
 }
 
 // Create placeholder 5x5 matrix for initial render
@@ -174,7 +177,8 @@ const initialState: MatrixState = {
 
 	isLoadingOptions: false,
 	error: null,
-	conversationId: null
+	conversationId: null,
+	autoRefresh: false
 };
 
 function createMatrixStore() {
@@ -625,6 +629,16 @@ function createMatrixStore() {
 			}));
 		},
 
+		// Toggle auto refresh
+		toggleAutoRefresh() {
+			update(state => ({ ...state, autoRefresh: !state.autoRefresh }));
+		},
+
+		// Set auto refresh state directly
+		setAutoRefresh(enabled: boolean) {
+			update(state => ({ ...state, autoRefresh: enabled }));
+		},
+
 		// Reset matrix
 		reset() {
 			set(initialState);
@@ -666,6 +680,7 @@ export const isMatrixGenerated = derived(matrix, ($matrix) => $matrix.isGenerate
 export const isGeneratingMoreDocuments = derived(matrix, ($matrix) => $matrix.isGeneratingMoreDocuments);
 export const showRiskHeatmap = derived(matrix, ($matrix) => $matrix.showRiskHeatmap);
 export const isLoadingOptions = derived(matrix, ($matrix) => $matrix.isLoadingOptions);
+export const autoRefresh = derived(matrix, ($matrix) => $matrix.autoRefresh);
 
 // Plays derived stores
 export const plays = derived(matrix, ($matrix) => $matrix.plays);

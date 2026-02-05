@@ -28,7 +28,8 @@ export {
 	documents as matrixDocuments,
 	plays,
 	selectedPlayId,
-	isLoadingPlays
+	isLoadingPlays,
+	autoRefresh
 } from './matrix';
 
 // Re-export types
