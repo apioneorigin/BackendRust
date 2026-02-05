@@ -80,7 +80,7 @@ export interface ColumnOption {
 export interface Document {
 	id: string;
 	name: string;
-	description: string;  // ~20 word description
+	description?: string;  // ~20 word description (optional in on-demand architecture)
 	matrix_data: {
 		row_options: RowOption[];
 		column_options: ColumnOption[];
@@ -361,7 +361,7 @@ function createMatrixStore() {
 
 			// Persist to backend
 			try {
-				await api.patch(`/matrix/${state.conversationId}/document/${state.activeDocumentId}/selection`, {
+				await api.patch(`/api/matrix/${state.conversationId}/document/${state.activeDocumentId}/selection`, {
 					document_id: state.activeDocumentId,
 					selected_rows: selectedRows,
 					selected_columns: selectedColumns
@@ -382,7 +382,7 @@ function createMatrixStore() {
 			update(s => ({ ...s, isGeneratingMoreDocuments: true, error: null }));
 
 			try {
-				const response = await api.post<{ documents: Document[]; total_document_count: number }>(`/matrix/${state.conversationId}/documents/generate`);
+				const response = await api.post<{ documents: Document[]; total_document_count: number }>(`/api/matrix/${state.conversationId}/documents/generate`);
 				const { documents: newDocs, total_document_count } = response;
 
 				update(s => ({
@@ -413,7 +413,7 @@ function createMatrixStore() {
 			try {
 				// Backend returns the updated document directly — no follow-up GET needed
 				const doc = await api.post<Document>(
-					`/matrix/${state.conversationId}/document/${docId}/design-reality`,
+					`/api/matrix/${state.conversationId}/document/${docId}/design-reality`,
 					{ model }
 				);
 
@@ -435,7 +435,7 @@ function createMatrixStore() {
 
 			// Backend returns the updated document directly — no follow-up GET needed
 			const doc = await api.post<Document>(
-				`/matrix/${state.conversationId}/document/${state.activeDocumentId}/generate-insights`,
+				`/api/matrix/${state.conversationId}/document/${state.activeDocumentId}/generate-insights`,
 				{ model, insight_index: insightIndex }
 			);
 
@@ -458,7 +458,7 @@ function createMatrixStore() {
 
 			try {
 				const response = await api.get<{ plays: Play[]; selectedPlayId: string | null }>(
-					`/matrix/${state.conversationId}/document/${state.activeDocumentId}/plays`
+					`/api/matrix/${state.conversationId}/document/${state.activeDocumentId}/plays`
 				);
 				const plays = response.plays || [];
 				const selectedPlayId = response.selectedPlayId || null;
@@ -492,7 +492,7 @@ function createMatrixStore() {
 
 			try {
 				await api.put(
-					`/matrix/${state.conversationId}/document/${state.activeDocumentId}/plays/select`,
+					`/api/matrix/${state.conversationId}/document/${state.activeDocumentId}/plays/select`,
 					{ play_id: playId }
 				);
 
@@ -560,7 +560,7 @@ function createMatrixStore() {
 
 				// Persist to backend
 				const response = await api.patch<{ success: boolean; changes_saved: number }>(
-					`/matrix/${state.conversationId}/document/${state.activeDocumentId}/cells`,
+					`/api/matrix/${state.conversationId}/document/${state.activeDocumentId}/cells`,
 					{
 						changes: changes.map(ch => ({
 							row_idx: ch.row,
