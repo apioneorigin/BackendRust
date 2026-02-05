@@ -47,13 +47,14 @@ class ValueOrganizer:
         """
         values_count = len(raw_values.get('values')) if isinstance(raw_values, dict) and 'values' in raw_values else len(raw_values)
         logger.info(f"[VALUE_ORGANIZER] Organizing {values_count} computed values into consciousness state")
-        logger.debug(f"[VALUE_ORGANIZER] Tier1 keys: {len(tier1_values)} | Targets: {len(tier1_values.get('targets'))}")
+        targets = tier1_values.get('targets') or []
+        logger.debug(f"[VALUE_ORGANIZER] Tier1 keys: {len(tier1_values)} | Targets: {len(targets)}")
 
         # Split raw values into calculated vs non-calculated (two buckets)
         calculated_values, non_calc_question, non_calc_context = self._split_calculated_values(raw_values)
 
         # Extract LLM Call 1's missing operator priority (if provided)
-        missing_operator_priority = tier1_values.get('missing_operator_priority')
+        missing_operator_priority = tier1_values.get('missing_operator_priority') or []
 
         state = ConsciousnessState(
             timestamp=datetime.now().isoformat(),
@@ -184,7 +185,7 @@ class ValueOrganizer:
         """Organize Tier 1 values (from LLM Call 1)"""
         logger.debug("[_organize_tier1] entry")
         # Extract core operators from observations
-        observations = values.get('observations')
+        observations = values.get('observations') or []
         obs_dict = {}
         for obs in observations:
             if isinstance(obs, dict) and 'var' in obs and 'value' in obs:
