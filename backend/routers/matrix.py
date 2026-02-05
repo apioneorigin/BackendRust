@@ -109,19 +109,25 @@ class StrategicPreset(CamelModel):
 
 class DocumentMatrixData(BaseModel):
     """Matrix data for a document - 10x10 grid"""
-    row_options: List[RowOption]
-    column_options: List[ColumnOption]
-    selected_rows: List[int]
-    selected_columns: List[int]
+    row_options: List[RowOption] = []
+    column_options: List[ColumnOption] = []
+    selected_rows: List[int] = [0, 1, 2, 3, 4]
+    selected_columns: List[int] = [0, 1, 2, 3, 4]
     cells: Optional[dict] = None
 
 
 class GeneratedDocument(BaseModel):
-    """Document with its own 10x10 matrix data"""
+    """Document with its own 10x10 matrix data.
+    Fields match what design_reality/add_documents actually store."""
     id: str
     name: str
     description: Optional[str] = None
     matrix_data: Optional[DocumentMatrixData] = None
+    leverage_points: Optional[list] = None
+    risk_analysis: Optional[list] = None
+    plays: Optional[list] = None
+    presets: Optional[list] = None
+    selected_play_id: Optional[str] = None
 
 
 # Endpoints
