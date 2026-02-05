@@ -16,12 +16,57 @@
 		activeDocumentId,
 		activeDocument
 	} from '$lib/stores';
-	import type { ArticulatedInsight, RowOption, ColumnOption } from '$lib/stores/matrix';
+	import type { ArticulatedInsight, RowOption, ColumnOption, DocumentPreview } from '$lib/stores/matrix';
 	import { Button } from '$lib/components/ui';
 	import InsightPopup from './InsightPopup.svelte';
 
 	export let open = false;
 	export let model = 'claude-opus-4-5-20251101';
+
+	// Document creation state
+	let previews: DocumentPreview[] = [];
+	let selectedPreviews: Set<string> = new Set();
+	let isLoadingPreviews = false;
+	let isAddingDocuments = false;
+	let showPreviewPanel = false;
+
+	async function handleGeneratePreviews() {
+		isLoadingPreviews = true;
+		showPreviewPanel = true;
+		previews = [];
+		selectedPreviews = new Set();
+		try {
+			previews = await matrix.previewDocuments(model);
+		} finally {
+			isLoadingPreviews = false;
+		}
+	}
+
+	function handleTogglePreview(tempId: string) {
+		const next = new Set(selectedPreviews);
+		if (next.has(tempId)) next.delete(tempId);
+		else next.add(tempId);
+		selectedPreviews = next;
+	}
+
+	async function handleAddSelected() {
+		if (selectedPreviews.size === 0) return;
+		isAddingDocuments = true;
+		try {
+			await matrix.addDocuments([...selectedPreviews], model);
+			showPreviewPanel = false;
+			previews = [];
+			selectedPreviews = new Set();
+		} finally {
+			isAddingDocuments = false;
+		}
+	}
+
+	function handleCancelPreviews() {
+		showPreviewPanel = false;
+		previews = [];
+		selectedPreviews = new Set();
+	}
 
 	// Insight popup state
 	let showInsightPopup = false;
@@ -194,38 +239,73 @@
 			</div>
 
 			<!-- Document Tabs -->
-			<!-- All documents: LLM-generated stubs and fully populated -->
 			{#if $matrixDocuments.length > 0}
 				<div class="document-tabs-container">
 					<div class="document-tabs">
 						{#each $matrixDocuments as doc (doc.id)}
-							<div class="document-tab-wrapper">
-								<button
-									class="document-tab"
-									class:active={doc.id === $activeDocumentId}
-									on:click={() => handleDocumentTabClick(doc.id)}
-									title={doc.description}
-								>
-									<span class="tab-name">{doc.name}</span>
-								</button>
+							<button
+								class="document-tab"
+								class:active={doc.id === $activeDocumentId}
+								on:click={() => handleDocumentTabClick(doc.id)}
+								title={doc.description}
+							>
+								<span class="tab-name">{doc.name}</span>
 								{#if $matrixDocuments.length > 1}
-									<button
-										class="tab-delete-btn"
+									<span
+										class="tab-delete-x"
+										role="button"
+										tabindex="-1"
 										on:click|stopPropagation={() => handleDeleteDocument(doc.id)}
-										disabled={deletingDocId === doc.id}
 										title="Delete document"
-									>
-										<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-											<path d="M18 6 6 18" /><path d="m6 6 12 12" />
-										</svg>
-									</button>
+									>&times;</span>
 								{/if}
-							</div>
+							</button>
 						{/each}
+						<button
+							class="document-tab add-tab"
+							on:click={handleGeneratePreviews}
+							disabled={isLoadingPreviews}
+							title="Add new document"
+						>+</button>
 					</div>
 				</div>
 
-				<!-- Document Description -->
+				{#if showPreviewPanel}
+					<div class="preview-panel">
+						{#if isLoadingPreviews}
+							<div class="preview-loading">Generating previews...</div>
+						{:else if previews.length > 0}
+							<div class="preview-list">
+								{#each previews as preview (preview.tempId)}
+									<button
+										class="preview-card"
+										class:selected={selectedPreviews.has(preview.tempId)}
+										on:click={() => handleTogglePreview(preview.tempId)}
+									>
+										<div class="preview-check" class:checked={selectedPreviews.has(preview.tempId)}>
+											{#if selectedPreviews.has(preview.tempId)}
+												<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12" /></svg>
+											{/if}
+										</div>
+										<div class="preview-info">
+											<span class="preview-name">{preview.name}</span>
+											<span class="preview-titles">{preview.insightTitles?.slice(0, 4).join(' · ')}</span>
+										</div>
+									</button>
+								{/each}
+							</div>
+							<div class="preview-actions">
+								<Button variant="ghost" size="sm" on:click={handleCancelPreviews}>Cancel</Button>
+								<Button variant="primary" size="sm" on:click={handleAddSelected} disabled={selectedPreviews.size === 0 || isAddingDocuments}>
+									{isAddingDocuments ? 'Adding...' : `Add ${selectedPreviews.size}`}
+								</Button>
+							</div>
+						{:else}
+							<div class="preview-loading">No previews generated.</div>
+						{/if}
+					</div>
+				{/if}
+
 				{#if $activeDocument?.description}
 					<div class="document-description">
 						{$activeDocument.description}
@@ -476,7 +556,10 @@
 	}
 
 	.document-tab {
-		padding: 0.5rem 1rem;
+		display: flex;
+		align-items: center;
+		gap: 0.375rem;
+		padding: 0.5rem 0.75rem;
 		background: var(--color-field-depth);
 		border: 1px solid transparent;
 		border-radius: 0.5rem 0.5rem 0 0;
@@ -500,52 +583,126 @@
 		color: var(--color-primary-700);
 	}
 
-	.document-tab-wrapper {
-		position: relative;
-		display: flex;
-		align-items: stretch;
-		flex-shrink: 0;
-	}
-
-	.tab-delete-btn {
-		position: absolute;
-		top: -6px;
-		right: -6px;
-		width: 18px;
-		height: 18px;
-		padding: 0;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		background: var(--color-field-surface);
-		border: 1px solid var(--color-veil-thin);
-		border-radius: 50%;
+	.document-tab.add-tab {
+		padding: 0.5rem 0.75rem;
+		font-size: 1rem;
+		font-weight: 400;
 		color: var(--color-text-whisper);
-		cursor: pointer;
-		opacity: 0;
-		transition: all 0.15s ease;
-		z-index: 1;
+		border: 1px dashed var(--color-veil-thin);
 	}
 
-	.document-tab-wrapper:hover .tab-delete-btn {
-		opacity: 1;
-	}
-
-	.tab-delete-btn:hover {
-		background: #ef4444;
-		border-color: #ef4444;
-		color: white;
-	}
-
-	.tab-delete-btn:disabled {
-		opacity: 0.4;
-		cursor: wait;
+	.document-tab.add-tab:hover {
+		color: var(--color-primary-600);
+		border-color: var(--color-primary-400);
 	}
 
 	.tab-name {
-		max-width: 150px;
+		max-width: 130px;
 		overflow: hidden;
 		text-overflow: ellipsis;
+	}
+
+	.tab-delete-x {
+		font-size: 1rem;
+		line-height: 1;
+		color: var(--color-text-whisper);
+		padding: 0 0.125rem;
+		border-radius: 0.25rem;
+		transition: color 0.1s ease;
+	}
+
+	.tab-delete-x:hover {
+		color: #ef4444;
+	}
+
+	/* Preview panel */
+	.preview-panel {
+		padding: 0.75rem 1.25rem;
+		border-bottom: 1px solid var(--color-veil-thin);
+		flex-shrink: 0;
+	}
+
+	.preview-loading {
+		text-align: center;
+		padding: 1rem;
+		font-size: 0.8125rem;
+		color: var(--color-text-whisper);
+	}
+
+	.preview-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.preview-card {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.625rem;
+		padding: 0.625rem 0.75rem;
+		background: var(--color-field-depth);
+		border: 1px solid transparent;
+		border-radius: 0.5rem;
+		cursor: pointer;
+		text-align: left;
+		transition: all 0.15s ease;
+	}
+
+	.preview-card:hover {
+		border-color: var(--color-primary-200);
+	}
+
+	.preview-card.selected {
+		background: var(--color-primary-50);
+		border-color: var(--color-primary-400);
+	}
+
+	.preview-check {
+		width: 18px;
+		height: 18px;
+		border: 2px solid var(--color-veil-thin);
+		border-radius: 0.25rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+		margin-top: 1px;
+		transition: all 0.15s ease;
+	}
+
+	.preview-check.checked {
+		background: var(--color-primary-500);
+		border-color: var(--color-primary-500);
+		color: white;
+	}
+
+	.preview-info {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.preview-name {
+		display: block;
+		font-size: 0.8125rem;
+		font-weight: 600;
+		color: var(--color-text-source);
+	}
+
+	.preview-titles {
+		display: block;
+		font-size: 0.75rem;
+		color: var(--color-text-whisper);
+		margin-top: 0.125rem;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.preview-actions {
+		display: flex;
+		justify-content: flex-end;
+		gap: 0.5rem;
+		margin-top: 0.625rem;
 	}
 
 	.document-description {

@@ -79,6 +79,14 @@ export interface ColumnOption {
 }
 
 // New: Document with its own matrix data
+export interface DocumentPreview {
+	tempId: string;
+	name: string;
+	rowLabels: string[];
+	columnLabels: string[];
+	insightTitles: string[];
+}
+
 export interface Document {
 	id: string;
 	name: string;
@@ -473,6 +481,66 @@ function createMatrixStore() {
 			} catch (error: any) {
 				console.error('Failed to delete document:', error);
 				addToast('error', 'Failed to delete document');
+			}
+		},
+
+		// Generate 3 document previews for user selection
+		async previewDocuments(model: string = 'claude-opus-4-5-20251101'): Promise<DocumentPreview[]> {
+			const state = get({ subscribe });
+			if (!state.conversationId) return [];
+
+			try {
+				const response = await api.post<{ previews: DocumentPreview[] }>(
+					`/api/matrix/${state.conversationId}/documents/preview`,
+					{ model }
+				);
+				return response.previews ?? [];
+			} catch (error: any) {
+				console.error('Failed to generate document previews:', error);
+				addToast('error', 'Failed to generate document previews');
+				return [];
+			}
+		},
+
+		// Add selected previews as new documents, then reload full document list
+		async addDocuments(selectedPreviewIds: string[], model: string = 'claude-opus-4-5-20251101') {
+			const state = get({ subscribe });
+			if (!state.conversationId) return;
+
+			try {
+				await api.post(
+					`/api/matrix/${state.conversationId}/documents/add`,
+					{ selected_preview_ids: selectedPreviewIds, model }
+				);
+
+				// Reload full document list from backend
+				const documents = await api.get<Document[]>(
+					`/api/matrix/${state.conversationId}/documents`
+				);
+
+				if (documents?.length) {
+					const activeDoc = documents.find(d => d.id === state.activeDocumentId) || documents[0];
+					const displayed = buildDisplayedMatrix(activeDoc);
+
+					update(s => ({
+						...s,
+						documents,
+						activeDocumentId: activeDoc.id,
+						...(displayed ? {
+							displayedMatrixData: displayed.matrixData,
+							displayedRowHeaders: displayed.rowHeaders,
+							displayedColumnHeaders: displayed.columnHeaders,
+							displayedRowInsights: displayed.rowInsights,
+							displayedColumnInsights: displayed.columnInsights,
+						} : {}),
+						isGenerated: !!activeDoc.matrix_data?.cells && Object.keys(activeDoc.matrix_data.cells).length > 0
+					}));
+				}
+
+				addToast('info', 'Documents added');
+			} catch (error: any) {
+				console.error('Failed to add documents:', error);
+				addToast('error', 'Failed to add documents');
 			}
 		},
 
