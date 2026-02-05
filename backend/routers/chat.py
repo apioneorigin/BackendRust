@@ -19,6 +19,7 @@ from database import get_db, User, ChatConversation, ChatMessage, ChatSummary, S
 from routers.auth import get_current_user, generate_id
 from utils import get_or_404, paginate, to_response, to_response_list, safe_json_loads, CamelModel
 from logging_config import api_logger
+from file_parser import parse_file, ParsedFile
 from security.guardrails import (
     classify_zone,
     get_crisis_response,
@@ -329,14 +330,22 @@ async def send_message(
         matrix_state=matrix_state  # Include matrix selection state
     )
 
-    # Add any new file attachments from this request
+    # Add any new file attachments from this request (parse binary formats)
     if request.attachments:
         for attachment in request.attachments:
-            conversation_context.file_summaries.append({
-                "name": attachment.get("name", "unnamed"),
-                "summary": attachment.get("content", "")[:5000],  # First 5K chars as summary
-                "type": attachment.get("type", "unknown")
-            })
+            name = attachment.get("name", "unnamed")
+            content = attachment.get("content", "")
+            file_type = attachment.get("type", "unknown")
+            encoding = attachment.get("encoding", "text")
+
+            parsed_list = parse_file(name, content, encoding)
+            for parsed in parsed_list:
+                extracted = parsed.text_content or ""
+                conversation_context.file_summaries.append({
+                    "name": parsed.name,
+                    "summary": extracted[:5000],
+                    "type": file_type,
+                })
 
     # Save user message with attachments
     user_message = ChatMessage(
@@ -738,23 +747,34 @@ async def upload_files(
         db, ChatConversation, conversation_id, user_id=current_user.id
     )
 
-    # Process files and create summaries
+    # Process files: parse binary formats, then create summaries
     file_summaries = []
     for file_data in request.files[:10]:  # Max 10 files
         name = file_data.get("name", "unnamed")
         content = file_data.get("content", "")
         file_type = file_data.get("type", "unknown")
+        encoding = file_data.get("encoding", "text")
 
-        # Create a simple summary (first N chars)
-        # In production, this would use an LLM to summarize
-        summary = content[:5000] if len(content) > 5000 else content
-
-        file_summaries.append({
-            "name": name,
-            "type": file_type,
-            "summary": summary,
-            "char_count": len(content)
-        })
+        # Parse the file to extract text from binary formats
+        parsed_list = parse_file(name, content, encoding)
+        for parsed in parsed_list:
+            if parsed.is_image:
+                # For images, store a description; image data is too large for summaries
+                file_summaries.append({
+                    "name": parsed.name,
+                    "type": file_type,
+                    "summary": parsed.text_content,
+                    "char_count": 0,
+                })
+            else:
+                extracted = parsed.text_content or f"[Parse error: {parsed.parse_error}]"
+                summary = extracted[:5000] if len(extracted) > 5000 else extracted
+                file_summaries.append({
+                    "name": parsed.name,
+                    "type": file_type,
+                    "summary": summary,
+                    "char_count": len(extracted),
+                })
 
     # Create a system message with file attachments
     file_message = ChatMessage(

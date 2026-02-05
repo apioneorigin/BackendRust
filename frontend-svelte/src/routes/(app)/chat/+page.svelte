@@ -219,6 +219,35 @@
 		wasStreamingBefore = isCurrentlyStreaming;
 	}
 
+	const TEXT_EXTENSIONS = new Set(['.txt', '.md', '.json', '.csv', '.xml']);
+	const BINARY_EXTENSIONS = new Set(['.docx', '.pptx', '.xlsx', '.jpg', '.jpeg', '.png', '.zip', '.pdf', '.doc', '.xls', '.ppt', '.rar']);
+
+	function getFileExt(name: string): string {
+		const dot = name.lastIndexOf('.');
+		return dot >= 0 ? name.slice(dot).toLowerCase() : '';
+	}
+
+	function readAsText(file: File): Promise<string> {
+		return new Promise((resolve, reject) => {
+			const r = new FileReader();
+			r.onload = () => resolve(r.result as string);
+			r.onerror = reject;
+			r.readAsText(file);
+		});
+	}
+
+	function readAsBase64(file: File): Promise<string> {
+		return new Promise((resolve, reject) => {
+			const r = new FileReader();
+			r.onload = () => {
+				const res = r.result as string;
+				resolve(res.includes(',') ? res.split(',')[1] : res);
+			};
+			r.onerror = reject;
+			r.readAsDataURL(file);
+		});
+	}
+
 	async function handleSendMessage() {
 		if ((!messageInput.trim() && attachedFiles.length === 0) || $isStreaming) return;
 
@@ -231,8 +260,31 @@
 			inputElement.style.height = 'auto';
 		}
 
+		// Convert File objects to processed attachment objects
+		let processedAttachments: { name: string; content: string; type: string; encoding: string }[] = [];
+		if (files.length > 0) {
+			try {
+				processedAttachments = await Promise.all(
+					files.map(async (file) => {
+						const ext = getFileExt(file.name);
+						const isBinary = BINARY_EXTENSIONS.has(ext);
+						const fileContent = isBinary ? await readAsBase64(file) : await readAsText(file);
+						return {
+							name: file.name,
+							content: fileContent,
+							type: file.type || 'application/octet-stream',
+							encoding: isBinary ? 'base64' : 'text',
+						};
+					})
+				);
+			} catch {
+				addToast('error', 'Failed to read attached files');
+				return;
+			}
+		}
+
 		try {
-			await chat.sendMessage(content, selectedModel, files, webSearchEnabled);
+			await chat.sendMessage(content, selectedModel, processedAttachments, webSearchEnabled);
 		} catch (error: any) {
 			addToast('error', error.message || 'Failed to send message');
 		}
@@ -568,7 +620,7 @@
 				bind:this={fileInputElement}
 				on:change={handleFileSelect}
 				multiple
-				accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.json,.xml,.zip,.rar"
+				accept=".txt,.md,.json,.csv,.xml,.docx,.pptx,.xlsx,.jpg,.jpeg,.png,.zip,.pdf,.doc,.xls,.ppt,.rar"
 				class="hidden-input"
 			/>
 
