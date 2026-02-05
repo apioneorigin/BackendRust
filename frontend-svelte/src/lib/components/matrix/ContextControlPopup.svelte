@@ -30,8 +30,14 @@
 	let isLoadingPreviews = false;
 	let isAddingDocuments = false;
 	let showPreviewPanel = false;
+	let showConfirmGenerate = false;
 
-	async function handleGeneratePreviews() {
+	function handleClickAdd() {
+		showConfirmGenerate = true;
+	}
+
+	async function handleConfirmGenerate() {
+		showConfirmGenerate = false;
 		isLoadingPreviews = true;
 		showPreviewPanel = true;
 		previews = [];
@@ -41,6 +47,10 @@
 		} finally {
 			isLoadingPreviews = false;
 		}
+	}
+
+	function handleCancelGenerate() {
+		showConfirmGenerate = false;
 	}
 
 	function handleTogglePreview(tempId: string) {
@@ -106,6 +116,8 @@
 
 	function handleClose() {
 		open = false;
+		showConfirmGenerate = false;
+		showPreviewPanel = false;
 		dispatch('close');
 	}
 
@@ -253,26 +265,32 @@
 							>
 								<span class="tab-name">{doc.name}</span>
 								{#if $matrixDocuments.length > 1}
-									<span
-										class="tab-delete-x"
-										role="button"
-										tabindex="-1"
+									<button
+										class="tab-delete-btn"
 										on:click|stopPropagation={() => handleDeleteDocument(doc.id)}
 										title="Delete document"
-									>&times;</span>
+									>&times;</button>
 								{/if}
 							</button>
 						{/each}
 						<button
 							class="document-tab add-tab"
-							on:click={handleGeneratePreviews}
-							disabled={isLoadingPreviews}
+							on:click={handleClickAdd}
+							disabled={isLoadingPreviews || showConfirmGenerate}
 							title="Add new document"
 						>+</button>
 					</div>
 				</div>
 
-				{#if showPreviewPanel}
+				{#if showConfirmGenerate}
+					<div class="confirm-generate-panel">
+						<p class="confirm-text">Generate 3 new documents with unique perspectives? Each includes 10 drivers and 10 outcomes with insight titles. Cell data is generated separately per document.</p>
+						<div class="confirm-actions">
+							<Button variant="ghost" size="sm" on:click={handleCancelGenerate}>Cancel</Button>
+							<Button variant="primary" size="sm" on:click={handleConfirmGenerate}>Generate</Button>
+						</div>
+					</div>
+				{:else if showPreviewPanel}
 					<div class="preview-panel">
 						{#if isLoadingPreviews}
 							<div class="preview-loading">Generating previews...</div>
@@ -315,14 +333,15 @@
 				{/if}
 			{/if}
 
-			<div class="popup-body">
-				<div class="selection-info">
-					<span class="selection-count" class:complete={canSubmit}>
-						{selectedRowCount}/5 drivers, {selectedColCount}/5 outcomes
-					</span>
-					<span class="selection-hint">{canSubmit ? 'Ready to apply' : 'Select exactly 5 drivers and 5 outcomes to apply'}</span>
-				</div>
+			<!-- Sticky selection status — never scrolls with options list -->
+			<div class="selection-info">
+				<span class="selection-count" class:complete={canSubmit}>
+					{selectedRowCount}/5 drivers, {selectedColCount}/5 outcomes
+				</span>
+				<span class="selection-hint">{canSubmit ? 'Ready to apply' : 'Select exactly 5 drivers and 5 outcomes to apply'}</span>
+			</div>
 
+			<div class="popup-body">
 				{#if hasOptions}
 					<div class="options-sections">
 						<!-- Drivers (internally rows) -->
@@ -604,17 +623,48 @@
 		text-overflow: ellipsis;
 	}
 
-	.tab-delete-x {
-		font-size: 1rem;
+	.tab-delete-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 18px;
+		height: 18px;
+		padding: 0;
+		background: none;
+		border: 1px solid transparent;
+		border-radius: 50%;
+		font-size: 0.875rem;
 		line-height: 1;
 		color: var(--color-text-whisper);
-		padding: 0 0.125rem;
-		border-radius: 0.25rem;
-		transition: color 0.1s ease;
+		cursor: pointer;
+		transition: all 0.15s ease;
+		flex-shrink: 0;
 	}
 
-	.tab-delete-x:hover {
+	.tab-delete-btn:hover {
+		background: #fef2f2;
+		border-color: #fecaca;
 		color: #ef4444;
+	}
+
+	/* Confirmation panel for document generation */
+	.confirm-generate-panel {
+		padding: 0.75rem 1.25rem;
+		border-bottom: 1px solid var(--color-veil-thin);
+		flex-shrink: 0;
+	}
+
+	.confirm-text {
+		font-size: 0.8125rem;
+		color: var(--color-text-manifest);
+		line-height: 1.5;
+		margin: 0 0 0.625rem;
+	}
+
+	.confirm-actions {
+		display: flex;
+		justify-content: flex-end;
+		gap: 0.5rem;
 	}
 
 	/* Preview panel */
@@ -716,17 +766,15 @@
 		border-bottom: 1px solid var(--color-veil-thin);
 	}
 
-	.popup-body {
-		flex: 1;
-		padding: 1rem 1.25rem;
-		overflow-y: auto;
-	}
-
+	/* Sticky selection status bar — outside scrollable body */
 	.selection-info {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		margin-bottom: 1rem;
+		padding: 0.625rem 1.25rem;
+		border-bottom: 1px solid var(--color-veil-thin);
+		background: var(--color-field-surface);
+		flex-shrink: 0;
 	}
 
 	.selection-count {
@@ -742,6 +790,12 @@
 	.selection-hint {
 		font-size: 0.75rem;
 		color: var(--color-text-whisper);
+	}
+
+	.popup-body {
+		flex: 1;
+		padding: 1rem 1.25rem;
+		overflow-y: auto;
 	}
 
 	.options-sections {
