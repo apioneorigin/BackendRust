@@ -37,10 +37,19 @@
 		}
 	}
 
-	// Parse markdown bold (**text**) to HTML
+	// Escape HTML entities to prevent XSS from LLM-generated content
+	function escapeHtml(text: string): string {
+		return text
+			.replace(/&/g, '&amp;')
+			.replace(/</g, '&lt;')
+			.replace(/>/g, '&gt;')
+			.replace(/"/g, '&quot;');
+	}
+
+	// Parse markdown bold (**text**) to HTML (sanitized)
 	function parseBold(text: string): string {
 		if (!text) return '';
-		return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+		return escapeHtml(text).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
 	}
 </script>
 

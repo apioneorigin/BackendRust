@@ -16,10 +16,9 @@ from datetime import datetime
 from typing import Optional, List, Dict, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, Field
-from sqlalchemy import select, desc
+from pydantic import BaseModel
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-import openai
 
 from database import get_db, User, Goal, MatrixValue, DiscoveredGoal, UserGoalInventory
 from routers.auth import get_current_user, generate_id

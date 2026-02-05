@@ -43,6 +43,21 @@ async def _save_documents(conversation, documents, db: AsyncSession):
     await db.commit()
 
 
+async def _load_context_messages(conversation_id: str, db: AsyncSession, limit: int = 10) -> list[dict]:
+    """Load recent messages for LLM context. Used by design-reality, insights, preview, add-documents."""
+    messages_result = await db.execute(
+        select(ChatMessage)
+        .where(ChatMessage.conversation_id == conversation_id)
+        .order_by(ChatMessage.created_at.desc())
+        .limit(limit)
+    )
+    messages = messages_result.scalars().all()
+    return [
+        {"role": msg.role, "content": msg.content[:2000] if len(msg.content) > 2000 else msg.content}
+        for msg in reversed(messages)
+    ]
+
+
 # Response models
 class DimensionOption(BaseModel):
     name: str
@@ -191,22 +206,7 @@ async def design_reality(
     conversation = await get_or_404(db, ChatConversation, conversation_id, user_id=current_user.id)
     documents, doc_index, doc_stub = await _find_document(conversation, doc_id)
 
-    # Get conversation context
-    messages_result = await db.execute(
-        select(ChatMessage)
-        .where(ChatMessage.conversation_id == conversation_id)
-        .order_by(ChatMessage.created_at.desc())
-        .limit(10)
-    )
-    messages = messages_result.scalars().all()
-
-    context_messages = []
-    for msg in reversed(messages):
-        context_messages.append({
-            "role": msg.role,
-            "content": msg.content[:2000] if len(msg.content) > 2000 else msg.content
-        })
-
+    context_messages = await _load_context_messages(conversation_id, db)
     model_config = get_model_config(request.model)
 
     result = await generate_matrix_data_llm(
@@ -278,22 +278,7 @@ async def generate_insights(
     if not missing_indices:
         return documents[doc_index]
 
-    # Get conversation context
-    messages_result = await db.execute(
-        select(ChatMessage)
-        .where(ChatMessage.conversation_id == conversation_id)
-        .order_by(ChatMessage.created_at.desc())
-        .limit(10)
-    )
-    messages = messages_result.scalars().all()
-
-    context_messages = []
-    for msg in reversed(messages):
-        context_messages.append({
-            "role": msg.role,
-            "content": msg.content[:2000] if len(msg.content) > 2000 else msg.content
-        })
-
+    context_messages = await _load_context_messages(conversation_id, db)
     model_config = get_model_config(request.model)
 
     result = await generate_insights_batch_llm(
@@ -372,27 +357,12 @@ async def preview_documents(
 
     conversation = await get_or_404(db, ChatConversation, conversation_id, user_id=current_user.id)
 
-    # Get conversation context
-    messages_result = await db.execute(
-        select(ChatMessage)
-        .where(ChatMessage.conversation_id == conversation_id)
-        .order_by(ChatMessage.created_at.desc())
-        .limit(10)
-    )
-    messages = messages_result.scalars().all()
-
-    context_messages = []
-    for msg in reversed(messages):
-        context_messages.append({
-            "role": msg.role,
-            "content": msg.content[:2000] if len(msg.content) > 2000 else msg.content
-        })
+    context_messages = await _load_context_messages(conversation_id, db)
 
     # Get existing documents
     existing_docs = conversation.generated_documents or []
     next_doc_id = len(existing_docs)
 
-    # Get model config
     model_config = get_model_config(request.model)
 
     # Generate previews
@@ -463,23 +433,7 @@ async def add_documents(
     existing_docs = conversation.generated_documents or []
     next_doc_id = len(existing_docs)
 
-    # Get conversation context for regeneration
-    messages_result = await db.execute(
-        select(ChatMessage)
-        .where(ChatMessage.conversation_id == conversation_id)
-        .order_by(ChatMessage.created_at.desc())
-        .limit(10)
-    )
-    messages = messages_result.scalars().all()
-
-    context_messages = []
-    for msg in reversed(messages):
-        context_messages.append({
-            "role": msg.role,
-            "content": msg.content[:2000] if len(msg.content) > 2000 else msg.content
-        })
-
-    # Get model config
+    context_messages = await _load_context_messages(conversation_id, db)
     model_config = get_model_config(request.model)
 
     # Regenerate the documents (since previews are not persisted)

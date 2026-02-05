@@ -107,9 +107,21 @@ const initialState: ChatState = {
 	error: null,
 };
 
-// Message cache for instant conversation switching
+// Message cache for instant conversation switching (LRU, max 20 entries)
+const MAX_CACHE_SIZE = 20;
 const messageCache = new Map<string, { messages: Message[]; questions: Question[]; timestamp: number }>();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache validity
+
+function cacheSet(key: string, value: { messages: Message[]; questions: Question[]; timestamp: number }) {
+	// Delete first so re-insertion moves key to end (Map preserves insertion order)
+	messageCache.delete(key);
+	messageCache.set(key, value);
+	// Evict oldest entries if over limit
+	if (messageCache.size > MAX_CACHE_SIZE) {
+		const oldest = messageCache.keys().next().value;
+		if (oldest !== undefined) messageCache.delete(oldest);
+	}
+}
 
 function createChatStore() {
 	const { subscribe, set, update } = writable<ChatState>(initialState);
@@ -135,10 +147,11 @@ function createChatStore() {
 				loadConversationsController.abort();
 			}
 			loadConversationsController = new AbortController();
+			const { signal } = loadConversationsController;
 
 			update(state => ({ ...state, isLoading: true }));
 			try {
-				const response = await api.get<{ conversations: Conversation[] }>('/api/chat/conversations');
+				const response = await api.get<{ conversations: Conversation[] }>('/api/chat/conversations', { signal });
 				update(state => ({
 					...state,
 					conversations: response.conversations,
@@ -225,10 +238,10 @@ function createChatStore() {
 			try {
 				// Load all data in parallel — conversation+messages are required, documents+questions are optional
 				const results = await Promise.allSettled([
-					api.get<Conversation>(`/api/chat/conversations/${conversationId}`),
-					api.get<Message[]>(`/api/chat/conversations/${conversationId}/messages`),
-					api.get<any[]>(`/api/matrix/${conversationId}/documents`),
-					api.get<Question[]>(`/api/chat/conversations/${conversationId}/questions`),
+					api.get<Conversation>(`/api/chat/conversations/${conversationId}`, { signal }),
+					api.get<Message[]>(`/api/chat/conversations/${conversationId}/messages`, { signal }),
+					api.get<any[]>(`/api/matrix/${conversationId}/documents`, { signal }),
+					api.get<Question[]>(`/api/chat/conversations/${conversationId}/questions`, { signal }),
 				]);
 
 				if (signal.aborted) return;
@@ -266,8 +279,8 @@ function createChatStore() {
 
 				const messages = Array.isArray(messagesResponse) ? messagesResponse : [];
 
-				// Update cache
-				messageCache.set(conversationId, {
+				// Update cache (LRU eviction)
+				cacheSet(conversationId, {
 					messages,
 					questions,
 					timestamp: Date.now()
@@ -472,7 +485,7 @@ function createChatStore() {
 									break;
 							}
 						} catch (e) {
-							// Skip unparseable events
+							console.warn('[SSE] Failed to parse event data:', eventType, e);
 						}
 					}
 				}

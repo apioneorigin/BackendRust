@@ -41,6 +41,7 @@
 		isLoadingPlays as isLoadingPlaysStore,
 		autoRefresh as autoRefreshStore
 	} from '$lib/stores';
+	import { api } from '$lib/utils/api';
 	import { Button, Spinner, TypingIndicator } from '$lib/components/ui';
 	import MatrixPanel from '$lib/components/matrix/MatrixPanel.svelte';
 	import LivePreviewBox from '$lib/components/matrix/LivePreviewBox.svelte';
@@ -208,11 +209,11 @@
 				userScrolledUp = false;
 				lastScrollTop = messagesContainer.scrollHeight; // Reset scroll tracking
 			}
-			setTimeout(() => {
+			tick().then(() => {
 				if (messagesContainer && !userScrolledUp) {
 					messagesContainer.scrollTop = messagesContainer.scrollHeight;
 				}
-			}, 0);
+			});
 		}
 
 		wasStreamingBefore = isCurrentlyStreaming;
@@ -381,17 +382,13 @@
 			const conversationId = $currentConversation?.id;
 			const docId = $activeDocumentId;
 			if (conversationId && docId) {
-				const response = await fetch(
-					`/api/matrix/${conversationId}/document/${docId}/cell/${e.detail.row}/${e.detail.col}/explain?explanation_type=leverage`,
-					{ method: 'GET', credentials: 'include' }
+				const data = await api.get<{ explanation: any }>(
+					`/api/matrix/${conversationId}/document/${docId}/cell/${e.detail.row}/${e.detail.col}/explain?explanation_type=leverage`
 				);
-				if (response.ok) {
-					const data = await response.json();
-					explanationData = data.explanation;
-				}
+				explanationData = data.explanation;
 			}
-		} catch (err) {
-			console.error('Failed to fetch leverage explanation:', err);
+		} catch (err: any) {
+			addToast('error', err.message || 'Failed to fetch leverage explanation');
 		} finally {
 			explanationLoading = false;
 		}
@@ -411,17 +408,13 @@
 			const conversationId = $currentConversation?.id;
 			const docId = $activeDocumentId;
 			if (conversationId && docId) {
-				const response = await fetch(
-					`/api/matrix/${conversationId}/document/${docId}/cell/${e.detail.row}/${e.detail.col}/explain?explanation_type=risk`,
-					{ method: 'GET', credentials: 'include' }
+				const data = await api.get<{ explanation: any }>(
+					`/api/matrix/${conversationId}/document/${docId}/cell/${e.detail.row}/${e.detail.col}/explain?explanation_type=risk`
 				);
-				if (response.ok) {
-					const data = await response.json();
-					explanationData = data.explanation;
-				}
+				explanationData = data.explanation;
 			}
-		} catch (err) {
-			console.error('Failed to fetch risk explanation:', err);
+		} catch (err: any) {
+			addToast('error', err.message || 'Failed to fetch risk explanation');
 		} finally {
 			explanationLoading = false;
 		}

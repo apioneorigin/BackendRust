@@ -20,6 +20,7 @@ interface RequestOptions {
 	headers?: Record<string, string>;
 	timeout?: number;
 	retries?: number;
+	signal?: AbortSignal;
 }
 
 class ApiError extends Error {
@@ -51,7 +52,12 @@ async function request<T>(
 	data?: any,
 	options: RequestOptions = {}
 ): Promise<T> {
-	const { headers = {}, timeout = 30000, retries = 3 } = options;
+	const { headers = {}, timeout = 30000, retries = 3, signal: externalSignal } = options;
+
+	// Bail immediately if already aborted
+	if (externalSignal?.aborted) {
+		throw new DOMException('The operation was aborted.', 'AbortError');
+	}
 
 	const token = getToken();
 	const authHeaders: Record<string, string> = {};
@@ -78,6 +84,12 @@ async function request<T>(
 		try {
 			const controller = new AbortController();
 			const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+			// Forward external signal to internal controller
+			if (externalSignal) {
+				externalSignal.addEventListener('abort', () => controller.abort(), { once: true });
+			}
+
 			config.signal = controller.signal;
 
 			const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
@@ -105,7 +117,10 @@ async function request<T>(
 		} catch (error: any) {
 			lastError = error;
 
-			// Don't retry on client errors (4xx)
+			// Don't retry on abort or client errors (4xx)
+			if (error.name === 'AbortError') {
+				throw error;
+			}
 			if (error instanceof ApiError && error.status >= 400 && error.status < 500) {
 				throw error;
 			}
