@@ -11,6 +11,8 @@
 	import { user, isAuthenticated, credits, creditBalance, addToast } from '$lib/stores';
 	import { Spinner } from '$lib/components/ui';
 
+	export let params: Record<string, string> = {};
+
 	let promoCode = '';
 	let isRedeeming = false;
 	let isCheckingCredits = true;

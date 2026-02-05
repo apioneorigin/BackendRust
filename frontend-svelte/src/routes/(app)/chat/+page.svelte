@@ -13,6 +13,8 @@
 	 * └────────────────────────────┴───────────────┘
 	 */
 
+	export let params: Record<string, string> = {};
+
 	import { onMount, onDestroy, tick } from 'svelte';
 	import {
 		chat,

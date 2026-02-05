@@ -4,6 +4,8 @@
 	import { ToastContainer } from '$lib/components/ui';
 	import '../styles/globals.css';
 
+	export let params: Record<string, string> = {};
+
 	// Initialize theme on mount
 	onMount(() => {
 		// Check for system preference

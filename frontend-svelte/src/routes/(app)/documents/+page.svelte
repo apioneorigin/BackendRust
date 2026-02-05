@@ -4,6 +4,8 @@
 	import type { Document } from '$lib/stores/documents';
 	import { Button, Spinner } from '$lib/components/ui';
 
+	export let params: Record<string, string> = {};
+
 	let domainFilter = '';
 	let isLoading = true;
 	let searchQuery = '';

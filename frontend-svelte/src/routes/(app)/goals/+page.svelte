@@ -5,6 +5,8 @@
 	import { Button, Spinner } from '$lib/components/ui';
 	import { api } from '$lib/utils/api';
 
+	export let params: Record<string, string> = {};
+
 	interface DiscoveredGoal {
 		id: string;
 		type: string;

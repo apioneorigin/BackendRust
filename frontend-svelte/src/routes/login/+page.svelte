@@ -4,6 +4,7 @@
 	import type { ActionData } from './$types';
 
 	export let form: ActionData;
+	export let params: Record<string, string> = {};
 
 	let isLoading = false;
 </script>

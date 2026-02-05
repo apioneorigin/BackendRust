@@ -3,6 +3,8 @@
 	import { goto } from '$app/navigation';
 	import { auth, credits, creditBalance } from '$lib/stores';
 
+	export let params: Record<string, string> = {};
+
 	// Super admin bypasses credit check
 	const SUPER_ADMIN_EMAIL = 'raghavan.vinod@gmail.com';
 
