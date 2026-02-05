@@ -513,6 +513,7 @@
 	}
 
 	.matrix-grid {
+		position: relative;
 		display: grid;
 		grid-template-columns: 100px repeat(5, 1fr);
 		grid-template-rows: 56px repeat(5, minmax(0, 1fr));
@@ -841,14 +842,21 @@
 		visibility: hidden;
 	}
 
-	/* Overlay covers only the cell area (columns 2-6, rows 2-6) */
+	/* Overlay covers only the visible cell area, positioned absolutely */
 	.stub-overlay {
-		grid-column: 2 / -1;
-		grid-row: 2 / -1;
+		position: absolute;
+		top: calc(56px + 2px);
+		left: calc(100px + 2px);
+		right: 0;
+		bottom: 0;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		overflow: hidden;
+	}
+
+	.compact .stub-overlay {
+		top: calc(52px + 2px);
+		left: calc(90px + 2px);
 	}
 
 	.stub-generate-btn {
