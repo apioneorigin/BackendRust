@@ -420,7 +420,7 @@
 		background: var(--color-field-surface);
 		border: 1px solid var(--color-veil-thin);
 		border-radius: 0.5rem;
-		padding: 0.5rem;
+		padding: 0.75rem 0.5rem 0.5rem;
 		height: 100%;
 		display: flex;
 		flex-direction: column;
@@ -428,12 +428,12 @@
 	}
 
 	.matrix-panel.compact {
-		padding: 0.375rem;
+		padding: 0.5rem 0.375rem 0.375rem;
 	}
 
 	/* Document Tabs */
 	.document-tabs-container {
-		padding: 0 0 0.5rem;
+		padding: 0 0 0.125rem;
 		flex-shrink: 0;
 	}
 
@@ -454,7 +454,7 @@
 		align-items: center;
 		gap: 0.25rem;
 		overflow-x: auto;
-		padding-bottom: 0.25rem;
+		padding-bottom: 0.125rem;
 		overflow-x: auto;
 	}
 

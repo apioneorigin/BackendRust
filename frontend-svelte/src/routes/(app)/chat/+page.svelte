@@ -1543,7 +1543,7 @@
 	.matrix-column {
 		display: flex;
 		flex-direction: column;
-		gap: 0.75rem;
+		gap: 0.875rem;
 		min-width: 0;
 		min-height: 0;
 		overflow: hidden;
