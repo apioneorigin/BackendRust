@@ -311,7 +311,10 @@ async def generate_insights(
     insights_applied = 0
 
     for idx_str, insight in insights.items():
-        idx = int(idx_str)
+        try:
+            idx = int(idx_str)
+        except (ValueError, TypeError):
+            continue
         if idx < 10:
             if idx < len(row_options):
                 documents[doc_index]["matrix_data"]["row_options"][idx]["articulated_insight"] = insight
@@ -418,10 +421,6 @@ async def preview_documents(
             column_labels=[c.get("label", "") for c in col_options],
             insight_titles=[r.get("insight_title", "") for r in row_options] + [c.get("insight_title", "") for c in col_options]
         ))
-
-    # Store previews temporarily in session or cache
-    # For simplicity, we'll store them in the conversation's generated_documents with a preview flag
-    conversation._preview_documents = new_documents  # Store temporarily
 
     return PreviewDocumentsResponse(previews=previews)
 
@@ -534,7 +533,15 @@ class UpdateDocumentSelectionRequest(BaseModel):
     selected_columns: List[int]
 
 
-@router.patch("/{conversation_id}/document/{doc_id}/selection")
+class UpdateDocumentSelectionResponse(BaseModel):
+    """Response from updating document selection"""
+    status: str
+    document_id: str
+    selected_rows: List[int]
+    selected_columns: List[int]
+
+
+@router.patch("/{conversation_id}/document/{doc_id}/selection", response_model=UpdateDocumentSelectionResponse)
 async def update_document_selection(
     conversation_id: str,
     doc_id: str,
@@ -554,6 +561,10 @@ async def update_document_selection(
         raise HTTPException(status_code=400, detail="Must select exactly 5 rows")
     if len(request.selected_columns) != 5:
         raise HTTPException(status_code=400, detail="Must select exactly 5 columns")
+    if len(set(request.selected_rows)) != 5:
+        raise HTTPException(status_code=400, detail="Duplicate row indices not allowed")
+    if len(set(request.selected_columns)) != 5:
+        raise HTTPException(status_code=400, detail="Duplicate column indices not allowed")
     if any(idx < 0 or idx >= row_count for idx in request.selected_rows):
         raise HTTPException(status_code=400, detail="Invalid row index")
     if any(idx < 0 or idx >= col_count for idx in request.selected_columns):
@@ -564,12 +575,12 @@ async def update_document_selection(
 
     await _save_documents(conversation, documents, db)
 
-    return {
-        "status": "success",
-        "document_id": doc_id,
-        "selected_rows": request.selected_rows,
-        "selected_columns": request.selected_columns
-    }
+    return UpdateDocumentSelectionResponse(
+        status="success",
+        document_id=doc_id,
+        selected_rows=request.selected_rows,
+        selected_columns=request.selected_columns
+    )
 
 
 # ============================================================================
@@ -639,19 +650,7 @@ async def get_leverage_points(
     This endpoint returns cached data - use design-reality endpoint first if not available.
     """
     conversation = await get_or_404(db, ChatConversation, conversation_id, user_id=current_user.id)
-
-    if not conversation.generated_documents:
-        raise HTTPException(status_code=400, detail="No documents exist")
-
-    # Find the document
-    doc = None
-    for d in conversation.generated_documents:
-        if d.get("id") == doc_id:
-            doc = d
-            break
-
-    if doc is None:
-        raise HTTPException(status_code=404, detail="Document not found")
+    _, _, doc = await _find_document(conversation, doc_id)
 
     # Return cached leverage points
     cached_leverage = doc.get("leverage_points", [])
@@ -685,19 +684,7 @@ async def get_risk_analysis(
     This endpoint returns cached data - use design-reality endpoint first if not available.
     """
     conversation = await get_or_404(db, ChatConversation, conversation_id, user_id=current_user.id)
-
-    if not conversation.generated_documents:
-        raise HTTPException(status_code=400, detail="No documents exist")
-
-    # Find the document
-    doc = None
-    for d in conversation.generated_documents:
-        if d.get("id") == doc_id:
-            doc = d
-            break
-
-    if doc is None:
-        raise HTTPException(status_code=404, detail="Document not found")
+    _, _, doc = await _find_document(conversation, doc_id)
 
     # Return cached risk analysis
     cached_risk = doc.get("risk_analysis", [])
@@ -717,7 +704,7 @@ async def get_risk_analysis(
     )
 
 
-@router.get("/{conversation_id}/document/{doc_id}/cell/{row}/{col}/explain")
+@router.get("/{conversation_id}/document/{doc_id}/cell/{row}/{col}/explain", response_model=CellExplanationResponse)
 async def explain_cell(
     conversation_id: str,
     doc_id: str,
@@ -733,26 +720,14 @@ async def explain_cell(
     Returns cached analysis from document population.
     """
     conversation = await get_or_404(db, ChatConversation, conversation_id, user_id=current_user.id)
-
-    if not conversation.generated_documents:
-        raise HTTPException(status_code=400, detail="No documents exist")
-
-    # Find the document
-    doc = None
-    for d in conversation.generated_documents:
-        if d.get("id") == doc_id:
-            doc = d
-            break
-
-    if doc is None:
-        raise HTTPException(status_code=404, detail="Document not found")
+    _, _, doc = await _find_document(conversation, doc_id)
 
     # Get selected indices to map row/col to actual cell ID
     matrix_data = doc.get("matrix_data", {})
     selected_rows = matrix_data.get("selected_rows", list(range(5)))
     selected_cols = matrix_data.get("selected_columns", list(range(5)))
 
-    if row >= len(selected_rows) or col >= len(selected_cols):
+    if row < 0 or row >= len(selected_rows) or col < 0 or col >= len(selected_cols):
         raise HTTPException(status_code=400, detail="Invalid row/col index")
 
     actual_row = selected_rows[row]
@@ -831,6 +806,13 @@ class SelectPlayRequest(BaseModel):
     play_id: Optional[str]  # None to deselect
 
 
+class SelectPlayResponse(BaseModel):
+    """Response from selecting a play"""
+    status: str
+    document_id: str
+    selected_play_id: Optional[str]
+
+
 @router.get("/{conversation_id}/document/{doc_id}/plays", response_model=PlaysResponse)
 async def get_plays(
     conversation_id: str,
@@ -845,19 +827,7 @@ async def get_plays(
     This endpoint returns cached data - use design-reality endpoint first if not available.
     """
     conversation = await get_or_404(db, ChatConversation, conversation_id, user_id=current_user.id)
-
-    if not conversation.generated_documents:
-        raise HTTPException(status_code=400, detail="No documents exist")
-
-    # Find the document
-    doc = None
-    for d in conversation.generated_documents:
-        if d.get("id") == doc_id:
-            doc = d
-            break
-
-    if doc is None:
-        raise HTTPException(status_code=404, detail="Document not found")
+    _, _, doc = await _find_document(conversation, doc_id)
 
     # Return cached plays
     cached_plays = doc.get("plays", [])
@@ -881,7 +851,7 @@ async def get_plays(
     )
 
 
-@router.put("/{conversation_id}/document/{doc_id}/plays/select")
+@router.put("/{conversation_id}/document/{doc_id}/plays/select", response_model=SelectPlayResponse)
 async def select_play(
     conversation_id: str,
     doc_id: str,
@@ -908,11 +878,11 @@ async def select_play(
 
     api_logger.info(f"[PLAYS] Selected play '{request.play_id}' for doc {doc_id}")
 
-    return {
-        "status": "success",
-        "document_id": doc_id,
-        "selected_play_id": request.play_id
-    }
+    return SelectPlayResponse(
+        status="success",
+        document_id=doc_id,
+        selected_play_id=request.play_id
+    )
 
 
 # ============================================================================
@@ -934,7 +904,13 @@ class SaveCellChangesRequest(BaseModel):
     changes: List[CellDimensionUpdate]
 
 
-@router.patch("/{conversation_id}/document/{doc_id}/cells")
+class SaveCellChangesResponse(BaseModel):
+    """Response from saving cell changes"""
+    success: bool
+    changes_saved: int
+
+
+@router.patch("/{conversation_id}/document/{doc_id}/cells", response_model=SaveCellChangesResponse)
 async def save_cell_changes(
     conversation_id: str,
     doc_id: str,
@@ -986,4 +962,4 @@ async def save_cell_changes(
 
     api_logger.info(f"[CELLS] Saved {changes_applied} dimension changes for doc {doc_id}")
 
-    return {"success": True, "changes_saved": changes_applied}
+    return SaveCellChangesResponse(success=True, changes_saved=changes_applied)

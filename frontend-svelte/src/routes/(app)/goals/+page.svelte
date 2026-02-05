@@ -129,7 +129,7 @@
 
 		isDiscovering = true;
 		try {
-			const data = await api.post<{ goals: DiscoveredGoal[] }>('/api/goal-inventory/generate', {
+			const data = await api.post<{ goals: DiscoveredGoal[] }>('/api/goals/discover-from-files', {
 				files: uploadedFiles,
 				existing_goals: discoveredGoals
 			});
@@ -166,9 +166,10 @@
 	}
 
 	async function removeFromInventory(goalId: string) {
+		const updatedGoals = savedGoals.filter((g) => g.id !== goalId);
 		try {
-			await api.post('/api/goal-inventory/remove', { goal_id: goalId });
-			savedGoals = savedGoals.filter((g) => g.id !== goalId);
+			await api.post('/api/goal-inventory/save', { goals: updatedGoals });
+			savedGoals = updatedGoals;
 			addToast('success', 'Goal removed from library');
 		} catch (error) {
 			addToast('error', 'Failed to remove goal');

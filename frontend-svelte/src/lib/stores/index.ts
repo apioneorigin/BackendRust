@@ -19,7 +19,6 @@ export {
 	columnInsights,
 	isMatrixGenerated,
 	showRiskHeatmap,
-	isLoadingOptions,
 	coherence,
 	population,
 	avgScore,
