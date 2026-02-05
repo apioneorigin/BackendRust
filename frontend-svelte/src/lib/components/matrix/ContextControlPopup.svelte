@@ -257,10 +257,13 @@
 				<div class="document-tabs-container">
 					<div class="document-tabs">
 						{#each $matrixDocuments as doc (doc.id)}
-							<button
+							<div
 								class="document-tab"
 								class:active={doc.id === $activeDocumentId}
 								on:click={() => handleDocumentTabClick(doc.id)}
+								on:keydown={(e) => e.key === 'Enter' && handleDocumentTabClick(doc.id)}
+								role="tab"
+								tabindex="0"
 								title={doc.description}
 							>
 								<span class="tab-name">{doc.name}</span>
@@ -271,7 +274,7 @@
 										title="Delete document"
 									>&times;</button>
 								{/if}
-							</button>
+							</div>
 						{/each}
 						<button
 							class="document-tab add-tab"
@@ -588,6 +591,7 @@
 		font-weight: 500;
 		color: var(--color-text-manifest);
 		cursor: pointer;
+		user-select: none;
 		transition: all 0.15s ease;
 		white-space: nowrap;
 		flex-shrink: 0;
