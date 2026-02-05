@@ -194,9 +194,12 @@ function createMatrixStore() {
 			value: 50  // Medium
 		}));
 
-		const { row_options = [], column_options = [], selected_rows = [0,1,2,3,4], selected_columns = [0,1,2,3,4] } = doc.matrix_data;
-		// Nullish coalescing required: Pydantic serializes Optional[dict]=None as JSON null,
+		// Nullish coalescing required: Pydantic serializes Optional fields as JSON null,
 		// but JS destructuring defaults only apply for undefined, not null
+		const row_options = doc.matrix_data.row_options ?? [];
+		const column_options = doc.matrix_data.column_options ?? [];
+		const selected_rows = doc.matrix_data.selected_rows ?? [0, 1, 2, 3, 4];
+		const selected_columns = doc.matrix_data.selected_columns ?? [0, 1, 2, 3, 4];
 		const cells = doc.matrix_data.cells ?? {};
 
 		const rowHeaders = selected_rows.map(i => row_options[i]?.label || `Row ${i + 1}`);
@@ -347,8 +350,8 @@ function createMatrixStore() {
 			if (!activeDoc?.matrix_data || !state.conversationId) return;
 
 			// Save original selection for rollback
-			const originalRows = [...activeDoc.matrix_data.selected_rows];
-			const originalCols = [...activeDoc.matrix_data.selected_columns];
+			const originalRows = [...(activeDoc.matrix_data.selected_rows ?? [0, 1, 2, 3, 4])];
+			const originalCols = [...(activeDoc.matrix_data.selected_columns ?? [0, 1, 2, 3, 4])];
 
 			// Optimistic update
 			update(s => {

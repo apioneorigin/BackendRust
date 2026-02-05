@@ -40,13 +40,14 @@
 	let selectedColumns: number[] = [];
 
 	// Sync local selection with active document
+	// Use ?? (not ||) because Pydantic may serialize as JSON null
 	$: if ($activeDocument?.matrix_data) {
-		selectedRows = [...($activeDocument.matrix_data.selected_rows || [0, 1, 2, 3, 4])];
-		selectedColumns = [...($activeDocument.matrix_data.selected_columns || [0, 1, 2, 3, 4])];
+		selectedRows = [...($activeDocument.matrix_data.selected_rows ?? [0, 1, 2, 3, 4])];
+		selectedColumns = [...($activeDocument.matrix_data.selected_columns ?? [0, 1, 2, 3, 4])];
 	}
 
-	$: rowOptions = $activeDocument?.matrix_data?.row_options || [];
-	$: columnOptions = $activeDocument?.matrix_data?.column_options || [];
+	$: rowOptions = $activeDocument?.matrix_data?.row_options ?? [];
+	$: columnOptions = $activeDocument?.matrix_data?.column_options ?? [];
 
 	// Show all options — user needs to see everything to make swap decisions
 	$: visibleRowIndices = rowOptions.map((_: any, i: number) => i);
