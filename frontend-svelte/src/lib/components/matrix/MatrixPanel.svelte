@@ -504,8 +504,8 @@
 	.matrix-grid {
 		position: relative;
 		display: grid;
-		grid-template-columns: 100px repeat(5, 1fr);
-		grid-template-rows: 36px repeat(5, minmax(0, 1fr));
+		grid-template-columns: 120px repeat(5, 1fr);
+		grid-template-rows: 72px repeat(5, minmax(0, 1fr));
 		gap: 2px;
 		flex: 1;
 		min-height: 0;
@@ -513,8 +513,8 @@
 	}
 
 	.compact .matrix-grid {
-		grid-template-columns: 90px repeat(5, 1fr);
-		grid-template-rows: 32px repeat(5, minmax(0, 1fr));
+		grid-template-columns: 108px repeat(5, 1fr);
+		grid-template-rows: 66px repeat(5, minmax(0, 1fr));
 		gap: 2px;
 	}
 
