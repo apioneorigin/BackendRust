@@ -113,18 +113,18 @@
 	.matrix-toolbar {
 		display: flex;
 		align-items: center;
-		justify-content: center;
 		gap: 0.25rem;
-		padding: 0.125rem 0.25rem;
+		padding: 0.25rem 0;
+		flex-shrink: 0;
 	}
 
 	.toolbar-btn {
+		flex: 1;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		gap: 0.25rem;
 		padding: 0.375rem 0.5rem;
-		min-width: 100px;
 		background: transparent;
 		border: 1px solid var(--color-accent);
 		border-radius: 0.5rem;
