@@ -21,6 +21,7 @@
 	export let showRiskView = false;
 	export let compact = false;
 	export let showDocumentTabs = true;
+	export let stubMode = false;
 
 	const dispatch = createEventDispatcher<{
 		cellClick: { row: number; col: number };
@@ -319,21 +320,23 @@
 
 			<!-- Data cells -->
 			{#each row as cell, colIdx}
-				{@const cellAvg = calcCellValueFromDimensions(cell.dimensions)}
-				{@const filledCount = getFilledSegments(cellAvg)}
+				{@const cellAvg = stubMode ? 0 : calcCellValueFromDimensions(cell.dimensions)}
+				{@const filledCount = stubMode ? 0 : getFilledSegments(cellAvg)}
 				<div
-					class="matrix-cell {getCellColor(cell)}"
-					class:leverage-point={cell.isLeveragePoint}
-					class:selected={selectedCell?.row === rowIdx && selectedCell?.col === colIdx}
+					class="matrix-cell {stubMode ? '' : getCellColor(cell)}"
+					class:leverage-point={!stubMode && cell.isLeveragePoint}
+					class:selected={!stubMode && selectedCell?.row === rowIdx && selectedCell?.col === colIdx}
+					class:stub-cell={stubMode}
 				>
-					{#if cell.isLeveragePoint}
+					{#if !stubMode && cell.isLeveragePoint}
 						<span class="power-indicator" title="Power Spot">⚡</span>
 					{/if}
 					<!-- Top 50%: click to open dimensions popup -->
 					<button
 						class="cell-top-area"
-						on:click={() => handleCellClick(rowIdx, colIdx)}
+						on:click={() => !stubMode && handleCellClick(rowIdx, colIdx)}
 						aria-label="Open dimensions"
+						disabled={stubMode}
 					></button>
 					<!-- Bottom 50%: 5-segment bar, clickable -->
 					<div class="cell-bar">
@@ -341,14 +344,31 @@
 							<button
 								class="cell-bar-segment"
 								class:filled={segIdx < filledCount}
-								on:click={() => handleCellBarClick(rowIdx, colIdx, segIdx)}
+								on:click={() => !stubMode && handleCellBarClick(rowIdx, colIdx, segIdx)}
 								aria-label="Set level {segIdx + 1}"
+								disabled={stubMode}
 							></button>
 						{/each}
 					</div>
 				</div>
 			{/each}
 		{/each}
+
+		<!-- Stub overlay: covers only the cell area, headers stay visible -->
+		{#if stubMode}
+			<div class="stub-overlay">
+				<div class="stub-overlay-content">
+					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<rect x="3" y="3" width="7" height="7"/>
+						<rect x="14" y="3" width="7" height="7"/>
+						<rect x="14" y="14" width="7" height="7"/>
+						<rect x="3" y="14" width="7" height="7"/>
+					</svg>
+					<span class="stub-label">Design Your Reality</span>
+					<span class="stub-hint">Generate cell data to explore relationships</span>
+				</div>
+			</div>
+		{/if}
 	</div>
 </div>
 
@@ -845,5 +865,51 @@
 		padding: 0.75rem 1rem;
 		background: var(--color-field-depth);
 		border-radius: 0 0 1rem 1rem;
+	}
+
+	/* Stub mode: cells are empty, overlay covers only cell area */
+	.matrix-cell.stub-cell {
+		background: var(--color-field-depth);
+		opacity: 0.4;
+	}
+
+	.matrix-cell.stub-cell .cell-top-area,
+	.matrix-cell.stub-cell .cell-bar-segment {
+		cursor: default;
+	}
+
+	.stub-overlay {
+		grid-column: 2 / -1;
+		grid-row: 2 / -1;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 5;
+		pointer-events: none;
+	}
+
+	.stub-overlay-content {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		text-align: center;
+		gap: 0.375rem;
+		color: var(--color-text-whisper);
+	}
+
+	.stub-overlay-content svg {
+		opacity: 0.5;
+		margin-bottom: 0.25rem;
+	}
+
+	.stub-label {
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: var(--color-text-manifest);
+	}
+
+	.stub-hint {
+		font-size: 0.6875rem;
+		color: var(--color-text-whisper);
 	}
 </style>
