@@ -420,7 +420,7 @@
 		background: var(--color-field-surface);
 		border: 1px solid var(--color-veil-thin);
 		border-radius: 0.5rem;
-		padding: 0.25rem;
+		padding: 0.75rem 0.5rem 0.5rem;
 		height: 100%;
 		display: flex;
 		flex-direction: column;
@@ -428,12 +428,12 @@
 	}
 
 	.matrix-panel.compact {
-		padding: 0.125rem;
+		padding: 0.5rem 0.375rem 0.375rem;
 	}
 
 	/* Document Tabs */
 	.document-tabs-container {
-		padding: 0;
+		padding: 0 0 0.125rem;
 		flex-shrink: 0;
 	}
 
@@ -455,10 +455,11 @@
 		gap: 0.25rem;
 		overflow-x: auto;
 		padding-bottom: 0.125rem;
+		overflow-x: auto;
 	}
 
 	.document-tab {
-		padding: 0.25rem 0.625rem;
+		padding: 0.375rem 0.75rem;
 		background: var(--color-field-depth);
 		border: 1px solid transparent;
 		border-radius: 0.375rem;
@@ -536,33 +537,40 @@
 		overflow: hidden;
 	}
 
-	/* Column and row header text — identical sizing */
-	.col-header .header-text,
-	.row-header .header-text {
-		font-size: 0.75rem;
+	/* Column header text: one word per line, clipped to container */
+	.col-header .header-text {
+		font-size: 0.5625rem;
 		font-weight: 600;
 		color: var(--color-text-whisper);
+		text-align: center;
+		line-height: 1.15;
+		text-transform: uppercase;
+		letter-spacing: 0.01em;
+		word-spacing: 100vw; /* Forces each word to its own line — works well for narrow columns */
+		overflow: hidden;
+		display: -webkit-box;
+		-webkit-line-clamp: 4;
+		-webkit-box-orient: vertical;
+	}
+
+	/* Row header text: natural wrapping so multi-word names use width efficiently */
+	.row-header .header-text {
+		font-size: 0.5625rem;
+		font-weight: 600;
+		color: var(--color-text-whisper);
+		text-align: right;
 		line-height: 1.15;
 		text-transform: uppercase;
 		letter-spacing: 0.01em;
 		overflow: hidden;
 		display: -webkit-box;
-		-webkit-line-clamp: 3;
+		-webkit-line-clamp: 4;
 		-webkit-box-orient: vertical;
-	}
-
-	.col-header .header-text {
-		text-align: center;
-		word-spacing: 100vw; /* Forces each word to its own line — works well for narrow columns */
-	}
-
-	.row-header .header-text {
-		text-align: right;
 	}
 
 	.compact .col-header .header-text,
 	.compact .row-header .header-text {
-		font-size: 0.6875rem;
+		font-size: 0.5rem;
 	}
 
 	.matrix-cell {
@@ -605,40 +613,41 @@
 		background: rgba(220, 38, 38, 0.08);
 	}
 
-	/* Top area - click to open dimensions popup */
+	/* Top 50% - click to open dimensions popup */
 	.cell-top-area {
 		flex: 1;
 		background: transparent;
 		border: none;
 		cursor: pointer;
-		min-height: 0;
+		min-height: 50%;
 	}
 
 	.cell-top-area:hover {
 		background: rgba(0, 0, 0, 0.05);
 	}
 
-	/* Bottom - thin fixed-height bar strip, identical style to dimension bars */
+	/* Bottom 50% - 5-segment bar */
 	.cell-bar {
 		display: flex;
 		gap: 2px;
-		padding: 2px 3px;
-		flex-shrink: 0;
+		padding: 0.25rem;
+		min-height: 50%;
+		align-items: stretch;
 	}
 
 	.compact .cell-bar {
-		padding: 2px;
+		padding: 0.125rem;
 		gap: 1px;
 	}
 
 	.cell-bar-segment {
-		width: 28px;
-		height: 8px;
+		flex: 1;
 		background: var(--color-veil-thin);
 		border: none;
 		border-radius: 2px;
 		cursor: pointer;
 		transition: all 0.1s ease;
+		min-height: 8px;
 	}
 
 	.cell-bar-segment:hover {
@@ -766,17 +775,16 @@
 
 	.dim-bar {
 		display: flex;
-		gap: 2px;
+		gap: 4px;
 		flex-shrink: 0;
 	}
 
-	/* Dimension bar segments — identical style to cell bar segments */
 	.dim-bar-segment {
 		width: 28px;
-		height: 8px;
+		height: 16px;
 		background: var(--color-veil-thin);
 		border: none;
-		border-radius: 2px;
+		border-radius: 3px;
 		cursor: pointer;
 		transition: all 0.1s ease;
 	}
@@ -824,7 +832,7 @@
 	/* Overlay covers only the visible cell area, positioned absolutely */
 	.stub-overlay {
 		position: absolute;
-		top: calc(36px + 2px);
+		top: calc(56px + 2px);
 		left: calc(100px + 2px);
 		right: 0;
 		bottom: 0;
@@ -834,7 +842,7 @@
 	}
 
 	.compact .stub-overlay {
-		top: calc(32px + 2px);
+		top: calc(52px + 2px);
 		left: calc(90px + 2px);
 	}
 
