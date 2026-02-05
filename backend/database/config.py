@@ -179,6 +179,9 @@ async def _migrate_articulated_insights():
                         if "your_truth_revelation" not in insight:
                             insight["your_truth_revelation"] = insight.get("the_mark_identity", "")
                             modified = True
+                        if "micro_moment" not in insight:
+                            insight["micro_moment"] = ""
+                            modified = True
 
                 # Fix column_options
                 for opt in matrix_data.get("column_options", []):
@@ -192,6 +195,9 @@ async def _migrate_articulated_insights():
                             modified = True
                         if "your_truth_revelation" not in insight:
                             insight["your_truth_revelation"] = insight.get("the_mark_identity", "")
+                            modified = True
+                        if "micro_moment" not in insight:
+                            insight["micro_moment"] = ""
                             modified = True
 
             if modified:

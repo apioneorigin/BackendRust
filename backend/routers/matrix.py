@@ -65,8 +65,9 @@ class DimensionOption(BaseModel):
 
 
 class ArticulatedInsight(BaseModel):
-    """Full 3-component insight structure (THE TRUTH -> YOUR TRUTH -> THE MARK)"""
+    """Full 4-component insight: MICRO MOMENT -> THE TRUTH -> YOUR TRUTH -> THE MARK"""
     title: str
+    micro_moment: str               # Fly-on-wall scene in user's world (40-60 words)
     the_truth: str
     the_truth_law: str
     your_truth: str

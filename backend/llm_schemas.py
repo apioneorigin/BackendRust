@@ -206,6 +206,9 @@ ARTICULATED_INSIGHT_SCHEMA: Dict[str, Any] = {
         # Insight title (max 10 words) - displayed in popup header
         "title": {"type": "string"},               # Max 10-word title phrase for this insight
 
+        # MICRO MOMENT (40-60 words): Fly-on-wall scene in user's world
+        "micro_moment": {"type": "string"},        # Present tense, sensory, user's actual context
+
         # THE TRUTH (80-120 words): Analogy from outside user's domain
         "the_truth": {"type": "string"},           # Italicized analogy, present tense, sensory
         "the_truth_law": {"type": "string"},       # Bold one-line universal law (15-25 words)
@@ -220,7 +223,7 @@ ARTICULATED_INSIGHT_SCHEMA: Dict[str, Any] = {
         "the_mark_identity": {"type": "string"}    # Bold new capability/identity
     },
     "required": [
-        "title",
+        "title", "micro_moment",
         "the_truth", "the_truth_law",
         "your_truth", "your_truth_revelation",
         "the_mark_name", "the_mark_prediction", "the_mark_identity"

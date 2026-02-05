@@ -96,8 +96,12 @@
 			</div>
 
 			<div class="popup-body">
-				<!-- Continuous prose insight - fully LLM-generated, no templates -->
+				<!-- 4-component insight: Micro Moment → The Truth → Your Truth → The Mark -->
 				<article class="insight-prose">
+					{#if insight.micro_moment}
+						<p class="micro-moment">{@html parseBold(insight.micro_moment)}</p>
+					{/if}
+
 					{#if insight.the_truth}
 						<p>{@html parseBold(insight.the_truth)}</p>
 					{/if}
@@ -231,6 +235,14 @@
 
 	.insight-prose p:last-child {
 		margin-bottom: 0;
+	}
+
+	/* Micro moment — grounding scene in user's world */
+	.insight-prose .micro-moment {
+		font-style: italic;
+		color: var(--color-text-source);
+		border-left: 3px solid var(--color-primary-300);
+		padding-left: 1rem;
 	}
 
 	/* Bold text styling (from markdown **text**) */
