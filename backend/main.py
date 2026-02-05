@@ -55,6 +55,7 @@ Reverse Causality Mapping Integration:
 
 import os
 import json
+import re
 import asyncio
 import httpx
 import time
@@ -2328,6 +2329,29 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
     raise RuntimeError(f"parse_query_with_web_research failed after {STREAMING_MAX_RETRIES + 1} attempts: {last_error}")
 
 
+def _extract_anthropic_text(data: dict) -> str:
+    """Extract text from Anthropic API response, handling thinking blocks."""
+    content_blocks = data.get("content", [])
+    # Find the first text block (skip thinking blocks)
+    for block in content_blocks:
+        if block.get("type") == "text":
+            return block.get("text", "")
+    # Fallback: grab first block's text if no typed blocks
+    if content_blocks:
+        return content_blocks[0].get("text", "")
+    return ""
+
+
+def _strip_markdown_json(text: str) -> str:
+    """Strip markdown code fences from LLM JSON responses."""
+    text = text.strip()
+    # Remove ```json ... ``` or ``` ... ```
+    m = re.match(r'^```(?:json)?\s*\n(.*)\n```\s*$', text, re.DOTALL)
+    if m:
+        return m.group(1).strip()
+    return text
+
+
 async def generate_document_previews_llm(
     context_messages: List[dict],
     existing_document_names: List[str],
@@ -2468,7 +2492,7 @@ REQUIREMENTS:
                     return None
 
                 data = response.json()
-                response_text = data.get("content", [{}])[0].get("text", "")
+                response_text = _extract_anthropic_text(data)
                 usage = data.get("usage", {})
                 api_logger.info(f"[DOC_PREVIEW] Tokens - Input: {usage.get('input_tokens')}, Output: {usage.get('output_tokens')}")
             else:
@@ -2494,7 +2518,11 @@ REQUIREMENTS:
                 usage = data.get("usage", {})
                 api_logger.info(f"[DOC_PREVIEW] Tokens - Input: {usage.get('prompt_tokens')}, Output: {usage.get('completion_tokens')}")
 
-            # Parse JSON response
+            # Parse JSON response (strip markdown fences if present)
+            response_text = _strip_markdown_json(response_text)
+            if not response_text:
+                api_logger.error(f"[DOC_PREVIEW] Empty response text from LLM")
+                return None
             result = json.loads(response_text)
             documents = result.get("documents", [])
 
@@ -2505,7 +2533,7 @@ REQUIREMENTS:
             return documents
 
     except json.JSONDecodeError as e:
-        api_logger.error(f"[DOC_PREVIEW] JSON parse error: {e}")
+        api_logger.error(f"[DOC_PREVIEW] JSON parse error: {e} | raw text: {response_text[:200] if response_text else '(empty)'}")
         return None
     except Exception as e:
         api_logger.error(f"[DOC_PREVIEW] Failed: {type(e).__name__}: {e}")
@@ -2693,7 +2721,7 @@ REQUIREMENTS:
                     return None
 
                 data = response.json()
-                response_text = data.get("content", [{}])[0].get("text", "")
+                response_text = _extract_anthropic_text(data)
                 usage = data.get("usage", {})
                 api_logger.info(f"[MATRIX_GEN] Tokens - Input: {usage.get('input_tokens')}, Output: {usage.get('output_tokens')}")
             else:
@@ -2719,7 +2747,11 @@ REQUIREMENTS:
                 usage = data.get("usage", {})
                 api_logger.info(f"[MATRIX_GEN] Tokens - Input: {usage.get('prompt_tokens')}, Output: {usage.get('completion_tokens')}")
 
-            # Parse JSON response
+            # Parse JSON response (strip markdown fences if present)
+            response_text = _strip_markdown_json(response_text)
+            if not response_text:
+                api_logger.error(f"[MATRIX_GEN] Empty response text from LLM")
+                return None
             result = json.loads(response_text)
             cells = result.get("cells", {})
             leverage_points = result.get("leverage_points", [])
@@ -2760,7 +2792,7 @@ REQUIREMENTS:
             }
 
     except json.JSONDecodeError as e:
-        api_logger.error(f"[MATRIX_GEN] JSON parse error: {e}")
+        api_logger.error(f"[MATRIX_GEN] JSON parse error: {e} | raw text: {response_text[:200] if response_text else '(empty)'}")
         return None
     except Exception as e:
         api_logger.error(f"[MATRIX_GEN] Failed: {type(e).__name__}: {e}")
@@ -2898,7 +2930,7 @@ REQUIREMENTS:
                     return None
 
                 data = response.json()
-                response_text = data.get("content", [{}])[0].get("text", "")
+                response_text = _extract_anthropic_text(data)
                 usage = data.get("usage", {})
                 api_logger.info(f"[INSIGHT_GEN] Tokens - Input: {usage.get('input_tokens')}, Output: {usage.get('output_tokens')}")
             else:
@@ -2924,7 +2956,11 @@ REQUIREMENTS:
                 usage = data.get("usage", {})
                 api_logger.info(f"[INSIGHT_GEN] Tokens - Input: {usage.get('prompt_tokens')}, Output: {usage.get('completion_tokens')}")
 
-            # Parse JSON response
+            # Parse JSON response (strip markdown fences if present)
+            response_text = _strip_markdown_json(response_text)
+            if not response_text:
+                api_logger.error(f"[INSIGHT_GEN] Empty response text from LLM")
+                return None
             result = json.loads(response_text)
             insights = result.get("insights", {})
 
@@ -2936,7 +2972,7 @@ REQUIREMENTS:
             return {"insights": insights}
 
     except json.JSONDecodeError as e:
-        api_logger.error(f"[INSIGHT_GEN] JSON parse error: {e}")
+        api_logger.error(f"[INSIGHT_GEN] JSON parse error: {e} | raw text: {response_text[:200] if response_text else '(empty)'}")
         return None
     except Exception as e:
         api_logger.error(f"[INSIGHT_GEN] Failed: {type(e).__name__}: {e}")
