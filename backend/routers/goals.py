@@ -166,6 +166,74 @@ def parse_llm_json_response(text: str, context: str = "JSON_PARSE") -> Optional[
     return None
 
 
+# Signal categories that live under "signal_extraction" in the prompt schema
+_SIGNAL_CATEGORIES = [
+    "entities", "metrics", "strengths", "weaknesses",
+    "anomalies", "unused_capacity", "avoidances", "cross_file_patterns",
+]
+
+
+def normalize_call1_output(raw: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Normalize Call 1 LLM output to the flat schema the backend expects.
+
+    The LLM prompt asks for a nested structure:
+        { signal_extraction: { metrics: [...], ... },
+          consciousness_extraction: { core_operators: { observations: [...] }, s_level: ... },
+          cross_mapping: [...] }
+
+    The backend expects a flat structure:
+        { signals: [...], observations: [...], s_level: ..., cross_mapping: [...], file_metadata: ... }
+
+    If the output is already flat (has top-level "signals"), return as-is.
+    """
+    # Already in flat format — nothing to do
+    if "signals" in raw:
+        return raw
+
+    sig_ext = raw.get("signal_extraction")
+    if not isinstance(sig_ext, dict):
+        return raw
+
+    # Flatten all signal category arrays into one list
+    signals = []
+    for cat in _SIGNAL_CATEGORIES:
+        items = sig_ext.get(cat)
+        if isinstance(items, list):
+            for sig in items:
+                # Ensure each signal carries its category if missing
+                if isinstance(sig, dict) and "category" not in sig:
+                    sig["category"] = cat
+                signals.append(sig)
+
+    # Extract observations from consciousness_extraction
+    cons_ext = raw.get("consciousness_extraction") or {}
+    core_ops = cons_ext.get("core_operators") or {}
+    observations = core_ops.get("observations") or []
+
+    # Extract s_level
+    s_level_obj = cons_ext.get("s_level")
+    s_level = s_level_obj
+    # If it's a dict with a "current" key, keep the dict (classifier handles both)
+    if isinstance(s_level_obj, dict) and "current" in s_level_obj:
+        s_level = s_level_obj
+
+    result = {
+        "signals": signals,
+        "observations": observations,
+        "cross_mapping": raw.get("cross_mapping") or [],
+        "file_metadata": sig_ext.get("file_summary") or sig_ext.get("domain_context") or {},
+    }
+    if s_level is not None:
+        result["s_level"] = s_level
+
+    api_logger.info(
+        f"[GOAL DISCOVERY] Normalized nested Call 1 output: "
+        f"{len(signals)} signals, {len(observations)} observations"
+    )
+    return result
+
+
 class CreateGoalRequest(BaseModel):
     goal_text: str
     session_id: Optional[str] = None
@@ -828,6 +896,7 @@ Return valid JSON only. No markdown, no explanation."""
                 call1_output = parse_llm_json_response(response_text, "CALL1")
 
         if call1_output:
+            call1_output = normalize_call1_output(call1_output)
             signal_count = len(call1_output.get("signals") or [])
             obs_count = len(call1_output.get("observations") or [])
             api_logger.info(f"[GOAL DISCOVERY] Call 1 complete: {signal_count} signals, {obs_count} observations")
