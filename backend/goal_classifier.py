@@ -730,7 +730,7 @@ class GoalClassifier:
 
         operators = {}
         if consciousness_state.tier1:
-            core = consciousness_state.tier1.core
+            core = consciousness_state.tier1.core_operators
             if core:
                 operators = {
                     "G_grace": core.G_grace,
