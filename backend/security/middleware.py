@@ -160,7 +160,11 @@ class UnifiedSecurityMiddleware(BaseHTTPMiddleware):
                 raise HTTPException(status_code=413, detail="Request too large")
 
             # 4. Input validation (for POST/PUT/PATCH with JSON body)
-            if request.method in ("POST", "PUT", "PATCH"):
+            # Skip validation for auth endpoints - passwords legitimately contain
+            # characters that match attack patterns ($, #, &, ;, etc.)
+            if request.method in ("POST", "PUT", "PATCH") and not any(
+                request.url.path.startswith(ep) for ep in AUTH_ENDPOINTS
+            ):
                 await self._validate_input(request, ctx)
 
             # ========== CALL HANDLER ==========

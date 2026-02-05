@@ -28,12 +28,7 @@ export {
 	documents as matrixDocuments,
 	plays,
 	selectedPlayId,
-	isLoadingPlays,
-	changedRowIndices,
-	changedColumnIndices,
-	previousRowOptions,
-	previousColumnOptions,
-	autoRefresh
+	isLoadingPlays
 } from './matrix';
 
 // Re-export types
