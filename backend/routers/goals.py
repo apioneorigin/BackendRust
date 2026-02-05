@@ -23,7 +23,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database import get_db, User, Goal, MatrixValue, DiscoveredGoal, UserGoalInventory, FileGoalDiscovery
 from routers.auth import get_current_user, generate_id
 from utils import get_or_404, paginate, to_response, to_response_list, CamelModel
-from logging_config import api_logger, pipeline_logger
+from logging_config import api_logger
 
 # Goal classifier (backend intelligence between Call 1 and Call 2)
 from goal_classifier import GoalClassifier, classify_goals
@@ -661,7 +661,7 @@ async def discover_goals_from_files(
     4. Return merged results
     """
     start_time = time.time()
-    pipeline_logger.info(f"[GOAL DISCOVERY] Starting for user {current_user.id}, {len(request.files)} files")
+    api_logger.info(f"[GOAL DISCOVERY] Starting for user {current_user.id}, {len(request.files)} files")
 
     # Get model config
     try:
@@ -682,7 +682,7 @@ async def discover_goals_from_files(
     # =========================================================================
     # STEP 0: PARSE ALL UPLOADED FILES
     # =========================================================================
-    pipeline_logger.info("[GOAL DISCOVERY] Step 0: Parsing uploaded files")
+    api_logger.info("[GOAL DISCOVERY] Step 0: Parsing uploaded files")
     parse_result = parse_all_files(request.files)
 
     if not parse_result.parsed_files and not parse_result.image_files:
@@ -691,7 +691,7 @@ async def discover_goals_from_files(
             detail += " Errors: " + "; ".join(parse_result.errors[:5])
         raise HTTPException(status_code=400, detail=detail)
 
-    pipeline_logger.info(
+    api_logger.info(
         f"[GOAL DISCOVERY] Parsed: {len(parse_result.parsed_files)} text, "
         f"{len(parse_result.image_files)} images, {len(parse_result.errors)} errors"
     )
@@ -714,7 +714,7 @@ async def discover_goals_from_files(
     # =========================================================================
     # STEP 1: CALL 1 - Signal & Consciousness Extraction
     # =========================================================================
-    pipeline_logger.info("[GOAL DISCOVERY] Step 1: Call 1 - Signal extraction")
+    api_logger.info("[GOAL DISCOVERY] Step 1: Call 1 - Signal extraction")
 
     call1_dynamic_prompt = f"""You are analyzing {len(request.files)} file(s) for goal discovery.
 Multi-file mode: {len(request.files) > 1}
@@ -762,7 +762,7 @@ Return valid JSON only. No markdown, no explanation."""
                 }
 
                 content_size = len(str(call1_user_content))
-                pipeline_logger.debug(f"[GOAL DISCOVERY] Call 1 request to Anthropic: {content_size} chars")
+                api_logger.debug(f"[GOAL DISCOVERY] Call 1 request to Anthropic: {content_size} chars")
                 response = await client.post(
                     model_config["endpoint"],
                     headers=headers,
@@ -809,7 +809,7 @@ Return valid JSON only. No markdown, no explanation."""
                 }
 
                 content_size = len(str(call1_user_content))
-                pipeline_logger.debug(f"[GOAL DISCOVERY] Call 1 request to OpenAI: {content_size} chars")
+                api_logger.debug(f"[GOAL DISCOVERY] Call 1 request to OpenAI: {content_size} chars")
                 response = await client.post(
                     model_config["endpoint"],
                     headers=headers,
@@ -830,22 +830,22 @@ Return valid JSON only. No markdown, no explanation."""
         if call1_output:
             signal_count = len(call1_output.get("signals", []))
             obs_count = len(call1_output.get("observations", []))
-            pipeline_logger.info(f"[GOAL DISCOVERY] Call 1 complete: {signal_count} signals, {obs_count} observations")
+            api_logger.info(f"[GOAL DISCOVERY] Call 1 complete: {signal_count} signals, {obs_count} observations")
         else:
-            pipeline_logger.warning("[GOAL DISCOVERY] Call 1 returned no valid JSON")
+            api_logger.warning("[GOAL DISCOVERY] Call 1 returned no valid JSON")
 
     except httpx.HTTPStatusError as e:
-        pipeline_logger.error(f"[GOAL DISCOVERY] Call 1 HTTP error: {e.response.status_code}")
+        api_logger.error(f"[GOAL DISCOVERY] Call 1 HTTP error: {e.response.status_code}")
         api_logger.error(f"[GOAL DISCOVERY] Call 1 response: {e.response.text[:1000]}")
         call1_output = None
     except Exception as e:
-        pipeline_logger.error(f"[GOAL DISCOVERY] Call 1 error: {e}")
+        api_logger.error(f"[GOAL DISCOVERY] Call 1 error: {e}")
         call1_output = None
 
     # =========================================================================
     # STEP 2: BACKEND CLASSIFICATION
     # =========================================================================
-    pipeline_logger.info("[GOAL DISCOVERY] Step 2: Backend classification")
+    api_logger.info("[GOAL DISCOVERY] Step 2: Backend classification")
 
     goal_skeletons = []
     if call1_output:
@@ -855,14 +855,14 @@ Return valid JSON only. No markdown, no explanation."""
                 call1_output,
                 request.existing_goals
             )
-            pipeline_logger.info(f"[GOAL DISCOVERY] Classified {len(goal_skeletons)} goal skeletons")
+            api_logger.info(f"[GOAL DISCOVERY] Classified {len(goal_skeletons)} goal skeletons")
         except Exception as e:
-            pipeline_logger.error(f"[GOAL DISCOVERY] Classification error: {e}")
+            api_logger.error(f"[GOAL DISCOVERY] Classification error: {e}")
             goal_skeletons = []
 
     # No fallback - fail if classification produces no results
     if not goal_skeletons:
-        pipeline_logger.error("[GOAL DISCOVERY] Classification produced no goal skeletons")
+        api_logger.error("[GOAL DISCOVERY] Classification produced no goal skeletons")
         raise HTTPException(
             status_code=500,
             detail="Goal discovery failed: no goals could be extracted from the provided files"
@@ -871,7 +871,7 @@ Return valid JSON only. No markdown, no explanation."""
     # =========================================================================
     # STEP 3: CALL 2 - Articulation
     # =========================================================================
-    pipeline_logger.info("[GOAL DISCOVERY] Step 3: Call 2 - Articulation")
+    api_logger.info("[GOAL DISCOVERY] Step 3: Call 2 - Articulation")
 
     call2_dynamic_prompt = """You are articulating pre-classified goal skeletons.
 
@@ -920,7 +920,7 @@ Return valid JSON with a "goals" array containing all skeletons with identity an
                     "Content-Type": "application/json"
                 }
 
-                pipeline_logger.debug(f"[GOAL DISCOVERY] Call 2 request to Anthropic: {len(call2_user_prompt)} chars")
+                api_logger.debug(f"[GOAL DISCOVERY] Call 2 request to Anthropic: {len(call2_user_prompt)} chars")
                 response = await client.post(
                     model_config["endpoint"],
                     headers=headers,
@@ -963,7 +963,7 @@ Return valid JSON with a "goals" array containing all skeletons with identity an
                     "Content-Type": "application/json"
                 }
 
-                pipeline_logger.debug(f"[GOAL DISCOVERY] Call 2 request to OpenAI: {len(call2_user_prompt)} chars")
+                api_logger.debug(f"[GOAL DISCOVERY] Call 2 request to OpenAI: {len(call2_user_prompt)} chars")
                 response = await client.post(
                     model_config["endpoint"],
                     headers=headers,
@@ -981,21 +981,21 @@ Return valid JSON with a "goals" array containing all skeletons with identity an
 
         if articulated_goals:
             goals_list = articulated_goals.get("goals", [])
-            pipeline_logger.info(f"[GOAL DISCOVERY] Call 2 complete: {len(goals_list)} articulated goals")
+            api_logger.info(f"[GOAL DISCOVERY] Call 2 complete: {len(goals_list)} articulated goals")
         else:
-            pipeline_logger.warning("[GOAL DISCOVERY] Call 2 returned no valid JSON")
+            api_logger.warning("[GOAL DISCOVERY] Call 2 returned no valid JSON")
 
     except httpx.HTTPStatusError as e:
-        pipeline_logger.error(f"[GOAL DISCOVERY] Call 2 HTTP error: {e.response.status_code}")
+        api_logger.error(f"[GOAL DISCOVERY] Call 2 HTTP error: {e.response.status_code}")
         articulated_goals = None
     except Exception as e:
-        pipeline_logger.error(f"[GOAL DISCOVERY] Call 2 error: {e}")
+        api_logger.error(f"[GOAL DISCOVERY] Call 2 error: {e}")
         articulated_goals = None
 
     # =========================================================================
     # STEP 4: MERGE AND RETURN
     # =========================================================================
-    pipeline_logger.info("[GOAL DISCOVERY] Step 4: Merge and return")
+    api_logger.info("[GOAL DISCOVERY] Step 4: Merge and return")
 
     # Merge articulated identity/firstMove into skeletons
     final_goals = []
@@ -1015,7 +1015,7 @@ Return valid JSON with a "goals" array containing all skeletons with identity an
 
         # Find matching articulation (LLM returns camelCase, we store snake_case)
         if goal_type not in articulated_by_type or not articulated_by_type[goal_type]:
-            pipeline_logger.error(f"[GOAL DISCOVERY] No articulation found for goal type: {goal_type}")
+            api_logger.error(f"[GOAL DISCOVERY] No articulation found for goal type: {goal_type}")
             raise HTTPException(
                 status_code=500,
                 detail=f"Goal articulation failed: no articulation returned for goal type '{goal_type}'"
@@ -1023,7 +1023,7 @@ Return valid JSON with a "goals" array containing all skeletons with identity an
 
         articulated = articulated_by_type[goal_type].pop(0)
         if not articulated.get("identity") or not articulated.get("firstMove"):
-            pipeline_logger.error(f"[GOAL DISCOVERY] Incomplete articulation for goal type: {goal_type}")
+            api_logger.error(f"[GOAL DISCOVERY] Incomplete articulation for goal type: {goal_type}")
             raise HTTPException(
                 status_code=500,
                 detail=f"Goal articulation incomplete: missing identity or firstMove for goal type '{goal_type}'"
@@ -1044,7 +1044,7 @@ Return valid JSON with a "goals" array containing all skeletons with identity an
     total_usage["total_output_tokens"] = total_usage["call1_output_tokens"] + total_usage["call2_output_tokens"]
 
     elapsed = time.time() - start_time
-    pipeline_logger.info(
+    api_logger.info(
         f"[GOAL DISCOVERY] Complete: {len(final_goals)} goals in {elapsed:.1f}s, "
         f"tokens: {total_usage['total_input_tokens']} in / {total_usage['total_output_tokens']} out"
     )
@@ -1064,7 +1064,7 @@ Return valid JSON with a "goals" array containing all skeletons with identity an
     db.add(discovery)
     await db.commit()
 
-    pipeline_logger.info(f"[GOAL DISCOVERY] Persisted discovery {discovery_id} with {len(final_goals)} goals")
+    api_logger.info(f"[GOAL DISCOVERY] Persisted discovery {discovery_id} with {len(final_goals)} goals")
 
     return DiscoverGoalsResponse(
         success=True,

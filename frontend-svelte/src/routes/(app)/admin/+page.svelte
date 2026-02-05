@@ -5,6 +5,8 @@
 	import { Button, Card, Spinner } from '$lib/components/ui';
 	import { api } from '$lib/utils/api';
 
+	export let params: Record<string, string> = {};
+
 	interface DashboardStats {
 		totalUsers: number;
 		activeUsers: number;
