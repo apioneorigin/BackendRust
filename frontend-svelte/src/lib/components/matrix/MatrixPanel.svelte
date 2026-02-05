@@ -605,9 +605,9 @@
 		background: rgba(220, 38, 38, 0.08);
 	}
 
-	/* Top 2/3 - click to open dimensions popup */
+	/* Top area - click to open dimensions popup */
 	.cell-top-area {
-		flex: 2;
+		flex: 1;
 		background: transparent;
 		border: none;
 		cursor: pointer;
@@ -618,13 +618,12 @@
 		background: rgba(0, 0, 0, 0.05);
 	}
 
-	/* Bottom 1/3 - thin 5-segment bar strip */
+	/* Bottom - thin fixed-height bar strip, identical style to dimension bars */
 	.cell-bar {
 		display: flex;
 		gap: 2px;
 		padding: 2px 3px;
-		flex: 1;
-		align-items: stretch;
+		flex-shrink: 0;
 	}
 
 	.compact .cell-bar {
@@ -633,7 +632,8 @@
 	}
 
 	.cell-bar-segment {
-		flex: 1;
+		width: 28px;
+		height: 8px;
 		background: var(--color-veil-thin);
 		border: none;
 		border-radius: 2px;
