@@ -420,7 +420,7 @@
 		background: var(--color-field-surface);
 		border: 1px solid var(--color-veil-thin);
 		border-radius: 0.5rem;
-		padding: 0.75rem 0.5rem 0.5rem;
+		padding: 0.5rem;
 		height: 100%;
 		display: flex;
 		flex-direction: column;
@@ -428,12 +428,12 @@
 	}
 
 	.matrix-panel.compact {
-		padding: 0.5rem 0.375rem 0.375rem;
+		padding: 0.375rem;
 	}
 
 	/* Document Tabs */
 	.document-tabs-container {
-		padding: 0 0 0.125rem;
+		padding: 0 0 0.5rem;
 		flex-shrink: 0;
 	}
 
@@ -454,7 +454,7 @@
 		align-items: center;
 		gap: 0.25rem;
 		overflow-x: auto;
-		padding-bottom: 0.125rem;
+		padding-bottom: 0.25rem;
 		overflow-x: auto;
 	}
 
@@ -505,8 +505,8 @@
 	.matrix-grid {
 		position: relative;
 		display: grid;
-		grid-template-columns: 120px repeat(5, 1fr);
-		grid-template-rows: 72px repeat(5, minmax(0, 1fr));
+		grid-template-columns: 100px repeat(5, 1fr);
+		grid-template-rows: 56px repeat(5, minmax(0, 1fr));
 		gap: 2px;
 		flex: 1;
 		min-height: 0;
@@ -514,8 +514,8 @@
 	}
 
 	.compact .matrix-grid {
-		grid-template-columns: 108px repeat(5, 1fr);
-		grid-template-rows: 66px repeat(5, minmax(0, 1fr));
+		grid-template-columns: 90px repeat(5, 1fr);
+		grid-template-rows: 52px repeat(5, minmax(0, 1fr));
 		gap: 2px;
 	}
 
@@ -537,40 +537,43 @@
 		overflow: hidden;
 	}
 
-	/* Column header text: one word per line, clipped to container */
+	/* Column header text: vertical, one word per line (max 3 lines) */
 	.col-header .header-text {
-		font-size: 0.5625rem;
+		font-size: 0.75rem;
 		font-weight: 600;
 		color: var(--color-text-whisper);
 		text-align: center;
-		line-height: 1.15;
+		line-height: 1.2;
 		text-transform: uppercase;
-		letter-spacing: 0.01em;
-		word-spacing: 100vw; /* Forces each word to its own line — works well for narrow columns */
-		overflow: hidden;
+		letter-spacing: 0.02em;
+		word-spacing: 100vw; /* Forces each word to its own line */
+		overflow: visible;
 		display: -webkit-box;
-		-webkit-line-clamp: 4;
+		line-clamp: 3;
+		-webkit-line-clamp: 3;
 		-webkit-box-orient: vertical;
 	}
 
-	/* Row header text: natural wrapping so multi-word names use width efficiently */
+	/* Row header text: vertical, one word per line (max 3 lines) */
 	.row-header .header-text {
-		font-size: 0.5625rem;
+		font-size: 0.75rem;
 		font-weight: 600;
 		color: var(--color-text-whisper);
 		text-align: right;
-		line-height: 1.15;
+		line-height: 1.2;
 		text-transform: uppercase;
-		letter-spacing: 0.01em;
-		overflow: hidden;
+		letter-spacing: 0.02em;
+		word-spacing: 100vw; /* Forces each word to its own line */
+		overflow: visible;
 		display: -webkit-box;
-		-webkit-line-clamp: 4;
+		line-clamp: 3;
+		-webkit-line-clamp: 3;
 		-webkit-box-orient: vertical;
 	}
 
 	.compact .col-header .header-text,
 	.compact .row-header .header-text {
-		font-size: 0.5rem;
+		font-size: 0.6875rem;
 	}
 
 	.matrix-cell {
