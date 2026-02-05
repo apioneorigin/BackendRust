@@ -174,6 +174,8 @@ class ValueOrganizer:
 
     def _get_value(self, values: Dict[str, Any], *keys, default: Optional[float] = None) -> Optional[float]:
         """Get value from dict, trying multiple key names. Returns None if not found (ZERO-FALLBACK)."""
+        if not values:
+            return default
         for key in keys:
             if key in values:
                 val = values[key]
@@ -693,7 +695,7 @@ class ValueOrganizer:
             distortion_field=self._get_value(v, 'unity_distortion_field', default=None),
             percolation_quality=self._get_value(v, 'unity_percolation_quality', default=None),
             unity_vector=self._get_value(v, 'unity_vector', default=None),
-            net_direction=v.get('unity_net_direction')
+            net_direction=v.get('unity_net_direction') if v else None
         )
 
         none_fields = [
@@ -755,7 +757,7 @@ class ValueOrganizer:
             separation_pathway=separation_pathway,
             unity_pathway=unity_pathway,
             crossover_point_months=self._get_value(v, 'pathway_crossover_months', default=None),
-            recommended_pathway=v.get('pathway_recommendation'),
+            recommended_pathway=v.get('pathway_recommendation') if v else None,
             optimal_blend_ratio=self._get_value(v, 'pathway_blend_ratio', default=None)
         )
 

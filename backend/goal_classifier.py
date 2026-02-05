@@ -222,7 +222,9 @@ class GoalClassifier:
         profile = self.inference_engine.calculate_full_profile(operators, s_level)
 
         # Build ConsciousnessState using value organizer
-        raw_values = self.inference_engine._flatten_profile(profile, {})
+        # Wrap in {'values': ...} format expected by ValueOrganizer._organize_tierN
+        flat_values = self.inference_engine._flatten_profile(profile, {})
+        raw_values = {'values': flat_values}
         tier1_values = self._extract_tier1_values(profile)
         consciousness_state = self.value_organizer.organize(raw_values, tier1_values)
 
