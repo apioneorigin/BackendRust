@@ -10,6 +10,7 @@ export { session, currentSession, sessions } from './session';
 export { credits, creditBalance, isLowCredits } from './credits';
 export { documents, currentDocument, documentList } from './documents';
 export { goals, currentGoal, activeGoals, completedGoals } from './goals';
+export { llmBusy, llmManualBusy } from './llm';
 export {
 	matrix,
 	matrixData,

@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
+	import { goto, beforeNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { theme, addToast, chat, conversations, currentConversation, messages } from '$lib/stores';
+	import { theme, addToast, chat, conversations, currentConversation, messages, llmBusy } from '$lib/stores';
 	import type { LayoutData } from './$types';
 
 	export let data: LayoutData;
@@ -17,6 +17,16 @@
 	let sidebarCollapsed = false;
 	let activeOptionsMenu: string | null = null;
 	let isSelectingConversation = false;
+
+	// Block navigation while any LLM call is in flight
+	beforeNavigate(({ cancel }) => {
+		if ($llmBusy) cancel();
+	});
+
+	// Toggle not-allowed cursor on body during LLM calls
+	$: if (typeof document !== 'undefined') {
+		document.body.classList.toggle('llm-busy', $llmBusy);
+	}
 
 	// Close menus on navigation
 	$: if ($page.url.pathname) {
