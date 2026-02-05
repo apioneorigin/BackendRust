@@ -15,6 +15,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any, Set, Tuple
 from enum import Enum
 import hashlib
+import re
 
 from formulas.inference import OOFInferenceEngine, IntegratedProfile
 from formulas.operators import CANONICAL_OPERATOR_NAMES, SHORT_TO_CANONICAL
@@ -213,7 +214,9 @@ class GoalClassifier:
             if canonical is None and var_name in CANONICAL_OPERATOR_NAMES:
                 canonical = var_name
             if canonical:
-                operators[canonical] = float(value)
+                parsed = self._parse_float(value, -1.0)
+                if parsed >= 0.0:
+                    operators[canonical] = parsed
 
         # Extract S-level
         s_level = self._parse_s_level(call1_output.get("s_level"))
@@ -228,6 +231,21 @@ class GoalClassifier:
 
         return consciousness_state, profile
 
+    @staticmethod
+    def _parse_float(value: Any, default: float) -> float:
+        """Parse a numeric value from LLM output (system boundary)."""
+        if isinstance(value, (int, float)):
+            return float(value)
+        if isinstance(value, str):
+            match = re.search(r'-?\d+\.?\d*', value)
+            if match:
+                parsed = float(match.group())
+                # Clamp to 0-1 range for normalized fields
+                if parsed > 1.0:
+                    return default
+                return parsed
+        return default
+
     def _parse_s_level(self, s_level_raw: Any) -> Optional[float]:
         """Parse S-level from various formats."""
         if s_level_raw is None:
@@ -235,7 +253,6 @@ class GoalClassifier:
         if isinstance(s_level_raw, (int, float)):
             return float(s_level_raw)
         if isinstance(s_level_raw, str):
-            import re
             match = re.search(r'S?(\d+\.?\d*)', s_level_raw)
             if match:
                 return float(match.group(1))
@@ -299,12 +316,12 @@ class GoalClassifier:
                 category=category,
                 layer=layer,
                 description=sig.get("description", ""),
-                magnitude=float(sig.get("magnitude", 0.5)),
-                actionability=float(sig.get("actionability", 0.5)),
-                impact_estimate=float(sig.get("impact_estimate", 0.5)),
+                magnitude=self._parse_float(sig.get("magnitude"), 0.5),
+                actionability=self._parse_float(sig.get("actionability"), 0.5),
+                impact_estimate=self._parse_float(sig.get("impact_estimate"), 0.5),
                 source_file=sig.get("source_file", "unknown"),
                 source_quote=sig.get("source_quote"),
-                data_quality=float(sig.get("data_quality", 0.8)),
+                data_quality=self._parse_float(sig.get("data_quality"), 0.8),
                 relationships=sig.get("relationships") or [],
             )
             indexed.append(indexed_signal)
