@@ -22,12 +22,12 @@ router = APIRouter(prefix="/api/matrix", tags=["matrix"])
 
 
 # Response models
-class DimensionOption(CamelModel):
+class DimensionOption(BaseModel):
     name: str
     value: int  # One of [0, 50, 100] = Low, Medium, High
 
 
-class ArticulatedInsight(CamelModel):
+class ArticulatedInsight(BaseModel):
     """Full 3-component insight structure (THE TRUTH -> YOUR TRUTH -> THE MARK)"""
     title: str
     the_truth: str
@@ -39,7 +39,7 @@ class ArticulatedInsight(CamelModel):
     the_mark_identity: str
 
 
-class RowOption(CamelModel):
+class RowOption(BaseModel):
     id: str
     label: str
     insight_title: Optional[str] = None
@@ -47,7 +47,7 @@ class RowOption(CamelModel):
     articulated_insight: Optional[ArticulatedInsight] = None
 
 
-class ColumnOption(CamelModel):
+class ColumnOption(BaseModel):
     id: str
     label: str
     insight_title: Optional[str] = None
@@ -70,7 +70,7 @@ class StrategicPreset(CamelModel):
     steps: List[PresetStep]
 
 
-class DocumentMatrixData(CamelModel):
+class DocumentMatrixData(BaseModel):
     """Matrix data for a document - 10x10 grid"""
     row_options: List[RowOption]
     column_options: List[ColumnOption]
@@ -79,7 +79,7 @@ class DocumentMatrixData(CamelModel):
     cells: Optional[dict] = None
 
 
-class GeneratedDocument(CamelModel):
+class GeneratedDocument(BaseModel):
     """Document with its own 10x10 matrix data"""
     id: str
     name: str
