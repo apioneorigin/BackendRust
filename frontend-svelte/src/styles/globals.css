@@ -220,6 +220,12 @@ body {
 	letter-spacing: -0.011em;
 }
 
+/* LLM busy — block all interaction */
+body.llm-busy,
+body.llm-busy * {
+	cursor: not-allowed !important;
+}
+
 /* Typography Scale - Source Serif Pro for headings */
 h1 {
 	font-family: var(--font-heading);

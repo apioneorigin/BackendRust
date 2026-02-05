@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { addToast, auth, chat } from '$lib/stores';
+	import { addToast, auth, chat, llmManualBusy } from '$lib/stores';
 	import { Button, Spinner } from '$lib/components/ui';
 	import { api } from '$lib/utils/api';
 
@@ -181,6 +181,7 @@
 		}
 
 		isDiscovering = true;
+		llmManualBusy.set(true);
 		try {
 			await api.post('/api/goals/discover-from-files', {
 				files: uploadedFiles,
@@ -194,6 +195,7 @@
 			addToast('error', error.message || 'Failed to discover goals');
 		} finally {
 			isDiscovering = false;
+			llmManualBusy.set(false);
 		}
 	}
 
