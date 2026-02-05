@@ -184,6 +184,27 @@ async def get_document(
     return None
 
 
+@router.delete("/{conversation_id}/document/{doc_id}")
+async def delete_document(
+    conversation_id: str,
+    doc_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Delete a document from the conversation. Cannot delete the last document."""
+    conversation = await get_or_404(db, ChatConversation, conversation_id, user_id=current_user.id)
+    documents, idx, _ = await _find_document(conversation, doc_id)
+
+    if len(documents) <= 1:
+        raise HTTPException(status_code=400, detail="Cannot delete the last document")
+
+    documents.pop(idx)
+    await _save_documents(conversation, documents, db)
+
+    api_logger.info(f"[MATRIX DELETE] Removed document {doc_id} from conv {conversation_id}, {len(documents)} remaining")
+    return {"status": "success", "remaining": len(documents)}
+
+
 # ============================================================================
 # Matrix Button: "Design Your Reality"
 # Generates cells, dimensions, powerspots, risks, plays, presets for a document

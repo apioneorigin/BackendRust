@@ -77,8 +77,20 @@
 		dispatch('close');
 	}
 
+	let deletingDocId: string | null = null;
+
 	function handleDocumentTabClick(docId: string) {
 		matrix.setActiveDocument(docId);
+	}
+
+	async function handleDeleteDocument(docId: string) {
+		if ($matrixDocuments.length <= 1) return;
+		deletingDocId = docId;
+		try {
+			await matrix.deleteDocument(docId);
+		} finally {
+			deletingDocId = null;
+		}
 	}
 
 	function handleToggleRow(index: number) {
@@ -213,17 +225,29 @@
 				<div class="document-tabs-container">
 					<div class="document-tabs">
 						{#each $matrixDocuments as doc (doc.id)}
-							<button
-								class="document-tab"
-								class:active={doc.id === $activeDocumentId}
-								on:click={() => handleDocumentTabClick(doc.id)}
-								title={doc.description}
-							>
-								<span class="tab-name">{doc.name}</span>
-							</button>
+							<div class="document-tab-wrapper">
+								<button
+									class="document-tab"
+									class:active={doc.id === $activeDocumentId}
+									on:click={() => handleDocumentTabClick(doc.id)}
+									title={doc.description}
+								>
+									<span class="tab-name">{doc.name}</span>
+								</button>
+								{#if $matrixDocuments.length > 1}
+									<button
+										class="tab-delete-btn"
+										on:click|stopPropagation={() => handleDeleteDocument(doc.id)}
+										disabled={deletingDocId === doc.id}
+										title="Delete document"
+									>
+										<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+											<path d="M18 6 6 18" /><path d="m6 6 12 12" />
+										</svg>
+									</button>
+								{/if}
+							</div>
 						{/each}
-
-						<!-- No + button here - generate from Matrix tab instead -->
 					</div>
 				</div>
 
@@ -524,6 +548,48 @@
 		background: var(--color-primary-100);
 		border-color: var(--color-primary-400);
 		color: var(--color-primary-700);
+	}
+
+	.document-tab-wrapper {
+		position: relative;
+		display: flex;
+		align-items: stretch;
+		flex-shrink: 0;
+	}
+
+	.tab-delete-btn {
+		position: absolute;
+		top: -6px;
+		right: -6px;
+		width: 18px;
+		height: 18px;
+		padding: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: var(--color-field-surface);
+		border: 1px solid var(--color-veil-thin);
+		border-radius: 50%;
+		color: var(--color-text-whisper);
+		cursor: pointer;
+		opacity: 0;
+		transition: all 0.15s ease;
+		z-index: 1;
+	}
+
+	.document-tab-wrapper:hover .tab-delete-btn {
+		opacity: 1;
+	}
+
+	.tab-delete-btn:hover {
+		background: #ef4444;
+		border-color: #ef4444;
+		color: white;
+	}
+
+	.tab-delete-btn:disabled {
+		opacity: 0.4;
+		cursor: wait;
 	}
 
 	.tab-name {
