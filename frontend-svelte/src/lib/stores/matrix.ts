@@ -422,6 +422,57 @@ function createMatrixStore() {
 			}
 		},
 
+		// Delete a document (only from CC popup, never from Matrix panel)
+		async deleteDocument(docId: string) {
+			const state = get({ subscribe });
+			if (!state.conversationId) {
+				console.error('No conversation ID set');
+				return;
+			}
+
+			if (state.documents.length <= 1) {
+				addToast('error', 'Cannot delete the last document');
+				return;
+			}
+
+			try {
+				await api.delete(`/api/matrix/${state.conversationId}/document/${docId}`);
+
+				update(s => {
+					const remaining = s.documents.filter(d => d.id !== docId);
+					// If deleted doc was active, switch to first remaining
+					const needSwitch = s.activeDocumentId === docId;
+					const newActiveId = needSwitch ? remaining[0]?.id ?? null : s.activeDocumentId;
+					const newActiveDoc = remaining.find(d => d.id === newActiveId);
+
+					if (needSwitch && newActiveDoc) {
+						const displayed = buildDisplayedMatrix(newActiveDoc);
+						if (displayed) {
+							return {
+								...s,
+								documents: remaining,
+								activeDocumentId: newActiveId,
+								displayedMatrixData: displayed.matrixData,
+								displayedRowHeaders: displayed.rowHeaders,
+								displayedColumnHeaders: displayed.columnHeaders,
+								displayedRowInsights: displayed.rowInsights,
+								displayedColumnInsights: displayed.columnInsights,
+								isGenerated: !!newActiveDoc.matrix_data?.cells && Object.keys(newActiveDoc.matrix_data.cells).length > 0
+							};
+						}
+						return { ...s, documents: remaining, activeDocumentId: newActiveId, isGenerated: false };
+					}
+
+					return { ...s, documents: remaining };
+				});
+
+				addToast('info', 'Document deleted');
+			} catch (error: any) {
+				console.error('Failed to delete document:', error);
+				addToast('error', 'Failed to delete document');
+			}
+		},
+
 		// Populate a document with full cell data via "Design Your Reality"
 		async populateDocument(docId: string, model: string = 'claude-opus-4-5-20251101') {
 			const state = get({ subscribe });
