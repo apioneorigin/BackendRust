@@ -433,7 +433,7 @@
 
 	/* Document Tabs */
 	.document-tabs-container {
-		padding: 0 0 0.5rem;
+		padding: 0 0 0.25rem;
 		flex-shrink: 0;
 	}
 
@@ -454,7 +454,7 @@
 		align-items: center;
 		gap: 0.25rem;
 		overflow-x: auto;
-		padding-bottom: 0.25rem;
+		padding-bottom: 0.125rem;
 		overflow-x: auto;
 	}
 
