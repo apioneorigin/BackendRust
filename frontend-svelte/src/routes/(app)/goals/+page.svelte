@@ -36,6 +36,15 @@
 		name: string;
 		content: string;
 		type: string;
+		encoding: 'text' | 'base64';
+	}
+
+	const TEXT_EXTENSIONS = new Set(['.txt', '.md', '.json', '.csv']);
+	const BINARY_EXTENSIONS = new Set(['.docx', '.pptx', '.xlsx', '.jpg', '.jpeg', '.png', '.zip']);
+
+	function getFileExtension(filename: string): string {
+		const dot = filename.lastIndexOf('.');
+		return dot >= 0 ? filename.slice(dot).toLowerCase() : '';
 	}
 
 	let uploadedFiles: UploadedFile[] = [];
@@ -118,10 +127,17 @@
 		for (const file of files) {
 			if (uploadedFiles.some((f) => f.name === file.name)) continue;
 			try {
-				const content = await readFileContent(file);
+				const ext = getFileExtension(file.name);
+				const isBinary = BINARY_EXTENSIONS.has(ext);
+				const content = isBinary ? await readFileAsBase64(file) : await readFileAsText(file);
 				uploadedFiles = [
 					...uploadedFiles,
-					{ name: file.name, content, type: file.type || 'text/plain' }
+					{
+						name: file.name,
+						content,
+						type: file.type || 'text/plain',
+						encoding: isBinary ? 'base64' : 'text'
+					}
 				];
 			} catch (error) {
 				addToast('error', `Failed to read ${file.name}`);
@@ -129,12 +145,26 @@
 		}
 	}
 
-	async function readFileContent(file: File): Promise<string> {
+	async function readFileAsText(file: File): Promise<string> {
 		return new Promise((resolve, reject) => {
 			const reader = new FileReader();
 			reader.onload = () => resolve(reader.result as string);
 			reader.onerror = reject;
 			reader.readAsText(file);
+		});
+	}
+
+	async function readFileAsBase64(file: File): Promise<string> {
+		return new Promise((resolve, reject) => {
+			const reader = new FileReader();
+			reader.onload = () => {
+				const result = reader.result as string;
+				// Strip "data:...;base64," prefix — backend expects raw base64
+				const base64 = result.includes(',') ? result.split(',')[1] : result;
+				resolve(base64);
+			};
+			reader.onerror = reject;
+			reader.readAsDataURL(file);
 		});
 	}
 
@@ -327,7 +357,7 @@
 				type="file"
 				id="file-input"
 				multiple
-				accept=".txt,.pdf,.csv,.json,.md,.doc,.docx,.xls,.xlsx"
+				accept=".txt,.md,.json,.csv,.docx,.pptx,.xlsx,.jpg,.jpeg,.png,.zip"
 				on:change={handleFileSelect}
 				class="hidden"
 			/>

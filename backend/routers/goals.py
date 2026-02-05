@@ -27,6 +27,7 @@ from logging_config import api_logger, pipeline_logger
 
 # Goal classifier (backend intelligence between Call 1 and Call 2)
 from goal_classifier import GoalClassifier, classify_goals
+from file_parser import parse_all_files, ParseResult, ParsedFile
 
 router = APIRouter(prefix="/api", tags=["goals"])
 
@@ -458,6 +459,7 @@ class FileData(BaseModel):
     content: str
     type: Optional[str] = None
     size: Optional[int] = None
+    encoding: Optional[str] = "text"  # "text" or "base64"
 
 
 class DiscoverGoalsRequest(BaseModel):
@@ -480,26 +482,32 @@ class DiscoverGoalsResponse(CamelModel):
 # NEW 2-CALL ARCHITECTURE HELPERS
 # =============================================================================
 
-def build_call1_user_prompt(files: List[FileData], existing_goals: Optional[List[Dict]] = None) -> str:
+def build_call1_user_content(
+    parse_result: ParseResult,
+    files: List[FileData],
+    existing_goals: Optional[List[Dict]] = None,
+    provider: str = "anthropic",
+) -> Any:
     """
-    Build user prompt for Call 1 (Signal & Consciousness Extraction).
-    Contains ONLY file content - no goal generation instructions.
-    """
-    file_sections = []
-    for f in files:
-        # Limit content to prevent token overflow
-        content = f.content[:50000] if len(f.content) > 50000 else f.content
-        file_sections.append(f"""
-=== FILE: {f.name} ===
-Type: {f.type or 'unknown'}
-Size: {f.size or len(f.content)} bytes
+    Build user content for Call 1 (Signal & Consciousness Extraction).
 
+    Returns a string for OpenAI, or a list of content blocks for Anthropic
+    (to support interleaved text + image blocks).
+    """
+    total_file_count = len(parse_result.parsed_files) + len(parse_result.image_files)
+
+    # Build text file sections
+    file_sections = []
+    for pf in parse_result.parsed_files:
+        content = pf.text_content[:50000]
+        file_sections.append(f"""
+=== FILE: {pf.name} ===
 CONTENT:
 {content}
-=== END FILE: {f.name} ===
+=== END FILE: {pf.name} ===
 """)
 
-    # Include existing goals for context (helps LLM assess user's intent)
+    # Existing goals context
     existing_goals_section = ""
     if existing_goals:
         goals_summary = []
@@ -514,20 +522,51 @@ CONTENT:
 === END EXISTING GOALS ===
 """
 
-    return f"""Extract signals and consciousness operators from these files.
+    text_prompt = f"""Extract signals and consciousness operators from these files.
 
-FILE COUNT: {len(files)}
-MULTI-FILE MODE: {len(files) > 1}
+FILE COUNT: {total_file_count}
+MULTI-FILE MODE: {total_file_count > 1}
 
 {chr(10).join(file_sections)}
 {existing_goals_section}
 
 Return JSON with signal_extraction, consciousness_extraction, and cross_mapping sections."""
 
+    # If no images or using OpenAI, return as plain string
+    if not parse_result.image_files or provider != "anthropic":
+        # For OpenAI, describe images as text placeholders
+        if parse_result.image_files:
+            image_notes = "\n".join(
+                f"[Image file: {img.name} — analyze visually for signals]"
+                for img in parse_result.image_files
+            )
+            text_prompt += f"\n\n{image_notes}"
+        return text_prompt
+
+    # For Anthropic with images: build content blocks array
+    content_blocks: List[Dict[str, Any]] = [
+        {"type": "text", "text": text_prompt}
+    ]
+    for img in parse_result.image_files:
+        content_blocks.append({
+            "type": "image",
+            "source": {
+                "type": "base64",
+                "media_type": img.image_media_type,
+                "data": img.image_base64,
+            }
+        })
+        content_blocks.append({
+            "type": "text",
+            "text": f"The above image is from file: {img.name}. Extract any signals, data, or goals visible in it."
+        })
+
+    return content_blocks
+
 
 def build_call2_user_prompt(
     goal_skeletons: List[Dict],
-    files: List[FileData]
+    parse_result: ParseResult,
 ) -> str:
     """
     Build user prompt for Call 2 (Goal Articulation).
@@ -535,11 +574,17 @@ def build_call2_user_prompt(
     """
     # File summaries (first 2000 chars each to save tokens)
     file_summaries = []
-    for f in files:
-        summary = f.content[:2000] + ("..." if len(f.content) > 2000 else "")
+    for pf in parse_result.parsed_files:
+        summary = pf.text_content[:2000] + ("..." if len(pf.text_content) > 2000 else "")
         file_summaries.append(f"""
-=== FILE SUMMARY: {f.name} ===
+=== FILE SUMMARY: {pf.name} ===
 {summary}
+=== END SUMMARY ===
+""")
+    for img in parse_result.image_files:
+        file_summaries.append(f"""
+=== FILE SUMMARY: {img.name} ===
+{img.text_content}
 === END SUMMARY ===
 """)
 
@@ -628,6 +673,23 @@ async def discover_goals_from_files(
             detail=f"No API key configured for {provider}"
         )
 
+    # =========================================================================
+    # STEP 0: PARSE ALL UPLOADED FILES
+    # =========================================================================
+    pipeline_logger.info("[GOAL DISCOVERY] Step 0: Parsing uploaded files")
+    parse_result = parse_all_files(request.files)
+
+    if not parse_result.parsed_files and not parse_result.image_files:
+        detail = "No readable content extracted from uploaded files."
+        if parse_result.errors:
+            detail += " Errors: " + "; ".join(parse_result.errors[:5])
+        raise HTTPException(status_code=400, detail=detail)
+
+    pipeline_logger.info(
+        f"[GOAL DISCOVERY] Parsed: {len(parse_result.parsed_files)} text, "
+        f"{len(parse_result.image_files)} images, {len(parse_result.errors)} errors"
+    )
+
     # Import shared context from main (lazy import to avoid circular dependency)
     from main import SHARED_GOAL_DISCOVERY_CONTEXT
 
@@ -658,7 +720,7 @@ YOUR TASK:
 
 Return valid JSON only. No markdown, no explanation."""
 
-    call1_user_prompt = build_call1_user_prompt(request.files, request.existing_goals)
+    call1_user_content = build_call1_user_content(parse_result, request.files, request.existing_goals, provider)
 
     call1_output = None
     try:
@@ -682,7 +744,7 @@ Return valid JSON only. No markdown, no explanation."""
                     "max_tokens": model_config["max_tokens"],
                     "system": system_content,
                     "messages": [
-                        {"role": "user", "content": call1_user_prompt},
+                        {"role": "user", "content": call1_user_content},
                         {"role": "assistant", "content": "{"}  # Force JSON start
                     ]
                 }
@@ -693,7 +755,8 @@ Return valid JSON only. No markdown, no explanation."""
                     "Content-Type": "application/json"
                 }
 
-                pipeline_logger.debug(f"[GOAL DISCOVERY] Call 1 request to Anthropic: {len(call1_user_prompt)} chars")
+                content_size = len(str(call1_user_content))
+                pipeline_logger.debug(f"[GOAL DISCOVERY] Call 1 request to Anthropic: {content_size} chars")
                 response = await client.post(
                     model_config["endpoint"],
                     headers=headers,
@@ -723,12 +786,15 @@ Return valid JSON only. No markdown, no explanation."""
                 # OpenAI
                 instructions = f"{SHARED_GOAL_DISCOVERY_CONTEXT}\n\n{call1_dynamic_prompt}"
 
+                # OpenAI content is always a string
+                call1_text = call1_user_content if isinstance(call1_user_content, str) else str(call1_user_content)
+
                 request_body = {
                     "model": model,
                     "max_tokens": model_config["max_tokens"],
                     "messages": [
                         {"role": "system", "content": instructions},
-                        {"role": "user", "content": call1_user_prompt}
+                        {"role": "user", "content": call1_text}
                     ],
                     "response_format": {"type": "json_object"}
                 }
@@ -738,7 +804,7 @@ Return valid JSON only. No markdown, no explanation."""
                     "Content-Type": "application/json"
                 }
 
-                pipeline_logger.debug(f"[GOAL DISCOVERY] Call 1 request to OpenAI: {len(call1_user_prompt)} chars")
+                pipeline_logger.debug(f"[GOAL DISCOVERY] Call 1 request to OpenAI: {len(call1_text)} chars")
                 response = await client.post(
                     model_config["endpoint"],
                     headers=headers,
@@ -814,7 +880,7 @@ Ground your articulation in the file summaries provided.
 
 Return valid JSON with a "goals" array containing all skeletons with identity and firstMove added."""
 
-    call2_user_prompt = build_call2_user_prompt(goal_skeletons, request.files)
+    call2_user_prompt = build_call2_user_prompt(goal_skeletons, parse_result)
 
     articulated_goals = None
     try:
