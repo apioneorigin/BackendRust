@@ -275,23 +275,9 @@
 							<span class="tab-name">{doc.name}</span>
 						</button>
 					{:else}
-						<!-- Stub document: show with generate button -->
-						<div class="document-tab stub" title={doc.description}>
+						<!-- Stub document: name only, generation handled by overlay button -->
+						<div class="document-tab stub" class:active={isActive} title={doc.description}>
 							<span class="tab-name">{doc.name}</span>
-							<button
-								class="generate-btn"
-								on:click|stopPropagation={() => handlePopulateDocument(doc.id)}
-								disabled={isPopulating}
-								title="Generate full matrix data"
-							>
-								{#if isPopulating}
-									<Spinner size="xs" />
-								{:else}
-									<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-										<path d="M12 3v3m6.366-.366-2.12 2.12M21 12h-3m.366 6.366-2.12-2.12M12 21v-3m-6.366.366 2.12-2.12M3 12h3m-.366-6.366 2.12 2.12"/>
-									</svg>
-								{/if}
-							</button>
 						</div>
 					{/if}
 				{/each}
@@ -356,17 +342,26 @@
 
 		<!-- Stub overlay: covers only the cell area, headers stay visible -->
 		{#if stubMode}
+			{@const isPopulating = isPopulatingDoc === $activeDocumentId}
 			<div class="stub-overlay">
-				<div class="stub-overlay-content">
-					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						<rect x="3" y="3" width="7" height="7"/>
-						<rect x="14" y="3" width="7" height="7"/>
-						<rect x="14" y="14" width="7" height="7"/>
-						<rect x="3" y="14" width="7" height="7"/>
-					</svg>
-					<span class="stub-label">Design Your Reality</span>
-					<span class="stub-hint">Generate cell data to explore relationships</span>
-				</div>
+				<button
+					class="stub-generate-btn"
+					on:click={() => handlePopulateDocument($activeDocumentId)}
+					disabled={isPopulating}
+				>
+					{#if isPopulating}
+						<Spinner size="sm" />
+						<span>Generating...</span>
+					{:else}
+						<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<rect x="3" y="3" width="7" height="7"/>
+							<rect x="14" y="3" width="7" height="7"/>
+							<rect x="14" y="14" width="7" height="7"/>
+							<rect x="3" y="14" width="7" height="7"/>
+						</svg>
+						<span>Design Your Reality</span>
+					{/if}
+				</button>
 			</div>
 		{/if}
 	</div>
@@ -506,42 +501,15 @@
 
 	/* Stub document tabs (not yet populated) */
 	.document-tab.stub {
-		display: flex;
-		align-items: center;
-		gap: 0.375rem;
 		background: var(--color-field-depth);
 		border: 1px dashed var(--color-veil-thin);
 		cursor: default;
-		opacity: 0.8;
-	}
-
-	.document-tab.stub:hover {
-		background: var(--color-field-depth);
-		border-color: var(--color-primary-300);
-	}
-
-	.generate-btn {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 20px;
-		height: 20px;
-		padding: 0;
-		background: var(--color-primary-500);
-		border: none;
-		border-radius: 0.25rem;
-		color: white;
-		cursor: pointer;
-		transition: all 0.15s ease;
-	}
-
-	.generate-btn:hover:not(:disabled) {
-		background: var(--color-primary-600);
-	}
-
-	.generate-btn:disabled {
 		opacity: 0.7;
-		cursor: wait;
+	}
+
+	.document-tab.stub.active {
+		border-color: var(--color-primary-300);
+		opacity: 1;
 	}
 
 	.matrix-grid {
@@ -867,49 +835,44 @@
 		border-radius: 0 0 1rem 1rem;
 	}
 
-	/* Stub mode: cells are empty, overlay covers only cell area */
+	/* Stub mode: cells invisible so headers stand out */
 	.matrix-cell.stub-cell {
-		background: var(--color-field-depth);
-		opacity: 0.4;
+		background: transparent;
+		visibility: hidden;
 	}
 
-	.matrix-cell.stub-cell .cell-top-area,
-	.matrix-cell.stub-cell .cell-bar-segment {
-		cursor: default;
-	}
-
+	/* Overlay covers only the cell area (columns 2-6, rows 2-6) */
 	.stub-overlay {
 		grid-column: 2 / -1;
 		grid-row: 2 / -1;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		z-index: 5;
-		pointer-events: none;
+		overflow: hidden;
 	}
 
-	.stub-overlay-content {
+	.stub-generate-btn {
 		display: flex;
-		flex-direction: column;
 		align-items: center;
-		text-align: center;
-		gap: 0.375rem;
-		color: var(--color-text-whisper);
-	}
-
-	.stub-overlay-content svg {
-		opacity: 0.5;
-		margin-bottom: 0.25rem;
-	}
-
-	.stub-label {
-		font-size: 0.875rem;
+		gap: 0.5rem;
+		padding: 0.625rem 1.25rem;
+		background: var(--color-primary-500);
+		color: white;
+		border: none;
+		border-radius: 0.5rem;
+		font-size: 0.8125rem;
 		font-weight: 600;
-		color: var(--color-text-manifest);
+		cursor: pointer;
+		transition: all 0.15s ease;
+		white-space: nowrap;
 	}
 
-	.stub-hint {
-		font-size: 0.6875rem;
-		color: var(--color-text-whisper);
+	.stub-generate-btn:hover:not(:disabled) {
+		background: var(--color-primary-600);
+	}
+
+	.stub-generate-btn:disabled {
+		opacity: 0.7;
+		cursor: wait;
 	}
 </style>
