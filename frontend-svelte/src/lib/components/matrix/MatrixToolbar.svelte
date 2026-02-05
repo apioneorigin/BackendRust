@@ -115,7 +115,7 @@
 		align-items: center;
 		justify-content: center;
 		gap: 0.25rem;
-		padding: 0.5rem;
+		padding: 0.125rem 0.25rem;
 	}
 
 	.toolbar-btn {

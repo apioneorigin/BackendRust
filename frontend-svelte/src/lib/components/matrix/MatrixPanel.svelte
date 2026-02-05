@@ -420,7 +420,7 @@
 		background: var(--color-field-surface);
 		border: 1px solid var(--color-veil-thin);
 		border-radius: 0.5rem;
-		padding: 0.5rem;
+		padding: 0.25rem;
 		height: 100%;
 		display: flex;
 		flex-direction: column;
@@ -428,12 +428,12 @@
 	}
 
 	.matrix-panel.compact {
-		padding: 0.375rem;
+		padding: 0.125rem;
 	}
 
 	/* Document Tabs */
 	.document-tabs-container {
-		padding: 0 0 0.25rem;
+		padding: 0;
 		flex-shrink: 0;
 	}
 
@@ -454,12 +454,11 @@
 		align-items: center;
 		gap: 0.25rem;
 		overflow-x: auto;
-		padding-bottom: 0.25rem;
-		overflow-x: auto;
+		padding-bottom: 0.125rem;
 	}
 
 	.document-tab {
-		padding: 0.375rem 0.75rem;
+		padding: 0.25rem 0.625rem;
 		background: var(--color-field-depth);
 		border: 1px solid transparent;
 		border-radius: 0.375rem;
@@ -506,7 +505,7 @@
 		position: relative;
 		display: grid;
 		grid-template-columns: 100px repeat(5, 1fr);
-		grid-template-rows: 56px repeat(5, minmax(0, 1fr));
+		grid-template-rows: 36px repeat(5, minmax(0, 1fr));
 		gap: 2px;
 		flex: 1;
 		min-height: 0;
@@ -515,7 +514,7 @@
 
 	.compact .matrix-grid {
 		grid-template-columns: 90px repeat(5, 1fr);
-		grid-template-rows: 52px repeat(5, minmax(0, 1fr));
+		grid-template-rows: 32px repeat(5, minmax(0, 1fr));
 		gap: 2px;
 	}
 
@@ -540,7 +539,7 @@
 	/* Column and row header text — identical sizing */
 	.col-header .header-text,
 	.row-header .header-text {
-		font-size: 0.625rem;
+		font-size: 0.75rem;
 		font-weight: 600;
 		color: var(--color-text-whisper);
 		line-height: 1.15;
@@ -548,7 +547,7 @@
 		letter-spacing: 0.01em;
 		overflow: hidden;
 		display: -webkit-box;
-		-webkit-line-clamp: 4;
+		-webkit-line-clamp: 3;
 		-webkit-box-orient: vertical;
 	}
 
@@ -563,7 +562,7 @@
 
 	.compact .col-header .header-text,
 	.compact .row-header .header-text {
-		font-size: 0.5625rem;
+		font-size: 0.6875rem;
 	}
 
 	.matrix-cell {
@@ -825,7 +824,7 @@
 	/* Overlay covers only the visible cell area, positioned absolutely */
 	.stub-overlay {
 		position: absolute;
-		top: calc(56px + 2px);
+		top: calc(36px + 2px);
 		left: calc(100px + 2px);
 		right: 0;
 		bottom: 0;
@@ -835,7 +834,7 @@
 	}
 
 	.compact .stub-overlay {
-		top: calc(52px + 2px);
+		top: calc(32px + 2px);
 		left: calc(90px + 2px);
 	}
 

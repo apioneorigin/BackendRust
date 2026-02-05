@@ -1028,8 +1028,8 @@
 	.chat-layout {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
-		gap: 1.5rem;
-		padding: 1.5rem;
+		gap: 0.75rem;
+		padding: 0.5rem 0.75rem;
 		flex: 1;
 		min-height: 0;
 		overflow: hidden;
@@ -1543,7 +1543,7 @@
 	.matrix-column {
 		display: flex;
 		flex-direction: column;
-		gap: 0.75rem;
+		gap: 0.25rem;
 		min-width: 0;
 		min-height: 0;
 		overflow: hidden;
@@ -1989,8 +1989,8 @@
 
 	@media (max-width: 767px) {
 		.chat-layout {
-			padding: 0.5rem;
-			gap: 0.5rem;
+			padding: 0.25rem;
+			gap: 0.375rem;
 		}
 	}
 </style>
