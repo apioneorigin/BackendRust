@@ -39,33 +39,18 @@
 	let selectedRows: number[] = [];
 	let selectedColumns: number[] = [];
 
-	// Track whether extra options are revealed (no LLM call needed - data already in backend)
-	let showExtraDrivers = false;
-	let showExtraOutcomes = false;
-
-	// Sync local selection with active document and reset revealed state
+	// Sync local selection with active document
 	$: if ($activeDocument?.matrix_data) {
 		selectedRows = [...($activeDocument.matrix_data.selected_rows || [0, 1, 2, 3, 4])];
 		selectedColumns = [...($activeDocument.matrix_data.selected_columns || [0, 1, 2, 3, 4])];
-		// Reset revealed state when document changes
-		showExtraDrivers = false;
-		showExtraOutcomes = false;
 	}
 
 	$: rowOptions = $activeDocument?.matrix_data?.row_options || [];
 	$: columnOptions = $activeDocument?.matrix_data?.column_options || [];
 
-	// Initially show only selected options, or all if extras are revealed
-	$: visibleRowIndices = showExtraDrivers
-		? rowOptions.map((_, i) => i)
-		: selectedRows.slice(0, 5);
-	$: visibleColIndices = showExtraOutcomes
-		? columnOptions.map((_, i) => i)
-		: selectedColumns.slice(0, 5);
-
-	// Check if there are extra options to reveal
-	$: hasExtraDrivers = rowOptions.length > 5 && !showExtraDrivers;
-	$: hasExtraOutcomes = columnOptions.length > 5 && !showExtraOutcomes;
+	// Show all options — user needs to see everything to make swap decisions
+	$: visibleRowIndices = rowOptions.map((_: any, i: number) => i);
+	$: visibleColIndices = columnOptions.map((_: any, i: number) => i);
 
 	$: selectedRowCount = selectedRows.length;
 	$: selectedColCount = selectedColumns.length;
@@ -95,8 +80,6 @@
 
 	function handleToggleRow(index: number) {
 		if (selectedRows.includes(index)) {
-			// Allow deselection only when extra options are visible (so user can swap)
-			if (!showExtraDrivers) return;
 			selectedRows = selectedRows.filter(i => i !== index);
 		} else {
 			if (selectedRows.length >= 5) return;
@@ -106,21 +89,11 @@
 
 	function handleToggleColumn(index: number) {
 		if (selectedColumns.includes(index)) {
-			// Allow deselection only when extra options are visible (so user can swap)
-			if (!showExtraOutcomes) return;
 			selectedColumns = selectedColumns.filter(i => i !== index);
 		} else {
 			if (selectedColumns.length >= 5) return;
 			selectedColumns = [...selectedColumns, index];
 		}
-	}
-
-	function handleShowExtraDrivers() {
-		showExtraDrivers = true;
-	}
-
-	function handleShowExtraOutcomes() {
-		showExtraOutcomes = true;
 	}
 
 	async function handleSubmit() {
@@ -271,14 +244,13 @@
 					<div class="options-sections">
 						<!-- Drivers (internally rows) -->
 						<div class="options-section">
-							<h4 class="section-title">Drivers ({visibleRowIndices.length} of {rowOptions.length})</h4>
+							<h4 class="section-title">Drivers ({selectedRowCount}/5 selected)</h4>
 							<div class="titles-list">
 								{#each visibleRowIndices as idx (`row-${idx}`)}
 									{@const opt = rowOptions[idx]}
 									{@const isSelected = selectedRows.includes(idx)}
-									{@const canDeselect = showExtraDrivers}
 									{@const canSelect = selectedRows.length < 5}
-									{@const canToggle = isSelected ? canDeselect : canSelect}
+									{@const canToggle = isSelected || canSelect}
 									{@const hasInsight = !!(opt?.insight_title || opt?.articulated_insight)}
 									{#if opt}
 										<div class="title-item-wrapper">
@@ -304,10 +276,7 @@
 													{/if}
 												</div>
 												<div class="title-content">
-													<span class="title-text">{opt.label}</span>
-													{#if opt.insight_title || opt.articulated_insight?.title}
-														<span class="title-insight">{opt.insight_title || opt.articulated_insight?.title}</span>
-													{/if}
+													<span class="title-text">{opt.insight_title || opt.label}</span>
 												</div>
 											</button>
 											{#if hasInsight}
@@ -339,26 +308,17 @@
 									{/if}
 								{/each}
 							</div>
-							{#if hasExtraDrivers}
-								<button class="show-more-btn" on:click={handleShowExtraDrivers}>
-									<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-										<path d="M12 5v14M5 12h14"/>
-									</svg>
-									Show 5 More Drivers
-								</button>
-							{/if}
 						</div>
 
 						<!-- Outcomes (internally columns) -->
 						<div class="options-section">
-							<h4 class="section-title">Outcomes ({visibleColIndices.length} of {columnOptions.length})</h4>
+							<h4 class="section-title">Outcomes ({selectedColCount}/5 selected)</h4>
 							<div class="titles-list">
 								{#each visibleColIndices as idx (`col-${idx}`)}
 									{@const opt = columnOptions[idx]}
 									{@const isSelected = selectedColumns.includes(idx)}
-									{@const canDeselect = showExtraOutcomes}
 									{@const canSelect = selectedColumns.length < 5}
-									{@const canToggle = isSelected ? canDeselect : canSelect}
+									{@const canToggle = isSelected || canSelect}
 									{@const hasInsight = !!(opt?.insight_title || opt?.articulated_insight)}
 									{#if opt}
 										<div class="title-item-wrapper">
@@ -384,10 +344,7 @@
 													{/if}
 												</div>
 												<div class="title-content">
-													<span class="title-text">{opt.label}</span>
-													{#if opt.insight_title || opt.articulated_insight?.title}
-														<span class="title-insight">{opt.insight_title || opt.articulated_insight?.title}</span>
-													{/if}
+													<span class="title-text">{opt.insight_title || opt.label}</span>
 												</div>
 											</button>
 											{#if hasInsight}
@@ -419,14 +376,6 @@
 									{/if}
 								{/each}
 							</div>
-							{#if hasExtraOutcomes}
-								<button class="show-more-btn" on:click={handleShowExtraOutcomes}>
-									<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-										<path d="M12 5v14M5 12h14"/>
-									</svg>
-									Show 5 More Outcomes
-								</button>
-							{/if}
 						</div>
 					</div>
 				{:else}
@@ -661,29 +610,6 @@
 		gap: 0.5rem;
 	}
 
-	.show-more-btn {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.5rem;
-		width: 100%;
-		margin-top: 0.75rem;
-		padding: 0.75rem;
-		background: var(--color-field-depth);
-		border: 1px dashed var(--color-primary-400);
-		border-radius: 0.5rem;
-		font-size: 0.8125rem;
-		font-weight: 500;
-		color: var(--color-primary-600);
-		cursor: pointer;
-		transition: all 0.15s ease;
-	}
-
-	.show-more-btn:hover {
-		background: var(--color-primary-50);
-		border-style: solid;
-	}
-
 	.title-item-wrapper {
 		display: flex;
 		align-items: stretch;
@@ -772,14 +698,6 @@
 		font-size: 0.875rem;
 		font-weight: 500;
 		color: var(--color-text-source);
-	}
-
-	.title-insight {
-		display: block;
-		font-size: 0.75rem;
-		color: var(--color-text-whisper);
-		margin-top: 0.25rem;
-		line-height: 1.4;
 	}
 
 	.no-options-notice {
