@@ -1200,16 +1200,28 @@ async def inference_stream(
         # Build context-enhanced prompt for Call 1
         context_enhanced_prompt = _build_context_enhanced_prompt(prompt, conversation_context)
         api_logger.info(f"[CONTEXT] Conversation context: {'provided' if conversation_context else 'none'}")
+
+        # Extract images from conversation context for vision support in LLM calls
+        context_images = []
         if conversation_context:
             msg_count = len(conversation_context.get('messages', []))
             file_count = len(conversation_context.get('file_summaries', []))
             api_logger.info(f"[CONTEXT] Messages: {msg_count}, Files: {file_count}")
+            for f in conversation_context.get('file_summaries', []):
+                if f.get('image_base64'):
+                    context_images.append({
+                        'name': f.get('name', 'image'),
+                        'base64': f['image_base64'],
+                        'media_type': f.get('image_media_type', 'image/jpeg'),
+                    })
+            if context_images:
+                api_logger.info(f"[CONTEXT] Images for vision: {len(context_images)}")
 
         # Step 1: Parse query with OpenAI + Web Research
         api_logger.info(f"[STEP 1] Parsing query (web_search_data={web_search_data})")
         yield sse_status(f"{'Researching context and parsing' if web_search_data else 'Parsing'} query...")
 
-        evidence = await parse_query_with_web_research(context_enhanced_prompt, model_config, web_search_data)
+        evidence = await parse_query_with_web_research(context_enhanced_prompt, model_config, web_search_data, context_images)
         call1_token_usage = evidence.pop('_call1_token_usage', None)
 
         # Extract and emit conversation title (generated in Call 1)
@@ -1641,7 +1653,7 @@ Articulation Tokens: {token_count}
         yield sse_error(str(e))
 
 
-async def parse_query_with_web_research(prompt: str, model_config: dict, use_web_search: bool = True) -> dict:
+async def parse_query_with_web_research(prompt: str, model_config: dict, use_web_search: bool = True, images: Optional[List[dict]] = None) -> dict:
     """
     Use LLM API with optional web_search tool to:
     1. Research relevant context about user's query (if web search enabled)
@@ -1650,6 +1662,12 @@ async def parse_query_with_web_research(prompt: str, model_config: dict, use_web
 
     Returns structured evidence for inference engine with search_guidance for Call 2.
     Supports both OpenAI and Anthropic providers with optional web search.
+
+    Args:
+        prompt: The user's current message (may include conversation context)
+        model_config: Model configuration (provider, api_key, model)
+        use_web_search: Enable web search for data gathering
+        images: Optional list of image dicts with 'name', 'base64', 'media_type' for vision support
     """
     provider = model_config.get("provider")
     api_key = model_config.get("api_key")
@@ -1872,11 +1890,31 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
             async with httpx.AsyncClient(timeout=120.0) as client:
                 if provider == "anthropic":
                     # Anthropic Claude API with optional web search and prompt caching
-                    user_content = f"User query:\n{prompt}"
+                    user_content_text = f"User query:\n{prompt}"
                     if use_web_search:
-                        user_content += "\n\nIMPORTANT: Use the web_search tool to gather real data before responding."
+                        user_content_text += "\n\nIMPORTANT: Use the web_search tool to gather real data before responding."
                     # Strong JSON enforcement at end of user content
-                    user_content += "\n\nAFTER completing any research, respond with ONLY the JSON object. No markdown, no explanation, no prose - just the raw JSON starting with { and ending with }."
+                    user_content_text += "\n\nAFTER completing any research, respond with ONLY the JSON object. No markdown, no explanation, no prose - just the raw JSON starting with { and ending with }."
+
+                    # Build user content with optional image vision blocks
+                    if images:
+                        user_content = [{"type": "text", "text": user_content_text}]
+                        for img in images:
+                            user_content.append({
+                                "type": "image",
+                                "source": {
+                                    "type": "base64",
+                                    "media_type": img['media_type'],
+                                    "data": img['base64'],
+                                }
+                            })
+                            user_content.append({
+                                "type": "text",
+                                "text": f"Above image is from file: {img['name']}. Analyze visually for consciousness signals."
+                            })
+                        api_logger.info(f"[PARSE] Including {len(images)} image(s) for Anthropic vision")
+                    else:
+                        user_content = user_content_text
 
                     # Build system prompt with cache_control for prompt caching.
                     # SHARED_LLM_CONTEXT contains BOTH Call 1 and Call 2 framework knowledge.
@@ -2079,13 +2117,23 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
                 else:
                     # OpenAI Responses API with optional web search
                     # Uses shared schema from llm_schemas.py (single source of truth)
+                    input_content = [{"type": "input_text", "text": f"User query:\n{prompt}"}]
+                    # Add images for OpenAI vision support
+                    if images:
+                        for img in images:
+                            input_content.append({
+                                "type": "input_image",
+                                "image_url": f"data:{img['media_type']};base64,{img['base64']}"
+                            })
+                        api_logger.info(f"[PARSE] Including {len(images)} image(s) for OpenAI vision")
+
                     request_body = {
                         "model": model,
                         "instructions": instructions,
                         "input": [{
                             "type": "message",
                             "role": "user",
-                            "content": [{"type": "input_text", "text": f"User query:\n{prompt}"}]
+                            "content": input_content
                         }],
                         "text": {
                             "format": CALL1_OPENAI_SCHEMA
