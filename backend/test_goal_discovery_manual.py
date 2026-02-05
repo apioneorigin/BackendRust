@@ -32,7 +32,7 @@ except ImportError:
 
 # Configuration
 DEFAULT_BASE_URL = "http://localhost:8000"
-DEFAULT_MODEL = "claude-opus-4-5-20251101"
+DEFAULT_MODEL = "gpt-5.2"
 
 
 def read_file(file_path: str) -> dict:

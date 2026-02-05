@@ -534,7 +534,7 @@ class DiscoverGoalsRequest(BaseModel):
     """Request for file-based goal discovery."""
     files: List[FileData]
     existing_goals: Optional[List[Dict[str, Any]]] = None
-    model: str = "claude-opus-4-5-20251101"
+    model: str = "gpt-5.2"
 
 
 class DiscoverGoalsResponse(CamelModel):

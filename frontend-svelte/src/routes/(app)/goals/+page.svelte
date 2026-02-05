@@ -186,7 +186,7 @@
 			await api.post('/api/goals/discover-from-files', {
 				files: uploadedFiles,
 				existing_goals: []
-			});
+			}, { timeout: 300000 });
 			addToast('success', 'Goals discovered and saved');
 			uploadedFiles = [];
 			// Reload the persisted discoveries
