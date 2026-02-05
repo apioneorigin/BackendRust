@@ -79,6 +79,14 @@ export interface ColumnOption {
 }
 
 // New: Document with its own matrix data
+export interface DocumentPreview {
+	tempId: string;
+	name: string;
+	rowLabels: string[];
+	columnLabels: string[];
+	insightTitles: string[];
+}
+
 export interface Document {
 	id: string;
 	name: string;
@@ -194,9 +202,12 @@ function createMatrixStore() {
 			value: 50  // Medium
 		}));
 
-		const { row_options = [], column_options = [], selected_rows = [0,1,2,3,4], selected_columns = [0,1,2,3,4] } = doc.matrix_data;
-		// Nullish coalescing required: Pydantic serializes Optional[dict]=None as JSON null,
+		// Nullish coalescing required: Pydantic serializes Optional fields as JSON null,
 		// but JS destructuring defaults only apply for undefined, not null
+		const row_options = doc.matrix_data.row_options ?? [];
+		const column_options = doc.matrix_data.column_options ?? [];
+		const selected_rows = doc.matrix_data.selected_rows ?? [0, 1, 2, 3, 4];
+		const selected_columns = doc.matrix_data.selected_columns ?? [0, 1, 2, 3, 4];
 		const cells = doc.matrix_data.cells ?? {};
 
 		const rowHeaders = selected_rows.map(i => row_options[i]?.label || `Row ${i + 1}`);
@@ -347,8 +358,8 @@ function createMatrixStore() {
 			if (!activeDoc?.matrix_data || !state.conversationId) return;
 
 			// Save original selection for rollback
-			const originalRows = [...activeDoc.matrix_data.selected_rows];
-			const originalCols = [...activeDoc.matrix_data.selected_columns];
+			const originalRows = [...(activeDoc.matrix_data.selected_rows ?? [0, 1, 2, 3, 4])];
+			const originalCols = [...(activeDoc.matrix_data.selected_columns ?? [0, 1, 2, 3, 4])];
 
 			// Optimistic update
 			update(s => {
@@ -473,6 +484,68 @@ function createMatrixStore() {
 			}
 		},
 
+		// Generate 3 document previews for user selection
+		async previewDocuments(model: string = 'claude-opus-4-5-20251101'): Promise<DocumentPreview[]> {
+			const state = get({ subscribe });
+			if (!state.conversationId) return [];
+
+			try {
+				const response = await api.post<{ previews: DocumentPreview[] }>(
+					`/api/matrix/${state.conversationId}/documents/preview`,
+					{ model },
+					{ timeout: 300000, retries: 1 }
+				);
+				return response.previews ?? [];
+			} catch (error: any) {
+				console.error('Failed to generate document previews:', error);
+				addToast('error', 'Failed to generate document previews');
+				return [];
+			}
+		},
+
+		// Add selected previews as new documents, then reload full document list
+		async addDocuments(selectedPreviewIds: string[], model: string = 'claude-opus-4-5-20251101') {
+			const state = get({ subscribe });
+			if (!state.conversationId) return;
+
+			try {
+				await api.post(
+					`/api/matrix/${state.conversationId}/documents/add`,
+					{ selected_preview_ids: selectedPreviewIds, model },
+					{ timeout: 300000, retries: 1 }
+				);
+
+				// Reload full document list from backend
+				const documents = await api.get<Document[]>(
+					`/api/matrix/${state.conversationId}/documents`
+				);
+
+				if (documents?.length) {
+					const activeDoc = documents.find(d => d.id === state.activeDocumentId) || documents[0];
+					const displayed = buildDisplayedMatrix(activeDoc);
+
+					update(s => ({
+						...s,
+						documents,
+						activeDocumentId: activeDoc.id,
+						...(displayed ? {
+							displayedMatrixData: displayed.matrixData,
+							displayedRowHeaders: displayed.rowHeaders,
+							displayedColumnHeaders: displayed.columnHeaders,
+							displayedRowInsights: displayed.rowInsights,
+							displayedColumnInsights: displayed.columnInsights,
+						} : {}),
+						isGenerated: !!activeDoc.matrix_data?.cells && Object.keys(activeDoc.matrix_data.cells).length > 0
+					}));
+				}
+
+				addToast('info', 'Documents added');
+			} catch (error: any) {
+				console.error('Failed to add documents:', error);
+				addToast('error', 'Failed to add documents');
+			}
+		},
+
 		// Populate a document with full cell data via "Design Your Reality"
 		async populateDocument(docId: string, model: string = 'claude-opus-4-5-20251101') {
 			const state = get({ subscribe });
@@ -485,7 +558,8 @@ function createMatrixStore() {
 				// Backend returns the updated document directly — no follow-up GET needed
 				const doc = await api.post<Document>(
 					`/api/matrix/${state.conversationId}/document/${docId}/design-reality`,
-					{ model }
+					{ model },
+					{ timeout: 300000, retries: 1 }
 				);
 
 				if (doc?.matrix_data) {
@@ -502,12 +576,15 @@ function createMatrixStore() {
 		// Generate all missing insights for the active document
 		async generateInsights(insightIndex: number, model: string): Promise<Document | null> {
 			const state = get({ subscribe });
-			if (!state.conversationId || !state.activeDocumentId) return null;
+			if (!state.conversationId) throw new Error('No conversation selected');
+			if (!state.activeDocumentId) throw new Error('No document selected');
 
 			// Backend returns the updated document directly — no follow-up GET needed
+			// LLM insight generation can take up to 5 minutes — override default 30s timeout
 			const doc = await api.post<Document>(
 				`/api/matrix/${state.conversationId}/document/${state.activeDocumentId}/generate-insights`,
-				{ model, insight_index: insightIndex }
+				{ model, insight_index: insightIndex },
+				{ timeout: 300000, retries: 1 }
 			);
 
 			if (doc?.matrix_data) {
@@ -686,6 +763,8 @@ function createMatrixStore() {
 
 			update(state => ({
 				...state,
+				documents: [],
+				activeDocumentId: null,
 				displayedMatrixData,
 				displayedRowHeaders: ['Row 1', 'Row 2', 'Row 3', 'Row 4', 'Row 5'],
 				displayedColumnHeaders: ['Column 1', 'Column 2', 'Column 3', 'Column 4', 'Column 5'],
