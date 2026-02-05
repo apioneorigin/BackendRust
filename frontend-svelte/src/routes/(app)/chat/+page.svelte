@@ -727,52 +727,51 @@
 
 	<!-- Right column: Matrix + Preview (shows with welcome overlays in welcome state) -->
 	<div class="matrix-column">
-		<!-- Top half: Matrix + Toolbar -->
-		<div class="matrix-top">
-			<div class="matrix-box" class:welcome-overlay-container={isWelcomeState}>
-				<MatrixPanel
-					matrixData={$matrixDataStore}
-					rowHeaders={$rowHeadersStore}
-					columnHeaders={$columnHeadersStore}
-					showPowerSpotsView={showPowerSpotsView}
-					showRiskView={showRiskView}
-					compact={true}
-					stubMode={isStubState}
-					on:cellClick={handleCellClick}
-					on:cellChange={handleCellChange}
-					on:showPowerSpotExplanation={handleShowPowerSpotExplanation}
-					on:showRiskExplanation={handleShowRiskExplanation}
-				/>
-				{#if isWelcomeState}
-					<div class="welcome-overlay matrix-overlay">
-						<div class="overlay-content">
-							<div class="overlay-icon matrix-icon">
-								<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-									<rect x="3" y="3" width="7" height="7"/>
-									<rect x="14" y="3" width="7" height="7"/>
-									<rect x="14" y="14" width="7" height="7"/>
-									<rect x="3" y="14" width="7" height="7"/>
-								</svg>
-							</div>
-							<h3>Design Your Reality</h3>
-							<p>Visualize how factors influence each other.<br/>Click cells to explore relationships.</p>
-						</div>
-					</div>
-				{/if}
-			</div>
-
-			<MatrixToolbar
+		<!-- Matrix Panel -->
+		<div class="matrix-box" class:welcome-overlay-container={isWelcomeState}>
+			<MatrixPanel
+				matrixData={$matrixDataStore}
+				rowHeaders={$rowHeadersStore}
+				columnHeaders={$columnHeadersStore}
 				showPowerSpotsView={showPowerSpotsView}
 				showRiskView={showRiskView}
-				disabled={isWelcomeState || isStubState}
-				on:openPopup={handleToolbarPopup}
-				on:togglePowerSpots={handleTogglePowerSpots}
-				on:toggleRisk={handleToggleRisk}
-				on:saveScenario={handleSaveScenario}
+				compact={true}
+				stubMode={isStubState}
+				on:cellClick={handleCellClick}
+				on:cellChange={handleCellChange}
+				on:showPowerSpotExplanation={handleShowPowerSpotExplanation}
+				on:showRiskExplanation={handleShowRiskExplanation}
 			/>
+			{#if isWelcomeState}
+				<div class="welcome-overlay matrix-overlay">
+					<div class="overlay-content">
+						<div class="overlay-icon matrix-icon">
+							<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<rect x="3" y="3" width="7" height="7"/>
+								<rect x="14" y="3" width="7" height="7"/>
+								<rect x="14" y="14" width="7" height="7"/>
+								<rect x="3" y="14" width="7" height="7"/>
+							</svg>
+						</div>
+						<h3>Design Your Reality</h3>
+						<p>Visualize how factors influence each other.<br/>Click cells to explore relationships.</p>
+					</div>
+				</div>
+			{/if}
 		</div>
 
-		<!-- Bottom half: Live Preview -->
+		<!-- Toolbar -->
+		<MatrixToolbar
+			showPowerSpotsView={showPowerSpotsView}
+			showRiskView={showRiskView}
+			disabled={isWelcomeState || isStubState}
+			on:openPopup={handleToolbarPopup}
+			on:togglePowerSpots={handleTogglePowerSpots}
+			on:toggleRisk={handleToggleRisk}
+			on:saveScenario={handleSaveScenario}
+		/>
+
+		<!-- Live Preview -->
 		<div class="preview-box" class:welcome-overlay-container={isWelcomeState}>
 			<LivePreviewBox
 				coherence={$coherenceStore}
@@ -1030,7 +1029,7 @@
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		gap: 1.5rem;
-		padding: 1.5rem;
+		padding: 1rem 1.5rem 1rem;
 		flex: 1;
 		min-height: 0;
 		overflow: hidden;
@@ -1050,7 +1049,7 @@
 		flex: 1;
 		overflow-y: auto;
 		overflow-x: hidden;
-		padding: 1.5rem calc(0.75rem + 1px);
+		padding: 0.375rem calc(0.75rem + 1px) 1.5rem;
 		min-height: 0;
 		/* Override global smooth scroll - prevents conflicts during streaming */
 		scroll-behavior: auto;
@@ -1546,14 +1545,6 @@
 		flex-direction: column;
 		gap: 0.375rem;
 		min-width: 0;
-		min-height: 0;
-		overflow: hidden;
-	}
-
-	.matrix-top {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
 		min-height: 0;
 		overflow: hidden;
 	}
