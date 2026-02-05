@@ -114,6 +114,7 @@ class DocumentMatrixData(BaseModel):
     column_options: List[ColumnOption] = []
     selected_rows: List[int] = [0, 1, 2, 3, 4]
     selected_columns: List[int] = [0, 1, 2, 3, 4]
+    viewed_insight_indices: List[int] = []
     cells: Optional[dict] = None
 
 
