@@ -198,7 +198,7 @@ class GoalClassifier:
         call1_output: Dict[str, Any]
     ) -> Tuple[ConsciousnessState, IntegratedProfile]:
         """Extract operators from Call 1 and run full inference."""
-        observations = call1_output.get("observations", [])
+        observations = call1_output.get("observations") or []
 
         # Build operators dict with canonical names
         operators: Dict[str, float] = {}
@@ -271,8 +271,8 @@ class GoalClassifier:
         call1_output: Dict[str, Any]
     ) -> List[IndexedSignal]:
         """Parse signals from Call 1, assign IDs, build signal graph."""
-        raw_signals = call1_output.get("signals", [])
-        file_metadata = call1_output.get("file_metadata", {})
+        raw_signals = call1_output.get("signals") or []
+        file_metadata = call1_output.get("file_metadata") or {}
 
         indexed = []
         for i, sig in enumerate(raw_signals):
@@ -305,7 +305,7 @@ class GoalClassifier:
                 source_file=sig.get("source_file", "unknown"),
                 source_quote=sig.get("source_quote"),
                 data_quality=float(sig.get("data_quality", 0.8)),
-                relationships=sig.get("relationships", []),
+                relationships=sig.get("relationships") or [],
             )
             indexed.append(indexed_signal)
 
@@ -355,7 +355,7 @@ class GoalClassifier:
             # Signals with no incoming relationships are more likely roots
             incoming = sum(
                 1 for s in signals
-                if signal.signal_id in s.relationships
+                if signal.signal_id in (s.relationships or [])
             )
             if incoming == 0 and signal.relationships:
                 root_score += 1
@@ -489,7 +489,7 @@ class GoalClassifier:
         strength_signals = [s for s in signals if s.category == SignalCategory.STRENGTHS]
         threatened_strengths = [
             s for s in strength_signals
-            if any("threat" in r.lower() or "risk" in r.lower() for r in s.relationships)
+            if any("threat" in r.lower() or "risk" in r.lower() for r in (s.relationships or []))
             or "declining" in s.description.lower()
             or "at risk" in s.description.lower()
         ]
@@ -850,11 +850,11 @@ class GoalClassifier:
 
     def _infer_user_intent(self, call1_output: Dict[str, Any]) -> str:
         """Infer user intent from file metadata and signal patterns."""
-        file_metadata = call1_output.get("file_metadata", {})
-        signals = call1_output.get("signals", [])
+        file_metadata = call1_output.get("file_metadata") or {}
+        signals = call1_output.get("signals") or []
 
         # Check file types for hints
-        file_types = file_metadata.get("file_types", [])
+        file_types = file_metadata.get("file_types") or []
 
         # Growth indicators
         growth_keywords = ["strategy", "vision", "roadmap", "plan", "growth"]

@@ -828,8 +828,8 @@ Return valid JSON only. No markdown, no explanation."""
                 call1_output = parse_llm_json_response(response_text, "CALL1")
 
         if call1_output:
-            signal_count = len(call1_output.get("signals", []))
-            obs_count = len(call1_output.get("observations", []))
+            signal_count = len(call1_output.get("signals") or [])
+            obs_count = len(call1_output.get("observations") or [])
             api_logger.info(f"[GOAL DISCOVERY] Call 1 complete: {signal_count} signals, {obs_count} observations")
         else:
             api_logger.warning("[GOAL DISCOVERY] Call 1 returned no valid JSON")
