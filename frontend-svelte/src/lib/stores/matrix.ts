@@ -186,13 +186,15 @@ function createMatrixStore() {
 		columnHeaders: string[];
 		rowInsights: string[];
 		columnInsights: string[];
-	} {
+	} | null {
+		if (!doc.matrix_data) return null;
+
 		const placeholderDimensions: CellDimension[] = Array.from({ length: 5 }, (_, i) => ({
 			name: `Dimension ${i + 1}`,
 			value: 50  // Medium
 		}));
 
-		const { row_options, column_options, selected_rows, selected_columns, cells = {} } = doc.matrix_data;
+		const { row_options = [], column_options = [], selected_rows = [0,1,2,3,4], selected_columns = [0,1,2,3,4], cells = {} } = doc.matrix_data;
 
 		const rowHeaders = selected_rows.map(i => row_options[i]?.label || `Row ${i + 1}`);
 		const columnHeaders = selected_columns.map(i => column_options[i]?.label || `Column ${i + 1}`);
@@ -253,6 +255,7 @@ function createMatrixStore() {
 
 			if (state.activeDocumentId === doc.id) {
 				const displayed = buildDisplayedMatrix(doc);
+				if (!displayed) return { ...state, documents: updatedDocs };
 				return {
 					...state,
 					documents: updatedDocs,
@@ -282,9 +285,21 @@ function createMatrixStore() {
 
 			const documents = data.documents;
 
-			const activeDocumentId = documents[0].id;
-			const activeDoc = documents[0];
+			// Find first document with valid matrix_data for display
+			const activeDoc = documents.find(d => d.matrix_data) || documents[0];
+			const activeDocumentId = activeDoc.id;
 			const displayed = buildDisplayedMatrix(activeDoc);
+
+			if (!displayed) {
+				// All documents are stubs (no matrix_data) — store them but don't update display
+				update(state => ({
+					...state,
+					documents,
+					activeDocumentId,
+					isGenerated: false
+				}));
+				return;
+			}
 
 			update(state => ({
 				...state,
@@ -306,6 +321,7 @@ function createMatrixStore() {
 				if (!doc) return state;
 
 				const displayed = buildDisplayedMatrix(doc);
+				if (!displayed) return { ...state, activeDocumentId: documentId };
 
 				return {
 					...state,
@@ -323,7 +339,7 @@ function createMatrixStore() {
 		async updateDocumentSelection(selectedRows: number[], selectedColumns: number[]) {
 			const state = get({ subscribe });
 			const activeDoc = state.documents.find(d => d.id === state.activeDocumentId);
-			if (!activeDoc || !state.conversationId) return;
+			if (!activeDoc?.matrix_data || !state.conversationId) return;
 
 			// Save original selection for rollback
 			const originalRows = [...activeDoc.matrix_data.selected_rows];
@@ -345,6 +361,7 @@ function createMatrixStore() {
 				};
 
 				const displayed = buildDisplayedMatrix(updatedDocs[docIndex]);
+				if (!displayed) return { ...s, documents: updatedDocs };
 
 				return {
 					...s,
@@ -383,6 +400,7 @@ function createMatrixStore() {
 					};
 
 					const displayed = buildDisplayedMatrix(updatedDocs[docIndex]);
+					if (!displayed) return { ...s, documents: updatedDocs };
 
 					return {
 						...s,

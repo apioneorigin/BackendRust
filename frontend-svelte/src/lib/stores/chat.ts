@@ -294,6 +294,9 @@ function createChatStore() {
 					isLoading: false,
 				}));
 
+				// Set conversation ID first — must run before any matrix operations
+				matrix.setConversationId(conversationId);
+
 				// Apply documents to matrix store if present (new architecture)
 				const documents = Array.isArray(documentsResponse) ? documentsResponse : [];
 				if (documents.length > 0) {
@@ -302,9 +305,6 @@ function createChatStore() {
 					// Reset matrix to default state if no data
 					matrix.initializeMatrix();
 				}
-
-				// Set conversation ID in matrix store for API calls
-				matrix.setConversationId(conversationId);
 			} catch (error: any) {
 				// Ignore abort errors (expected when user clicks rapidly)
 				if (error.name === 'AbortError') return;
