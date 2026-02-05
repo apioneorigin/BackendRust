@@ -296,10 +296,12 @@ async def generate_insights(
 
     missing_indices = []
     for i, row in enumerate(row_options):
-        if not row.get("articulated_insight"):
+        insight = row.get("articulated_insight")
+        if not insight or not insight.get("the_truth"):
             missing_indices.append(i)
     for i, col in enumerate(col_options):
-        if not col.get("articulated_insight"):
+        insight = col.get("articulated_insight")
+        if not insight or not insight.get("the_truth"):
             missing_indices.append(10 + i)
 
     # If all insights already exist, return document as-is

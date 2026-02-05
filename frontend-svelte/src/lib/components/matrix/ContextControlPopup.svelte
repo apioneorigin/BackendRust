@@ -175,7 +175,7 @@
 		selectedOptionLabel = opt.label;
 		selectedOptionType = type;
 
-		if (opt.articulated_insight) {
+		if (opt.articulated_insight?.the_truth) {
 			selectedInsight = opt.articulated_insight;
 			showInsightPopup = true;
 			return;
@@ -356,7 +356,7 @@
 									{@const canSelect = selectedRows.length < 5}
 									{@const canToggle = isSelected || canSelect}
 									{@const hasInsight = !!(opt?.insight_title || opt?.articulated_insight)}
-									{@const isGenerated = !!opt?.articulated_insight}
+									{@const isGenerated = !!opt?.articulated_insight?.the_truth}
 									{@const isThisLoading = generatingInsightKey === `row-${idx}`}
 									{#if opt}
 										<div class="title-item-wrapper">
@@ -409,7 +409,7 @@
 									{@const canSelect = selectedColumns.length < 5}
 									{@const canToggle = isSelected || canSelect}
 									{@const hasInsight = !!(opt?.insight_title || opt?.articulated_insight)}
-									{@const isGenerated = !!opt?.articulated_insight}
+									{@const isGenerated = !!opt?.articulated_insight?.the_truth}
 									{@const isThisLoading = generatingInsightKey === `column-${idx}`}
 									{#if opt}
 										<div class="title-item-wrapper">
