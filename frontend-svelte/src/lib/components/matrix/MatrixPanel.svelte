@@ -433,7 +433,7 @@
 
 	/* Document Tabs */
 	.document-tabs-container {
-		padding: 0 0 0.5rem;
+		padding: 0 0 0.25rem;
 		flex-shrink: 0;
 	}
 
@@ -537,40 +537,33 @@
 		overflow: hidden;
 	}
 
-	/* Column header text: one word per line, clipped to container */
-	.col-header .header-text {
-		font-size: 0.5625rem;
+	/* Column and row header text — identical sizing */
+	.col-header .header-text,
+	.row-header .header-text {
+		font-size: 0.625rem;
 		font-weight: 600;
 		color: var(--color-text-whisper);
-		text-align: center;
 		line-height: 1.15;
 		text-transform: uppercase;
 		letter-spacing: 0.01em;
-		word-spacing: 100vw; /* Forces each word to its own line — works well for narrow columns */
 		overflow: hidden;
 		display: -webkit-box;
 		-webkit-line-clamp: 4;
 		-webkit-box-orient: vertical;
 	}
 
-	/* Row header text: natural wrapping so multi-word names use width efficiently */
+	.col-header .header-text {
+		text-align: center;
+		word-spacing: 100vw; /* Forces each word to its own line — works well for narrow columns */
+	}
+
 	.row-header .header-text {
-		font-size: 0.5625rem;
-		font-weight: 600;
-		color: var(--color-text-whisper);
 		text-align: right;
-		line-height: 1.15;
-		text-transform: uppercase;
-		letter-spacing: 0.01em;
-		overflow: hidden;
-		display: -webkit-box;
-		-webkit-line-clamp: 4;
-		-webkit-box-orient: vertical;
 	}
 
 	.compact .col-header .header-text,
 	.compact .row-header .header-text {
-		font-size: 0.5rem;
+		font-size: 0.5625rem;
 	}
 
 	.matrix-cell {
@@ -613,30 +606,30 @@
 		background: rgba(220, 38, 38, 0.08);
 	}
 
-	/* Top 50% - click to open dimensions popup */
+	/* Top 2/3 - click to open dimensions popup */
 	.cell-top-area {
-		flex: 1;
+		flex: 2;
 		background: transparent;
 		border: none;
 		cursor: pointer;
-		min-height: 50%;
+		min-height: 0;
 	}
 
 	.cell-top-area:hover {
 		background: rgba(0, 0, 0, 0.05);
 	}
 
-	/* Bottom 50% - 5-segment bar */
+	/* Bottom 1/3 - thin 5-segment bar strip */
 	.cell-bar {
 		display: flex;
 		gap: 2px;
-		padding: 0.25rem;
-		min-height: 50%;
+		padding: 2px 3px;
+		flex: 1;
 		align-items: stretch;
 	}
 
 	.compact .cell-bar {
-		padding: 0.125rem;
+		padding: 2px;
 		gap: 1px;
 	}
 
@@ -647,7 +640,6 @@
 		border-radius: 2px;
 		cursor: pointer;
 		transition: all 0.1s ease;
-		min-height: 8px;
 	}
 
 	.cell-bar-segment:hover {
@@ -775,16 +767,17 @@
 
 	.dim-bar {
 		display: flex;
-		gap: 4px;
+		gap: 2px;
 		flex-shrink: 0;
 	}
 
+	/* Dimension bar segments — identical style to cell bar segments */
 	.dim-bar-segment {
 		width: 28px;
-		height: 16px;
+		height: 8px;
 		background: var(--color-veil-thin);
 		border: none;
-		border-radius: 3px;
+		border-radius: 2px;
 		cursor: pointer;
 		transition: all 0.1s ease;
 	}
