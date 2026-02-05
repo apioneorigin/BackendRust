@@ -266,7 +266,8 @@ function createMatrixStore() {
 					displayedRowHeaders: displayed.rowHeaders,
 					displayedColumnHeaders: displayed.columnHeaders,
 					displayedRowInsights: displayed.rowInsights,
-					displayedColumnInsights: displayed.columnInsights
+					displayedColumnInsights: displayed.columnInsights,
+					isGenerated: !!doc.matrix_data?.cells && Object.keys(doc.matrix_data.cells).length > 0
 				};
 			}
 
@@ -313,7 +314,7 @@ function createMatrixStore() {
 				displayedColumnHeaders: displayed.columnHeaders,
 				displayedRowInsights: displayed.rowInsights,
 				displayedColumnInsights: displayed.columnInsights,
-				isGenerated: true
+				isGenerated: !!activeDoc.matrix_data?.cells && Object.keys(activeDoc.matrix_data.cells).length > 0
 			}));
 		},
 
@@ -324,7 +325,7 @@ function createMatrixStore() {
 				if (!doc) return state;
 
 				const displayed = buildDisplayedMatrix(doc);
-				if (!displayed) return { ...state, activeDocumentId: documentId };
+				if (!displayed) return { ...state, activeDocumentId: documentId, isGenerated: false };
 
 				return {
 					...state,
@@ -333,7 +334,8 @@ function createMatrixStore() {
 					displayedRowHeaders: displayed.rowHeaders,
 					displayedColumnHeaders: displayed.columnHeaders,
 					displayedRowInsights: displayed.rowInsights,
-					displayedColumnInsights: displayed.columnInsights
+					displayedColumnInsights: displayed.columnInsights,
+					isGenerated: !!doc.matrix_data?.cells && Object.keys(doc.matrix_data.cells).length > 0
 				};
 			});
 		},

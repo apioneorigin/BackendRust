@@ -63,6 +63,9 @@
 	// Welcome state - shows strategic overview until user starts chatting
 	$: isWelcomeState = $messages.length === 0 && !$isStreaming;
 
+	// Matrix overlay - shows "Design Your Reality" for welcome state OR stub documents without cells
+	$: showMatrixOverlay = isWelcomeState || !$isMatrixGenerated;
+
 	// Popup state
 	let showContextPopup = false;
 	let activeToolbarPopup: 'plays' | 'scenarios' | null = null;
@@ -677,7 +680,7 @@
 	<!-- Right column: Matrix + Preview (shows with welcome overlays in welcome state) -->
 	<div class="matrix-column">
 		<!-- Matrix Panel - always shown -->
-		<div class="matrix-box" class:welcome-overlay-container={isWelcomeState}>
+		<div class="matrix-box" class:welcome-overlay-container={showMatrixOverlay}>
 			<MatrixPanel
 				matrixData={$matrixDataStore}
 				rowHeaders={$rowHeadersStore}
@@ -690,7 +693,7 @@
 				on:showPowerSpotExplanation={handleShowPowerSpotExplanation}
 				on:showRiskExplanation={handleShowRiskExplanation}
 			/>
-			{#if isWelcomeState}
+			{#if showMatrixOverlay}
 				<div class="welcome-overlay matrix-overlay">
 					<div class="overlay-content">
 						<div class="overlay-icon matrix-icon">
@@ -712,7 +715,7 @@
 		<MatrixToolbar
 			showPowerSpotsView={showPowerSpotsView}
 			showRiskView={showRiskView}
-			disabled={isWelcomeState}
+			disabled={showMatrixOverlay}
 			on:openPopup={handleToolbarPopup}
 			on:togglePowerSpots={handleTogglePowerSpots}
 			on:toggleRisk={handleToggleRisk}
