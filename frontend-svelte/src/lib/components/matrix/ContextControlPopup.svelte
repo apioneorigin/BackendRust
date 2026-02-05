@@ -84,7 +84,7 @@
 	let selectedInsight: ArticulatedInsight | null = null;
 	let selectedOptionLabel = '';
 	let selectedOptionType: 'row' | 'column' = 'row';
-	let generatingInsights = false;
+	let generatingInsightKey: string | null = null;
 
 	const dispatch = createEventDispatcher<{
 		close: void;
@@ -171,7 +171,7 @@
 		}
 	}
 
-	async function handleOpenInsight(opt: RowOption | ColumnOption, type: 'row' | 'column') {
+	async function handleOpenInsight(opt: RowOption | ColumnOption, type: 'row' | 'column', idx: number) {
 		selectedOptionLabel = opt.label;
 		selectedOptionType = type;
 
@@ -184,17 +184,16 @@
 		// Trigger on-demand generation of all missing insights
 		if (!opt.insight_title) return;
 
-		const optionsList = type === 'row' ? rowOptions : columnOptions;
-		const insightIndex = optionsList.indexOf(opt) + (type === 'column' ? 10 : 0);
+		const insightIndex = idx + (type === 'column' ? 10 : 0);
+		const key = `${type}-${idx}`;
 
-		generatingInsights = true;
+		generatingInsightKey = key;
 		try {
 			const updatedDoc = await matrix.generateInsights(insightIndex, model);
 			if (updatedDoc) {
 				const options = type === 'row'
 					? updatedDoc.matrix_data.row_options
 					: updatedDoc.matrix_data.column_options;
-				const idx = type === 'row' ? insightIndex : insightIndex - 10;
 				const updatedOpt = options[idx];
 				if (updatedOpt?.articulated_insight) {
 					selectedInsight = updatedOpt.articulated_insight;
@@ -205,7 +204,7 @@
 			console.error('Failed to generate insights:', error);
 			addToast('error', error.message || 'Failed to generate insight');
 		} finally {
-			generatingInsights = false;
+			generatingInsightKey = null;
 		}
 	}
 
@@ -357,6 +356,8 @@
 									{@const canSelect = selectedRows.length < 5}
 									{@const canToggle = isSelected || canSelect}
 									{@const hasInsight = !!(opt?.insight_title || opt?.articulated_insight)}
+									{@const isGenerated = !!opt?.articulated_insight}
+									{@const isThisLoading = generatingInsightKey === `row-${idx}`}
 									{#if opt}
 										<div class="title-item-wrapper">
 											<button
@@ -367,17 +368,7 @@
 											>
 												<div class="title-checkbox" class:checked={isSelected}>
 													{#if isSelected}
-														<svg
-															xmlns="http://www.w3.org/2000/svg"
-															width="14"
-															height="14"
-															viewBox="0 0 24 24"
-															fill="none"
-															stroke="currentColor"
-															stroke-width="3"
-														>
-															<polyline points="20 6 9 17 4 12" />
-														</svg>
+														<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12" /></svg>
 													{/if}
 												</div>
 												<div class="title-content">
@@ -387,26 +378,19 @@
 											{#if hasInsight}
 												<button
 													class="insight-expand-btn"
-													class:loading={generatingInsights}
-													disabled={generatingInsights}
-													on:click|stopPropagation={() => handleOpenInsight(opt, 'row')}
-													title={opt.articulated_insight ? 'View full insight' : 'Generate insight'}
+													class:loading={isThisLoading}
+													class:generated={isGenerated}
+													disabled={generatingInsightKey !== null}
+													on:click|stopPropagation={() => handleOpenInsight(opt, 'row', idx)}
+													title={isGenerated ? 'View insight' : 'Generate insight'}
 												>
-													<svg
-														xmlns="http://www.w3.org/2000/svg"
-														width="16"
-														height="16"
-														viewBox="0 0 24 24"
-														fill="none"
-														stroke="currentColor"
-														stroke-width="2"
-														stroke-linecap="round"
-														stroke-linejoin="round"
-													>
-														<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-														<polyline points="15 3 21 3 21 9" />
-														<line x1="10" y1="14" x2="21" y2="3" />
-													</svg>
+													{#if isThisLoading}
+														<svg class="spinner" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 2v4m0 12v4m-7.07-15.07 2.83 2.83m8.48 8.48 2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48 2.83-2.83" /></svg>
+													{:else if isGenerated}
+														<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg>
+													{:else}
+														<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>
+													{/if}
 												</button>
 											{/if}
 										</div>
@@ -425,6 +409,8 @@
 									{@const canSelect = selectedColumns.length < 5}
 									{@const canToggle = isSelected || canSelect}
 									{@const hasInsight = !!(opt?.insight_title || opt?.articulated_insight)}
+									{@const isGenerated = !!opt?.articulated_insight}
+									{@const isThisLoading = generatingInsightKey === `column-${idx}`}
 									{#if opt}
 										<div class="title-item-wrapper">
 											<button
@@ -435,17 +421,7 @@
 											>
 												<div class="title-checkbox" class:checked={isSelected}>
 													{#if isSelected}
-														<svg
-															xmlns="http://www.w3.org/2000/svg"
-															width="14"
-															height="14"
-															viewBox="0 0 24 24"
-															fill="none"
-															stroke="currentColor"
-															stroke-width="3"
-														>
-															<polyline points="20 6 9 17 4 12" />
-														</svg>
+														<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12" /></svg>
 													{/if}
 												</div>
 												<div class="title-content">
@@ -455,26 +431,19 @@
 											{#if hasInsight}
 												<button
 													class="insight-expand-btn"
-													class:loading={generatingInsights}
-													disabled={generatingInsights}
-													on:click|stopPropagation={() => handleOpenInsight(opt, 'column')}
-													title={opt.articulated_insight ? 'View full insight' : 'Generate insight'}
+													class:loading={isThisLoading}
+													class:generated={isGenerated}
+													disabled={generatingInsightKey !== null}
+													on:click|stopPropagation={() => handleOpenInsight(opt, 'column', idx)}
+													title={isGenerated ? 'View insight' : 'Generate insight'}
 												>
-													<svg
-														xmlns="http://www.w3.org/2000/svg"
-														width="16"
-														height="16"
-														viewBox="0 0 24 24"
-														fill="none"
-														stroke="currentColor"
-														stroke-width="2"
-														stroke-linecap="round"
-														stroke-linejoin="round"
-													>
-														<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-														<polyline points="15 3 21 3 21 9" />
-														<line x1="10" y1="14" x2="21" y2="3" />
-													</svg>
+													{#if isThisLoading}
+														<svg class="spinner" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 2v4m0 12v4m-7.07-15.07 2.83 2.83m8.48 8.48 2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48 2.83-2.83" /></svg>
+													{:else if isGenerated}
+														<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg>
+													{:else}
+														<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>
+													{/if}
 												</button>
 											{/if}
 										</div>
@@ -842,21 +811,45 @@
 		background: var(--color-field-depth);
 		border: 1px solid var(--color-veil-thin);
 		border-radius: 0.5rem;
-		color: var(--color-primary-500);
+		color: var(--color-text-whisper);
 		cursor: pointer;
 		transition: all 0.15s ease;
 		flex-shrink: 0;
 	}
 
-	.insight-expand-btn:hover {
+	.insight-expand-btn:hover:not(:disabled) {
 		background: var(--color-primary-50);
 		border-color: var(--color-primary-400);
 		color: var(--color-primary-600);
 	}
 
+	.insight-expand-btn.generated {
+		color: var(--color-primary-500);
+		border-color: var(--color-primary-200);
+	}
+
+	.insight-expand-btn.generated:hover:not(:disabled) {
+		background: var(--color-primary-50);
+		border-color: var(--color-primary-400);
+		color: var(--color-primary-700);
+	}
+
 	.insight-expand-btn.loading {
-		opacity: 0.5;
 		cursor: wait;
+		color: var(--color-primary-500);
+	}
+
+	.insight-expand-btn:disabled:not(.loading) {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+
+	.insight-expand-btn .spinner {
+		animation: spin 1s linear infinite;
+	}
+
+	@keyframes spin {
+		to { transform: rotate(360deg); }
 	}
 
 	.title-item {
