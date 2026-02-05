@@ -43,6 +43,7 @@ from .models import (
     ValueTrajectory,
     DiscoveredGoal,
     UserGoalInventory,
+    FileGoalDiscovery,
     # Document
     Document,
     MilestoneConcept,
@@ -121,6 +122,7 @@ __all__ = [
     "ValueTrajectory",
     "DiscoveredGoal",
     "UserGoalInventory",
+    "FileGoalDiscovery",
     # Document
     "Document",
     "MilestoneConcept",

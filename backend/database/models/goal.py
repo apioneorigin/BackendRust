@@ -308,3 +308,28 @@ class UserGoalInventory(Base):
     __table_args__ = (
         Index("ix_user_goal_inventories_od_id", "od_id"),
     )
+
+
+class FileGoalDiscovery(Base):
+    """Persisted file-wise goal discovery sessions."""
+    __tablename__ = "file_goal_discoveries"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    user_id: Mapped[str] = mapped_column(String, nullable=False)
+    organization_id: Mapped[str] = mapped_column(String, nullable=False)
+
+    # File info
+    file_names: Mapped[dict] = mapped_column(JSON, nullable=False)  # List of file names
+    file_count: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    # Discovered goals data
+    goals: Mapped[dict] = mapped_column(JSON, nullable=False)  # Full goals array
+    goal_count: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    # Metadata
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        Index("ix_file_goal_discoveries_user_id", "user_id"),
+        Index("ix_file_goal_discoveries_created_at", "created_at"),
+    )
