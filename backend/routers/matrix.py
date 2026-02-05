@@ -600,7 +600,15 @@ class UpdateDocumentSelectionRequest(BaseModel):
     selected_columns: List[int]
 
 
-@router.patch("/{conversation_id}/document/{doc_id}/selection")
+class UpdateDocumentSelectionResponse(CamelModel):
+    """Response from updating document selection"""
+    status: str
+    document_id: str
+    selected_rows: List[int]
+    selected_columns: List[int]
+
+
+@router.patch("/{conversation_id}/document/{doc_id}/selection", response_model=UpdateDocumentSelectionResponse)
 async def update_document_selection(
     conversation_id: str,
     doc_id: str,
@@ -647,12 +655,12 @@ async def update_document_selection(
     flag_modified(conversation, "generated_documents")
     await db.commit()
 
-    return {
-        "status": "success",
-        "document_id": doc_id,
-        "selected_rows": request.selected_rows,
-        "selected_columns": request.selected_columns
-    }
+    return UpdateDocumentSelectionResponse(
+        status="success",
+        document_id=doc_id,
+        selected_rows=request.selected_rows,
+        selected_columns=request.selected_columns
+    )
 
 
 # ============================================================================
@@ -800,7 +808,7 @@ async def get_risk_analysis(
     )
 
 
-@router.get("/{conversation_id}/document/{doc_id}/cell/{row}/{col}/explain")
+@router.get("/{conversation_id}/document/{doc_id}/cell/{row}/{col}/explain", response_model=CellExplanationResponse)
 async def explain_cell(
     conversation_id: str,
     doc_id: str,
@@ -914,6 +922,13 @@ class SelectPlayRequest(BaseModel):
     play_id: Optional[str]  # None to deselect
 
 
+class SelectPlayResponse(CamelModel):
+    """Response from selecting a play"""
+    status: str
+    document_id: str
+    selected_play_id: Optional[str]
+
+
 @router.get("/{conversation_id}/document/{doc_id}/plays", response_model=PlaysResponse)
 async def get_plays(
     conversation_id: str,
@@ -964,7 +979,7 @@ async def get_plays(
     )
 
 
-@router.put("/{conversation_id}/document/{doc_id}/plays/select")
+@router.put("/{conversation_id}/document/{doc_id}/plays/select", response_model=SelectPlayResponse)
 async def select_play(
     conversation_id: str,
     doc_id: str,
@@ -1012,11 +1027,11 @@ async def select_play(
 
     api_logger.info(f"[PLAYS] Selected play '{request.play_id}' for doc {doc_id}")
 
-    return {
-        "status": "success",
-        "document_id": doc_id,
-        "selected_play_id": request.play_id
-    }
+    return SelectPlayResponse(
+        status="success",
+        document_id=doc_id,
+        selected_play_id=request.play_id
+    )
 
 
 # ============================================================================
@@ -1045,7 +1060,7 @@ class SaveCellChangesResponse(CamelModel):
     success: bool
 
 
-@router.patch("/{conversation_id}/document/{doc_id}/cells")
+@router.patch("/{conversation_id}/document/{doc_id}/cells", response_model=SaveCellChangesResponse)
 async def save_cell_changes(
     conversation_id: str,
     doc_id: str,

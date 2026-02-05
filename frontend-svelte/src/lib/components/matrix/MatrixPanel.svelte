@@ -11,7 +11,7 @@
 
 	import { createEventDispatcher } from 'svelte';
 	import { Button, Spinner } from '$lib/components/ui';
-	import { matrix, matrixDocuments as documents, activeDocumentId, activeDocument, isGeneratingMoreDocuments } from '$lib/stores';
+	import { matrix, matrixDocuments as documents, activeDocumentId, activeDocument } from '$lib/stores';
 	import type { CellData, CellDimension, MatrixDocument as Document } from '$lib/stores';
 
 	export let matrixData: CellData[][] = [];
@@ -240,14 +240,6 @@
 		dispatch('documentChange', { documentId: docId });
 	}
 
-	async function handleGenerateMoreDocuments() {
-		try {
-			await matrix.generateMoreDocuments();
-		} catch (error) {
-			console.error('Failed to generate more documents:', error);
-		}
-	}
-
 	async function handlePopulateDocument(docId: string) {
 		isPopulatingDoc = docId;
 		try {
@@ -302,22 +294,6 @@
 						</div>
 					{/if}
 				{/each}
-
-				<!-- Plus button to generate more document stubs -->
-				<button
-					class="add-document-btn"
-					on:click={handleGenerateMoreDocuments}
-					disabled={$isGeneratingMoreDocuments}
-					title="Generate 3 more documents"
-				>
-					{#if $isGeneratingMoreDocuments}
-						<Spinner size="xs" />
-					{:else}
-						<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-							<path d="M12 5v14M5 12h14"/>
-						</svg>
-					{/if}
-				</button>
 			</div>
 		</div>
 	{/if}
@@ -544,33 +520,6 @@
 	}
 
 	.generate-btn:disabled {
-		opacity: 0.7;
-		cursor: wait;
-	}
-
-	/* Plus button to add more documents */
-	.add-document-btn {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 28px;
-		height: 28px;
-		padding: 0;
-		background: var(--color-field-depth);
-		border: 1px dashed var(--color-primary-400);
-		border-radius: 0.375rem;
-		color: var(--color-primary-500);
-		cursor: pointer;
-		transition: all 0.15s ease;
-		flex-shrink: 0;
-	}
-
-	.add-document-btn:hover:not(:disabled) {
-		background: var(--color-primary-50);
-		border-style: solid;
-	}
-
-	.add-document-btn:disabled {
 		opacity: 0.7;
 		cursor: wait;
 	}

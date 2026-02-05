@@ -16,12 +16,10 @@
 		matrix,
 		matrixDocuments,
 		activeDocumentId,
-		activeDocument,
-		isGeneratingMoreDocuments,
-		chat
+		activeDocument
 	} from '$lib/stores';
 	import type { ArticulatedInsight, RowOption, ColumnOption, Document } from '$lib/stores/matrix';
-	import { Button, Spinner } from '$lib/components/ui';
+	import { Button } from '$lib/components/ui';
 	import InsightPopup from './InsightPopup.svelte';
 
 	export let open = false;
@@ -92,14 +90,6 @@
 
 	function handleDocumentTabClick(docId: string) {
 		matrix.setActiveDocument(docId);
-	}
-
-	async function handleGenerateMoreDocuments() {
-		try {
-			await matrix.generateMoreDocuments();
-		} catch (error) {
-			console.error('Failed to generate more documents:', error);
-		}
 	}
 
 	function handleToggleRow(index: number) {
