@@ -14,7 +14,8 @@
 		matrix,
 		matrixDocuments,
 		activeDocumentId,
-		activeDocument
+		activeDocument,
+		addToast
 	} from '$lib/stores';
 	import type { ArticulatedInsight, RowOption, ColumnOption, DocumentPreview } from '$lib/stores/matrix';
 	import { Button } from '$lib/components/ui';
@@ -188,8 +189,9 @@
 					showInsightPopup = true;
 				}
 			}
-		} catch (error) {
+		} catch (error: any) {
 			console.error('Failed to generate insights:', error);
+			addToast('error', error.message || 'Failed to generate insight');
 		} finally {
 			generatingInsights = false;
 		}
@@ -318,7 +320,7 @@
 					<span class="selection-count" class:complete={canSubmit}>
 						{selectedRowCount}/5 drivers, {selectedColCount}/5 outcomes
 					</span>
-					<span class="selection-hint">{canSubmit ? 'Ready to apply' : 'Deselect one to swap with another'}</span>
+					<span class="selection-hint">{canSubmit ? 'Ready to apply' : 'Select exactly 5 drivers and 5 outcomes to apply'}</span>
 				</div>
 
 				{#if hasOptions}

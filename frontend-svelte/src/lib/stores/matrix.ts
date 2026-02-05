@@ -492,7 +492,8 @@ function createMatrixStore() {
 			try {
 				const response = await api.post<{ previews: DocumentPreview[] }>(
 					`/api/matrix/${state.conversationId}/documents/preview`,
-					{ model }
+					{ model },
+					{ timeout: 300000, retries: 1 }
 				);
 				return response.previews ?? [];
 			} catch (error: any) {
@@ -510,7 +511,8 @@ function createMatrixStore() {
 			try {
 				await api.post(
 					`/api/matrix/${state.conversationId}/documents/add`,
-					{ selected_preview_ids: selectedPreviewIds, model }
+					{ selected_preview_ids: selectedPreviewIds, model },
+					{ timeout: 300000, retries: 1 }
 				);
 
 				// Reload full document list from backend
@@ -556,7 +558,8 @@ function createMatrixStore() {
 				// Backend returns the updated document directly — no follow-up GET needed
 				const doc = await api.post<Document>(
 					`/api/matrix/${state.conversationId}/document/${docId}/design-reality`,
-					{ model }
+					{ model },
+					{ timeout: 300000, retries: 1 }
 				);
 
 				if (doc?.matrix_data) {
@@ -573,12 +576,15 @@ function createMatrixStore() {
 		// Generate all missing insights for the active document
 		async generateInsights(insightIndex: number, model: string): Promise<Document | null> {
 			const state = get({ subscribe });
-			if (!state.conversationId || !state.activeDocumentId) return null;
+			if (!state.conversationId) throw new Error('No conversation selected');
+			if (!state.activeDocumentId) throw new Error('No document selected');
 
 			// Backend returns the updated document directly — no follow-up GET needed
+			// LLM insight generation can take up to 5 minutes — override default 30s timeout
 			const doc = await api.post<Document>(
 				`/api/matrix/${state.conversationId}/document/${state.activeDocumentId}/generate-insights`,
-				{ model, insight_index: insightIndex }
+				{ model, insight_index: insightIndex },
+				{ timeout: 300000, retries: 1 }
 			);
 
 			if (doc?.matrix_data) {
@@ -757,6 +763,8 @@ function createMatrixStore() {
 
 			update(state => ({
 				...state,
+				documents: [],
+				activeDocumentId: null,
 				displayedMatrixData,
 				displayedRowHeaders: ['Row 1', 'Row 2', 'Row 3', 'Row 4', 'Row 5'],
 				displayedColumnHeaders: ['Column 1', 'Column 2', 'Column 3', 'Column 4', 'Column 5'],
