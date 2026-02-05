@@ -247,6 +247,32 @@ function createMatrixStore() {
 		return { matrixData, rowHeaders, columnHeaders, rowInsights, columnInsights };
 	}
 
+	// Patch a single document into the store and rebuild display if it's the active doc
+	function applyDocumentUpdate(doc: Document) {
+		update(state => {
+			const docIndex = state.documents.findIndex(d => d.id === doc.id);
+			if (docIndex === -1) return state;
+
+			const updatedDocs = [...state.documents];
+			updatedDocs[docIndex] = doc;
+
+			if (state.activeDocumentId === doc.id) {
+				const displayed = buildDisplayedMatrix(doc);
+				return {
+					...state,
+					documents: updatedDocs,
+					displayedMatrixData: displayed.matrixData,
+					displayedRowHeaders: displayed.rowHeaders,
+					displayedColumnHeaders: displayed.columnHeaders,
+					displayedRowInsights: displayed.rowInsights,
+					displayedColumnInsights: displayed.columnInsights
+				};
+			}
+
+			return { ...state, documents: updatedDocs };
+		});
+	}
+
 	return {
 		subscribe,
 
@@ -376,8 +402,8 @@ function createMatrixStore() {
 			}
 		},
 
-		// Populate a document stub with full cell data
-		async populateDocument(docId: string) {
+		// Populate a document with full cell data via "Design Your Reality"
+		async populateDocument(docId: string, model: string = 'claude-opus-4-5-20251101') {
 			const state = get({ subscribe });
 			if (!state.conversationId) {
 				console.error('No conversation ID set');
@@ -385,33 +411,17 @@ function createMatrixStore() {
 			}
 
 			try {
-				const response = await api.post<{ success: boolean }>(`/matrix/${state.conversationId}/document/${docId}/populate`);
+				// Backend returns the updated document directly — no follow-up GET needed
+				const doc = await api.post<Document>(
+					`/matrix/${state.conversationId}/document/${docId}/design-reality`,
+					{ model }
+				);
 
-				if (response.success) {
-					// Refresh documents to get the populated data
-					const docsResponse = await api.get(`/matrix/${state.conversationId}/documents`);
-					if (docsResponse && Array.isArray(docsResponse)) {
-						const activeDocumentId = docId;
-						const activeDoc = docsResponse.find((d: any) => d.id === docId);
-
-						if (activeDoc) {
-							const displayed = buildDisplayedMatrix(activeDoc);
-
-							update(s => ({
-								...s,
-								documents: docsResponse,
-								activeDocumentId,
-								displayedMatrixData: displayed.matrixData,
-								displayedRowHeaders: displayed.rowHeaders,
-								displayedColumnHeaders: displayed.columnHeaders,
-								displayedRowInsights: displayed.rowInsights,
-								displayedColumnInsights: displayed.columnInsights
-							}));
-						}
-					}
+				if (doc?.matrix_data) {
+					applyDocumentUpdate(doc);
 				}
 
-				return response;
+				return doc;
 			} catch (error: any) {
 				console.error('Failed to populate document:', error);
 				throw error;
@@ -423,30 +433,15 @@ function createMatrixStore() {
 			const state = get({ subscribe });
 			if (!state.conversationId || !state.activeDocumentId) return null;
 
-			const response = await api.post<{ document_id: string; insights_generated: number; success: boolean }>(
+			// Backend returns the updated document directly — no follow-up GET needed
+			const doc = await api.post<Document>(
 				`/matrix/${state.conversationId}/document/${state.activeDocumentId}/generate-insights`,
 				{ model, insight_index: insightIndex }
 			);
 
-			if (response.success && response.insights_generated > 0) {
-				// Refresh documents to get the generated insights
-				const docsResponse = await api.get(`/matrix/${state.conversationId}/documents`);
-				if (docsResponse && Array.isArray(docsResponse)) {
-					const activeDoc = docsResponse.find((d: any) => d.id === state.activeDocumentId);
-					if (activeDoc) {
-						const displayed = buildDisplayedMatrix(activeDoc);
-						update(s => ({
-							...s,
-							documents: docsResponse,
-							displayedMatrixData: displayed.matrixData,
-							displayedRowHeaders: displayed.rowHeaders,
-							displayedColumnHeaders: displayed.columnHeaders,
-							displayedRowInsights: displayed.rowInsights,
-							displayedColumnInsights: displayed.columnInsights
-						}));
-					}
-					return activeDoc;
-				}
+			if (doc?.matrix_data) {
+				applyDocumentUpdate(doc);
+				return doc;
 			}
 			return null;
 		},
@@ -564,7 +559,7 @@ function createMatrixStore() {
 				});
 
 				// Persist to backend
-				const response = await api.patch<{ success?: boolean; changes_saved?: number; changesSaved?: number }>(
+				const response = await api.patch<{ success: boolean; changes_saved: number }>(
 					`/matrix/${state.conversationId}/document/${state.activeDocumentId}/cells`,
 					{
 						changes: changes.map(ch => ({
@@ -577,8 +572,8 @@ function createMatrixStore() {
 				);
 
 				return {
-					success: response.success ?? true,
-					changesSaved: response.changes_saved ?? response.changesSaved ?? changes.length
+					success: response.success,
+					changesSaved: response.changes_saved
 				};
 			} catch (error: any) {
 				console.error('Failed to save cell changes:', error);

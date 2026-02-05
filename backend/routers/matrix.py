@@ -21,6 +21,28 @@ from logging_config import api_logger
 router = APIRouter(prefix="/api/matrix", tags=["matrix"])
 
 
+# Helpers to reduce repeated copy/find/save pattern across endpoints
+
+async def _find_document(conversation, doc_id: str):
+    """Find document in conversation. Returns (documents_copy, index, doc_dict) or raises."""
+    if not conversation.generated_documents:
+        raise HTTPException(status_code=400, detail="No documents exist")
+
+    documents = conversation.generated_documents.copy()
+    for i, doc in enumerate(documents):
+        if doc.get("id") == doc_id:
+            return documents, i, doc
+
+    raise HTTPException(status_code=404, detail="Document not found")
+
+
+async def _save_documents(conversation, documents, db: AsyncSession):
+    """Write updated documents array back and commit."""
+    conversation.generated_documents = documents
+    flag_modified(conversation, "generated_documents")
+    await db.commit()
+
+
 # Response models
 class DimensionOption(BaseModel):
     name: str
@@ -152,18 +174,7 @@ class DesignRealityRequest(BaseModel):
     model: str  # User-selected model
 
 
-class DesignRealityResponse(CamelModel):
-    """Response from Design Your Reality button"""
-    document_id: str
-    cell_count: int
-    leverage_point_count: int
-    risk_count: int
-    plays_count: int
-    presets_count: int
-    success: bool
-
-
-@router.post("/{conversation_id}/document/{doc_id}/design-reality", response_model=DesignRealityResponse)
+@router.post("/{conversation_id}/document/{doc_id}/design-reality", response_model=GeneratedDocument)
 async def design_reality(
     conversation_id: str,
     doc_id: str,
@@ -173,36 +184,12 @@ async def design_reality(
 ):
     """
     Generate/regenerate all matrix data for a document ("Design Your Reality" button).
-
-    Generates:
-    - 100 cells with impact_score, relationship, 5 dimensions
-    - 3-5 leverage points (powerspots)
-    - 3-6 risk analysis points
-    - 3-5 plays
-    - 5 presets
-
-    Does NOT generate articulated insights - those are generated via the insight endpoint.
+    Returns the updated document directly so frontend doesn't need a follow-up GET.
     """
     from main import generate_matrix_data_llm, get_model_config
 
     conversation = await get_or_404(db, ChatConversation, conversation_id, user_id=current_user.id)
-
-    if not conversation.generated_documents:
-        raise HTTPException(status_code=400, detail="No documents exist")
-
-    # Find the document
-    documents = conversation.generated_documents.copy()
-    doc_index = None
-    doc_stub = None
-
-    for i, doc in enumerate(documents):
-        if doc.get("id") == doc_id:
-            doc_index = i
-            doc_stub = doc
-            break
-
-    if doc_stub is None:
-        raise HTTPException(status_code=404, detail="Document not found")
+    documents, doc_index, doc_stub = await _find_document(conversation, doc_id)
 
     # Get conversation context
     messages_result = await db.execute(
@@ -220,10 +207,8 @@ async def design_reality(
             "content": msg.content[:2000] if len(msg.content) > 2000 else msg.content
         })
 
-    # Get model config from user-selected model
     model_config = get_model_config(request.model)
 
-    # Generate matrix data
     result = await generate_matrix_data_llm(
         document_stub=doc_stub,
         context_messages=context_messages,
@@ -241,22 +226,11 @@ async def design_reality(
     documents[doc_index]["presets"] = result.get("presets", [])
     documents[doc_index]["selected_play_id"] = None
 
-    conversation.generated_documents = documents
-    flag_modified(conversation, "generated_documents")
-
-    await db.commit()
+    await _save_documents(conversation, documents, db)
 
     api_logger.info(f"[DESIGN_REALITY] Generated matrix data for doc {doc_id}")
 
-    return DesignRealityResponse(
-        document_id=doc_id,
-        cell_count=len(result["cells"]),
-        leverage_point_count=len(result.get("leverage_points", [])),
-        risk_count=len(result.get("risk_analysis", [])),
-        plays_count=len(result.get("plays", [])),
-        presets_count=len(result.get("presets", [])),
-        success=True
-    )
+    return documents[doc_index]
 
 
 # ============================================================================
@@ -270,14 +244,7 @@ class GenerateInsightsRequest(BaseModel):
     insight_index: int  # Index of insight user clicked (0-19)
 
 
-class GenerateInsightsResponse(CamelModel):
-    """Response from generating insights"""
-    document_id: str
-    insights_generated: int
-    success: bool
-
-
-@router.post("/{conversation_id}/document/{doc_id}/generate-insights", response_model=GenerateInsightsResponse)
+@router.post("/{conversation_id}/document/{doc_id}/generate-insights", response_model=GeneratedDocument)
 async def generate_insights(
     conversation_id: str,
     doc_id: str,
@@ -287,30 +254,12 @@ async def generate_insights(
 ):
     """
     Generate all missing insights for a document.
-
-    When user clicks on any insight title, this generates ALL missing insights
-    for that document in a single LLM call for efficiency.
+    Returns the updated document directly so frontend doesn't need a follow-up GET.
     """
     from main import generate_insights_batch_llm, get_model_config
 
     conversation = await get_or_404(db, ChatConversation, conversation_id, user_id=current_user.id)
-
-    if not conversation.generated_documents:
-        raise HTTPException(status_code=400, detail="No documents exist")
-
-    # Find the document
-    documents = conversation.generated_documents.copy()
-    doc_index = None
-    doc = None
-
-    for i, d in enumerate(documents):
-        if d.get("id") == doc_id:
-            doc_index = i
-            doc = d
-            break
-
-    if doc is None:
-        raise HTTPException(status_code=404, detail="Document not found")
+    documents, doc_index, doc = await _find_document(conversation, doc_id)
 
     # Find missing insights (indices 0-9 = rows, 10-19 = columns)
     matrix_data = doc.get("matrix_data", {})
@@ -325,13 +274,9 @@ async def generate_insights(
         if not col.get("articulated_insight"):
             missing_indices.append(10 + i)
 
-    # If all insights already exist, return the requested one
+    # If all insights already exist, return document as-is
     if not missing_indices:
-        return GenerateInsightsResponse(
-            document_id=doc_id,
-            insights_generated=0,
-            success=True
-        )
+        return documents[doc_index]
 
     # Get conversation context
     messages_result = await db.execute(
@@ -349,10 +294,8 @@ async def generate_insights(
             "content": msg.content[:2000] if len(msg.content) > 2000 else msg.content
         })
 
-    # Get model config
     model_config = get_model_config(request.model)
 
-    # Generate all missing insights
     result = await generate_insights_batch_llm(
         document=doc,
         missing_indices=missing_indices,
@@ -370,29 +313,20 @@ async def generate_insights(
     for idx_str, insight in insights.items():
         idx = int(idx_str)
         if idx < 10:
-            # Row insight
             if idx < len(row_options):
                 documents[doc_index]["matrix_data"]["row_options"][idx]["articulated_insight"] = insight
                 insights_applied += 1
         else:
-            # Column insight
             col_idx = idx - 10
             if col_idx < len(col_options):
                 documents[doc_index]["matrix_data"]["column_options"][col_idx]["articulated_insight"] = insight
                 insights_applied += 1
 
-    conversation.generated_documents = documents
-    flag_modified(conversation, "generated_documents")
-
-    await db.commit()
+    await _save_documents(conversation, documents, db)
 
     api_logger.info(f"[INSIGHTS] Generated {insights_applied} insights for doc {doc_id}")
 
-    return GenerateInsightsResponse(
-        document_id=doc_id,
-        insights_generated=insights_applied,
-        success=True
-    )
+    return documents[doc_index]
 
 
 # ============================================================================
@@ -610,42 +544,25 @@ async def update_document_selection(
 ):
     """Update which rows/columns are selected for a specific document."""
     conversation = await get_or_404(db, ChatConversation, conversation_id, user_id=current_user.id)
+    documents, doc_index, doc = await _find_document(conversation, doc_id)
 
-    if not conversation.generated_documents:
-        raise HTTPException(status_code=400, detail="No documents exist")
+    matrix_data = doc.get("matrix_data", {})
+    row_count = len(matrix_data.get("row_options", []))
+    col_count = len(matrix_data.get("column_options", []))
 
-    # Find the document
-    documents = conversation.generated_documents.copy()
-    doc_found = False
+    if len(request.selected_rows) != 5:
+        raise HTTPException(status_code=400, detail="Must select exactly 5 rows")
+    if len(request.selected_columns) != 5:
+        raise HTTPException(status_code=400, detail="Must select exactly 5 columns")
+    if any(idx < 0 or idx >= row_count for idx in request.selected_rows):
+        raise HTTPException(status_code=400, detail="Invalid row index")
+    if any(idx < 0 or idx >= col_count for idx in request.selected_columns):
+        raise HTTPException(status_code=400, detail="Invalid column index")
 
-    for i, doc in enumerate(documents):
-        if doc.get("id") == doc_id:
-            matrix_data = doc.get("matrix_data", {})
-            row_count = len(matrix_data.get("row_options", []))
-            col_count = len(matrix_data.get("column_options", []))
+    documents[doc_index]["matrix_data"]["selected_rows"] = request.selected_rows
+    documents[doc_index]["matrix_data"]["selected_columns"] = request.selected_columns
 
-            # Validate
-            if len(request.selected_rows) != 5:
-                raise HTTPException(status_code=400, detail="Must select exactly 5 rows")
-            if len(request.selected_columns) != 5:
-                raise HTTPException(status_code=400, detail="Must select exactly 5 columns")
-            if any(idx < 0 or idx >= row_count for idx in request.selected_rows):
-                raise HTTPException(status_code=400, detail="Invalid row index")
-            if any(idx < 0 or idx >= col_count for idx in request.selected_columns):
-                raise HTTPException(status_code=400, detail="Invalid column index")
-
-            # Update selection
-            documents[i]["matrix_data"]["selected_rows"] = request.selected_rows
-            documents[i]["matrix_data"]["selected_columns"] = request.selected_columns
-            doc_found = True
-            break
-
-    if not doc_found:
-        raise HTTPException(status_code=404, detail="Document not found")
-
-    conversation.generated_documents = documents
-    flag_modified(conversation, "generated_documents")
-    await db.commit()
+    await _save_documents(conversation, documents, db)
 
     return {
         "status": "success",
@@ -978,37 +895,16 @@ async def select_play(
     The selected play can be used to highlight relevant cells in the matrix view.
     """
     conversation = await get_or_404(db, ChatConversation, conversation_id, user_id=current_user.id)
+    documents, doc_index, doc = await _find_document(conversation, doc_id)
 
-    if not conversation.generated_documents:
-        raise HTTPException(status_code=400, detail="No documents exist")
-
-    # Find the document
-    documents = conversation.generated_documents.copy()
-    doc_index = None
-    doc = None
-
-    for i, d in enumerate(documents):
-        if d.get("id") == doc_id:
-            doc_index = i
-            doc = d
-            break
-
-    if doc is None:
-        raise HTTPException(status_code=404, detail="Document not found")
-
-    # Validate play_id if provided
     if request.play_id is not None:
         plays = doc.get("plays", [])
         play_ids = [p.get("id") for p in plays]
         if request.play_id not in play_ids:
             raise HTTPException(status_code=400, detail=f"Play '{request.play_id}' not found in document")
 
-    # Update selected_play_id
     documents[doc_index]["selected_play_id"] = request.play_id
-    conversation.generated_documents = documents
-    flag_modified(conversation, "generated_documents")
-
-    await db.commit()
+    await _save_documents(conversation, documents, db)
 
     api_logger.info(f"[PLAYS] Selected play '{request.play_id}' for doc {doc_id}")
 
@@ -1038,13 +934,6 @@ class SaveCellChangesRequest(BaseModel):
     changes: List[CellDimensionUpdate]
 
 
-class SaveCellChangesResponse(CamelModel):
-    """Response from saving cell changes"""
-    document_id: str
-    changes_saved: int
-    success: bool
-
-
 @router.patch("/{conversation_id}/document/{doc_id}/cells")
 async def save_cell_changes(
     conversation_id: str,
@@ -1053,29 +942,9 @@ async def save_cell_changes(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Save user-modified cell dimension values.
-
-    Takes a list of dimension value changes and persists them to the document.
-    """
+    """Save user-modified cell dimension values."""
     conversation = await get_or_404(db, ChatConversation, conversation_id, user_id=current_user.id)
-
-    if not conversation.generated_documents:
-        raise HTTPException(status_code=400, detail="No documents exist")
-
-    # Find the document
-    documents = conversation.generated_documents.copy()
-    doc_index = None
-    doc = None
-
-    for i, d in enumerate(documents):
-        if d.get("id") == doc_id:
-            doc_index = i
-            doc = d
-            break
-
-    if doc is None:
-        raise HTTPException(status_code=404, detail="Document not found")
+    documents, doc_index, doc = await _find_document(conversation, doc_id)
 
     matrix_data = doc.get("matrix_data", {})
     cells = matrix_data.get("cells", {})
@@ -1088,7 +957,6 @@ async def save_cell_changes(
     changes_applied = 0
 
     for change in request.changes:
-        # Validate indices
         if change.row_idx < 0 or change.row_idx >= len(selected_rows):
             continue
         if change.col_idx < 0 or change.col_idx >= len(selected_cols):
@@ -1098,7 +966,6 @@ async def save_cell_changes(
         if change.value not in [0, 50, 100]:
             continue
 
-        # Map display indices to actual cell key
         actual_row = selected_rows[change.row_idx]
         actual_col = selected_cols[change.col_idx]
         cell_key = f"{actual_row}-{actual_col}"
@@ -1114,17 +981,9 @@ async def save_cell_changes(
             cells[cell_key]["dimensions"] = dimensions
             changes_applied += 1
 
-    # Update the document
     documents[doc_index]["matrix_data"]["cells"] = cells
-    conversation.generated_documents = documents
-    flag_modified(conversation, "generated_documents")
-
-    await db.commit()
+    await _save_documents(conversation, documents, db)
 
     api_logger.info(f"[CELLS] Saved {changes_applied} dimension changes for doc {doc_id}")
 
-    return SaveCellChangesResponse(
-        document_id=doc_id,
-        changes_saved=changes_applied,
-        success=True
-    )
+    return {"success": True, "changes_saved": changes_applied}
