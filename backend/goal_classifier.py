@@ -355,7 +355,7 @@ class GoalClassifier:
             # Signals with no incoming relationships are more likely roots
             incoming = sum(
                 1 for s in signals
-                if signal.signal_id in (s.relationships or [])
+                if signal.signal_id in s.relationships
             )
             if incoming == 0 and signal.relationships:
                 root_score += 1
@@ -489,7 +489,7 @@ class GoalClassifier:
         strength_signals = [s for s in signals if s.category == SignalCategory.STRENGTHS]
         threatened_strengths = [
             s for s in strength_signals
-            if any("threat" in r.lower() or "risk" in r.lower() for r in (s.relationships or []))
+            if any("threat" in r.lower() or "risk" in r.lower() for r in s.relationships)
             or "declining" in s.description.lower()
             or "at risk" in s.description.lower()
         ]
