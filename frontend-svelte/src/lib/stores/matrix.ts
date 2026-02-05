@@ -194,7 +194,10 @@ function createMatrixStore() {
 			value: 50  // Medium
 		}));
 
-		const { row_options = [], column_options = [], selected_rows = [0,1,2,3,4], selected_columns = [0,1,2,3,4], cells = {} } = doc.matrix_data;
+		const { row_options = [], column_options = [], selected_rows = [0,1,2,3,4], selected_columns = [0,1,2,3,4] } = doc.matrix_data;
+		// Nullish coalescing required: Pydantic serializes Optional[dict]=None as JSON null,
+		// but JS destructuring defaults only apply for undefined, not null
+		const cells = doc.matrix_data.cells ?? {};
 
 		const rowHeaders = selected_rows.map(i => row_options[i]?.label || `Row ${i + 1}`);
 		const columnHeaders = selected_columns.map(i => column_options[i]?.label || `Column ${i + 1}`);
