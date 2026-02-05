@@ -491,7 +491,7 @@ class GoalClassifier:
         strength_signals = [s for s in signals if s.category == SignalCategory.STRENGTHS]
         threatened_strengths = [
             s for s in strength_signals
-            if any("threat" in r.lower() or "risk" in r.lower() for r in (s.relationships or []))
+            if any("threat" in r.lower() or "risk" in r.lower() for r in s.relationships)
             or "declining" in s.description.lower()
             or "at risk" in s.description.lower()
         ]
