@@ -65,13 +65,15 @@ export interface Play {
 export interface RowOption {
 	id: string;
 	label: string;
-	articulated_insight?: ArticulatedInsight;  // Full 3-component insight (when document is fully populated)
+	insight_title?: string;
+	articulated_insight?: ArticulatedInsight;
 }
 
 export interface ColumnOption {
 	id: string;
 	label: string;
-	articulated_insight?: ArticulatedInsight;  // Full 3-component insight (when document is fully populated)
+	insight_title?: string;
+	articulated_insight?: ArticulatedInsight;
 }
 
 // New: Document with its own matrix data
@@ -84,7 +86,7 @@ export interface Document {
 		column_options: ColumnOption[];
 		selected_rows: number[];
 		selected_columns: number[];
-		cells: Record<string, {
+		cells?: Record<string, {
 			impact_score: number;
 			relationship?: string;
 			dimensions: {
@@ -191,12 +193,12 @@ function createMatrixStore() {
 			value: 50  // Medium
 		}));
 
-		const { row_options, column_options, selected_rows, selected_columns, cells } = doc.matrix_data;
+		const { row_options, column_options, selected_rows, selected_columns, cells = {} } = doc.matrix_data;
 
 		const rowHeaders = selected_rows.map(i => row_options[i]?.label || `Row ${i + 1}`);
 		const columnHeaders = selected_columns.map(i => column_options[i]?.label || `Column ${i + 1}`);
-		const rowInsights = selected_rows.map(i => row_options[i]?.articulated_insight?.title || '');
-		const columnInsights = selected_columns.map(i => column_options[i]?.articulated_insight?.title || '');
+		const rowInsights = selected_rows.map(i => row_options[i]?.insight_title || row_options[i]?.articulated_insight?.title || '');
+		const columnInsights = selected_columns.map(i => column_options[i]?.insight_title || column_options[i]?.articulated_insight?.title || '');
 
 		const matrixData: CellData[][] = selected_rows.map(rowIdx =>
 			selected_columns.map(colIdx => {
