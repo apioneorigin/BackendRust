@@ -2875,10 +2875,11 @@ CONVERSATION CONTEXT:
 INSIGHTS TO GENERATE:
 {insights_list}
 
-For each insight, generate the full 8-field ArticulatedInsight structure:
+For each insight, generate the full 9-field ArticulatedInsight structure:
 
 **TITLE**: Use the provided title exactly
-**THE TRUTH (80-120 words)**: Analogy from OUTSIDE user's domain. Immersive present tense, sensory details.
+**MICRO MOMENT (40-60 words)**: Fly-on-the-wall scene set in the USER'S actual world. Present tense. Sensory. Capture the precise instant where the truth reveals itself — a meeting, a dashboard, a conversation. The reader should think "that's exactly what happens."
+**THE TRUTH (80-120 words)**: Analogy from OUTSIDE user's domain. Immersive present tense, sensory details. A completely different world that maps perfectly onto the micro moment.
 **THE TRUTH LAW**: One-line universal law in **bold** (15-25 words)
 **YOUR TRUTH (50-80 words)**: Opens with "I see you...", includes "never miss again" trigger
 **YOUR TRUTH REVELATION**: Bold revelation - what's now visible
@@ -2892,6 +2893,7 @@ Return ONLY valid JSON:
   "insights": {{
     "0": {{
       "title": "The title provided",
+      "micro_moment": "You're sitting in the Monday standup...",
       "the_truth": "...",
       "the_truth_law": "**...**",
       "your_truth": "I see you...",
@@ -2906,7 +2908,8 @@ Return ONLY valid JSON:
 
 REQUIREMENTS:
 - Generate insights for ALL indices listed above
-- Each insight should be 160-250 words total across all fields
+- Each insight should be 200-300 words total across all fields
+- micro_moment MUST come first and ground the insight in the user's real world
 - User should think: "I can't unsee this now"
 - Use the exact title provided for each insight"""
 
