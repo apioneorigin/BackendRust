@@ -42,6 +42,7 @@ class ArticulatedInsight(CamelModel):
 class RowOption(CamelModel):
     id: str
     label: str
+    insight_title: Optional[str] = None
     description: Optional[str] = None
     articulated_insight: Optional[ArticulatedInsight] = None
 
@@ -49,6 +50,7 @@ class RowOption(CamelModel):
 class ColumnOption(CamelModel):
     id: str
     label: str
+    insight_title: Optional[str] = None
     description: Optional[str] = None
     articulated_insight: Optional[ArticulatedInsight] = None
 
@@ -74,14 +76,14 @@ class DocumentMatrixData(CamelModel):
     column_options: List[ColumnOption]
     selected_rows: List[int]
     selected_columns: List[int]
-    cells: dict
+    cells: Optional[dict] = None
 
 
 class GeneratedDocument(CamelModel):
     """Document with its own 10x10 matrix data"""
     id: str
     name: str
-    description: str  # ~20 word description
+    description: Optional[str] = None
     matrix_data: Optional[DocumentMatrixData] = None
 
 
