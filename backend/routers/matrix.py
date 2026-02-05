@@ -390,7 +390,12 @@ async def preview_documents(
     existing_docs = conversation.generated_documents or []
     next_doc_id = len(existing_docs)
 
-    model_config = get_model_config(request.model)
+    try:
+        model_config = get_model_config(request.model)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    api_logger.info(f"[DOC_PREVIEW] Generating {3} previews for conv {conversation_id} with model {request.model}")
 
     # Generate previews
     new_documents = await generate_document_previews_llm(
@@ -402,6 +407,7 @@ async def preview_documents(
     )
 
     if not new_documents:
+        api_logger.error(f"[DOC_PREVIEW] LLM returned None for conv {conversation_id}")
         raise HTTPException(status_code=500, detail="Failed to generate document previews")
 
     # Convert to preview format
