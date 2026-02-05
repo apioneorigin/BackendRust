@@ -37,6 +37,7 @@ from .goal import (
     ValueTrajectory,
     DiscoveredGoal,
     UserGoalInventory,
+    FileGoalDiscovery,
 )
 from .document import (
     Document,
@@ -113,6 +114,7 @@ __all__ = [
     "ValueTrajectory",
     "DiscoveredGoal",
     "UserGoalInventory",
+    "FileGoalDiscovery",
     # Document
     "Document",
     "MilestoneConcept",

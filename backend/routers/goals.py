@@ -20,7 +20,7 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database import get_db, User, Goal, MatrixValue, DiscoveredGoal, UserGoalInventory
+from database import get_db, User, Goal, MatrixValue, DiscoveredGoal, UserGoalInventory, FileGoalDiscovery
 from routers.auth import get_current_user, generate_id
 from utils import get_or_404, paginate, to_response, to_response_list, CamelModel
 from logging_config import api_logger, pipeline_logger
@@ -394,6 +394,58 @@ async def save_goal_inventory(
     return {"status": "success"}
 
 
+# File Goal Discovery persistence endpoints
+@router.get("/goal-discoveries")
+async def list_goal_discoveries(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """List all persisted file goal discoveries for current user, newest first."""
+    result = await db.execute(
+        select(FileGoalDiscovery)
+        .where(FileGoalDiscovery.user_id == current_user.id)
+        .order_by(FileGoalDiscovery.created_at.desc())
+    )
+    discoveries = result.scalars().all()
+
+    return {
+        "discoveries": [
+            {
+                "id": d.id,
+                "fileNames": d.file_names,
+                "fileCount": d.file_count,
+                "goals": d.goals,
+                "goalCount": d.goal_count,
+                "createdAt": d.created_at.isoformat(),
+            }
+            for d in discoveries
+        ]
+    }
+
+
+@router.delete("/goal-discoveries/{discovery_id}")
+async def delete_goal_discovery(
+    discovery_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Delete a persisted file goal discovery."""
+    result = await db.execute(
+        select(FileGoalDiscovery).where(
+            FileGoalDiscovery.id == discovery_id,
+            FileGoalDiscovery.user_id == current_user.id,
+        )
+    )
+    discovery = result.scalar_one_or_none()
+    if not discovery:
+        raise HTTPException(status_code=404, detail="Discovery not found")
+
+    await db.delete(discovery)
+    await db.commit()
+
+    return {"status": "success"}
+
+
 # =============================================================================
 # GOAL DISCOVERY FROM FILES
 # 2-Call LLM Architecture with Backend Classifier
@@ -546,6 +598,7 @@ def get_goal_discovery_model_config(model: str) -> Dict[str, Any]:
 async def discover_goals_from_files(
     request: DiscoverGoalsRequest,
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Discover goals from uploaded files using 2-call LLM architecture.
@@ -924,6 +977,23 @@ Return valid JSON with a "goals" array containing all skeletons with identity an
         f"[GOAL DISCOVERY] Complete: {len(final_goals)} goals in {elapsed:.1f}s, "
         f"tokens: {total_usage['total_input_tokens']} in / {total_usage['total_output_tokens']} out"
     )
+
+    # Persist this discovery to the database so it survives refreshes/sessions
+    discovery_id = generate_id()
+    file_names = [f.name for f in request.files]
+    discovery = FileGoalDiscovery(
+        id=discovery_id,
+        user_id=current_user.id,
+        organization_id=current_user.organization_id,
+        file_names=file_names,
+        file_count=len(request.files),
+        goals=final_goals,
+        goal_count=len(final_goals),
+    )
+    db.add(discovery)
+    await db.commit()
+
+    pipeline_logger.info(f"[GOAL DISCOVERY] Persisted discovery {discovery_id} with {len(final_goals)} goals")
 
     return DiscoverGoalsResponse(
         success=True,

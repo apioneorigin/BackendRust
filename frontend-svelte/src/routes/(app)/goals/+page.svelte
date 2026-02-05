@@ -10,14 +10,26 @@
 		type: string;
 		identity: string;
 		firstMove: string;
+		first_move?: string;
 		confidence: number;
-		sourceFiles: string[];
-		createdAt: string;
-		addedToInventory: boolean;
+		sourceFiles?: string[];
+		source_files?: string[];
+		createdAt?: string;
+		created_at?: string;
+		addedToInventory?: boolean;
 	}
 
 	interface SavedGoal extends DiscoveredGoal {
 		savedAt: string;
+	}
+
+	interface FileGoalDiscovery {
+		id: string;
+		fileNames: string[];
+		fileCount: number;
+		goals: DiscoveredGoal[];
+		goalCount: number;
+		createdAt: string;
 	}
 
 	interface UploadedFile {
@@ -27,12 +39,16 @@
 	}
 
 	let uploadedFiles: UploadedFile[] = [];
-	let discoveredGoals: DiscoveredGoal[] = [];
+	let discoveries: FileGoalDiscovery[] = [];
 	let savedGoals: SavedGoal[] = [];
 	let isDiscovering = false;
-	let isLoadingInventory = true;
+	let isLoading = true;
 	let activeTab: 'discover' | 'saved' = 'discover';
 	let dragOver = false;
+
+	// Modal state
+	let showGoalsModal = false;
+	let modalDiscovery: FileGoalDiscovery | null = null;
 
 	const goalTypeColors: Record<string, string> = {
 		OPTIMIZE: 'type-optimize',
@@ -49,8 +65,19 @@
 	};
 
 	onMount(async () => {
-		await loadSavedGoals();
+		await Promise.all([loadDiscoveries(), loadSavedGoals()]);
 	});
+
+	async function loadDiscoveries() {
+		try {
+			const data = await api.get<{ discoveries: FileGoalDiscovery[] }>('/api/goal-discoveries');
+			discoveries = data.discoveries || [];
+		} catch (error) {
+			console.error('Failed to load discoveries:', error);
+		} finally {
+			isLoading = false;
+		}
+	}
 
 	async function loadSavedGoals() {
 		try {
@@ -58,8 +85,6 @@
 			savedGoals = data.goals || [];
 		} catch (error) {
 			console.error('Failed to load saved goals:', error);
-		} finally {
-			isLoadingInventory = false;
 		}
 	}
 
@@ -68,6 +93,8 @@
 		if (input.files) {
 			await processFiles(Array.from(input.files));
 		}
+		// Reset input so same file can be re-selected
+		input.value = '';
 	}
 
 	async function handleDrop(event: DragEvent) {
@@ -89,18 +116,12 @@
 
 	async function processFiles(files: File[]) {
 		for (const file of files) {
-			// Skip if already uploaded
 			if (uploadedFiles.some((f) => f.name === file.name)) continue;
-
 			try {
 				const content = await readFileContent(file);
 				uploadedFiles = [
 					...uploadedFiles,
-					{
-						name: file.name,
-						content,
-						type: file.type || 'text/plain'
-					}
+					{ name: file.name, content, type: file.type || 'text/plain' }
 				];
 			} catch (error) {
 				addToast('error', `Failed to read ${file.name}`);
@@ -129,12 +150,14 @@
 
 		isDiscovering = true;
 		try {
-			const data = await api.post<{ goals: DiscoveredGoal[] }>('/api/goals/discover-from-files', {
+			await api.post('/api/goals/discover-from-files', {
 				files: uploadedFiles,
-				existing_goals: discoveredGoals
+				existing_goals: []
 			});
-			discoveredGoals = [...discoveredGoals, ...data.goals];
-			addToast('success', `Discovered ${data.goals.length} goals`);
+			addToast('success', 'Goals discovered and saved');
+			uploadedFiles = [];
+			// Reload the persisted discoveries
+			await loadDiscoveries();
 		} catch (error: any) {
 			addToast('error', error.message || 'Failed to discover goals');
 		} finally {
@@ -142,21 +165,44 @@
 		}
 	}
 
-	async function saveGoalToInventory(goal: DiscoveredGoal) {
-		const savedGoal: SavedGoal = {
+	function openGoalsModal(discovery: FileGoalDiscovery) {
+		modalDiscovery = discovery;
+		showGoalsModal = true;
+	}
+
+	function closeGoalsModal() {
+		showGoalsModal = false;
+		modalDiscovery = null;
+	}
+
+	async function deleteDiscovery(discoveryId: string) {
+		try {
+			await api.delete(`/api/goal-discoveries/${discoveryId}`);
+			discoveries = discoveries.filter((d) => d.id !== discoveryId);
+			addToast('success', 'Discovery removed');
+		} catch (error) {
+			addToast('error', 'Failed to remove discovery');
+		}
+	}
+
+	function normalizeGoal(goal: DiscoveredGoal): DiscoveredGoal {
+		return {
 			...goal,
+			firstMove: goal.firstMove || goal.first_move || '',
+			sourceFiles: goal.sourceFiles || goal.source_files || [],
+			createdAt: goal.createdAt || goal.created_at || ''
+		};
+	}
+
+	async function saveGoalToInventory(goal: DiscoveredGoal) {
+		const g = normalizeGoal(goal);
+		const savedGoal: SavedGoal = {
+			...g,
 			savedAt: new Date().toISOString(),
 			addedToInventory: true
 		};
 
 		savedGoals = [...savedGoals, savedGoal];
-
-		// Update local state
-		discoveredGoals = discoveredGoals.map((g) =>
-			g.id === goal.id ? { ...g, addedToInventory: true } : g
-		);
-
-		// Persist to backend
 		try {
 			await api.post('/api/goal-inventory/save', { goals: savedGoals });
 			addToast('success', 'Goal saved to library');
@@ -177,11 +223,11 @@
 	}
 
 	async function startChatWithGoal(goal: DiscoveredGoal | SavedGoal) {
-		// Create a new conversation with this goal as context
+		const g = normalizeGoal(goal);
 		try {
 			const conversation = await api.post<{ id: string }>('/api/chat/conversations', {
-				title: goal.identity,
-				context: `Goal: ${goal.identity}\n\nFirst Move: ${goal.firstMove}\n\nType: ${goal.type}\nConfidence: ${goal.confidence}%`
+				title: g.identity,
+				context: `Goal: ${g.identity}\n\nFirst Move: ${g.firstMove}\n\nType: ${g.type}\nConfidence: ${g.confidence}%`
 			});
 			await chat.loadConversations();
 			goto(`/chat`);
@@ -191,6 +237,10 @@
 		}
 	}
 
+	function isGoalSaved(goalId: string): boolean {
+		return savedGoals.some((g) => g.id === goalId);
+	}
+
 	function getConfidenceColor(confidence: number): string {
 		if (confidence >= 90) return 'confidence-high';
 		if (confidence >= 70) return 'confidence-good';
@@ -198,8 +248,15 @@
 		return 'confidence-low';
 	}
 
-	function clearDiscoveredGoals() {
-		discoveredGoals = [];
+	function formatDate(dateStr: string): string {
+		const d = new Date(dateStr);
+		return d.toLocaleDateString('en-US', {
+			month: 'short',
+			day: 'numeric',
+			year: 'numeric',
+			hour: '2-digit',
+			minute: '2-digit'
+		});
 	}
 </script>
 
@@ -210,19 +267,9 @@
 <div class="goals-page">
 	<!-- Page header -->
 	<header class="page-header">
-		<div class="header-content">
+		<div class="header-left">
 			<div class="header-icon">
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					width="24"
-					height="24"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-				>
+				<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 					<circle cx="12" cy="12" r="10" />
 					<circle cx="12" cy="12" r="6" />
 					<circle cx="12" cy="12" r="2" />
@@ -230,17 +277,17 @@
 			</div>
 			<div>
 				<h1>Goal Discovery</h1>
-				<p>Upload files to discover actionable goals</p>
+				<p class="subtitle">Upload files to discover actionable goals</p>
 			</div>
 		</div>
 		<div class="header-stats">
 			<div class="stat-item">
-				<span class="stat-value">{uploadedFiles.length}</span>
-				<span class="stat-label">Files</span>
+				<span class="stat-value">{discoveries.length}</span>
+				<span class="stat-label">Discoveries</span>
 			</div>
 			<div class="stat-item">
-				<span class="stat-value">{discoveredGoals.length}</span>
-				<span class="stat-label">Discovered</span>
+				<span class="stat-value">{discoveries.reduce((sum, d) => sum + d.goalCount, 0)}</span>
+				<span class="stat-label">Goals Found</span>
 			</div>
 			<div class="stat-item">
 				<span class="stat-value">{savedGoals.length}</span>
@@ -252,15 +299,13 @@
 	<!-- Tabs -->
 	<div class="tabs">
 		<button class="tab" class:active={activeTab === 'discover'} on:click={() => (activeTab = 'discover')}>
-			<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-				<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-				<polyline points="17 8 12 3 7 8" />
-				<line x1="12" x2="12" y1="3" y2="15" />
+			<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				<circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" />
 			</svg>
-			Upload Files
+			Discoveries
 		</button>
 		<button class="tab" class:active={activeTab === 'saved'} on:click={() => (activeTab = 'saved')}>
-			<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+			<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 				<path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
 			</svg>
 			My Library ({savedGoals.length})
@@ -268,157 +313,146 @@
 	</div>
 
 	{#if activeTab === 'discover'}
-		<!-- File upload section -->
-		<section class="upload-section">
-			<div
-				class="drop-zone"
-				class:drag-over={dragOver}
-				on:drop={handleDrop}
-				on:dragover={handleDragOver}
-				on:dragleave={handleDragLeave}
-				role="button"
-				tabindex="0"
-			>
-				<input
-					type="file"
-					id="file-input"
-					multiple
-					accept=".txt,.pdf,.csv,.json,.md,.doc,.docx,.xls,.xlsx"
-					on:change={handleFileSelect}
-					class="hidden"
-				/>
-				<label for="file-input" class="drop-zone-content">
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						width="48"
-						height="48"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="1.5"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-					>
+		<!-- Upload bar -->
+		<div
+			class="upload-bar"
+			class:drag-over={dragOver}
+			on:drop={handleDrop}
+			on:dragover={handleDragOver}
+			on:dragleave={handleDragLeave}
+			role="button"
+			tabindex="0"
+		>
+			<input
+				type="file"
+				id="file-input"
+				multiple
+				accept=".txt,.pdf,.csv,.json,.md,.doc,.docx,.xls,.xlsx"
+				on:change={handleFileSelect}
+				class="hidden"
+			/>
+			<div class="upload-bar-left">
+				{#if uploadedFiles.length > 0}
+					<div class="staged-files">
+						{#each uploadedFiles as file (file.name)}
+							<span class="file-tag">
+								<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+									<polyline points="14 2 14 8 20 8" />
+								</svg>
+								{file.name}
+								<button class="file-tag-remove" on:click|stopPropagation={() => removeFile(file.name)}>
+									<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+										<path d="M18 6 6 18" /><path d="m6 6 12 12" />
+									</svg>
+								</button>
+							</span>
+						{/each}
+					</div>
+				{:else}
+					<span class="upload-hint">
+						{dragOver ? 'Drop files here' : 'Drag files here or click browse'}
+					</span>
+				{/if}
+			</div>
+			<div class="upload-bar-actions">
+				<label for="file-input" class="browse-btn">
+					<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 						<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
 						<polyline points="17 8 12 3 7 8" />
 						<line x1="12" x2="12" y1="3" y2="15" />
 					</svg>
-					<p class="drop-text">Drag & drop files here, or click to browse</p>
-					<p class="drop-hint">Supports TXT, PDF, CSV, JSON, MD, DOC, XLS files</p>
+					Browse
 				</label>
+				<button
+					class="discover-btn"
+					on:click={discoverGoals}
+					disabled={isDiscovering || uploadedFiles.length === 0}
+				>
+					{#if isDiscovering}
+						<Spinner size="sm" />
+						Analyzing...
+					{:else}
+						<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" />
+						</svg>
+						Discover Goals
+					{/if}
+				</button>
 			</div>
+		</div>
 
-			{#if uploadedFiles.length > 0}
-				<div class="uploaded-files">
-					<div class="files-header">
-						<h3>Uploaded Files ({uploadedFiles.length})</h3>
-						{#if uploadedFiles.length >= 2}
-							<span class="multi-file-badge">Multi-file analysis enabled</span>
-						{/if}
+		<!-- Discoveries list -->
+		<section class="discoveries-section">
+			{#if isLoading}
+				<div class="loading-state">
+					<Spinner size="lg" />
+					<p>Loading discoveries...</p>
+				</div>
+			{:else if discoveries.length === 0 && uploadedFiles.length === 0}
+				<div class="empty-state">
+					<div class="empty-icon">
+						<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+							<circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" />
+						</svg>
 					</div>
-					<div class="files-grid">
-						{#each uploadedFiles as file (file.name)}
-							<div class="file-chip">
-								<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-									<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
-									<polyline points="14 2 14 8 20 8" />
-								</svg>
-								<span class="file-name">{file.name}</span>
-								<button class="remove-file" on:click={() => removeFile(file.name)} title="Remove file">
-									<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-										<path d="M18 6 6 18" />
-										<path d="m6 6 12 12" />
+					<h3>No discoveries yet</h3>
+					<p>Upload files above to discover goals from your data</p>
+				</div>
+			{:else}
+				<div class="discoveries-list">
+					{#each discoveries as discovery (discovery.id)}
+						<div class="discovery-row">
+							<div class="discovery-info">
+								<div class="discovery-files">
+									{#each discovery.fileNames as fileName}
+										<span class="file-badge">
+											<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+												<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+												<polyline points="14 2 14 8 20 8" />
+											</svg>
+											{fileName}
+										</span>
+									{/each}
+								</div>
+								<div class="discovery-meta">
+									<span class="meta-item">
+										<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+											<circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" />
+										</svg>
+										{discovery.goalCount} goals
+									</span>
+									<span class="meta-separator">·</span>
+									<span class="meta-item">{formatDate(discovery.createdAt)}</span>
+								</div>
+							</div>
+							<div class="discovery-actions">
+								<button class="icon-btn view-btn" on:click={() => openGoalsModal(discovery)} title="View goals">
+									<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+										<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+										<circle cx="12" cy="12" r="3" />
 									</svg>
 								</button>
-							</div>
-						{/each}
-					</div>
-					<div class="discover-actions">
-						<Button variant="primary" on:click={discoverGoals} disabled={isDiscovering}>
-							{#if isDiscovering}
-								<Spinner size="sm" />
-								<span>Analyzing...</span>
-							{:else}
-								<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-									<circle cx="12" cy="12" r="10" />
-									<circle cx="12" cy="12" r="6" />
-									<circle cx="12" cy="12" r="2" />
-								</svg>
-								Discover Goals
-							{/if}
-						</Button>
-					</div>
-				</div>
-			{/if}
-		</section>
-
-		<!-- Discovered goals section -->
-		{#if discoveredGoals.length > 0}
-			<section class="goals-section">
-				<div class="section-header">
-					<h2>Discovered Goals ({discoveredGoals.length})</h2>
-					<button class="clear-btn" on:click={clearDiscoveredGoals}>Clear all</button>
-				</div>
-				<div class="goals-grid">
-					{#each discoveredGoals as goal (goal.id)}
-						<div class="goal-card">
-							<div class="goal-header">
-								<span class="goal-type {goalTypeColors[goal.type] || 'type-default'}">
-									{goal.type.replace('_', ' ')}
-								</span>
-								<span class="goal-confidence {getConfidenceColor(goal.confidence)}">
-									{goal.confidence}%
-								</span>
-							</div>
-							<h3 class="goal-identity">{goal.identity}</h3>
-							<p class="goal-first-move">{goal.firstMove}</p>
-							<div class="goal-sources">
-								{#each goal.sourceFiles as source}
-									<span class="source-badge">{source}</span>
-								{/each}
-							</div>
-							<div class="goal-actions">
-								<button
-									class="action-btn save-btn"
-									on:click={() => saveGoalToInventory(goal)}
-									disabled={goal.addedToInventory}
-								>
-									{#if goal.addedToInventory}
-										<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-											<path d="M20 6 9 17l-5-5" />
-										</svg>
-										Saved
-									{:else}
-										<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-											<path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
-										</svg>
-										Save to Library
-									{/if}
-								</button>
-								<button class="action-btn chat-btn" on:click={() => startChatWithGoal(goal)}>
+								<button class="icon-btn delete-btn" on:click={() => deleteDiscovery(discovery.id)} title="Delete discovery">
 									<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-										<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+										<path d="M3 6h18" />
+										<path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+										<path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
 									</svg>
-									Start Chat
 								</button>
 							</div>
 						</div>
 					{/each}
 				</div>
-			</section>
-		{/if}
+			{/if}
+		</section>
 	{:else}
 		<!-- Saved goals (library) -->
-		<section class="goals-section">
-			{#if isLoadingInventory}
-				<div class="loading-state">
-					<Spinner size="lg" />
-					<p>Loading your library...</p>
-				</div>
-			{:else if savedGoals.length === 0}
+		<section class="discoveries-section">
+			{#if savedGoals.length === 0}
 				<div class="empty-state">
 					<div class="empty-icon">
-						<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+						<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
 							<path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
 						</svg>
 					</div>
@@ -431,31 +465,32 @@
 			{:else}
 				<div class="goals-grid">
 					{#each savedGoals as goal (goal.id)}
+						{@const g = normalizeGoal(goal)}
 						<div class="goal-card">
 							<div class="goal-header">
-								<span class="goal-type {goalTypeColors[goal.type] || 'type-default'}">
-									{goal.type.replace('_', ' ')}
+								<span class="goal-type {goalTypeColors[g.type] || 'type-default'}">
+									{g.type.replace('_', ' ')}
 								</span>
-								<span class="goal-confidence {getConfidenceColor(goal.confidence)}">
-									{goal.confidence}%
+								<span class="goal-confidence {getConfidenceColor(g.confidence)}">
+									{g.confidence}%
 								</span>
 							</div>
-							<h3 class="goal-identity">{goal.identity}</h3>
-							<p class="goal-first-move">{goal.firstMove}</p>
+							<h3 class="goal-identity">{g.identity}</h3>
+							<p class="goal-first-move">{g.firstMove}</p>
 							<div class="goal-sources">
-								{#each goal.sourceFiles as source}
+								{#each g.sourceFiles || [] as source}
 									<span class="source-badge">{source}</span>
 								{/each}
 							</div>
 							<div class="goal-actions">
-								<button class="action-btn chat-btn" on:click={() => startChatWithGoal(goal)}>
-									<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<button class="action-btn chat-btn" on:click={() => startChatWithGoal(g)}>
+									<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 										<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
 									</svg>
 									Start Chat
 								</button>
-								<button class="action-btn remove-btn" on:click={() => removeFromInventory(goal.id)}>
-									<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<button class="action-btn remove-btn" on:click={() => removeFromInventory(g.id)}>
+									<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 										<path d="M3 6h18" />
 										<path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
 										<path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
@@ -471,9 +506,82 @@
 	{/if}
 </div>
 
+<!-- Goals Modal -->
+{#if showGoalsModal && modalDiscovery}
+	<div class="modal-overlay" on:click={closeGoalsModal} on:keydown={(e) => e.key === 'Escape' && closeGoalsModal()} role="dialog" tabindex="-1">
+		<div class="modal-content" on:click|stopPropagation role="document">
+			<div class="modal-header">
+				<div class="modal-title-section">
+					<h2>Discovered Goals</h2>
+					<div class="modal-file-tags">
+						{#each modalDiscovery.fileNames as fileName}
+							<span class="file-badge">{fileName}</span>
+						{/each}
+						<span class="meta-item modal-date">{formatDate(modalDiscovery.createdAt)}</span>
+					</div>
+				</div>
+				<button class="modal-close" on:click={closeGoalsModal}>
+					<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M18 6 6 18" /><path d="m6 6 12 12" />
+					</svg>
+				</button>
+			</div>
+			<div class="modal-body">
+				<div class="goals-grid">
+					{#each modalDiscovery.goals as goal (goal.id)}
+						{@const g = normalizeGoal(goal)}
+						<div class="goal-card">
+							<div class="goal-header">
+								<span class="goal-type {goalTypeColors[g.type] || 'type-default'}">
+									{g.type.replace('_', ' ')}
+								</span>
+								<span class="goal-confidence {getConfidenceColor(g.confidence)}">
+									{g.confidence}%
+								</span>
+							</div>
+							<h3 class="goal-identity">{g.identity}</h3>
+							<p class="goal-first-move">{g.firstMove}</p>
+							<div class="goal-sources">
+								{#each g.sourceFiles || [] as source}
+									<span class="source-badge">{source}</span>
+								{/each}
+							</div>
+							<div class="goal-actions">
+								<button
+									class="action-btn save-btn"
+									on:click={() => saveGoalToInventory(g)}
+									disabled={isGoalSaved(g.id)}
+								>
+									{#if isGoalSaved(g.id)}
+										<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+											<path d="M20 6 9 17l-5-5" />
+										</svg>
+										Saved
+									{:else}
+										<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+											<path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
+										</svg>
+										Save to Library
+									{/if}
+								</button>
+								<button class="action-btn chat-btn" on:click={() => startChatWithGoal(g)}>
+									<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+										<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+									</svg>
+									Start Chat
+								</button>
+							</div>
+						</div>
+					{/each}
+				</div>
+			</div>
+		</div>
+	</div>
+{/if}
+
 <style>
 	.goals-page {
-		padding: 2rem 3rem;
+		padding: 1.5rem 2rem;
 		width: 100%;
 		height: 100%;
 		overflow-y: auto;
@@ -482,52 +590,54 @@
 		animation: fadeIn 0.2s ease;
 	}
 
-	.goals-page > * {
-		max-width: 1400px;
+	@keyframes fadeIn {
+		from { opacity: 0; }
+		to { opacity: 1; }
 	}
 
 	/* Page header */
 	.page-header {
 		display: flex;
 		justify-content: space-between;
-		align-items: flex-start;
-		margin-bottom: 1.5rem;
-		padding-bottom: 1.5rem;
+		align-items: center;
+		margin-bottom: 1.25rem;
+		padding-bottom: 1.25rem;
 		border-bottom: 1px solid var(--color-veil-thin);
 	}
 
-	.header-content {
+	.header-left {
 		display: flex;
 		align-items: center;
-		gap: 1rem;
+		gap: 0.75rem;
 	}
 
 	.header-icon {
-		width: 48px;
-		height: 48px;
+		width: 40px;
+		height: 40px;
 		background: var(--color-primary-500);
-		border-radius: 0.75rem;
+		border-radius: 0.625rem;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		color: #ffffff;
+		flex-shrink: 0;
 	}
 
 	.page-header h1 {
-		font-size: 1.5rem;
+		font-size: 1.25rem;
 		font-weight: 700;
 		color: var(--color-text-source);
-		margin-bottom: 0.25rem;
+		margin-bottom: 0.125rem;
 	}
 
-	.page-header p {
+	.subtitle {
 		color: var(--color-text-whisper);
-		font-size: 0.875rem;
+		font-size: 0.8125rem;
 	}
 
 	.header-stats {
 		display: flex;
-		gap: 1.5rem;
+		gap: 1.25rem;
 	}
 
 	.stat-item {
@@ -536,33 +646,35 @@
 
 	.stat-value {
 		display: block;
-		font-size: 1.25rem;
+		font-size: 1.125rem;
 		font-weight: 700;
 		color: var(--color-primary-500);
 	}
 
 	.stat-label {
-		font-size: 0.75rem;
+		font-size: 0.6875rem;
 		color: var(--color-text-whisper);
+		text-transform: uppercase;
+		letter-spacing: 0.025em;
 	}
 
 	/* Tabs */
 	.tabs {
 		display: flex;
-		gap: 0.5rem;
-		margin-bottom: 1.5rem;
+		gap: 0.375rem;
+		margin-bottom: 1rem;
 	}
 
 	.tab {
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
-		padding: 0.75rem 1.25rem;
+		gap: 0.375rem;
+		padding: 0.5rem 1rem;
 		background: transparent;
 		border: 1px solid var(--color-veil-thin);
-		border-radius: 0.5rem;
+		border-radius: 0.375rem;
 		color: var(--color-text-manifest);
-		font-size: 0.875rem;
+		font-size: 0.8125rem;
 		font-weight: 500;
 		cursor: pointer;
 		transition: all 0.15s ease;
@@ -578,115 +690,60 @@
 		color: white;
 	}
 
-	/* Upload section */
-	.upload-section {
-		margin-bottom: 2rem;
-		min-height: 200px;
+	/* Upload bar */
+	.upload-bar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 0.625rem 0.75rem;
+		background: var(--color-field-surface);
+		border: 1px solid var(--color-veil-thin);
+		border-radius: 0.5rem;
+		margin-bottom: 1.25rem;
+		gap: 0.75rem;
+		transition: border-color 0.15s ease, background 0.15s ease;
+		min-height: 44px;
 	}
 
-	.drop-zone {
-		border: 2px dashed var(--color-veil-soft);
-		border-radius: 1rem;
-		padding: 3rem 2rem;
-		text-align: center;
-		transition: all 0.2s ease;
-		cursor: pointer;
-		min-height: 180px;
-	}
-
-	.drop-zone:hover,
-	.drop-zone.drag-over {
+	.upload-bar.drag-over {
 		border-color: var(--color-primary-400);
 		background: var(--color-primary-50);
 	}
 
-	.drop-zone-content {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 1rem;
-		cursor: pointer;
+	.upload-bar-left {
+		flex: 1;
+		min-width: 0;
+		overflow: hidden;
 	}
 
-	.drop-zone svg {
-		color: var(--color-text-hint);
-	}
-
-	.drop-text {
-		font-size: 1rem;
-		font-weight: 500;
-		color: var(--color-text-manifest);
-	}
-
-	.drop-hint {
+	.upload-hint {
 		font-size: 0.8125rem;
 		color: var(--color-text-hint);
 	}
 
-	.hidden {
-		display: none;
-	}
-
-	/* Uploaded files */
-	.uploaded-files {
-		margin-top: 1.5rem;
-		padding: 1.25rem;
-		background: var(--color-field-surface);
-		border-radius: 0.75rem;
-		border: 1px solid var(--color-veil-thin);
-	}
-
-	.files-header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		margin-bottom: 1rem;
-	}
-
-	.files-header h3 {
-		font-size: 0.875rem;
-		font-weight: 600;
-		color: var(--color-text-source);
-	}
-
-	.multi-file-badge {
-		font-size: 0.6875rem;
-		padding: 0.25rem 0.625rem;
-		background: var(--color-success-100);
-		color: var(--color-success-700);
-		border-radius: 9999px;
-		font-weight: 600;
-	}
-
-	.files-grid {
+	.staged-files {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 0.5rem;
+		gap: 0.375rem;
 	}
 
-	.file-chip {
-		display: flex;
+	.file-tag {
+		display: inline-flex;
 		align-items: center;
-		gap: 0.5rem;
-		padding: 0.5rem 0.75rem;
+		gap: 0.25rem;
+		padding: 0.25rem 0.5rem;
 		background: var(--color-field-depth);
-		border-radius: 0.5rem;
-		font-size: 0.8125rem;
-	}
-
-	.file-chip svg {
-		color: var(--color-primary-500);
-	}
-
-	.file-name {
+		border-radius: 0.25rem;
+		font-size: 0.75rem;
 		color: var(--color-text-manifest);
-		max-width: 200px;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
 	}
 
-	.remove-file {
+	.file-tag svg {
+		color: var(--color-primary-500);
+		flex-shrink: 0;
+	}
+
+	.file-tag-remove {
 		background: none;
 		border: none;
 		padding: 0.125rem;
@@ -694,69 +751,194 @@
 		color: var(--color-text-hint);
 		display: flex;
 		align-items: center;
-		justify-content: center;
-		border-radius: 0.25rem;
+		border-radius: 2px;
+		margin-left: 0.125rem;
 	}
 
-	.remove-file:hover {
+	.file-tag-remove:hover {
 		color: var(--color-error-500);
 		background: var(--color-error-50);
 	}
 
-	.discover-actions {
-		margin-top: 1rem;
+	.upload-bar-actions {
 		display: flex;
-		justify-content: flex-end;
+		align-items: center;
+		gap: 0.5rem;
+		flex-shrink: 0;
 	}
 
-	/* Goals section */
-	.goals-section {
-		margin-top: 2rem;
+	.browse-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.375rem;
+		padding: 0.375rem 0.75rem;
+		background: var(--color-field-depth);
+		border: 1px solid var(--color-veil-soft);
+		border-radius: 0.375rem;
+		font-size: 0.75rem;
+		font-weight: 500;
+		color: var(--color-text-manifest);
+		cursor: pointer;
+		transition: all 0.15s ease;
 	}
 
-	.section-header {
+	.browse-btn:hover {
+		background: var(--color-veil-thin);
+	}
+
+	.discover-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.375rem;
+		padding: 0.375rem 0.875rem;
+		background: var(--color-primary-500);
+		border: none;
+		border-radius: 0.375rem;
+		font-size: 0.75rem;
+		font-weight: 600;
+		color: white;
+		cursor: pointer;
+		transition: all 0.15s ease;
+	}
+
+	.discover-btn:hover:not(:disabled) {
+		background: var(--color-primary-600);
+	}
+
+	.discover-btn:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	.hidden {
+		display: none;
+	}
+
+	/* Discoveries section */
+	.discoveries-section {
+		flex: 1;
+	}
+
+	.discoveries-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.discovery-row {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		margin-bottom: 1rem;
+		padding: 0.875rem 1rem;
+		background: var(--color-field-surface);
+		border: 1px solid var(--color-veil-thin);
+		border-radius: 0.5rem;
+		transition: border-color 0.15s ease, box-shadow 0.15s ease;
 	}
 
-	.section-header h2 {
-		font-size: 1.125rem;
-		font-weight: 600;
-		color: var(--color-text-source);
+	.discovery-row:hover {
+		border-color: var(--color-veil-soft);
+		box-shadow: var(--shadow-elevated);
 	}
 
-	.clear-btn {
-		background: none;
-		border: none;
+	.discovery-info {
+		display: flex;
+		flex-direction: column;
+		gap: 0.375rem;
+		min-width: 0;
+		flex: 1;
+	}
+
+	.discovery-files {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.375rem;
+	}
+
+	.file-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.25rem;
+		padding: 0.1875rem 0.5rem;
+		background: var(--color-field-depth);
+		border-radius: 0.25rem;
+		font-size: 0.75rem;
+		color: var(--color-text-manifest);
+	}
+
+	.file-badge svg {
+		color: var(--color-primary-500);
+		flex-shrink: 0;
+	}
+
+	.discovery-meta {
+		display: flex;
+		align-items: center;
+		gap: 0.375rem;
+		font-size: 0.6875rem;
+		color: var(--color-text-whisper);
+	}
+
+	.meta-item {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.25rem;
+	}
+
+	.meta-separator {
 		color: var(--color-text-hint);
-		font-size: 0.8125rem;
-		cursor: pointer;
-		padding: 0.375rem 0.75rem;
-		border-radius: 0.375rem;
 	}
 
-	.clear-btn:hover {
+	.discovery-actions {
+		display: flex;
+		align-items: center;
+		gap: 0.375rem;
+		flex-shrink: 0;
+		margin-left: 1rem;
+	}
+
+	.icon-btn {
+		width: 34px;
+		height: 34px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: transparent;
+		border: 1px solid var(--color-veil-thin);
+		border-radius: 0.375rem;
+		cursor: pointer;
+		color: var(--color-text-whisper);
+		transition: all 0.15s ease;
+	}
+
+	.view-btn:hover {
+		border-color: var(--color-primary-400);
+		color: var(--color-primary-500);
+		background: var(--color-primary-50);
+	}
+
+	.delete-btn:hover {
+		border-color: var(--color-error-400);
 		color: var(--color-error-500);
 		background: var(--color-error-50);
 	}
 
+	/* Goals grid (used in modal and library) */
 	.goals-grid {
 		display: grid;
-		grid-template-columns: repeat(3, 1fr);
-		gap: 1.25rem;
+		grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+		gap: 1rem;
 	}
 
 	.goal-card {
-		padding: 1.5rem;
+		padding: 1.25rem;
 		display: flex;
 		flex-direction: column;
-		gap: 0.75rem;
-		min-height: 220px;
+		gap: 0.625rem;
 		background: var(--color-field-surface);
 		box-shadow: var(--shadow-elevated);
-		border-radius: 12px;
+		border-radius: 0.625rem;
+		border: 1px solid var(--color-veil-thin);
 	}
 
 	.goal-header {
@@ -766,16 +948,16 @@
 	}
 
 	.goal-type {
-		font-size: 0.6875rem;
+		font-size: 0.625rem;
 		font-weight: 600;
-		padding: 0.25rem 0.625rem;
+		padding: 0.1875rem 0.5rem;
 		border-radius: 9999px;
 		text-transform: uppercase;
 		letter-spacing: 0.025em;
 	}
 
 	.goal-confidence {
-		font-size: 0.8125rem;
+		font-size: 0.75rem;
 		font-weight: 600;
 	}
 
@@ -800,14 +982,14 @@
 	.type-default { background: #f3f4f6; color: #374151; }
 
 	.goal-identity {
-		font-size: 1rem;
+		font-size: 0.9375rem;
 		font-weight: 600;
 		color: var(--color-text-source);
 		line-height: 1.4;
 	}
 
 	.goal-first-move {
-		font-size: 0.875rem;
+		font-size: 0.8125rem;
 		color: var(--color-text-manifest);
 		line-height: 1.5;
 	}
@@ -815,22 +997,22 @@
 	.goal-sources {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 0.375rem;
+		gap: 0.25rem;
 	}
 
 	.source-badge {
-		font-size: 0.6875rem;
-		padding: 0.125rem 0.5rem;
+		font-size: 0.625rem;
+		padding: 0.125rem 0.375rem;
 		background: var(--color-field-depth);
 		color: var(--color-text-whisper);
-		border-radius: 0.25rem;
+		border-radius: 0.1875rem;
 	}
 
 	.goal-actions {
 		display: flex;
-		gap: 0.5rem;
-		margin-top: 0.5rem;
-		padding-top: 0.75rem;
+		gap: 0.375rem;
+		margin-top: auto;
+		padding-top: 0.625rem;
 		border-top: 1px solid var(--color-veil-thin);
 	}
 
@@ -839,10 +1021,10 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		gap: 0.375rem;
-		padding: 0.5rem 0.75rem;
-		border-radius: 0.5rem;
-		font-size: 0.8125rem;
+		gap: 0.25rem;
+		padding: 0.4375rem 0.625rem;
+		border-radius: 0.375rem;
+		font-size: 0.75rem;
 		font-weight: 500;
 		cursor: pointer;
 		transition: all 0.15s ease;
@@ -891,27 +1073,27 @@
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		padding: 4rem 2rem;
-		gap: 1rem;
+		padding: 3rem 2rem;
+		gap: 0.75rem;
 	}
 
 	.loading-state p {
 		color: var(--color-text-whisper);
-		font-size: 0.875rem;
+		font-size: 0.8125rem;
 	}
 
 	.empty-state {
 		text-align: center;
-		padding: 4rem 2rem;
+		padding: 3rem 2rem;
 		background: var(--color-field-surface);
-		border-radius: 1rem;
+		border-radius: 0.75rem;
 		border: 1px dashed var(--color-veil-soft);
 	}
 
 	.empty-icon {
-		margin: 0 auto 1.5rem;
-		width: 80px;
-		height: 80px;
+		margin: 0 auto 1rem;
+		width: 64px;
+		height: 64px;
 		background: var(--color-field-depth);
 		border-radius: 50%;
 		display: flex;
@@ -921,38 +1103,110 @@
 	}
 
 	.empty-state h3 {
-		font-size: 1.125rem;
+		font-size: 1rem;
 		font-weight: 600;
 		color: var(--color-text-source);
-		margin-bottom: 0.5rem;
+		margin-bottom: 0.375rem;
 	}
 
 	.empty-state p {
 		color: var(--color-text-whisper);
-		font-size: 0.875rem;
-		margin-bottom: 1.5rem;
+		font-size: 0.8125rem;
+		margin-bottom: 1.25rem;
 	}
 
-	/* Tablet responsive */
+	/* Modal */
+	.modal-overlay {
+		position: fixed;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.5);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 1000;
+		padding: 2rem;
+		animation: fadeIn 0.15s ease;
+	}
+
+	.modal-content {
+		background: var(--color-field-surface);
+		border-radius: 0.75rem;
+		width: 100%;
+		max-width: 960px;
+		max-height: 80vh;
+		display: flex;
+		flex-direction: column;
+		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+		border: 1px solid var(--color-veil-thin);
+	}
+
+	.modal-header {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		padding: 1.25rem 1.5rem;
+		border-bottom: 1px solid var(--color-veil-thin);
+		flex-shrink: 0;
+	}
+
+	.modal-title-section h2 {
+		font-size: 1.125rem;
+		font-weight: 600;
+		color: var(--color-text-source);
+		margin-bottom: 0.375rem;
+	}
+
+	.modal-file-tags {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.375rem;
+	}
+
+	.modal-date {
+		color: var(--color-text-hint);
+		font-size: 0.6875rem;
+	}
+
+	.modal-close {
+		background: none;
+		border: none;
+		cursor: pointer;
+		color: var(--color-text-hint);
+		padding: 0.25rem;
+		border-radius: 0.25rem;
+		display: flex;
+		align-items: center;
+		transition: all 0.15s ease;
+	}
+
+	.modal-close:hover {
+		color: var(--color-text-source);
+		background: var(--color-field-depth);
+	}
+
+	.modal-body {
+		padding: 1.25rem 1.5rem;
+		overflow-y: auto;
+		flex: 1;
+	}
+
+	/* Responsive */
 	@media (max-width: 1200px) {
-		.goals-page {
-			padding: 1.5rem 2rem;
-		}
-
 		.goals-grid {
-			grid-template-columns: repeat(2, 1fr);
+			grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
 		}
 	}
 
-	/* Mobile responsive */
-	@media (max-width: 900px) {
+	@media (max-width: 768px) {
 		.goals-page {
 			padding: 1rem;
 		}
 
 		.page-header {
 			flex-direction: column;
-			gap: 1rem;
+			gap: 0.75rem;
+			align-items: flex-start;
 		}
 
 		.header-stats {
@@ -960,12 +1214,27 @@
 			justify-content: flex-start;
 		}
 
-		.tabs {
+		.upload-bar {
 			flex-direction: column;
+			align-items: stretch;
+			gap: 0.5rem;
+		}
+
+		.upload-bar-actions {
+			justify-content: flex-end;
 		}
 
 		.goals-grid {
 			grid-template-columns: 1fr;
+		}
+
+		.modal-content {
+			max-width: 100%;
+			max-height: 90vh;
+		}
+
+		.modal-overlay {
+			padding: 1rem;
 		}
 	}
 </style>
