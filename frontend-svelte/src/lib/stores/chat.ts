@@ -223,39 +223,38 @@ function createChatStore() {
 			}
 
 			try {
-				// Load conversation and messages (required), documents and questions (optional with error handling)
-				const [conversation, messagesResponse] = await Promise.all([
+				// Load all data in parallel — conversation+messages are required, documents+questions are optional
+				const results = await Promise.allSettled([
 					api.get<Conversation>(`/api/chat/conversations/${conversationId}`),
 					api.get<Message[]>(`/api/chat/conversations/${conversationId}/messages`),
+					api.get<any[]>(`/api/matrix/${conversationId}/documents`),
+					api.get<Question[]>(`/api/chat/conversations/${conversationId}/questions`),
 				]);
 
-				// Check if request was aborted (user clicked different conversation)
 				if (signal.aborted) return;
 
-				// Load optional data with proper error handling (don't block on failure)
+				// Required: conversation and messages must succeed
+				if (results[0].status === 'rejected') throw results[0].reason;
+				if (results[1].status === 'rejected') throw results[1].reason;
+
+				const conversation = results[0].value;
+				const messagesResponse = results[1].value;
+
+				// Optional: documents and questions can fail gracefully
 				let documentsResponse: any[] = [];
 				let questionsResponse: Question[] = [];
 
-				try {
-					documentsResponse = await api.get<any[]>(`/api/matrix/${conversationId}/documents`);
-				} catch (docError: any) {
-					if (docError.name !== 'AbortError') {
-						console.error('Failed to load documents:', docError);
-						addToast('error', 'Failed to load matrix documents');
-					}
+				if (results[2].status === 'fulfilled') {
+					documentsResponse = results[2].value;
+				} else if ((results[2].reason as any)?.name !== 'AbortError') {
+					console.error('Failed to load documents:', results[2].reason);
 				}
 
-				try {
-					questionsResponse = await api.get<Question[]>(`/api/chat/conversations/${conversationId}/questions`);
-				} catch (qError: any) {
-					if (qError.name !== 'AbortError') {
-						console.error('Failed to load questions:', qError);
-						addToast('error', 'Failed to load questions');
-					}
+				if (results[3].status === 'fulfilled') {
+					questionsResponse = results[3].value;
+				} else if ((results[3].reason as any)?.name !== 'AbortError') {
+					console.error('Failed to load questions:', results[3].reason);
 				}
-
-				// Check again if aborted before updating state
-				if (signal.aborted) return;
 
 				// Transform questions from API format to store format
 				const questions: Question[] = (Array.isArray(questionsResponse) ? questionsResponse : []).map(q => ({
