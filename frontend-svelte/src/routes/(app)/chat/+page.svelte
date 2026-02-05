@@ -962,6 +962,7 @@
 <!-- Context Control Popup -->
 <ContextControlPopup
 	bind:open={showContextPopup}
+	model={selectedModel}
 	on:close={() => (showContextPopup = false)}
 	on:submit={handleContextSubmit}
 />
@@ -1517,7 +1518,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		background: rgba(255, 255, 255, 0.9);
+		background: color-mix(in srgb, var(--color-field-void) 92%, transparent);
 		backdrop-filter: blur(4px);
 		border-radius: 0.5rem;
 		z-index: 10;

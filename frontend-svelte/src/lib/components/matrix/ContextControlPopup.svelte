@@ -25,6 +25,7 @@
 	import InsightPopup from './InsightPopup.svelte';
 
 	export let open = false;
+	export let model = 'claude-opus-4-5-20251101';
 
 	// Check if a document has full data (100 cells)
 	function hasFullData(doc: Document): boolean {
@@ -40,6 +41,7 @@
 	let selectedInsight: ArticulatedInsight | null = null;
 	let selectedOptionLabel = '';
 	let selectedOptionType: 'row' | 'column' = 'row';
+	let generatingInsights = false;
 
 	const dispatch = createEventDispatcher<{
 		close: void;
@@ -104,10 +106,8 @@
 		if (selectedRows.includes(index)) {
 			// Allow deselection only when extra options are visible (so user can swap)
 			if (!showExtraDrivers) return;
-			if (selectedRows.length <= 5) return;
 			selectedRows = selectedRows.filter(i => i !== index);
 		} else {
-			// When selecting a new one and already at 5, don't allow (user must deselect first)
 			if (selectedRows.length >= 5) return;
 			selectedRows = [...selectedRows, index];
 		}
@@ -117,10 +117,8 @@
 		if (selectedColumns.includes(index)) {
 			// Allow deselection only when extra options are visible (so user can swap)
 			if (!showExtraOutcomes) return;
-			if (selectedColumns.length <= 5) return;
 			selectedColumns = selectedColumns.filter(i => i !== index);
 		} else {
-			// When selecting a new one and already at 5, don't allow (user must deselect first)
 			if (selectedColumns.length >= 5) return;
 			selectedColumns = [...selectedColumns, index];
 		}
@@ -150,12 +148,41 @@
 		}
 	}
 
-	function handleOpenInsight(opt: RowOption | ColumnOption, type: 'row' | 'column') {
-		if (!opt.articulated_insight) return;
-		selectedInsight = opt.articulated_insight;
+	async function handleOpenInsight(opt: RowOption | ColumnOption, type: 'row' | 'column') {
 		selectedOptionLabel = opt.label;
 		selectedOptionType = type;
-		showInsightPopup = true;
+
+		if (opt.articulated_insight) {
+			selectedInsight = opt.articulated_insight;
+			showInsightPopup = true;
+			return;
+		}
+
+		// Trigger on-demand generation of all missing insights
+		if (!opt.insight_title) return;
+
+		const optionsList = type === 'row' ? rowOptions : columnOptions;
+		const insightIndex = optionsList.indexOf(opt) + (type === 'column' ? 10 : 0);
+
+		generatingInsights = true;
+		try {
+			const updatedDoc = await matrix.generateInsights(insightIndex, model);
+			if (updatedDoc) {
+				const options = type === 'row'
+					? updatedDoc.matrix_data.row_options
+					: updatedDoc.matrix_data.column_options;
+				const idx = type === 'row' ? insightIndex : insightIndex - 10;
+				const updatedOpt = options[idx];
+				if (updatedOpt?.articulated_insight) {
+					selectedInsight = updatedOpt.articulated_insight;
+					showInsightPopup = true;
+				}
+			}
+		} catch (error) {
+			console.error('Failed to generate insights:', error);
+		} finally {
+			generatingInsights = false;
+		}
 	}
 
 	function handleCloseInsight() {
@@ -246,10 +273,10 @@
 								{#each visibleRowIndices as idx (`row-${idx}`)}
 									{@const opt = rowOptions[idx]}
 									{@const isSelected = selectedRows.includes(idx)}
-									{@const canDeselect = showExtraDrivers && selectedRows.length > 5}
+									{@const canDeselect = showExtraDrivers}
 									{@const canSelect = selectedRows.length < 5}
 									{@const canToggle = isSelected ? canDeselect : canSelect}
-									{@const hasInsight = !!opt?.articulated_insight}
+									{@const hasInsight = !!(opt?.insight_title || opt?.articulated_insight)}
 									{#if opt}
 										<div class="title-item-wrapper">
 											<button
@@ -283,8 +310,10 @@
 											{#if hasInsight}
 												<button
 													class="insight-expand-btn"
+													class:loading={generatingInsights}
+													disabled={generatingInsights}
 													on:click|stopPropagation={() => handleOpenInsight(opt, 'row')}
-													title="View full insight"
+													title={opt.articulated_insight ? 'View full insight' : 'Generate insight'}
 												>
 													<svg
 														xmlns="http://www.w3.org/2000/svg"
@@ -324,10 +353,10 @@
 								{#each visibleColIndices as idx (`col-${idx}`)}
 									{@const opt = columnOptions[idx]}
 									{@const isSelected = selectedColumns.includes(idx)}
-									{@const canDeselect = showExtraOutcomes && selectedColumns.length > 5}
+									{@const canDeselect = showExtraOutcomes}
 									{@const canSelect = selectedColumns.length < 5}
 									{@const canToggle = isSelected ? canDeselect : canSelect}
-									{@const hasInsight = !!opt?.articulated_insight}
+									{@const hasInsight = !!(opt?.insight_title || opt?.articulated_insight)}
 									{#if opt}
 										<div class="title-item-wrapper">
 											<button
@@ -361,8 +390,10 @@
 											{#if hasInsight}
 												<button
 													class="insight-expand-btn"
+													class:loading={generatingInsights}
+													disabled={generatingInsights}
 													on:click|stopPropagation={() => handleOpenInsight(opt, 'column')}
-													title="View full insight"
+													title={opt.articulated_insight ? 'View full insight' : 'Generate insight'}
 												>
 													<svg
 														xmlns="http://www.w3.org/2000/svg"
@@ -632,6 +663,11 @@
 		background: var(--color-primary-50);
 		border-color: var(--color-primary-400);
 		color: var(--color-primary-600);
+	}
+
+	.insight-expand-btn.loading {
+		opacity: 0.5;
+		cursor: wait;
 	}
 
 	.title-item {

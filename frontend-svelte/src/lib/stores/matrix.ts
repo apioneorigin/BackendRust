@@ -414,6 +414,39 @@ function createMatrixStore() {
 			}
 		},
 
+		// Generate all missing insights for the active document
+		async generateInsights(insightIndex: number, model: string): Promise<Document | null> {
+			const state = get({ subscribe });
+			if (!state.conversationId || !state.activeDocumentId) return null;
+
+			const response = await api.post<{ document_id: string; insights_generated: number; success: boolean }>(
+				`/matrix/${state.conversationId}/document/${state.activeDocumentId}/generate-insights`,
+				{ model, insight_index: insightIndex }
+			);
+
+			if (response.success && response.insights_generated > 0) {
+				// Refresh documents to get the generated insights
+				const docsResponse = await api.get(`/matrix/${state.conversationId}/documents`);
+				if (docsResponse && Array.isArray(docsResponse)) {
+					const activeDoc = docsResponse.find((d: any) => d.id === state.activeDocumentId);
+					if (activeDoc) {
+						const displayed = buildDisplayedMatrix(activeDoc);
+						update(s => ({
+							...s,
+							documents: docsResponse,
+							displayedMatrixData: displayed.matrixData,
+							displayedRowHeaders: displayed.rowHeaders,
+							displayedColumnHeaders: displayed.columnHeaders,
+							displayedRowInsights: displayed.rowInsights,
+							displayedColumnInsights: displayed.columnInsights
+						}));
+					}
+					return activeDoc;
+				}
+			}
+			return null;
+		},
+
 		// Fetch plays for active document (plays are generated during document population)
 		async fetchPlays() {
 			const state = get({ subscribe });
