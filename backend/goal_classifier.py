@@ -364,8 +364,8 @@ class GoalClassifier:
             symptom_score = sum(1 for ind in symptom_indicators if ind in desc_lower)
 
             # Check if signal aligns with consciousness bottlenecks
-            if consciousness_state.tier2 and consciousness_state.tier2.bottlenecks:
-                for bottleneck in consciousness_state.tier2.bottlenecks:
+            if consciousness_state.bottlenecks:
+                for bottleneck in consciousness_state.bottlenecks:
                     if self._signal_matches_bottleneck(signal, bottleneck):
                         root_score += 2
 
@@ -441,11 +441,8 @@ class GoalClassifier:
         is_multi_file = len(signals_by_file) > 1
 
         # Get bottlenecks and leverage points
-        bottlenecks = []
-        leverage_points = []
-        if consciousness_state.tier2:
-            bottlenecks = consciousness_state.tier2.bottlenecks or []
-            leverage_points = consciousness_state.tier2.leverage_points or []
+        bottlenecks = consciousness_state.bottlenecks or []
+        leverage_points = consciousness_state.leverage_points or []
 
         # === SINGLE-FILE TYPE CLASSIFICATION ===
 
@@ -1019,8 +1016,8 @@ class GoalClassifier:
                 context["matrix_positions"] = matrices
 
         # Bottleneck data (primary bottleneck only)
-        if consciousness_state.tier2 and consciousness_state.tier2.bottlenecks:
-            primary = consciousness_state.tier2.bottlenecks[0]
+        if consciousness_state.bottlenecks:
+            primary = consciousness_state.bottlenecks[0]
             context["bottleneck_data"] = {
                 "primary": primary.variable,  # Bottleneck uses 'variable' not 'operator'
                 "value": primary.value,
