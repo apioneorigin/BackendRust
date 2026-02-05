@@ -104,6 +104,7 @@
 
 	$: rowOptions = $activeDocument?.matrix_data?.row_options ?? [];
 	$: columnOptions = $activeDocument?.matrix_data?.column_options ?? [];
+	$: viewedInsightIndices = $activeDocument?.matrix_data?.viewed_insight_indices ?? [];
 
 	// Show all options — user needs to see everything to make swap decisions
 	$: visibleRowIndices = rowOptions.map((_: any, i: number) => i);
@@ -175,16 +176,18 @@
 		selectedOptionLabel = opt.label;
 		selectedOptionType = type;
 
-		if (opt.articulated_insight?.the_truth) {
+		const insightIndex = idx + (type === 'column' ? 10 : 0);
+
+		// Already viewed and content exists — show directly (no backend call)
+		if (viewedInsightIndices.includes(insightIndex) && opt.articulated_insight?.the_truth) {
 			selectedInsight = opt.articulated_insight;
 			showInsightPopup = true;
 			return;
 		}
 
-		// Trigger on-demand generation of all missing insights
+		// Not yet viewed — call backend to generate (if needed) + mark as viewed
 		if (!opt.insight_title) return;
 
-		const insightIndex = idx + (type === 'column' ? 10 : 0);
 		const key = `${type}-${idx}`;
 
 		generatingInsightKey = key;
@@ -356,7 +359,7 @@
 									{@const canSelect = selectedRows.length < 5}
 									{@const canToggle = isSelected || canSelect}
 									{@const hasInsight = !!(opt?.insight_title || opt?.articulated_insight)}
-									{@const isGenerated = !!opt?.articulated_insight?.the_truth}
+									{@const isGenerated = viewedInsightIndices.includes(idx)}
 									{@const isThisLoading = generatingInsightKey === `row-${idx}`}
 									{#if opt}
 										<div class="title-item-wrapper">
@@ -409,7 +412,7 @@
 									{@const canSelect = selectedColumns.length < 5}
 									{@const canToggle = isSelected || canSelect}
 									{@const hasInsight = !!(opt?.insight_title || opt?.articulated_insight)}
-									{@const isGenerated = !!opt?.articulated_insight?.the_truth}
+									{@const isGenerated = viewedInsightIndices.includes(10 + idx)}
 									{@const isThisLoading = generatingInsightKey === `column-${idx}`}
 									{#if opt}
 										<div class="title-item-wrapper">

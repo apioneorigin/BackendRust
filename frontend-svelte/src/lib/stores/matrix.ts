@@ -99,6 +99,7 @@ export interface Document {
 		column_options: ColumnOption[];
 		selected_rows: number[];
 		selected_columns: number[];
+		viewed_insight_indices?: number[];  // Indices the user has explicitly opened (0-9 rows, 10-19 columns)
 		cells?: Record<string, {
 			impact_score: number;
 			relationship?: string;

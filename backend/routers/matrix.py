@@ -281,7 +281,7 @@ async def generate_insights(
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Generate all missing insights for a document.
+    Generate all missing insights for a document and mark the clicked one as viewed.
     Returns the updated document directly so frontend doesn't need a follow-up GET.
     """
     from main import generate_insights_batch_llm, get_model_config
@@ -289,11 +289,19 @@ async def generate_insights(
     conversation = await get_or_404(db, ChatConversation, conversation_id, user_id=current_user.id)
     documents, doc_index, doc = await _find_document(conversation, doc_id)
 
-    # Find missing insights (indices 0-9 = rows, 10-19 = columns)
     matrix_data = doc.get("matrix_data", {})
     row_options = matrix_data.get("row_options", [])
     col_options = matrix_data.get("column_options", [])
 
+    # Mark clicked insight as viewed
+    viewed = matrix_data.get("viewed_insight_indices") or []
+    needs_save = False
+    if request.insight_index not in viewed:
+        viewed.append(request.insight_index)
+        documents[doc_index]["matrix_data"]["viewed_insight_indices"] = viewed
+        needs_save = True
+
+    # Find missing insights (indices 0-9 = rows, 10-19 = columns)
     missing_indices = []
     for i, row in enumerate(row_options):
         insight = row.get("articulated_insight")
@@ -304,45 +312,44 @@ async def generate_insights(
         if not insight or not insight.get("the_truth"):
             missing_indices.append(10 + i)
 
-    # If all insights already exist, return document as-is
-    if not missing_indices:
-        return documents[doc_index]
+    if missing_indices:
+        context_messages = await _load_context_messages(conversation_id, db)
+        model_config = get_model_config(request.model)
 
-    context_messages = await _load_context_messages(conversation_id, db)
-    model_config = get_model_config(request.model)
+        result = await generate_insights_batch_llm(
+            document=doc,
+            missing_indices=missing_indices,
+            context_messages=context_messages,
+            model_config=model_config
+        )
 
-    result = await generate_insights_batch_llm(
-        document=doc,
-        missing_indices=missing_indices,
-        context_messages=context_messages,
-        model_config=model_config
-    )
+        if not result or "insights" not in result:
+            raise HTTPException(status_code=500, detail="Failed to generate insights")
 
-    if not result or "insights" not in result:
-        raise HTTPException(status_code=500, detail="Failed to generate insights")
+        # Apply generated insights to document
+        insights = result["insights"]
+        insights_applied = 0
 
-    # Apply generated insights to document
-    insights = result["insights"]
-    insights_applied = 0
+        for idx_str, insight in insights.items():
+            try:
+                idx = int(idx_str)
+            except (ValueError, TypeError):
+                continue
+            if idx < 10:
+                if idx < len(row_options):
+                    documents[doc_index]["matrix_data"]["row_options"][idx]["articulated_insight"] = insight
+                    insights_applied += 1
+            else:
+                col_idx = idx - 10
+                if col_idx < len(col_options):
+                    documents[doc_index]["matrix_data"]["column_options"][col_idx]["articulated_insight"] = insight
+                    insights_applied += 1
 
-    for idx_str, insight in insights.items():
-        try:
-            idx = int(idx_str)
-        except (ValueError, TypeError):
-            continue
-        if idx < 10:
-            if idx < len(row_options):
-                documents[doc_index]["matrix_data"]["row_options"][idx]["articulated_insight"] = insight
-                insights_applied += 1
-        else:
-            col_idx = idx - 10
-            if col_idx < len(col_options):
-                documents[doc_index]["matrix_data"]["column_options"][col_idx]["articulated_insight"] = insight
-                insights_applied += 1
+        api_logger.info(f"[INSIGHTS] Generated {insights_applied} insights for doc {doc_id}")
+        needs_save = True
 
-    await _save_documents(conversation, documents, db)
-
-    api_logger.info(f"[INSIGHTS] Generated {insights_applied} insights for doc {doc_id}")
+    if needs_save:
+        await _save_documents(conversation, documents, db)
 
     return documents[doc_index]
 
