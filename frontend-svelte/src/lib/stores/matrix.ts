@@ -625,9 +625,6 @@ export const plays = derived(matrix, ($matrix) => $matrix.plays);
 export const selectedPlayId = derived(matrix, ($matrix) => $matrix.selectedPlayId);
 export const isLoadingPlays = derived(matrix, ($matrix) => $matrix.isLoadingPlays);
 
-// Track which rows changed (used by matrix diff highlighting)
-export const changedRowIndices = writable<number[]>([]);
-
 // Computed metrics (from currently displayed matrix)
 export const coherence = derived(matrix, ($matrix) => {
 	if ($matrix.displayedMatrixData.length === 0) return 0;
