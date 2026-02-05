@@ -340,12 +340,16 @@ async def send_message(
 
             parsed_list = parse_file(name, content, encoding)
             for parsed in parsed_list:
-                extracted = parsed.text_content or ""
-                conversation_context.file_summaries.append({
+                file_entry = {
                     "name": parsed.name,
-                    "summary": extracted[:5000],
+                    "summary": (parsed.text_content or "")[:5000],
                     "type": file_type,
-                })
+                }
+                # Preserve image data for vision support in LLM calls
+                if parsed.is_image and parsed.image_base64:
+                    file_entry["image_base64"] = parsed.image_base64
+                    file_entry["image_media_type"] = parsed.image_media_type
+                conversation_context.file_summaries.append(file_entry)
 
     # Save user message with attachments
     user_message = ChatMessage(

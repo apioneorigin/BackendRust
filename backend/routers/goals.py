@@ -532,35 +532,41 @@ MULTI-FILE MODE: {total_file_count > 1}
 
 Return JSON with signal_extraction, consciousness_extraction, and cross_mapping sections."""
 
-    # If no images or using OpenAI, return as plain string
-    if not parse_result.image_files or provider != "anthropic":
-        # For OpenAI, describe images as text placeholders
-        if parse_result.image_files:
-            image_notes = "\n".join(
-                f"[Image file: {img.name} — analyze visually for signals]"
-                for img in parse_result.image_files
-            )
-            text_prompt += f"\n\n{image_notes}"
+    # If no images, return as plain string for all providers
+    if not parse_result.image_files:
         return text_prompt
 
-    # For Anthropic with images: build content blocks array
+    # For Anthropic with images: build Anthropic content blocks array
+    if provider == "anthropic":
+        content_blocks: List[Dict[str, Any]] = [
+            {"type": "text", "text": text_prompt}
+        ]
+        for img in parse_result.image_files:
+            content_blocks.append({
+                "type": "image",
+                "source": {
+                    "type": "base64",
+                    "media_type": img.image_media_type,
+                    "data": img.image_base64,
+                }
+            })
+            content_blocks.append({
+                "type": "text",
+                "text": f"The above image is from file: {img.name}. Extract any signals, data, or goals visible in it."
+            })
+        return content_blocks
+
+    # For OpenAI with images: build OpenAI Chat Completions vision content blocks
     content_blocks: List[Dict[str, Any]] = [
         {"type": "text", "text": text_prompt}
     ]
     for img in parse_result.image_files:
         content_blocks.append({
-            "type": "image",
-            "source": {
-                "type": "base64",
-                "media_type": img.image_media_type,
-                "data": img.image_base64,
+            "type": "image_url",
+            "image_url": {
+                "url": f"data:{img.image_media_type};base64,{img.image_base64}",
             }
         })
-        content_blocks.append({
-            "type": "text",
-            "text": f"The above image is from file: {img.name}. Extract any signals, data, or goals visible in it."
-        })
-
     return content_blocks
 
 
@@ -786,15 +792,13 @@ Return valid JSON only. No markdown, no explanation."""
                 # OpenAI
                 instructions = f"{SHARED_GOAL_DISCOVERY_CONTEXT}\n\n{call1_dynamic_prompt}"
 
-                # OpenAI content is always a string
-                call1_text = call1_user_content if isinstance(call1_user_content, str) else str(call1_user_content)
-
+                # OpenAI content can be a string (text only) or list (vision content blocks)
                 request_body = {
                     "model": model,
                     "max_tokens": model_config["max_tokens"],
                     "messages": [
                         {"role": "system", "content": instructions},
-                        {"role": "user", "content": call1_text}
+                        {"role": "user", "content": call1_user_content}
                     ],
                     "response_format": {"type": "json_object"}
                 }
@@ -804,7 +808,8 @@ Return valid JSON only. No markdown, no explanation."""
                     "Content-Type": "application/json"
                 }
 
-                pipeline_logger.debug(f"[GOAL DISCOVERY] Call 1 request to OpenAI: {len(call1_text)} chars")
+                content_size = len(str(call1_user_content))
+                pipeline_logger.debug(f"[GOAL DISCOVERY] Call 1 request to OpenAI: {content_size} chars")
                 response = await client.post(
                     model_config["endpoint"],
                     headers=headers,
