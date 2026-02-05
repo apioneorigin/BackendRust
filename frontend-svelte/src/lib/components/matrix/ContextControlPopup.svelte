@@ -3,9 +3,7 @@
 	 * ContextControlPopup - Unified context control for matrix dimensions
 	 *
 	 * ARCHITECTURE:
-	 * - ONLY shows documents with FULL DATA (100 cells populated)
-	 * - Document stubs (only names/row-column labels) are NOT shown here
-	 * - User must generate full data from Matrix tab before document appears here
+	 * - Shows ALL documents (LLM-generated stubs and fully populated)
 	 * - Per-document row/column selection (10 options each, select 5)
 	 * - Each document has ~20 word description
 	 * - Clickable titles open InsightPopup when articulated_insight is available
@@ -18,21 +16,12 @@
 		activeDocumentId,
 		activeDocument
 	} from '$lib/stores';
-	import type { ArticulatedInsight, RowOption, ColumnOption, Document } from '$lib/stores/matrix';
+	import type { ArticulatedInsight, RowOption, ColumnOption } from '$lib/stores/matrix';
 	import { Button } from '$lib/components/ui';
 	import InsightPopup from './InsightPopup.svelte';
 
 	export let open = false;
 	export let model = 'claude-opus-4-5-20251101';
-
-	// Check if a document has full data (100 cells)
-	function hasFullData(doc: Document): boolean {
-		const cells = doc.matrix_data?.cells || {};
-		return Object.keys(cells).length >= 100;
-	}
-
-	// Only show documents with full data
-	$: fullDataDocuments = $matrixDocuments.filter(hasFullData);
 
 	// Insight popup state
 	let showInsightPopup = false;
@@ -219,11 +208,11 @@
 			</div>
 
 			<!-- Document Tabs -->
-			<!-- Only show documents with full data (100 cells) -->
-			{#if fullDataDocuments.length > 0}
+			<!-- All documents: LLM-generated stubs and fully populated -->
+			{#if $matrixDocuments.length > 0}
 				<div class="document-tabs-container">
 					<div class="document-tabs">
-						{#each fullDataDocuments as doc (doc.id)}
+						{#each $matrixDocuments as doc (doc.id)}
 							<button
 								class="document-tab"
 								class:active={doc.id === $activeDocumentId}
