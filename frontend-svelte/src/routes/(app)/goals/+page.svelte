@@ -262,7 +262,7 @@
 		modalDiscovery = null;
 		if (goalsSavedDuringModal) {
 			flashLibraryTab = true;
-			setTimeout(() => { flashLibraryTab = false; }, 2000);
+			setTimeout(() => { flashLibraryTab = false; }, 5000);
 		}
 	}
 
@@ -900,15 +900,24 @@
 	}
 
 	@keyframes flashPulse {
-		0%, 100% { box-shadow: none; }
-		50% { box-shadow: 0 0 0 3px var(--color-primary-200); }
+		0%, 100% {
+			background: var(--color-primary-100);
+			box-shadow: 0 0 0 2px var(--color-primary-300);
+			transform: scale(1);
+		}
+		50% {
+			background: var(--color-primary-300);
+			box-shadow: 0 0 12px 4px var(--color-primary-400);
+			transform: scale(1.07);
+		}
 	}
 
 	.tab.flash {
-		animation: flashPulse 0.5s ease 4;
-		border-color: var(--color-primary-400);
-		color: var(--color-primary-600);
-		background: var(--color-primary-50);
+		animation: flashPulse 0.8s ease 5;
+		border-color: var(--color-primary-500);
+		color: var(--color-primary-700);
+		background: var(--color-primary-100);
+		font-weight: 700;
 	}
 
 	/* Upload bar */
