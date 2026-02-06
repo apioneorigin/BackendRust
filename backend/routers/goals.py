@@ -715,14 +715,14 @@ def build_call2_user_prompt_skeletons(
 
     text_prompt = f"""Articulate the following {len(skeletons)} pre-classified goal skeletons.
 
-For each skeleton, write: identity, goal_statement, evidence, pattern, shadow, dharma, first_move.
+For each skeleton, write: identity, goal_statement, articulation, first_move.
 Pass through type, confidence, sourceFiles unchanged.
 
 === PRE-CLASSIFIED GOAL SKELETONS ===
 {skeletons_json}
 === END SKELETONS ===
 
-Return JSON: {{"goals": [...]}} where each goal has all skeleton fields + your 6 articulation fields."""
+Return JSON: {{"goals": [...]}} where each goal has all skeleton fields + your 3 articulation fields."""
 
     # If no images, return as plain string
     if not parse_result.image_files:
@@ -1265,23 +1265,31 @@ Return valid JSON only. No markdown, no explanation."""
     call2_dynamic_prompt = """You receive pre-classified goal skeletons from the backend classifier.
 Each skeleton has: type, confidence, sourceFiles, supporting_signals, classification_reason, consciousness_context.
 
-YOUR ONE JOB: Write 6 articulation fields for each skeleton. Do NOT modify type, confidence, or sourceFiles.
+YOUR ONE JOB: Write 3 articulation fields for each skeleton. Do NOT modify type, confidence, or sourceFiles.
 
 For EACH skeleton, write:
 - identity: Concise action statement grounded in signal data (10-15 words)
-- goal_statement: Name the identity shift — who they're becoming (5-15 words)
-- evidence: Point to their specific work/actions — undeniable dots they can verify (40-60 words)
-- pattern: Name what the evidence reveals — surprising but verifiable synthesis (30-40 words)
-- shadow: Name the fear + its PRESENT cost, not future threat (40-60 words)
-- dharma: Produce self-recognition — homecoming, not arrival (40-60 words)
-- first_move: Convert dharma's recognition into concrete imperative action (20-30 words)
+- goal_statement: A short line that captures the identity shift at the heart of this goal. It should read as self-recognition — the reader should feel "that's exactly what I've been trying to become" rather than being told what to do. It should carry urgency by naming where they're currently stuck. Let the words find their own form — do NOT use any template or formula. Just write what lands.
+- articulation: A single freeflowing prose passage that moves through four phases without headers or labels:
+
+  First, ground the reader in their own evidence — point to specific things they've done or built from the supporting_signals that they can verify. Use their actual work, not general observations. This makes "that's not me" impossible.
+
+  Then, name the pattern the evidence reveals — a synthesis that's surprising but immediately verifiable. The reader should think "I never saw it that way, but yes." This makes "I don't see it" dissolve.
+
+  Then, name the specific fear or cost they're not naming — in present tense. Not what will happen, what IS happening. Every day they stay in the current state, what are they losing right now? This makes "I can wait" painful.
+
+  Finally, land on recognition — this isn't new, this was always theirs. Frame the real question (not the false one they've been asking). Movement should feel like homecoming, not effort. This makes "this isn't my path" dissolve into relief.
+
+  The prose should flow naturally between these phases. The reader shouldn't be able to tell where one ends and the next begins — it should feel like a single unfolding realization. Use text formatting (bold, italic) where it serves the prose. No headers, no bullets, no section labels.
+
+- first_move: Convert the articulation's recognition into a concrete imperative action (20-30 words). Must start with imperative verb and reference file specifics.
 
 CRITICAL RULES:
 - NEVER refuse or skip skeletons. Articulate ALL of them.
 - Pass through type, confidence, sourceFiles unchanged from each skeleton.
-- No template strings — full linguistic creativity within the logical frame.
-- Shadow MUST be present tense ("is costing" not "will cost").
-- Evidence MUST cite specific dots from the supporting_signals.
+- Full linguistic creativity — no templates, no formulaic phrasing.
+- Fear/cost in articulation MUST be present tense ("is costing" not "will cost").
+- Evidence in articulation MUST cite specific dots from the supporting_signals.
 - first_move MUST start with imperative verb and reference file specifics.
 - Framework concealment: NEVER use Maya, S-level, Karma, operator names.
 - For image-sourced goals: generate business-level articulation, not visual descriptions.
@@ -1291,7 +1299,7 @@ Use consciousness_context (when provided) to shape tone:
 - Bottleneck data informs shadow framing (but NEVER name operators directly)
 - Drive profile informs vocabulary (Achievement = competitive, Freedom = liberation, Love = connection)
 
-Return valid JSON with a "goals" array containing all skeletons with your 6 fields added."""
+Return valid JSON with a "goals" array containing all skeletons with your 3 articulation fields added."""
 
     call2_user_prompt = build_call2_user_prompt_skeletons(
         goal_skeletons, parse_result, provider
@@ -1463,7 +1471,7 @@ Return valid JSON with a "goals" array containing all skeletons with your 6 fiel
     api_logger.info("[GOAL DISCOVERY] Enforced skeleton fields on articulated goals")
 
     # Required fields for a valid goal
-    REQUIRED_FIELDS = ["type", "identity", "goal_statement", "first_move"]
+    REQUIRED_FIELDS = ["type", "identity", "goal_statement", "articulation", "first_move"]
 
     # Normalize field names (LLM may return camelCase)
     CAMEL_TO_SNAKE = {
