@@ -563,7 +563,7 @@
 					<p>Upload files above to discover goals from your data</p>
 				</div>
 			{:else}
-				<!-- svelte-ignore a11y-click-events-have-key-events -->
+				<!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
 				<div class="discoveries-list" on:click={closeDiscoveryMenus}>
 					{#each discoveries as discovery (discovery.id)}
 						<div class="discovery-row" on:click={() => openGoalsModal(discovery)} role="button" tabindex="0" on:keydown={(e) => e.key === 'Enter' && openGoalsModal(discovery)}>
@@ -584,8 +584,8 @@
 								</svg>
 							</button>
 							{#if activeDiscoveryMenu === discovery.id}
-								<!-- svelte-ignore a11y-click-events-have-key-events -->
-								<div class="discovery-dropdown" on:click|stopPropagation role="menu">
+								<!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
+								<div class="discovery-dropdown" on:click|stopPropagation role="menu" tabindex="-1">
 									<button class="dropdown-item" on:click={(e) => shareDiscovery(e, discovery.id)}>
 										<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 											<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
@@ -671,7 +671,9 @@
 
 <!-- Goals Modal -->
 {#if showGoalsModal && modalDiscovery}
-	<div class="modal-overlay" on:click={closeGoalsModal} on:keydown={(e) => e.key === 'Escape' && closeGoalsModal()} role="dialog" tabindex="-1">
+	<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+	<div class="modal-overlay" on:click={closeGoalsModal} on:keydown={(e) => e.key === 'Escape' && closeGoalsModal()} role="dialog" aria-modal="true" tabindex="-1">
+		<!-- svelte-ignore a11y-no-static-element-interactions a11y-click-events-have-key-events -->
 		<div class="modal-content" on:click|stopPropagation role="document">
 			<div class="modal-header">
 				<div class="modal-header-row">
@@ -1120,7 +1122,7 @@
 		flex: 1;
 		min-width: 0;
 		display: flex;
-		align-items: baseline;
+		align-items: center;
 		gap: 0.375rem;
 		font-size: 13px;
 		font-weight: 400;
