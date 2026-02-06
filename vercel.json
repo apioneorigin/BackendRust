@@ -1,6 +1,6 @@
 {
   "version": 2,
   "framework": null,
-  "buildCommand": "cd frontend-svelte && npm install && npm run build",
-  "outputDirectory": "frontend-svelte/.vercel/output"
+  "installCommand": "cd frontend-svelte && npm install",
+  "buildCommand": "cd frontend-svelte && npm run build && mkdir -p ../.vercel && cp -r .vercel/output ../.vercel/"
 }
