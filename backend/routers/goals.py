@@ -194,15 +194,28 @@ def normalize_call1_output(raw: Dict[str, Any]) -> Dict[str, Any]:
     if not isinstance(sig_ext, dict):
         return raw
 
-    # Flatten all signal category arrays into one list
+    # Flatten all signal category arrays into one list.
+    # Check known categories first, then sweep ALL remaining keys so that
+    # image-derived or model-invented categories are never silently dropped.
     signals = []
+    seen_keys: set = set()
     for cat in _SIGNAL_CATEGORIES:
+        seen_keys.add(cat)
         items = sig_ext.get(cat)
         if isinstance(items, list):
             for sig in items:
-                # Ensure each signal carries its category if missing
                 if isinstance(sig, dict) and "category" not in sig:
                     sig["category"] = cat
+                signals.append(sig)
+
+    # Sweep any extra keys the LLM may have added (e.g. image categories)
+    for key, val in sig_ext.items():
+        if key in seen_keys:
+            continue
+        if isinstance(val, list) and val and isinstance(val[0], dict):
+            for sig in val:
+                if isinstance(sig, dict) and "category" not in sig:
+                    sig["category"] = key
                 signals.append(sig)
 
     # Extract observations from consciousness_extraction
@@ -967,11 +980,13 @@ Return valid JSON only. No markdown, no explanation."""
                 messages = [
                     {"role": "user", "content": call1_user_content},
                 ]
-                # Assistant prefill forces JSON start — but only when
-                # web_search is OFF.  Server-side web_search must execute
-                # before the model generates its response; the prefill
-                # short-circuits that and causes empty/0-signal output.
-                if not request.web_search:
+                # Assistant prefill forces JSON start — only safe for
+                # text-only, no-tool requests.  Skip when:
+                #  - web_search is ON: server-side tool must run first
+                #  - images are present: model needs to do visual analysis
+                #    before producing structured output
+                use_prefill = not request.web_search and not has_images
+                if use_prefill:
                     messages.append({"role": "assistant", "content": "{"})
 
                 request_body = {
@@ -1036,8 +1051,9 @@ Return valid JSON only. No markdown, no explanation."""
                         response_text += block.get("text", "")
 
                 # Prepend the forced "{" only when we used assistant prefill
-                if not request.web_search:
+                if use_prefill:
                     response_text = "{" + response_text
+                api_logger.info(f"[GOAL DISCOVERY] Call 1 raw response (first 500): {response_text[:500]}")
                 call1_output = parse_llm_json_response(response_text, "CALL1")
 
             else:
