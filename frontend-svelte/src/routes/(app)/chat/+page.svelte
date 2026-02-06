@@ -387,11 +387,6 @@
 		// Cell click handled by MatrixPanel internally
 	}
 
-	function handleCellChange(e: CustomEvent<{ row: number; col: number; value: number }>) {
-		// Cell value changes are handled via dimension updates in MatrixPanel
-		// This handler is kept for backward compatibility with events
-	}
-
 	async function handleToolbarPopup(e: CustomEvent<{ type: 'plays' | 'scenarios' }>) {
 		activeToolbarPopup = e.detail.type;
 		// Fetch plays when opening plays popup
@@ -763,7 +758,6 @@
 				compact={true}
 				stubMode={isStubState}
 				on:cellClick={handleCellClick}
-				on:cellChange={handleCellChange}
 				on:showPowerSpotExplanation={handleShowPowerSpotExplanation}
 				on:showRiskExplanation={handleShowRiskExplanation}
 			/>
@@ -1002,7 +996,7 @@
 						</div>
 					{/if}
 				{:else}
-					<!-- Fallback to static content if no API data -->
+					<!-- API returned error message or no data -->
 					{#if explanationPopup.type === 'powerSpot'}
 						<div class="explanation-section">
 							<h4>Why is this a Power Spot?</h4>
