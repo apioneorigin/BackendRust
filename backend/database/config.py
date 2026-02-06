@@ -120,6 +120,7 @@ async def _run_sqlite_migrations(conn):
         ("chat_messages", "feedback", "TEXT", None),
         ("chat_conversations", "generated_presets", "TEXT", None),
         ("chat_conversations", "generated_documents", "TEXT", None),
+        ("file_goal_discoveries", "file_summary", "TEXT", None),
     ]
 
     for table, column, col_type, default in migrations:

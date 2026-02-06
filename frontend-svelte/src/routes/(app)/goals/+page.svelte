@@ -29,6 +29,7 @@
 		id: string;
 		fileNames: string[];
 		fileCount: number;
+		fileSummary: string;
 		goals: DiscoveredGoal[];
 		goalCount: number;
 		createdAt: string;
@@ -228,14 +229,6 @@
 			flashLibraryTab = true;
 			setTimeout(() => { flashLibraryTab = false; }, 2000);
 		}
-	}
-
-	function getDiscoverySummary(discovery: FileGoalDiscovery): string {
-		if (!discovery.goals || discovery.goals.length === 0) return '';
-		const types = [...new Set(discovery.goals.map((g) => g.type.toLowerCase().replace('_', ' ')))];
-		const summary = types.slice(0, 3).join(', ') + ' signals';
-		const words = summary.split(/\s+/);
-		return words.length <= 10 ? summary : words.slice(0, 10).join(' ');
 	}
 
 	function deleteDiscovery(discoveryId: string) {
@@ -549,7 +542,9 @@
 											{fileName}
 										</span>
 									{/each}
-									<span class="discovery-summary">{getDiscoverySummary(discovery)}</span>
+										{#if discovery.fileSummary}
+										<span class="discovery-summary">{discovery.fileSummary}</span>
+									{/if}
 								</div>
 								<div class="discovery-meta">
 									<span class="meta-item">
