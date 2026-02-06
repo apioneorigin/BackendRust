@@ -515,6 +515,39 @@ async def delete_goal_discovery(
     return {"status": "success"}
 
 
+@router.delete("/goal-discoveries/{discovery_id}/goals/{goal_id}")
+async def delete_goal_from_discovery(
+    discovery_id: str,
+    goal_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Delete a single goal from a discovery. Deletes the discovery if no goals remain."""
+    result = await db.execute(
+        select(FileGoalDiscovery).where(
+            FileGoalDiscovery.id == discovery_id,
+            FileGoalDiscovery.user_id == current_user.id,
+        )
+    )
+    discovery = result.scalar_one_or_none()
+    if not discovery:
+        raise HTTPException(status_code=404, detail="Discovery not found")
+
+    goals = [g for g in discovery.goals if g.get("id") != goal_id]
+    if len(goals) == len(discovery.goals):
+        raise HTTPException(status_code=404, detail="Goal not found in discovery")
+
+    if not goals:
+        await db.delete(discovery)
+    else:
+        discovery.goals = goals
+        discovery.goal_count = len(goals)
+
+    await db.commit()
+
+    return {"status": "success", "remaining": len(goals)}
+
+
 # =============================================================================
 # GOAL DISCOVERY FROM FILES
 # 2-Call LLM Architecture with Backend Classifier

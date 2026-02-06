@@ -219,6 +219,35 @@
 		}
 	}
 
+	async function deleteGoalFromDiscovery(discoveryId: string, goalId: string) {
+		try {
+			const result = await api.delete<{ remaining: number }>(`/api/goal-discoveries/${discoveryId}/goals/${goalId}`);
+			if (result.remaining === 0) {
+				// Discovery was deleted entirely
+				discoveries = discoveries.filter((d) => d.id !== discoveryId);
+				closeGoalsModal();
+				addToast('success', 'Goal removed (discovery empty, deleted)');
+			} else {
+				// Update the discovery in place
+				discoveries = discoveries.map((d) => {
+					if (d.id !== discoveryId) return d;
+					return {
+						...d,
+						goals: d.goals.filter((g) => g.id !== goalId),
+						goalCount: result.remaining
+					};
+				});
+				// Update modal if open
+				if (modalDiscovery?.id === discoveryId) {
+					modalDiscovery = discoveries.find((d) => d.id === discoveryId) || null;
+				}
+				addToast('success', 'Goal removed');
+			}
+		} catch (error) {
+			addToast('error', 'Failed to remove goal');
+		}
+	}
+
 	function normalizeGoal(goal: DiscoveredGoal): DiscoveredGoal {
 		return {
 			...goal,
@@ -261,7 +290,7 @@
 		try {
 			const conversation = await api.post<{ id: string }>('/api/chat/conversations', {
 				title: g.identity,
-				context: `Goal: ${g.identity}\n\nFirst Move: ${g.firstMove}\n\nType: ${g.type}\nConfidence: ${g.confidence}%`
+				context: `Goal: ${g.identity}\n\nFirst Move: ${g.firstMove}\n\nType: ${g.type}\nConfidence: ${formatConfidence(g.confidence)}`
 			});
 			await chat.loadConversations();
 			goto(`/chat`);
@@ -275,10 +304,14 @@
 		return savedGoals.some((g) => g.id === goalId);
 	}
 
+	function formatConfidence(confidence: number): string {
+		return `${Math.round(confidence * 100)}%`;
+	}
+
 	function getConfidenceColor(confidence: number): string {
-		if (confidence >= 90) return 'confidence-high';
-		if (confidence >= 70) return 'confidence-good';
-		if (confidence >= 50) return 'confidence-medium';
+		if (confidence >= 0.75) return 'confidence-high';
+		if (confidence >= 0.50) return 'confidence-good';
+		if (confidence >= 0.25) return 'confidence-medium';
 		return 'confidence-low';
 	}
 
@@ -506,7 +539,7 @@
 									{g.type.replace('_', ' ')}
 								</span>
 								<span class="goal-confidence {getConfidenceColor(g.confidence)}">
-									{g.confidence}%
+									{formatConfidence(g.confidence)}
 								</span>
 							</div>
 							<h3 class="goal-identity">{g.identity}</h3>
@@ -570,7 +603,7 @@
 									{g.type.replace('_', ' ')}
 								</span>
 								<span class="goal-confidence {getConfidenceColor(g.confidence)}">
-									{g.confidence}%
+									{formatConfidence(g.confidence)}
 								</span>
 							</div>
 							<h3 class="goal-identity">{g.identity}</h3>
@@ -603,6 +636,14 @@
 										<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
 									</svg>
 									Start Chat
+								</button>
+								<button class="action-btn remove-btn" on:click={() => deleteGoalFromDiscovery(modalDiscovery.id, g.id)}>
+									<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+										<path d="M3 6h18" />
+										<path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+										<path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+									</svg>
+									Delete
 								</button>
 							</div>
 						</div>
@@ -995,7 +1036,7 @@
 		font-weight: 600;
 	}
 
-	/* Confidence colors */
+	/* Confidence colors - 0/25/50/75 scale */
 	.confidence-high { color: #16a34a; }
 	.confidence-good { color: #2563eb; }
 	.confidence-medium { color: #ca8a04; }
