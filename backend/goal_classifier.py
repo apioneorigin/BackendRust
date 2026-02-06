@@ -407,10 +407,9 @@ class GoalClassifier:
         call1_output: Dict[str, Any]
     ) -> List[Dict[str, Any]]:
         """
-        Classify signals into goal types using:
-        - Signal category distributions
-        - Consciousness bottlenecks and leverage points
-        - OOF derived values
+        Classify signals into goal types using per-signal candidate generation.
+        Each qualifying signal produces its own candidate for higher goal counts.
+        Consciousness operators are score multipliers, not gates.
         """
         candidates = []
         operators = profile.operators
@@ -432,219 +431,232 @@ class GoalClassifier:
             bottlenecks = consciousness_state.tier2.bottlenecks or []
             leverage_points = consciousness_state.tier2.leverage_points or []
 
-        # === SINGLE-FILE TYPE CLASSIFICATION ===
-
-        # OPTIMIZE: Metrics + clear improvement potential
-        metric_signals = [s for s in signals if s.category == SignalCategory.METRICS]
-        if metric_signals:
-            improvement_signals = [
-                s for s in metric_signals
-                if s.magnitude > 0.3 and s.actionability > 0.5
-            ]
-            if improvement_signals:
-                candidates.append({
-                    "type": GoalType.OPTIMIZE,
-                    "signals": improvement_signals,
-                    "reason": "Quantifiable metrics with improvement potential",
-                    "score": sum(s.actionability * s.impact_estimate for s in improvement_signals)
-                })
-
-        # RESOLVE: Weaknesses + high resistance/fear bottleneck
-        weakness_signals = [s for s in signals if s.category == SignalCategory.WEAKNESSES]
-        if weakness_signals:
-            has_blocking_bottleneck = any(
-                b.variable in ["R_resistance", "F_fear"] and b.value > 0.6
-                for b in bottlenecks
-            )
-            if weakness_signals and (has_blocking_bottleneck or len(weakness_signals) >= 2):
-                candidates.append({
-                    "type": GoalType.RESOLVE,
-                    "signals": weakness_signals,
-                    "reason": "Clear obstacles blocking progress",
-                    "score": sum(s.magnitude for s in weakness_signals) * (1.3 if has_blocking_bottleneck else 1.0)
-                })
-
-        # DISCOVER: Anomalies + high witness/awareness
-        anomaly_signals = [s for s in signals if s.category == SignalCategory.ANOMALIES]
+        # Pre-compute operator conditions (now used as score multipliers)
         witness_high = operators.get("W_witness", 0) > THRESHOLDS["HIGH_WITNESS"]
-        if anomaly_signals:
-            candidates.append({
-                "type": GoalType.DISCOVER,
-                "signals": anomaly_signals,
-                "reason": "Unexplained patterns requiring investigation",
-                "score": sum(s.magnitude for s in anomaly_signals) * (1.4 if witness_high else 1.0)
-            })
-
-        # LEVERAGE: Unused capacity + high grace/coherence
-        capacity_signals = [s for s in signals if s.category == SignalCategory.UNUSED_CAPACITY]
         grace_high = operators.get("G_grace", 0) > THRESHOLDS["HIGH_GRACE"]
         coherence_high = operators.get("Co_coherence", 0) > THRESHOLDS["HIGH_COHERENCE"]
-        if capacity_signals and (leverage_points or grace_high):
-            candidates.append({
-                "type": GoalType.LEVERAGE,
-                "signals": capacity_signals,
-                "reason": "Untapped potential ready for activation",
-                "score": sum(s.actionability for s in capacity_signals) * (1.5 if leverage_points else 1.0)
-            })
-
-        # PROTECT: Strengths under threat + protective signals
-        strength_signals = [s for s in signals if s.category == SignalCategory.STRENGTHS]
-        threatened_strengths = [
-            s for s in strength_signals
-            if any("threat" in r.lower() or "risk" in r.lower() for r in s.relationships)
-            or "declining" in s.description.lower()
-            or "at risk" in s.description.lower()
-        ]
-        if threatened_strengths:
-            candidates.append({
-                "type": GoalType.PROTECT,
-                "signals": threatened_strengths,
-                "reason": "Valuable assets requiring protection",
-                "score": sum(s.magnitude for s in threatened_strengths)
-            })
-
-        # BUILD: Clear gap + creation matrix active
-        build_indicators = [
-            s for s in signals
-            if "missing" in s.description.lower()
-            or "need" in s.description.lower()
-            or "create" in s.description.lower()
-            or "develop" in s.description.lower()
-        ]
-        creation_active = False
-        if profile.matrices_profile and hasattr(profile.matrices_profile, "matrices"):
-            for matrix in getattr(profile.matrices_profile, "matrices", []):
-                if hasattr(matrix, "name") and "creation" in matrix.name.lower():
-                    creation_active = getattr(matrix, "score", 0) > 0.5
-        if build_indicators:
-            candidates.append({
-                "type": GoalType.BUILD,
-                "signals": build_indicators,
-                "reason": "Clear capability gap requiring development",
-                "score": sum(s.actionability for s in build_indicators) * (1.3 if creation_active else 1.0)
-            })
-
-        # RELEASE: Avoidances + high attachment bottleneck
-        avoidance_signals = [s for s in signals if s.category == SignalCategory.AVOIDANCES]
+        high_maya = operators.get("M_maya", 0) > THRESHOLDS["HIGH_MAYA"]
         high_attachment = any(
             b.variable == "At_attachment" and b.value > THRESHOLDS["HIGH_ATTACHMENT"]
             for b in bottlenecks
         )
-        if avoidance_signals and high_attachment:
-            candidates.append({
-                "type": GoalType.RELEASE,
-                "signals": avoidance_signals,
-                "reason": "Patterns of avoidance indicating need to let go",
-                "score": sum(s.magnitude for s in avoidance_signals) * 1.4
-            })
+        has_blocking_bottleneck = any(
+            b.variable in ["R_resistance", "F_fear"] and b.value > 0.6
+            for b in bottlenecks
+        )
 
-        # HIDDEN: Root signals with high maya + absent layer signals
-        absent_signals = [s for s in signals if s.layer == SignalLayer.ABSENT]
-        high_maya = operators.get("M_maya", 0) > THRESHOLDS["HIGH_MAYA"]
-        root_signals = [s for s in signals if s.is_root and s.root_confidence > 0.7]
-        if (absent_signals or root_signals) and high_maya:
-            hidden_signals = absent_signals + [s for s in root_signals if s not in absent_signals]
-            candidates.append({
-                "type": GoalType.HIDDEN,
-                "signals": hidden_signals[:5],  # Limit
-                "reason": "Blind spots and unacknowledged patterns",
-                "score": sum(s.root_confidence for s in hidden_signals[:5]) * 1.5
-            })
-
-        # TRANSFORM: High S-level transition + death architecture signals
-        transformation_indicators = [
-            s for s in signals
-            if any(kw in s.description.lower() for kw in
-                   ["transform", "evolve", "reinvent", "fundamental", "paradigm"])
-        ]
+        # Death/transform readiness
         death_active = False
         if profile.death_profile:
             death_readiness = getattr(profile.death_profile, "death_readiness", 0)
             death_active = death_readiness > 0.5
         s_level_transition = s_level and s_level > THRESHOLDS["S_LEVEL_TRANSITION"]
-        if transformation_indicators and (death_active or s_level_transition):
-            candidates.append({
-                "type": GoalType.TRANSFORM,
-                "signals": transformation_indicators,
-                "reason": "Readiness for fundamental change",
-                "score": sum(s.impact_estimate for s in transformation_indicators) * (1.5 if death_active else 1.2)
-            })
 
-        # QUANTUM: Breakthrough probability high + multiple leverage points
+        # Creation matrix
+        creation_active = False
+        if profile.matrices_profile and hasattr(profile.matrices_profile, "matrices"):
+            for matrix in getattr(profile.matrices_profile, "matrices", []):
+                if hasattr(matrix, "name") and "creation" in matrix.name.lower():
+                    creation_active = getattr(matrix, "score", 0) > 0.5
+
+        # Breakthrough probability
         breakthrough_prob = 0
         if profile.timeline_profile:
             breakthrough = getattr(profile.timeline_profile, "breakthrough", None)
             if breakthrough:
                 breakthrough_prob = getattr(breakthrough, "quantum_leap_probability", 0)
-        if breakthrough_prob > THRESHOLDS["QUANTUM_LEAP_THRESHOLD"] and len(leverage_points) >= 2:
-            quantum_signals = capacity_signals + [s for s in signals if s.actionability > 0.7]
-            candidates.append({
-                "type": GoalType.QUANTUM,
-                "signals": quantum_signals[:5],
-                "reason": f"High breakthrough probability ({breakthrough_prob:.0%}) with multiple leverage points",
-                "score": breakthrough_prob * len(leverage_points)
-            })
 
-        # === MULTI-FILE TYPE CLASSIFICATION ===
+        # === PER-SIGNAL CANDIDATE GENERATION ===
+
+        for sig in signals:
+            desc_lower = sig.description.lower()
+
+            # OPTIMIZE: Metric signals with improvement potential
+            if sig.category == SignalCategory.METRICS:
+                if sig.magnitude > 0.2 or sig.actionability > 0.3:  # Relaxed thresholds
+                    candidates.append({
+                        "type": GoalType.OPTIMIZE,
+                        "signals": [sig],
+                        "reason": f"Metric '{sig.description[:50]}...' with improvement potential",
+                        "score": sig.actionability * sig.impact_estimate
+                    })
+
+            # RESOLVE: Weakness signals
+            if sig.category == SignalCategory.WEAKNESSES:
+                score_mult = 1.3 if has_blocking_bottleneck else 1.0
+                candidates.append({
+                    "type": GoalType.RESOLVE,
+                    "signals": [sig],
+                    "reason": f"Obstacle: {sig.description[:50]}...",
+                    "score": sig.magnitude * score_mult
+                })
+
+            # DISCOVER: Anomaly signals
+            if sig.category == SignalCategory.ANOMALIES:
+                score_mult = 1.4 if witness_high else 1.0
+                candidates.append({
+                    "type": GoalType.DISCOVER,
+                    "signals": [sig],
+                    "reason": f"Unexplained pattern: {sig.description[:50]}...",
+                    "score": sig.magnitude * score_mult
+                })
+
+            # LEVERAGE: Unused capacity signals (relaxed - no gate)
+            if sig.category == SignalCategory.UNUSED_CAPACITY:
+                score_mult = 1.5 if (leverage_points or grace_high) else 0.9
+                candidates.append({
+                    "type": GoalType.LEVERAGE,
+                    "signals": [sig],
+                    "reason": f"Untapped potential: {sig.description[:50]}...",
+                    "score": sig.actionability * score_mult
+                })
+
+            # PROTECT: Strength signals (check for threat indicators)
+            if sig.category == SignalCategory.STRENGTHS:
+                is_threatened = (
+                    any("threat" in r.lower() or "risk" in r.lower() for r in sig.relationships)
+                    or "declining" in desc_lower
+                    or "at risk" in desc_lower
+                )
+                # Generate for all strengths, boost score if threatened
+                score_mult = 1.4 if is_threatened else 0.8
+                candidates.append({
+                    "type": GoalType.PROTECT,
+                    "signals": [sig],
+                    "reason": f"Asset to protect: {sig.description[:50]}...",
+                    "score": sig.magnitude * score_mult
+                })
+
+            # BUILD: Signals indicating gaps/needs
+            build_keywords = ["missing", "need", "create", "develop", "build", "establish", "implement"]
+            if any(kw in desc_lower for kw in build_keywords):
+                score_mult = 1.3 if creation_active else 1.0
+                candidates.append({
+                    "type": GoalType.BUILD,
+                    "signals": [sig],
+                    "reason": f"Capability gap: {sig.description[:50]}...",
+                    "score": sig.actionability * score_mult
+                })
+
+            # RELEASE: Avoidance signals (relaxed - no gate)
+            if sig.category == SignalCategory.AVOIDANCES:
+                score_mult = 1.4 if high_attachment else 0.85
+                candidates.append({
+                    "type": GoalType.RELEASE,
+                    "signals": [sig],
+                    "reason": f"Pattern to release: {sig.description[:50]}...",
+                    "score": sig.magnitude * score_mult
+                })
+
+            # HIDDEN: Absent layer or root signals (relaxed - no gate)
+            if sig.layer == SignalLayer.ABSENT or (sig.is_root and sig.root_confidence > 0.5):
+                score_mult = 1.5 if high_maya else 0.9
+                candidates.append({
+                    "type": GoalType.HIDDEN,
+                    "signals": [sig],
+                    "reason": f"Blind spot: {sig.description[:50]}...",
+                    "score": sig.root_confidence * score_mult
+                })
+
+            # TRANSFORM: Transformation keyword signals (relaxed - no gate)
+            transform_keywords = ["transform", "evolve", "reinvent", "fundamental", "paradigm", "shift", "change"]
+            if any(kw in desc_lower for kw in transform_keywords):
+                score_mult = 1.5 if death_active else (1.2 if s_level_transition else 0.9)
+                candidates.append({
+                    "type": GoalType.TRANSFORM,
+                    "signals": [sig],
+                    "reason": f"Transformation opportunity: {sig.description[:50]}...",
+                    "score": sig.impact_estimate * score_mult
+                })
+
+            # QUANTUM: High-actionability signals with breakthrough potential (relaxed - no gate)
+            if sig.actionability > 0.6 and sig.impact_estimate > 0.5:
+                score_mult = (1.0 + breakthrough_prob) * (1.0 + 0.2 * len(leverage_points))
+                candidates.append({
+                    "type": GoalType.QUANTUM,
+                    "signals": [sig],
+                    "reason": f"Breakthrough potential: {sig.description[:50]}...",
+                    "score": sig.actionability * sig.impact_estimate * score_mult
+                })
+
+        # === MULTI-FILE TYPE CLASSIFICATION (per-signal) ===
 
         if is_multi_file:
             cross_file_signals = [s for s in signals if s.category == SignalCategory.CROSS_FILE_PATTERNS]
 
-            # ALIGN: Cross-file misalignment patterns
-            misalignment_signals = [
-                s for s in cross_file_signals
-                if any(kw in s.description.lower() for kw in
-                       ["mismatch", "disconnect", "gap between", "not aligned", "conflict"])
-            ]
-            if misalignment_signals:
-                candidates.append({
-                    "type": GoalType.ALIGN,
-                    "signals": misalignment_signals,
-                    "reason": "Cross-file misalignment requiring harmonization",
-                    "score": sum(s.impact_estimate for s in misalignment_signals)
-                })
+            for sig in cross_file_signals:
+                desc_lower = sig.description.lower()
 
-            # INTEGRATION: Complementary patterns across files
-            complementary_signals = [
-                s for s in cross_file_signals
-                if any(kw in s.description.lower() for kw in
-                       ["complement", "together", "combine", "synergy", "integrate"])
-            ]
-            if complementary_signals:
-                candidates.append({
-                    "type": GoalType.INTEGRATION,
-                    "signals": complementary_signals,
-                    "reason": "Opportunity to integrate complementary elements",
-                    "score": sum(s.actionability for s in complementary_signals)
-                })
+                # ALIGN: Misalignment patterns
+                align_keywords = ["mismatch", "disconnect", "gap between", "not aligned", "conflict", "inconsisten"]
+                if any(kw in desc_lower for kw in align_keywords):
+                    candidates.append({
+                        "type": GoalType.ALIGN,
+                        "signals": [sig],
+                        "reason": f"Misalignment: {sig.description[:50]}...",
+                        "score": sig.impact_estimate
+                    })
 
-            # SYNTHESIS: Opposing patterns that could create new value
-            opposing_signals = [
-                s for s in cross_file_signals
-                if any(kw in s.description.lower() for kw in
-                       ["opposite", "contrast", "tension", "paradox", "versus"])
-            ]
-            if opposing_signals and coherence_high:
-                candidates.append({
-                    "type": GoalType.SYNTHESIS,
-                    "signals": opposing_signals,
-                    "reason": "Creative tension ready for synthesis",
-                    "score": sum(s.magnitude for s in opposing_signals) * 1.3
-                })
+                # INTEGRATION: Complementary patterns
+                integrate_keywords = ["complement", "together", "combine", "synergy", "integrate", "merge", "unify"]
+                if any(kw in desc_lower for kw in integrate_keywords):
+                    candidates.append({
+                        "type": GoalType.INTEGRATION,
+                        "signals": [sig],
+                        "reason": f"Integration opportunity: {sig.description[:50]}...",
+                        "score": sig.actionability
+                    })
 
-            # ARBITRAGE: Value differential across files
-            arbitrage_signals = [
-                s for s in cross_file_signals
-                if any(kw in s.description.lower() for kw in
-                       ["undervalued", "differential", "imbalance", "transfer", "opportunity"])
-            ]
-            if arbitrage_signals:
-                candidates.append({
-                    "type": GoalType.ARBITRAGE,
-                    "signals": arbitrage_signals,
-                    "reason": "Value differential across domains",
-                    "score": sum(s.actionability * s.impact_estimate for s in arbitrage_signals)
-                })
+                # DIFFERENTIATION: Distinction opportunities
+                diff_keywords = ["distinct", "unique", "differentiat", "separate", "specialize"]
+                if any(kw in desc_lower for kw in diff_keywords):
+                    candidates.append({
+                        "type": GoalType.DIFFERENTIATION,
+                        "signals": [sig],
+                        "reason": f"Differentiation opportunity: {sig.description[:50]}...",
+                        "score": sig.impact_estimate
+                    })
+
+                # ANTI_SILOING: Silo-breaking opportunities
+                silo_keywords = ["silo", "isolat", "fragment", "disconnect", "bridge", "connect across"]
+                if any(kw in desc_lower for kw in silo_keywords):
+                    candidates.append({
+                        "type": GoalType.ANTI_SILOING,
+                        "signals": [sig],
+                        "reason": f"Anti-siloing opportunity: {sig.description[:50]}...",
+                        "score": sig.actionability * sig.impact_estimate
+                    })
+
+                # SYNTHESIS: Opposing patterns (relaxed - no gate)
+                synthesis_keywords = ["opposite", "contrast", "tension", "paradox", "versus", "conflict", "reconcile"]
+                if any(kw in desc_lower for kw in synthesis_keywords):
+                    score_mult = 1.3 if coherence_high else 0.9
+                    candidates.append({
+                        "type": GoalType.SYNTHESIS,
+                        "signals": [sig],
+                        "reason": f"Synthesis opportunity: {sig.description[:50]}...",
+                        "score": sig.magnitude * score_mult
+                    })
+
+                # RECONCILIATION: Resolution opportunities
+                reconcile_keywords = ["reconcil", "resolv", "harmon", "balanc", "align"]
+                if any(kw in desc_lower for kw in reconcile_keywords):
+                    candidates.append({
+                        "type": GoalType.RECONCILIATION,
+                        "signals": [sig],
+                        "reason": f"Reconciliation opportunity: {sig.description[:50]}...",
+                        "score": sig.actionability
+                    })
+
+                # ARBITRAGE: Value differential
+                arbitrage_keywords = ["undervalued", "differential", "imbalance", "transfer", "opportunity", "arbitrage"]
+                if any(kw in desc_lower for kw in arbitrage_keywords):
+                    candidates.append({
+                        "type": GoalType.ARBITRAGE,
+                        "signals": [sig],
+                        "reason": f"Value arbitrage: {sig.description[:50]}...",
+                        "score": sig.actionability * sig.impact_estimate
+                    })
 
         return candidates
 
@@ -662,7 +674,7 @@ class GoalClassifier:
         Calculate composite confidence from:
         - signal_quality: Average data quality of supporting signals
         - consciousness_support: How well consciousness state supports this type
-        - evidence_depth: Number and diversity of supporting signals
+        - evidence_depth: Number and diversity of supporting signals (reduced weight for per-signal generation)
         - cross_validation: Signals from multiple sources agreeing
         """
         for candidate in candidates:
@@ -679,20 +691,27 @@ class GoalClassifier:
                 candidate["type"], consciousness_state
             )
 
-            # Evidence depth (0-1)
+            # Evidence depth (0-1) - adjusted for per-signal candidates
+            # Single-signal candidates get baseline 0.5, multi-signal get full depth scoring
             signal_count = len(supporting_signals)
-            categories_covered = len(set(s.category for s in supporting_signals))
-            evidence_depth = min(1.0, (signal_count / 5) * 0.6 + (categories_covered / 4) * 0.4)
+            if signal_count == 1:
+                # Per-signal candidates: use signal's own metrics as proxy for depth
+                sig = supporting_signals[0]
+                evidence_depth = 0.5 + (sig.magnitude + sig.actionability) * 0.25
+            else:
+                categories_covered = len(set(s.category for s in supporting_signals))
+                evidence_depth = min(1.0, (signal_count / 5) * 0.6 + (categories_covered / 4) * 0.4)
 
             # Cross-validation (0-1)
             source_files = set(s.source_file for s in supporting_signals)
             cross_validation = min(1.0, len(source_files) / 2)
 
-            # Composite confidence
+            # Composite confidence - reweighted for per-signal generation
+            # Reduced evidence_depth weight (0.15 vs 0.25) since per-signal candidates have fewer signals
             confidence = (
-                signal_quality * 0.25 +
-                consciousness_support * 0.30 +
-                evidence_depth * 0.25 +
+                signal_quality * 0.30 +
+                consciousness_support * 0.35 +
+                evidence_depth * 0.15 +
                 cross_validation * 0.20
             )
 
@@ -791,8 +810,8 @@ class GoalClassifier:
         """
         Enforce target distribution based on user intent inference.
 
-        Dynamic targets:
-        - Default: 5-8 goals
+        Dynamic targets (aligned with reality-transformer's 20-30 goal range):
+        - Default: 15-25 goals
         - Growth-focused: bias toward TRANSFORM, BUILD, QUANTUM
         - Maintenance-focused: bias toward OPTIMIZE, PROTECT, RESOLVE
         - Exploration-focused: bias toward DISCOVER, HIDDEN, LEVERAGE
@@ -800,12 +819,12 @@ class GoalClassifier:
         # Infer user intent from file metadata and signals
         intent = self._infer_user_intent(call1_output)
 
-        # Target counts based on intent
+        # Target counts based on intent (raised to 15-30 range)
         targets = {
-            "growth": {"min": 5, "max": 8, "bias": [GoalType.TRANSFORM, GoalType.BUILD, GoalType.QUANTUM]},
-            "maintenance": {"min": 4, "max": 6, "bias": [GoalType.OPTIMIZE, GoalType.PROTECT, GoalType.RESOLVE]},
-            "exploration": {"min": 6, "max": 9, "bias": [GoalType.DISCOVER, GoalType.HIDDEN, GoalType.LEVERAGE]},
-            "balanced": {"min": 5, "max": 8, "bias": []},
+            "growth": {"min": 15, "max": 25, "bias": [GoalType.TRANSFORM, GoalType.BUILD, GoalType.QUANTUM]},
+            "maintenance": {"min": 12, "max": 20, "bias": [GoalType.OPTIMIZE, GoalType.PROTECT, GoalType.RESOLVE]},
+            "exploration": {"min": 18, "max": 30, "bias": [GoalType.DISCOVER, GoalType.HIDDEN, GoalType.LEVERAGE]},
+            "balanced": {"min": 15, "max": 25, "bias": []},
         }
 
         target = targets.get(intent, targets["balanced"])
@@ -826,12 +845,12 @@ class GoalClassifier:
         for candidate in candidates:
             goal_type = candidate["type"]
 
-            # Limit 2 goals per type
-            if type_counts.get(goal_type, 0) >= 2:
+            # Limit 5 goals per type (raised from 2)
+            if type_counts.get(goal_type, 0) >= 5:
                 continue
 
-            # Minimum confidence threshold
-            if candidate.get("confidence", 0) < 0.4:
+            # Minimum confidence threshold (lowered from 0.4)
+            if candidate.get("confidence", 0) < 0.2:
                 continue
 
             selected.append(candidate)
