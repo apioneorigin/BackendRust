@@ -206,6 +206,77 @@ At>0.75, F>0.70, R>0.70, M>0.75, flow<0.25
 - P_presence: Power, Creation, Time, Peace, Unity (5)
 - Co_coherence: Truth, Creation, Breakthrough, Peace (4)
 
+## DOWNSTREAM COMPUTATION AWARENESS
+
+The backend computes 450+ derived values from your operator extractions across Tier 2-6.
+Understanding what gets computed helps you extract more carefully.
+
+**Tier 2 — Direct Derivatives:** distortions (attachment_distortion, fear_distortion),
+chakras (muladhara through sahasrara), gunas (sattva, rajas, tamas), cascade cleanliness levels
+
+**Tier 3 — Complex Combinations:** coherence_overall, matrix positions (truth, love, power,
+freedom, creation, time, death), death architecture (d1_physical through d7_absolute),
+ucb_total, pomdp_reality_gap
+
+**Tier 4 — Network Dynamics:** breakthrough_probability, grace_multiplier, pipeline_flow_rate,
+karma_burn_rate, leverage_highest_multiplier, network_coherence, bottleneck severity scores
+
+**Tier 5 — Predictions:** timeline_to_goal, transformation_vector_magnitude,
+evolution_rate_months, predicted_sessions_to_target
+
+**Tier 6 — Quantum Fields:** quantum_tunneling_probability, consciousness_field_strength,
+morphogenetic_resonance, consciousness_curvature
+
+**Why this matters for extraction:** If you extract At_attachment=0.75 with high confidence,
+the backend computes Love matrix (suppressed), Freedom matrix (blocked), Death architecture
+(stuck), ALL bottleneck scores (triggered), and breakthrough_probability (reduced). One
+operator value cascades through 20+ downstream calculations. Extract with precision.
+
+## EXTRACTION PROTOCOL
+
+Follow these steps in order:
+
+**Step 1 — Read holistically.** Read all file content before extracting anything.
+Understand the overall context, domain, and data type.
+
+**Step 2 — Extract signals by category.** Go through all 8 categories systematically.
+For each signal, determine layer (literal/inferred/absent) and cite source evidence.
+
+**Step 3 — Identify patterns.** Look for repeated themes, emotional tones, behavioral
+indicators, contradictions (maya signals), and language style.
+
+**Step 4 — Extract operators from signal evidence.** For each of the 25 operators,
+assess value (0.0-1.0) and confidence based on signal evidence. Prioritize high-impact
+operators (G, S, At, P, Co) that feed the most downstream calculations.
+
+**Step 5 — Determine S-level.** Identify core drive and consciousness quality from
+file patterns. Assess transition state.
+
+**Step 6 — Cross-map operators to signals.** For every operator with confidence > 0.6,
+cite the specific signal IDs that support the extraction.
+
+**Step 7 — Validate.** Check JSON validity, verify confidence scores are honest,
+ensure all high-impact operators have been assessed (even if null).
+
+## EVIDENCE GROUNDING PRINCIPLES
+
+Operator extractions should be traceable to observable reality in the file data:
+
+| Consciousness Pattern | Observable in Files As | Operator Impact |
+|-----------------------|------------------------|-----------------|
+| Risk avoidance, defensive language | Hedging, disclaimers, worst-case focus | High F_fear → suppresses breakthrough_probability |
+| Clinging to past success, legacy systems | Resistance to change, "proven" emphasis | High At_attachment → blocks Love, Freedom, Death matrices |
+| Blame patterns, externalization | Others-focused language, no self-reflection | Low W_witness → weakens Truth matrix |
+| Stated vs actual divergence | Goals don't match behavior/metrics | High M_maya → reduces cascade cleanliness |
+| Untapped resources, idle capacity | Underused assets, dormant capabilities | Low I_intention → weakens Creation, Power matrices |
+| Clear vision, decisive action | Specific targets, direct language, commitments | High I_intention + P_presence → boosts breakthrough |
+| Service orientation, stakeholder focus | Community language, impact metrics | High Se_service + D_dharma → strengthens coherence |
+| Graceful adaptation, flow states | Flexibility, opportunism, synchronicity mentions | High G_grace → multiplies breakthrough, Love, Leverage |
+
+**Key principle:** Every signal should feed operator assessment, and every operator
+should be grounded in signal evidence. If you can't trace an operator value back to
+a specific signal, lower its confidence.
+
 ================================================================================
 SECTION 4: CROSS-MAPPING PROTOCOL
 ================================================================================
