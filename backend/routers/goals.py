@@ -908,9 +908,11 @@ async def discover_goals_from_files(
     # =========================================================================
     api_logger.info("[GOAL DISCOVERY] Step 1: Call 1 - Signal extraction")
 
-    # Web search instructions - only when enabled
+    # Web search instructions — only for Anthropic (server-side tool).
+    # OpenAI has no web_search tool; including these instructions causes the
+    # model to output {"tool":"web_search","query":"..."} instead of signals.
     web_search_instructions = ""
-    if request.web_search:
+    if request.web_search and provider == "anthropic":
         web_search_instructions = """
 
 WEB SEARCH PROTOCOL (REQUIRED):
@@ -963,15 +965,15 @@ YOUR TASK:
 1. Extract signals from each file using the three-layer protocol (LITERAL, INFERRED, ABSENT)
 2. Extract consciousness operators (25 operators + S-level)
 3. If multiple files, identify cross-file patterns
-{f"4. Use web_search to enrich signals with current benchmarks, entity data, and market context" if request.web_search else ""}
+{f"4. Use web_search to enrich signals with current benchmarks, entity data, and market context" if request.web_search and provider == "anthropic" else ""}
 
 Return valid JSON only. No markdown, no explanation."""
 
     call1_user_content = build_call1_user_content(parse_result, request.files, request.existing_goals, provider)
 
     call1_output = None
-    # Longer timeout when web search is enabled (server-side searches add latency)
-    call1_timeout = 300.0 if request.web_search else 180.0
+    # Longer timeout when Anthropic web search is enabled (server-side searches add latency)
+    call1_timeout = 300.0 if (request.web_search and provider == "anthropic") else 180.0
     try:
         async with httpx.AsyncClient(timeout=call1_timeout) as client:
             if provider == "anthropic":
