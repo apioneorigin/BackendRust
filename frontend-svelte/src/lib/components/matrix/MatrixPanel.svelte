@@ -335,7 +335,7 @@
 			<div class="stub-overlay">
 				<button
 					class="stub-generate-btn"
-					on:click={() => handlePopulateDocument($activeDocumentId)}
+					on:click={() => { if ($activeDocumentId) handlePopulateDocument($activeDocumentId); }}
 					disabled={isPopulating}
 				>
 					{#if isPopulating}
