@@ -7,13 +7,21 @@ httpx>=0.27.0
 # Database
 sqlalchemy>=2.0.0
 asyncpg>=0.29.0
+aiosqlite>=0.19.0
 # Authentication
 bcrypt>=4.1.0
 PyJWT>=2.8.0
 # Validation
 pydantic>=2.5.0
 email-validator>=2.1.0
-# Security guardrails
+jsonschema>=4.20.0
+# Caching
+redis>=5.0.0
+# Security
+cryptography>=42.0.0
 pyahocorasick>=2.0.0
-# LLM response validation
-jsonschema>=4.0.0
+# File parsing
+python-docx>=1.1.0
+python-pptx>=0.6.23
+openpyxl>=3.1.0
+Pillow>=10.0.0
