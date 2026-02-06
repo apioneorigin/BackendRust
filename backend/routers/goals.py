@@ -1057,15 +1057,24 @@ Return valid JSON only. No markdown, no explanation."""
                 if search_count > 0:
                     api_logger.info(f"[GOAL DISCOVERY] Call 1 executed {search_count} web searches")
 
-                # Extract response text
-                response_text = ""
-                for block in content_blocks:
-                    if block.get("type") == "text":
-                        response_text += block.get("text", "")
-
-                # Prepend the forced "{" only when we used assistant prefill
+                # Extract response text — use last text block only when
+                # web search / images are active (use_prefill=False), because
+                # intermediate text blocks contain the model's search-planning
+                # prose whose stray '{' confuses the JSON parser.  With prefill
+                # the model outputs exactly one text block that is pure JSON.
                 if use_prefill:
-                    response_text = "{" + response_text
+                    response_text = "{"
+                    for block in content_blocks:
+                        if block.get("type") == "text":
+                            response_text += block.get("text", "")
+                else:
+                    # Grab the last text block — that's the structured output
+                    last_text = ""
+                    for block in content_blocks:
+                        if block.get("type") == "text":
+                            last_text = block.get("text", "")
+                    response_text = last_text
+
                 api_logger.info(f"[GOAL DISCOVERY] Call 1 raw response (first 500): {response_text[:500]}")
                 call1_output = parse_llm_json_response(response_text, "CALL1")
 
