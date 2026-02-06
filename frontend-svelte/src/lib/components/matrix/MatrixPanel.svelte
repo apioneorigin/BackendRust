@@ -507,7 +507,7 @@
 		grid-template-columns: 100px repeat(5, 1fr);
 		grid-template-rows: 56px repeat(5, minmax(0, 1fr));
 		column-gap: 2px;
-		row-gap: 8px;
+		row-gap: 6px;
 		flex: 1;
 		min-height: 0;
 		overflow: hidden;
@@ -517,7 +517,7 @@
 		grid-template-columns: 90px repeat(5, 1fr);
 		grid-template-rows: 52px repeat(5, minmax(0, 1fr));
 		column-gap: 2px;
-		row-gap: 6px;
+		row-gap: 4px;
 	}
 
 	.col-header {
@@ -533,9 +533,10 @@
 		display: flex;
 		align-items: center;
 		justify-content: flex-end;
-		padding: 0.125rem 0.25rem;
+		padding: 0.25rem 0.375rem;
 		background: transparent;
 		overflow: hidden;
+		border-right: 2px solid var(--color-border, rgba(148, 163, 184, 0.2));
 	}
 
 	/* Column header text: vertical, one word per line (max 3 lines) */
@@ -555,17 +556,16 @@
 		-webkit-box-orient: vertical;
 	}
 
-	/* Row header text: vertical, one word per line (max 3 lines) */
+	/* Row header text: compact, natural wrap within 100px (max 3 lines) */
 	.row-header .header-text {
-		font-size: 0.75rem;
-		font-weight: 600;
+		font-size: 0.625rem;
+		font-weight: 700;
 		color: var(--color-text-whisper);
 		text-align: right;
-		line-height: 1.2;
+		line-height: 1.35;
 		text-transform: uppercase;
-		letter-spacing: 0.02em;
-		word-spacing: 100vw; /* Forces each word to its own line */
-		overflow: visible;
+		letter-spacing: 0.03em;
+		overflow: hidden;
 		display: -webkit-box;
 		line-clamp: 3;
 		-webkit-line-clamp: 3;
