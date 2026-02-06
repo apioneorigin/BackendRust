@@ -19,8 +19,9 @@ SQL_INJECTION_PATTERNS = [
     # Boolean blind injection
     r"(?i)(\bor\b|\band\b)\s*['\"]?\d+['\"]?\s*=\s*['\"]?\d+['\"]?",
     r"(?i)'?\s*(or|and)\s*'?\d+'?\s*=\s*'?\d+'?",
-    # Comment sequences
-    r"(--|#|/\*|\*/)",
+    # Comment sequences (require SQL context, not bare punctuation)
+    r"(/\*|\*/)",
+    r"--\s*$",
     # Stacked queries
     r";\s*(select|insert|update|delete|drop|union|exec)",
     # Time-based injection
@@ -50,8 +51,7 @@ XSS_PATTERNS = [
 
 # Command injection patterns
 COMMAND_INJECTION_PATTERNS = [
-    # Shell operators
-    r"[|;&$`]",
+    # Shell execution operators (require command context, not bare punctuation)
     r"\$\(",
     r"`[^`]+`",
     # Shell commands
@@ -60,9 +60,8 @@ COMMAND_INJECTION_PATTERNS = [
     # Path to shell
     r"/bin/(ba)?sh",
     r"/usr/bin/",
-    # Environment variables
-    r"\$\{[^}]+\}",
-    r"\$[A-Z_]+",
+    # Environment variable expansion (shell-specific patterns)
+    r"\$\{[A-Z_][A-Z0-9_]*\}",
 ]
 
 # Path traversal patterns
