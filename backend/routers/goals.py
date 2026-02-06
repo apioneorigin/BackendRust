@@ -676,7 +676,7 @@ def build_call2_user_prompt(
     parse_result: ParseResult,
 ) -> str:
     """
-    Build user prompt for Call 2 (Goal Articulation).
+    Build user prompt for Call 2 (UGE Articulation).
     Contains goal skeletons + file summaries (not full content).
     """
     # File summaries (first 2000 chars each to save tokens)
@@ -698,7 +698,7 @@ def build_call2_user_prompt(
     # Goal skeletons as JSON
     skeletons_json = json.dumps(goal_skeletons, indent=2)
 
-    return f"""Articulate the following goal skeletons with identity and firstMove fields.
+    return f"""Articulate the following goal skeletons using the UGE 6-field framework.
 
 === GOAL SKELETONS (from backend classification) ===
 {skeletons_json}
@@ -708,11 +708,18 @@ def build_call2_user_prompt(
 {chr(10).join(file_summaries)}
 === END FILE SUMMARIES ===
 
-For each goal skeleton, write:
-- identity: 10-15 words, action-oriented, grounded in signal data
-- firstMove: 20-30 words, imperative verb start, ONE specific action from signals
+For each goal skeleton, write these 6 fields:
+- goal_statement: Name the identity shift — who they're becoming (5-15 words)
+- evidence: Point to their specific work/actions — dots they can verify (40-60 words)
+- pattern: Name what the dots reveal — surprising but verifiable synthesis (30-40 words)
+- shadow: Name the specific fear + its PRESENT cost, not future threat (40-60 words)
+- dharma: Produce self-recognition — homecoming, not arrival (40-60 words)
+- first_move: Convert dharma's recognition into imperative action (20-30 words)
 
-Return JSON with goals array containing all skeletons with identity and firstMove populated."""
+Use consciousness_context (if present) to shape tone. Ground in their specific signals.
+No template strings. Full linguistic freedom within the logical frame.
+
+Return JSON: {{"goals": [{{...skeleton fields..., "goal_statement": "...", "evidence": "...", "pattern": "...", "shadow": "...", "dharma": "...", "first_move": "..."}}]}}"""
 
 
 def get_goal_discovery_model_config(model: str) -> Dict[str, Any]:
@@ -1107,8 +1114,24 @@ Return valid JSON with a "goals" array containing all skeletons with these 6 fie
     final_goals = []
     articulated_list = articulated_goals.get("goals", []) if articulated_goals else []
 
-    # Required UGE fields from Call 2
+    # Required UGE fields from Call 2 (snake_case)
     UGE_REQUIRED_FIELDS = ["goal_statement", "evidence", "pattern", "shadow", "dharma", "first_move"]
+
+    # LLM may return camelCase — normalize to snake_case
+    CAMEL_TO_SNAKE = {
+        "goalStatement": "goal_statement",
+        "goal_statement": "goal_statement",
+        "firstMove": "first_move",
+        "first_move": "first_move",
+    }
+
+    def normalize_uge_fields(art: Dict) -> Dict:
+        """Normalize LLM response field names to snake_case."""
+        normalized = {}
+        for key, value in art.items():
+            norm_key = CAMEL_TO_SNAKE.get(key, key)
+            normalized[norm_key] = value
+        return normalized
 
     # Create lookup by type for merging
     articulated_by_type: Dict[str, List[Dict]] = {}
@@ -1116,7 +1139,7 @@ Return valid JSON with a "goals" array containing all skeletons with these 6 fie
         goal_type = ag.get("type", "UNKNOWN")
         if goal_type not in articulated_by_type:
             articulated_by_type[goal_type] = []
-        articulated_by_type[goal_type].append(ag)
+        articulated_by_type[goal_type].append(normalize_uge_fields(ag))
 
     for skeleton in goal_skeletons:
         goal_type = skeleton.get("type", "UNKNOWN")
@@ -1135,7 +1158,9 @@ Return valid JSON with a "goals" array containing all skeletons with these 6 fie
         # Validate all UGE fields present
         missing_fields = [f for f in UGE_REQUIRED_FIELDS if not articulated.get(f)]
         if missing_fields:
-            api_logger.error(f"[GOAL DISCOVERY] Incomplete UGE articulation for {goal_type}: missing {missing_fields}")
+            # Log what fields WERE returned for debugging
+            returned_fields = list(articulated.keys())
+            api_logger.error(f"[GOAL DISCOVERY] Incomplete UGE articulation for {goal_type}: missing {missing_fields}, got {returned_fields}")
             raise HTTPException(
                 status_code=500,
                 detail=f"Goal articulation incomplete: missing {missing_fields} for goal type '{goal_type}'"
