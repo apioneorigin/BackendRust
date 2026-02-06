@@ -27,7 +27,6 @@
 		id: string;
 		fileNames: string[];
 		fileCount: number;
-		fileSummary: string;
 		goals: DiscoveredGoal[];
 		goalCount: number;
 		createdAt: string;
@@ -611,9 +610,6 @@
 								</svg>
 								<span class="discovery-filename">{discovery.fileNames.join(', ')}</span>
 								<span class="discovery-goal-count">{discovery.goalCount} goals</span>
-								{#if discovery.fileSummary}
-									<span class="discovery-summary">{discovery.fileSummary}</span>
-								{/if}
 							</span>
 							<button class="discovery-options-btn" on:click|stopPropagation={(e) => toggleDiscoveryMenu(e, discovery.id)} title="Options">
 								<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1198,16 +1194,6 @@
 		font-size: 13px;
 		line-height: 1;
 		flex-shrink: 0;
-	}
-
-	.discovery-summary {
-		color: var(--color-text-hint);
-		font-size: 12px;
-		font-style: italic;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		min-width: 0;
 	}
 
 	.discovery-options-btn {
