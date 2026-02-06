@@ -257,8 +257,7 @@ def normalize_call1_output(raw: Dict[str, Any]) -> Dict[str, Any]:
 
 def generate_file_summary(parse_result: ParseResult) -> str:
     """
-    Generate a concise summary (max 10 words) from raw file content.
-    Extracts the first meaningful line/phrase from the parsed files.
+    Generate a concise summary (max 10 words) from file content / names.
     """
     for pf in parse_result.parsed_files:
         content = pf.text_content.strip()
@@ -292,10 +291,24 @@ def generate_file_summary(parse_result: ParseResult) -> str:
 
         return " ".join(words)
 
-    # Fallback for image-only uploads
-    if parse_result.image_files:
-        count = len(parse_result.image_files)
-        return f"Visual data from {count} image{'s' if count > 1 else ''}"
+    # Derive summary from file names (images or text files with no content)
+    all_files = parse_result.parsed_files + parse_result.image_files
+    if all_files:
+        # Build a human-readable summary from file names
+        # Strip extensions and clean up: "cricket_stadium.jpg" → "cricket stadium"
+        names = []
+        for f in all_files:
+            stem = f.name.rsplit(".", 1)[0] if "." in f.name else f.name
+            cleaned = stem.replace("_", " ").replace("-", " ").strip()
+            if cleaned:
+                names.append(cleaned)
+
+        if names:
+            combined = ", ".join(names)
+            words = combined.split()
+            if len(words) > 10:
+                words = words[:10]
+            return " ".join(words)
 
     return ""
 
