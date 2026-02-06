@@ -1024,6 +1024,14 @@ Return valid JSON only. No markdown, no explanation."""
                 response.raise_for_status()
                 data = response.json()
 
+                # Diagnostic: stop reason and content block types
+                stop_reason = data.get("stop_reason", "unknown")
+                block_types = [b.get("type") for b in data.get("content", [])]
+                api_logger.info(
+                    f"[GOAL DISCOVERY] Call 1 Anthropic response: stop_reason={stop_reason}, "
+                    f"blocks={block_types}, output_tokens={data.get('usage', {}).get('output_tokens', '?')}"
+                )
+
                 # Extract usage
                 usage = data.get("usage", {})
                 total_usage["call1_input_tokens"] = usage.get("input_tokens", 0)
