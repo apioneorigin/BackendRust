@@ -676,11 +676,14 @@ def build_call2_user_prompt(
     oof_values: Dict[str, Any],
     parse_result: ParseResult,
     file_count: int,
-) -> str:
+    provider: str = "anthropic",
+) -> Any:
     """
     Build user prompt for Call 2 (Creative Goal Generation).
     Contains raw signals + computed OOF values + file content.
     LLM has full creative freedom to generate goals.
+
+    Returns a string when no images, or a list of content blocks for vision support.
     """
     # File content (full for small files, truncated for large)
     file_sections = []
@@ -695,6 +698,7 @@ def build_call2_user_prompt(
         file_sections.append(f"""
 === FILE: {img.name} (image) ===
 {img.text_content}
+Analyze the image (attached below) to generate business-level goals from what is visible.
 === END FILE ===
 """)
 
@@ -728,7 +732,7 @@ def build_call2_user_prompt(
 
     oof_json = json.dumps(oof_context, indent=2)
 
-    return f"""Generate 15-30 goals from the uploaded file data using the UGE 6-field framework.
+    text_prompt = f"""Generate 15-30 goals from the uploaded file data using the UGE 6-field framework.
 
 === FILE DATA ({file_count} file(s)) ===
 {chr(10).join(file_sections)}
@@ -781,8 +785,46 @@ def build_call2_user_prompt(
 4. Confidence: 85-95 (exact data), 70-84 (inferred), 55-69 (pattern), 40-54 (directional)
 5. No template strings — full linguistic creativity within the structure
 6. Ground first_move in file specifics — make staying still uncomfortable
+7. For image files: infer business context from visual elements — venue type, capacity, infrastructure, operational systems, revenue streams, and market positioning. Go BEYOND describing what you see. Generate goals about the business reality the image represents.
 
 Return JSON: {{"goals": [...]}}"""
+
+    # If no images, return as plain string for all providers
+    if not parse_result.image_files:
+        return text_prompt
+
+    # For Anthropic with images: build content blocks with vision support
+    if provider == "anthropic":
+        content_blocks: List[Dict[str, Any]] = [
+            {"type": "text", "text": text_prompt}
+        ]
+        for img in parse_result.image_files:
+            content_blocks.append({
+                "type": "image",
+                "source": {
+                    "type": "base64",
+                    "media_type": img.image_media_type,
+                    "data": img.image_base64,
+                }
+            })
+            content_blocks.append({
+                "type": "text",
+                "text": f"Above image: {img.name}. Use this image to generate business-level goals — not just observations about pixels, but actionable goals about the operations, revenue, strategy, and potential this image reveals."
+            })
+        return content_blocks
+
+    # For OpenAI with images: build OpenAI vision content blocks
+    content_blocks: List[Dict[str, Any]] = [
+        {"type": "text", "text": text_prompt}
+    ]
+    for img in parse_result.image_files:
+        content_blocks.append({
+            "type": "image_url",
+            "image_url": {
+                "url": f"data:{img.image_media_type};base64,{img.image_base64}",
+            }
+        })
+    return content_blocks
 
 
 def get_goal_discovery_model_config(model: str) -> Dict[str, Any]:
@@ -918,9 +960,26 @@ SEARCH QUERY GUIDELINES:
 
 Include ALL search results in your signal extraction - they provide crucial context for accurate goal discovery."""
 
+    has_images = len(parse_result.image_files) > 0
+    image_instructions = ""
+    if has_images:
+        image_instructions = """
+IMAGE FILE PROTOCOL:
+- For image files, extract business-level signals — not just visual descriptions.
+- Every visible element (venue, infrastructure, crowd, lighting, signage) implies revenue streams, cost centers, and optimization opportunities.
+- Use INFERRED layer for business context derived from visual observation (capacity estimates, revenue potential, operational capabilities).
+- Use ABSENT layer for expected business data not visible (pricing, staffing, calendar, financials).
+- Target 20+ signals minimum even from a single image. Sparse visual data = lower confidence, NOT fewer signals.
+- source_quote for images = visual description of what you observe.
+"""
+
     call1_dynamic_prompt = f"""You are analyzing {len(request.files)} file(s) for goal discovery.
 Multi-file mode: {len(request.files) > 1}
+Contains images: {has_images}
 {web_search_instructions}
+{image_instructions}
+CRITICAL: NEVER refuse or produce minimal output due to sparse data. Work with whatever exists. Sparse data = lower confidence scores, NOT fewer signals. Extract exhaustively from all files including images.
+
 YOUR TASK:
 1. Extract signals from each file using the three-layer protocol (LITERAL, INFERRED, ABSENT)
 2. Extract consciousness operators (25 operators + S-level)
@@ -1152,7 +1211,7 @@ Return valid JSON only. No markdown, no explanation."""
     call2_dynamic_prompt = """You are generating goals from file data using the UGE 6-field framework.
 
 YOUR TASK:
-1. Analyze the extracted signals and computed OOF values
+1. Analyze the extracted signals, computed OOF values, and any attached images
 2. Generate 15-30 goals with full creative freedom
 3. For EACH goal, write all fields:
    - type: Select from the 11 goal types
@@ -1167,15 +1226,17 @@ YOUR TASK:
    - first_move: Imperative action with file specifics (20-30 words)
 
 CRITICAL RULES:
+- NEVER refuse or produce fewer than 15 goals due to sparse data. Work with whatever exists. Sparse data = lower confidence, NOT fewer goals.
 - Include SPECIFIC data from files (numbers, names, metrics) in identity and first_move
 - Generate diverse goal types - don't cluster into just 2-3 types
 - No template strings — full linguistic creativity
 - Ground first_move in file specifics — make staying still uncomfortable
+- For image files: generate goals about the BUSINESS REALITY the image represents — revenue optimization, operational efficiency, market positioning, capacity utilization, monetization strategies — not just observations about what is visible
 
 Return valid JSON with a "goals" array."""
 
     call2_user_prompt = build_call2_user_prompt(
-        raw_signals, oof_values, parse_result, len(request.files)
+        raw_signals, oof_values, parse_result, len(request.files), provider
     )
 
     articulated_goals = None
@@ -1211,7 +1272,8 @@ Return valid JSON with a "goals" array."""
                     "Content-Type": "application/json"
                 }
 
-                api_logger.debug(f"[GOAL DISCOVERY] Call 2 request to Anthropic: {len(call2_user_prompt)} chars")
+                call2_size = len(str(call2_user_prompt)) if isinstance(call2_user_prompt, list) else len(call2_user_prompt)
+                api_logger.debug(f"[GOAL DISCOVERY] Call 2 request to Anthropic: {call2_size} chars")
                 response = await client.post(
                     model_config["endpoint"],
                     headers=headers,
@@ -1254,7 +1316,8 @@ Return valid JSON with a "goals" array."""
                     "Content-Type": "application/json"
                 }
 
-                api_logger.debug(f"[GOAL DISCOVERY] Call 2 request to OpenAI: {len(call2_user_prompt)} chars")
+                call2_size = len(str(call2_user_prompt)) if isinstance(call2_user_prompt, list) else len(call2_user_prompt)
+                api_logger.debug(f"[GOAL DISCOVERY] Call 2 request to OpenAI: {call2_size} chars")
                 response = await client.post(
                     model_config["endpoint"],
                     headers=headers,

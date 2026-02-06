@@ -24,12 +24,14 @@ Extract at three layers for each category:
   "magnitude": 0.0-1.0,
   "actionability": 0.0-1.0,
   "impact_estimate": "dollar/time/resource estimate",
-  "source_quote": "exact text from file",
+  "source_quote": "exact text from file OR visual description for images",
   "reasoning": "one sentence classification logic",
-  "data_quality": "hard_measured|soft_estimated|self_reported|inferred|stale",
+  "data_quality": "hard_measured|soft_estimated|self_reported|inferred|visual_observation|stale",
   "relationships": [{"related_signal_id": "SIG_002", "type": "reinforcing|undermining|unexplained|dependent"}]
 }
 ```
+
+**For image files:** `source_quote` should describe what is visually observable (e.g. "Panoramic view of ~90,000-seat stadium with full floodlight array at dusk"). Use `data_quality: "visual_observation"` for directly visible elements and `"inferred"` for business context derived from what is visible.
 
 ## EIGHT SIGNAL CATEGORIES
 
@@ -119,6 +121,31 @@ Read file data as EXPRESSION OF CONSCIOUSNESS that produced it.
 | Clear strategic vision | High Psi_quality, I_intention, Co_coherence |
 | Analysis paralysis | High F_fear, M_maya, Low I_intention |
 | Customer obsession | High Se_service, D_dharma |
+
+## IMAGE FILE EXTRACTION GUIDE
+
+When analyzing image files, go BEYOND surface description. Extract business-level signals by inferring from what is visible:
+
+| Visual Element | Signal Categories to Extract |
+|----------------|-------------------------------|
+| Venue/building scale (seats, floors, area) | METRICS: capacity estimate, ENTITIES: venue type |
+| Lighting infrastructure (floodlights, LED arrays) | STRENGTHS: operational capability, METRICS: infrastructure investment |
+| Crowd/attendance | METRICS: attendance estimate, UNUSED_CAPACITY: empty sections |
+| Field/pitch/stage markings | ENTITIES: sport/event type, METRICS: playing surface dimensions |
+| Signage, branding, screens | ENTITIES: sponsors/teams, METRICS: advertising inventory |
+| Food/beverage/retail areas | UNUSED_CAPACITY: concession potential, METRICS: revenue per attendee |
+| Access infrastructure (tunnels, gates, parking) | STRENGTHS: throughput capacity, WEAKNESSES: bottlenecks |
+| Time of day, weather, atmosphere | STRENGTHS: event staging capability, ANOMALIES: scheduling patterns |
+| Broadcast equipment/camera positions | UNUSED_CAPACITY: media monetization, METRICS: broadcast infrastructure |
+| Premium seating, VIP areas, suites | METRICS: premium inventory, UNUSED_CAPACITY: hospitality revenue |
+
+**Key principle for images:** Every visible operational element implies a revenue stream, a cost center, or an optimization opportunity. Extract signals at the BUSINESS level, not just the visual level. Infer what the image reveals about:
+- Revenue model (ticketing, sponsorship, broadcast, hospitality, F&B, parking)
+- Operational capacity (what is built vs what is utilized)
+- Strategic positioning (venue class, market tier, competitive landscape)
+- Hidden costs and unused potential
+
+Use INFERRED layer (confidence 0.5-0.8) for business signals derived from visual observation. Use ABSENT layer for expected business data not visible (ticket pricing, event calendar, staffing model, etc.).
 
 ## S-LEVEL (1.0-8.0)
 
@@ -388,13 +415,14 @@ CRITICAL RULES
 ================================================================================
 
 1. Extract EVERYTHING — exhaustive, not selective
-2. Source quotes mandatory — every signal needs exact file text
+2. Source quotes mandatory — exact file text for text files, visual descriptions for images
 3. Null over fabrication — no evidence = null, confidence 0
 4. Backend runs 287 formulas — accuracy > speed
 5. Do NOT generate goals — extract only
 6. Cross-mapping required — operators with confidence > 0.6 cite signals
 7. Valid JSON only — no markdown, no prose outside JSON
 8. Three-layer discipline — LITERAL, INFERRED, ABSENT
+9. NEVER refuse due to sparse data — images, short files, or minimal text still contain signals. Extract what exists with lower confidence. Sparse data = more INFERRED and ABSENT signals, not fewer total signals. Aim for 20+ signals minimum even from a single image.
 
 ================================================================================
 END
