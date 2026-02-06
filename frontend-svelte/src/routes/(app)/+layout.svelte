@@ -2,6 +2,7 @@
 	import { goto, beforeNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { theme, addToast, chat, conversations, currentConversation, messages, llmBusy } from '$lib/stores';
+	import { ConfirmDialog } from '$lib/components/ui';
 	import type { LayoutData } from './$types';
 
 	export let data: LayoutData;
@@ -17,6 +18,11 @@
 	let sidebarCollapsed = false;
 	let activeOptionsMenu: string | null = null;
 	let isSelectingConversation = false;
+
+	// Delete confirmation state
+	let showDeleteConfirm = false;
+	let pendingDeleteId: string | null = null;
+	let pendingDeleteTitle: string = '';
 
 	// Block navigation while any LLM call is in flight
 	beforeNavigate(({ cancel }) => {
@@ -115,16 +121,25 @@
 		activeOptionsMenu = null;
 	}
 
-	async function handleDeleteConversation(e: Event, conversationId: string) {
+	function handleDeleteConversation(e: Event, conversationId: string) {
 		e.stopPropagation();
 		activeOptionsMenu = null;
 
+		const conv = $conversations.find(c => c.id === conversationId);
+		pendingDeleteId = conversationId;
+		pendingDeleteTitle = conv?.title || 'this chat';
+		showDeleteConfirm = true;
+	}
+
+	async function confirmDeleteConversation() {
+		if (!pendingDeleteId) return;
 		try {
-			await chat.deleteConversation(conversationId);
+			await chat.deleteConversation(pendingDeleteId);
 			addToast('success', 'Chat deleted');
 		} catch (error: any) {
 			addToast('error', error.message || 'Failed to delete chat');
 		}
+		pendingDeleteId = null;
 	}
 
 	function handleShareConversation(e: Event, conversationId: string) {
@@ -361,6 +376,16 @@
 		<slot />
 	</main>
 </div>
+
+<!-- Delete conversation confirmation -->
+<ConfirmDialog
+	bind:open={showDeleteConfirm}
+	title="Delete Chat"
+	message="Are you sure you want to delete '{pendingDeleteTitle}'? This cannot be undone."
+	confirmText="Delete"
+	variant="danger"
+	on:confirm={confirmDeleteConversation}
+/>
 
 <style>
 	.app-layout {

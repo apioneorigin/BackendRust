@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { addToast, auth, chat, llmManualBusy } from '$lib/stores';
-	import { Button, Spinner } from '$lib/components/ui';
+	import { Button, Spinner, ConfirmDialog } from '$lib/components/ui';
 	import { api } from '$lib/utils/api';
 
 	export let params: Record<string, string> = {};
@@ -60,6 +60,12 @@
 	// Modal state
 	let showGoalsModal = false;
 	let modalDiscovery: FileGoalDiscovery | null = null;
+
+	// Delete confirmation state
+	let showDeleteDiscoveryConfirm = false;
+	let deleteDiscoveryId: string | null = null;
+	let showRemoveGoalConfirm = false;
+	let removeGoalId: string | null = null;
 
 	const goalTypeColors: Record<string, string> = {
 		OPTIMIZE: 'type-optimize',
@@ -209,43 +215,26 @@
 		modalDiscovery = null;
 	}
 
-	async function deleteDiscovery(discoveryId: string) {
+	function deleteDiscovery(discoveryId: string) {
+		deleteDiscoveryId = discoveryId;
+		showDeleteDiscoveryConfirm = true;
+	}
+
+	async function confirmDeleteDiscovery() {
+		if (!deleteDiscoveryId) return;
 		try {
-			await api.delete(`/api/goal-discoveries/${discoveryId}`);
-			discoveries = discoveries.filter((d) => d.id !== discoveryId);
+			await api.delete(`/api/goal-discoveries/${deleteDiscoveryId}`);
+			discoveries = discoveries.filter((d) => d.id !== deleteDiscoveryId);
 			addToast('success', 'Discovery removed');
 		} catch (error) {
 			addToast('error', 'Failed to remove discovery');
+		} finally {
+			deleteDiscoveryId = null;
 		}
 	}
 
-	async function deleteGoalFromDiscovery(discoveryId: string, goalId: string) {
-		try {
-			const result = await api.delete<{ remaining: number }>(`/api/goal-discoveries/${discoveryId}/goals/${goalId}`);
-			if (result.remaining === 0) {
-				// Discovery was deleted entirely
-				discoveries = discoveries.filter((d) => d.id !== discoveryId);
-				closeGoalsModal();
-				addToast('success', 'Goal removed (discovery empty, deleted)');
-			} else {
-				// Update the discovery in place
-				discoveries = discoveries.map((d) => {
-					if (d.id !== discoveryId) return d;
-					return {
-						...d,
-						goals: d.goals.filter((g) => g.id !== goalId),
-						goalCount: result.remaining
-					};
-				});
-				// Update modal if open
-				if (modalDiscovery?.id === discoveryId) {
-					modalDiscovery = discoveries.find((d) => d.id === discoveryId) || null;
-				}
-				addToast('success', 'Goal removed');
-			}
-		} catch (error) {
-			addToast('error', 'Failed to remove goal');
-		}
+	function cancelDeleteDiscovery() {
+		deleteDiscoveryId = null;
 	}
 
 	function normalizeGoal(goal: DiscoveredGoal): DiscoveredGoal {
@@ -274,15 +263,27 @@
 		}
 	}
 
-	async function removeFromInventory(goalId: string) {
-		const updatedGoals = savedGoals.filter((g) => g.id !== goalId);
+	function removeFromInventory(goalId: string) {
+		removeGoalId = goalId;
+		showRemoveGoalConfirm = true;
+	}
+
+	async function confirmRemoveFromInventory() {
+		if (!removeGoalId) return;
+		const updatedGoals = savedGoals.filter((g) => g.id !== removeGoalId);
 		try {
 			await api.post('/api/goal-inventory/save', { goals: updatedGoals });
 			savedGoals = updatedGoals;
 			addToast('success', 'Goal removed from library');
 		} catch (error) {
 			addToast('error', 'Failed to remove goal');
+		} finally {
+			removeGoalId = null;
 		}
+	}
+
+	function cancelRemoveFromInventory() {
+		removeGoalId = null;
 	}
 
 	async function startChatWithGoal(goal: DiscoveredGoal | SavedGoal) {
@@ -290,7 +291,7 @@
 		try {
 			const conversation = await api.post<{ id: string }>('/api/chat/conversations', {
 				title: g.identity,
-				context: `Goal: ${g.identity}\n\nFirst Move: ${g.firstMove}\n\nType: ${g.type}\nConfidence: ${formatConfidence(g.confidence)}`
+				context: `Goal: ${g.identity}\n\nFirst Move: ${g.firstMove}\n\nType: ${g.type}\nConfidence: ${g.confidence}%`
 			});
 			await chat.loadConversations();
 			goto(`/chat`);
@@ -304,14 +305,10 @@
 		return savedGoals.some((g) => g.id === goalId);
 	}
 
-	function formatConfidence(confidence: number): string {
-		return `${Math.round(confidence * 100)}%`;
-	}
-
 	function getConfidenceColor(confidence: number): string {
-		if (confidence >= 0.75) return 'confidence-high';
-		if (confidence >= 0.50) return 'confidence-good';
-		if (confidence >= 0.25) return 'confidence-medium';
+		if (confidence >= 90) return 'confidence-high';
+		if (confidence >= 70) return 'confidence-good';
+		if (confidence >= 50) return 'confidence-medium';
 		return 'confidence-low';
 	}
 
@@ -539,7 +536,7 @@
 									{g.type.replace('_', ' ')}
 								</span>
 								<span class="goal-confidence {getConfidenceColor(g.confidence)}">
-									{formatConfidence(g.confidence)}
+									{g.confidence}%
 								</span>
 							</div>
 							<h3 class="goal-identity">{g.identity}</h3>
@@ -603,7 +600,7 @@
 									{g.type.replace('_', ' ')}
 								</span>
 								<span class="goal-confidence {getConfidenceColor(g.confidence)}">
-									{formatConfidence(g.confidence)}
+									{g.confidence}%
 								</span>
 							</div>
 							<h3 class="goal-identity">{g.identity}</h3>
@@ -637,14 +634,6 @@
 									</svg>
 									Start Chat
 								</button>
-								<button class="action-btn remove-btn" on:click={() => deleteGoalFromDiscovery(modalDiscovery.id, g.id)}>
-									<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-										<path d="M3 6h18" />
-										<path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-										<path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-									</svg>
-									Delete
-								</button>
 							</div>
 						</div>
 					{/each}
@@ -653,6 +642,26 @@
 		</div>
 	</div>
 {/if}
+
+<ConfirmDialog
+	bind:open={showDeleteDiscoveryConfirm}
+	title="Delete Discovery"
+	message="Are you sure you want to delete this discovery? All discovered goals from this batch will be removed."
+	confirmText="Delete"
+	variant="danger"
+	on:confirm={confirmDeleteDiscovery}
+	on:cancel={cancelDeleteDiscovery}
+/>
+
+<ConfirmDialog
+	bind:open={showRemoveGoalConfirm}
+	title="Remove from Library"
+	message="Are you sure you want to remove this goal from your library?"
+	confirmText="Remove"
+	variant="danger"
+	on:confirm={confirmRemoveFromInventory}
+	on:cancel={cancelRemoveFromInventory}
+/>
 
 <style>
 	.goals-page {
@@ -1036,7 +1045,7 @@
 		font-weight: 600;
 	}
 
-	/* Confidence colors - 0/25/50/75 scale */
+	/* Confidence colors */
 	.confidence-high { color: #16a34a; }
 	.confidence-good { color: #2563eb; }
 	.confidence-medium { color: #ca8a04; }

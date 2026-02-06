@@ -2,13 +2,17 @@
 	import { onMount } from 'svelte';
 	import { documents, documentList, addToast } from '$lib/stores';
 	import type { Document } from '$lib/stores/documents';
-	import { Button, Spinner } from '$lib/components/ui';
+	import { Button, Spinner, ConfirmDialog } from '$lib/components/ui';
 
 	export let params: Record<string, string> = {};
 
 	let domainFilter = '';
 	let isLoading = true;
 	let searchQuery = '';
+
+	// Delete confirmation state
+	let showDeleteConfirm = false;
+	let deleteDocId: string | null = null;
 
 	onMount(async () => {
 		await documents.loadDocuments();
@@ -26,11 +30,21 @@
 
 	$: domains = [...new Set($documentList.map((d) => d.domain).filter(Boolean))];
 
-	async function handleDeleteDocument(docId: string) {
-		if (confirm('Are you sure you want to delete this document?')) {
-			await documents.deleteDocument(docId);
+	function handleDeleteDocument(docId: string) {
+		deleteDocId = docId;
+		showDeleteConfirm = true;
+	}
+
+	async function confirmDeleteDocument() {
+		if (deleteDocId) {
+			await documents.deleteDocument(deleteDocId);
 			addToast('info', 'Document deleted');
+			deleteDocId = null;
 		}
+	}
+
+	function cancelDeleteDocument() {
+		deleteDocId = null;
 	}
 
 	function formatDate(date: Date) {
@@ -239,6 +253,16 @@
 		</div>
 	{/if}
 </div>
+
+<ConfirmDialog
+	bind:open={showDeleteConfirm}
+	title="Delete Document"
+	message="Are you sure you want to delete this document? This action cannot be undone."
+	confirmText="Delete"
+	variant="danger"
+	on:confirm={confirmDeleteDocument}
+	on:cancel={cancelDeleteDocument}
+/>
 
 <style>
 	.documents-page {
