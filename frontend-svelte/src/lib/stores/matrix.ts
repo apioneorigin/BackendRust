@@ -307,35 +307,71 @@ function createMatrixStore() {
 		populateFromStructuredData(data: { documents?: Document[] }) {
 			if (!data || !data.documents || data.documents.length === 0) return;
 
-			const documents = data.documents;
+			const incomingDocs = data.documents;
 
-			// Find first document with valid matrix_data for display
-			const activeDoc = documents.find(d => d.matrix_data) || documents[0];
-			const activeDocumentId = activeDoc.id;
-			const displayed = buildDisplayedMatrix(activeDoc);
+			// Merge incoming docs with existing: update matching IDs, preserve the rest
+			update(state => {
+				const existingDocs = state.documents;
+				let mergedDocs: Document[];
 
-			if (!displayed) {
-				// All documents are stubs (no matrix_data) — store them but don't update display
-				update(state => ({
+				if (existingDocs.length === 0) {
+					// No existing docs — use incoming as-is
+					mergedDocs = incomingDocs;
+				} else {
+					// Start with existing docs, update any that match incoming by ID
+					mergedDocs = existingDocs.map(existing => {
+						const incoming = incomingDocs.find(d => d.id === existing.id);
+						if (incoming) {
+							// Merge: incoming labels/titles, preserve existing cells/insights/leverage
+							return {
+								...existing,
+								name: incoming.name || existing.name,
+								description: incoming.description || existing.description,
+								matrix_data: {
+									...existing.matrix_data,
+									row_options: incoming.matrix_data?.row_options ?? existing.matrix_data?.row_options,
+									column_options: incoming.matrix_data?.column_options ?? existing.matrix_data?.column_options,
+									selected_rows: incoming.matrix_data?.selected_rows ?? existing.matrix_data?.selected_rows,
+									selected_columns: incoming.matrix_data?.selected_columns ?? existing.matrix_data?.selected_columns,
+								}
+							};
+						}
+						return existing;
+					});
+					// Add any incoming docs that don't exist yet
+					for (const inc of incomingDocs) {
+						if (!mergedDocs.find(d => d.id === inc.id)) {
+							mergedDocs.push(inc);
+						}
+					}
+				}
+
+				// Find first document with valid matrix_data for display
+				const activeDoc = mergedDocs.find(d => d.matrix_data) || mergedDocs[0];
+				const activeDocumentId = activeDoc.id;
+				const displayed = buildDisplayedMatrix(activeDoc);
+
+				if (!displayed) {
+					return {
+						...state,
+						documents: mergedDocs,
+						activeDocumentId,
+						isGenerated: false
+					};
+				}
+
+				return {
 					...state,
-					documents,
+					documents: mergedDocs,
 					activeDocumentId,
-					isGenerated: false
-				}));
-				return;
-			}
-
-			update(state => ({
-				...state,
-				documents,
-				activeDocumentId,
-				displayedMatrixData: displayed.matrixData,
-				displayedRowHeaders: displayed.rowHeaders,
-				displayedColumnHeaders: displayed.columnHeaders,
-				displayedRowInsights: displayed.rowInsights,
-				displayedColumnInsights: displayed.columnInsights,
-				isGenerated: !!activeDoc.matrix_data?.cells && Object.keys(activeDoc.matrix_data.cells).length > 0
-			}));
+					displayedMatrixData: displayed.matrixData,
+					displayedRowHeaders: displayed.rowHeaders,
+					displayedColumnHeaders: displayed.columnHeaders,
+					displayedRowInsights: displayed.rowInsights,
+					displayedColumnInsights: displayed.columnInsights,
+					isGenerated: !!activeDoc.matrix_data?.cells && Object.keys(activeDoc.matrix_data.cells).length > 0
+				};
+			});
 		},
 
 		// Switch active document tab
