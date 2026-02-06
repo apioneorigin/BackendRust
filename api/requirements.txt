@@ -15,3 +15,5 @@ pydantic>=2.5.0
 email-validator>=2.1.0
 # Security guardrails
 pyahocorasick>=2.0.0
+# LLM response validation
+jsonschema>=4.0.0
