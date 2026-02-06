@@ -654,6 +654,12 @@ CONTENT:
 === END FILE: {pf.name} ===
 """)
 
+    # Reference image files in text so the model connects them to the analysis
+    for img in parse_result.image_files:
+        file_sections.append(f"""
+=== IMAGE FILE: {img.name} (attached as image below — extract business signals from visual content) ===
+""")
+
     # Existing goals context
     existing_goals_section = ""
     if existing_goals:
@@ -958,14 +964,21 @@ Return valid JSON only. No markdown, no explanation."""
                     }
                 ]
 
+                messages = [
+                    {"role": "user", "content": call1_user_content},
+                ]
+                # Assistant prefill forces JSON start — but only when
+                # web_search is OFF.  Server-side web_search must execute
+                # before the model generates its response; the prefill
+                # short-circuits that and causes empty/0-signal output.
+                if not request.web_search:
+                    messages.append({"role": "assistant", "content": "{"})
+
                 request_body = {
                     "model": model,
                     "max_tokens": model_config["max_tokens"],
                     "system": system_content,
-                    "messages": [
-                        {"role": "user", "content": call1_user_content},
-                        {"role": "assistant", "content": "{"}  # Force JSON start
-                    ]
+                    "messages": messages,
                 }
 
                 # Add web search tool if enabled
@@ -1022,8 +1035,9 @@ Return valid JSON only. No markdown, no explanation."""
                     if block.get("type") == "text":
                         response_text += block.get("text", "")
 
-                # Prepend the forced "{" we used
-                response_text = "{" + response_text
+                # Prepend the forced "{" only when we used assistant prefill
+                if not request.web_search:
+                    response_text = "{" + response_text
                 call1_output = parse_llm_json_response(response_text, "CALL1")
 
             else:
