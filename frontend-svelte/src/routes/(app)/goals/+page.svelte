@@ -1186,13 +1186,13 @@
 		text-overflow: ellipsis;
 		white-space: nowrap;
 		min-width: 0;
-		line-height: 1;
+		line-height: normal;
 	}
 
 	.discovery-goal-count {
 		color: var(--color-text-whisper);
 		font-size: 13px;
-		line-height: 1;
+		line-height: normal;
 		flex-shrink: 0;
 	}
 
