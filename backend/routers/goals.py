@@ -255,63 +255,6 @@ def normalize_call1_output(raw: Dict[str, Any]) -> Dict[str, Any]:
     return result
 
 
-def generate_file_summary(parse_result: ParseResult) -> str:
-    """
-    Generate a concise summary (max 10 words) from file content / names.
-    """
-    for pf in parse_result.parsed_files:
-        content = pf.text_content.strip()
-        if not content or content.startswith("[Empty"):
-            continue
-
-        # Skip image placeholder lines
-        lines = [
-            ln.strip() for ln in content.split("\n")
-            if ln.strip()
-            and not ln.strip().startswith("[Image:")
-            and not ln.strip().startswith("===")
-            and len(ln.strip()) > 3
-        ]
-        if not lines:
-            continue
-
-        # Take the first meaningful line as the basis
-        first_line = lines[0]
-
-        # Strip common prefixes like "Sheet: Sheet1", "Slide 1:", headers
-        for prefix in ("Sheet:", "Slide "):
-            if first_line.startswith(prefix):
-                first_line = lines[1] if len(lines) > 1 else first_line
-                break
-
-        # Truncate to 10 full words
-        words = first_line.split()
-        if len(words) > 10:
-            words = words[:10]
-
-        return " ".join(words)
-
-    # Derive summary from file names (images or text files with no content)
-    all_files = parse_result.parsed_files + parse_result.image_files
-    if all_files:
-        # Build a human-readable summary from file names
-        # Strip extensions and clean up: "cricket_stadium.jpg" → "cricket stadium"
-        names = []
-        for f in all_files:
-            stem = f.name.rsplit(".", 1)[0] if "." in f.name else f.name
-            cleaned = stem.replace("_", " ").replace("-", " ").strip()
-            if cleaned:
-                names.append(cleaned)
-
-        if names:
-            combined = ", ".join(names)
-            words = combined.split()
-            if len(words) > 10:
-                words = words[:10]
-            return " ".join(words)
-
-    return ""
-
 
 class CreateGoalRequest(BaseModel):
     goal_text: str
@@ -562,7 +505,6 @@ async def list_goal_discoveries(
                 "id": d.id,
                 "fileNames": d.file_names,
                 "fileCount": d.file_count,
-                "fileSummary": d.file_summary or "",
                 "goals": d.goals,
                 "goalCount": d.goal_count,
                 "createdAt": d.created_at.isoformat(),
@@ -1595,14 +1537,12 @@ Return valid JSON with a "goals" array containing all skeletons with your 6 fiel
     try:
         discovery_id = generate_id()
         file_names = [f.name for f in request.files]
-        file_summary = generate_file_summary(parse_result)
         discovery = FileGoalDiscovery(
             id=discovery_id,
             user_id=current_user.id,
             organization_id=current_user.organization_id,
             file_names=file_names,
             file_count=len(request.files),
-            file_summary=file_summary,
             goals=final_goals,
             goal_count=len(final_goals),
         )
