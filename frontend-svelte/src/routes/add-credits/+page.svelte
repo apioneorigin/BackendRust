@@ -88,9 +88,9 @@
 			<Spinner size="lg" />
 		</div>
 	{:else if loadError}
-		<div class="loading-container">
-			<p style="color: var(--color-error-500); margin-bottom: 1rem;">{loadError}</p>
-			<button on:click={() => location.reload()} style="padding: 0.5rem 1rem; background: var(--gradient-primary); color: white; border: none; border-radius: 0.5rem; cursor: pointer;">Retry</button>
+		<div class="loading-container error-container">
+			<p class="error-text">{loadError}</p>
+			<button class="retry-btn" on:click={() => location.reload()}>Retry</button>
 		</div>
 	{:else}
 		<div class="credits-card">
@@ -230,6 +230,34 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
+	}
+
+	.error-container {
+		flex-direction: column;
+		gap: 1rem;
+	}
+
+	.error-text {
+		color: var(--color-error-500);
+		font-size: 0.9375rem;
+		text-align: center;
+		max-width: 300px;
+	}
+
+	.retry-btn {
+		padding: 0.625rem 1.5rem;
+		background: var(--gradient-primary);
+		color: white;
+		border: none;
+		border-radius: 0.5rem;
+		font-size: 0.875rem;
+		font-weight: 500;
+		cursor: pointer;
+		transition: opacity 0.15s ease;
+	}
+
+	.retry-btn:hover {
+		opacity: 0.9;
 	}
 
 	.credits-card {

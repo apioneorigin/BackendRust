@@ -85,7 +85,7 @@ export const POST: RequestHandler = async ({ request, params, cookies }) => {
 		});
 	}
 
-	// Non-SSE response (fallback)
+	// Non-SSE response (e.g. JSON error from backend)
 	const data = await backendResponse.text();
 	return new Response(data, {
 		status: backendResponse.status,

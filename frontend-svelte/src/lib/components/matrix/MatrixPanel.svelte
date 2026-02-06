@@ -25,7 +25,6 @@
 
 	const dispatch = createEventDispatcher<{
 		cellClick: { row: number; col: number };
-		cellChange: { row: number; col: number; value: number };
 		dimensionChange: { row: number; col: number; dimIndex: number; value: number };
 		documentChange: { documentId: string };
 		showPowerSpotExplanation: { row: number; col: number; cell: CellData };

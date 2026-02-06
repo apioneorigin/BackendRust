@@ -89,7 +89,7 @@
 	}
 
 	.error-text {
-		color: var(--color-error-500, #ef4444);
+		color: var(--color-error-500);
 		font-size: 0.9375rem;
 		text-align: center;
 		max-width: 300px;
@@ -97,7 +97,7 @@
 
 	.retry-btn {
 		padding: 0.625rem 1.5rem;
-		background: var(--gradient-primary, #3b82f6);
+		background: var(--gradient-primary);
 		color: white;
 		border: none;
 		border-radius: 0.5rem;
