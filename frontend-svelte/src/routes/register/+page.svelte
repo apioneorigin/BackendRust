@@ -7,6 +7,7 @@
 	export let params: Record<string, string> = {};
 
 	let isLoading = false;
+	let passwordError = '';
 </script>
 
 <svelte:head>
@@ -43,6 +44,17 @@
 			method="POST"
 			class="auth-form"
 			use:enhance={() => {
+				const pwd = (document.getElementById('password') as HTMLInputElement)?.value;
+				const confirm = (document.getElementById('confirmPassword') as HTMLInputElement)?.value;
+				if (pwd !== confirm) {
+					passwordError = 'Passwords do not match';
+					return ({ cancel }: { cancel: () => void }) => cancel();
+				}
+				if (pwd.length < 8) {
+					passwordError = 'Password must be at least 8 characters';
+					return ({ cancel }: { cancel: () => void }) => cancel();
+				}
+				passwordError = '';
 				isLoading = true;
 				return async ({ update }) => {
 					await update();
@@ -68,6 +80,17 @@
 						<line x1="12" x2="12.01" y1="16" y2="16" />
 					</svg>
 					{form.error}
+				</div>
+			{/if}
+
+			{#if passwordError}
+				<div class="error-message" role="alert">
+					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<circle cx="12" cy="12" r="10" />
+						<line x1="12" x2="12" y1="8" y2="12" />
+						<line x1="12" x2="12.01" y1="16" y2="16" />
+					</svg>
+					{passwordError}
 				</div>
 			{/if}
 

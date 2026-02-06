@@ -7,7 +7,7 @@ export { theme } from './theme';
 export { toast, toasts, addToast, removeToast } from './toast';
 export { chat, messages, currentConversation, conversations, isStreaming, streamingContent, questions } from './chat';
 export { session, currentSession, sessions } from './session';
-export { credits, creditBalance, isLowCredits } from './credits';
+export { credits, creditBalance, isLoadingCreditHistory, isLowCredits } from './credits';
 export { documents, currentDocument, documentList } from './documents';
 export { goals, currentGoal, activeGoals, completedGoals } from './goals';
 export { llmBusy, llmManualBusy } from './llm';
@@ -19,6 +19,7 @@ export {
 	rowInsights,
 	columnInsights,
 	isMatrixGenerated,
+	isMatrixProcessing,
 	showRiskHeatmap,
 	coherence,
 	population,

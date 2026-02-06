@@ -130,6 +130,9 @@ interface MatrixState {
 	// Risk heatmap state
 	showRiskHeatmap: boolean;
 
+	// Processing state (long-running LLM operations)
+	isProcessing: boolean;
+
 	// Plays state
 	plays: Play[];
 	selectedPlayId: string | null;
@@ -176,6 +179,8 @@ const initialState: MatrixState = {
 	displayedColumnInsights: ['', '', '', '', ''],
 
 	isGenerated: false,
+
+	isProcessing: false,
 
 	showRiskHeatmap: false,
 
@@ -493,6 +498,7 @@ function createMatrixStore() {
 			const state = get({ subscribe });
 			if (!state.conversationId) return [];
 
+			update(s => ({ ...s, isProcessing: true }));
 			try {
 				const response = await api.post<{ previews: DocumentPreview[] }>(
 					`/api/matrix/${state.conversationId}/documents/preview`,
@@ -504,6 +510,8 @@ function createMatrixStore() {
 				console.error('Failed to generate document previews:', error);
 				addToast('error', 'Failed to generate document previews');
 				return [];
+			} finally {
+				update(s => ({ ...s, isProcessing: false }));
 			}
 		},
 
@@ -512,6 +520,7 @@ function createMatrixStore() {
 			const state = get({ subscribe });
 			if (!state.conversationId) return;
 
+			update(s => ({ ...s, isProcessing: true }));
 			try {
 				await api.post(
 					`/api/matrix/${state.conversationId}/documents/add`,
@@ -547,6 +556,8 @@ function createMatrixStore() {
 			} catch (error: any) {
 				console.error('Failed to add documents:', error);
 				addToast('error', 'Failed to add documents');
+			} finally {
+				update(s => ({ ...s, isProcessing: false }));
 			}
 		},
 
@@ -558,6 +569,7 @@ function createMatrixStore() {
 				return;
 			}
 
+			update(s => ({ ...s, isProcessing: true }));
 			try {
 				// Backend returns the updated document directly — no follow-up GET needed
 				const doc = await api.post<Document>(
@@ -574,6 +586,8 @@ function createMatrixStore() {
 			} catch (error: any) {
 				console.error('Failed to populate document:', error);
 				throw error;
+			} finally {
+				update(s => ({ ...s, isProcessing: false }));
 			}
 		},
 
@@ -583,19 +597,24 @@ function createMatrixStore() {
 			if (!state.conversationId) throw new Error('No conversation selected');
 			if (!state.activeDocumentId) throw new Error('No document selected');
 
-			// Backend returns the updated document directly — no follow-up GET needed
-			// LLM insight generation can take up to 5 minutes — override default 30s timeout
-			const doc = await api.post<Document>(
-				`/api/matrix/${state.conversationId}/document/${state.activeDocumentId}/generate-insights`,
-				{ model, insight_index: insightIndex },
-				{ timeout: 300000, retries: 1 }
-			);
+			update(s => ({ ...s, isProcessing: true }));
+			try {
+				// Backend returns the updated document directly — no follow-up GET needed
+				// LLM insight generation can take up to 5 minutes — override default 30s timeout
+				const doc = await api.post<Document>(
+					`/api/matrix/${state.conversationId}/document/${state.activeDocumentId}/generate-insights`,
+					{ model, insight_index: insightIndex },
+					{ timeout: 300000, retries: 1 }
+				);
 
-			if (doc?.matrix_data) {
-				applyDocumentUpdate(doc);
-				return doc;
+				if (doc?.matrix_data) {
+					applyDocumentUpdate(doc);
+					return doc;
+				}
+				return null;
+			} finally {
+				update(s => ({ ...s, isProcessing: false }));
 			}
-			return null;
 		},
 
 		// Fetch plays for active document (plays are generated during document population)
@@ -642,15 +661,20 @@ function createMatrixStore() {
 				return;
 			}
 
+			const previousPlayId = state.selectedPlayId;
+			// Optimistic update
+			update(s => ({ ...s, selectedPlayId: playId }));
+
 			try {
 				await api.put(
 					`/api/matrix/${state.conversationId}/document/${state.activeDocumentId}/plays/select`,
 					{ play_id: playId }
 				);
-
-				update(s => ({ ...s, selectedPlayId: playId }));
 			} catch (error: any) {
 				console.error('Failed to select play:', error);
+				// Rollback on failure
+				update(s => ({ ...s, selectedPlayId: previousPlayId }));
+				addToast('error', 'Failed to select play');
 			}
 		},
 
@@ -826,6 +850,7 @@ export const rowInsights = derived(matrix, ($matrix) => $matrix.displayedRowInsi
 export const columnInsights = derived(matrix, ($matrix) => $matrix.displayedColumnInsights);
 
 export const isMatrixGenerated = derived(matrix, ($matrix) => $matrix.isGenerated);
+export const isMatrixProcessing = derived(matrix, ($matrix) => $matrix.isProcessing);
 export const showRiskHeatmap = derived(matrix, ($matrix) => $matrix.showRiskHeatmap);
 export const autoRefresh = derived(matrix, ($matrix) => $matrix.autoRefresh);
 

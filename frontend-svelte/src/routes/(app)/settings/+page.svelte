@@ -11,7 +11,7 @@
 
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { user, isAuthenticated, credits, creditBalance, addToast } from '$lib/stores';
+	import { user, isAuthenticated, credits, creditBalance, isLoadingCreditHistory, addToast } from '$lib/stores';
 	import { Spinner } from '$lib/components/ui';
 	import { api } from '$lib/utils/api';
 
@@ -60,6 +60,8 @@
 	let creditHistory: CreditTransaction[] = [];
 	let showUsageHistory = false;
 	let showCreditHistory = false;
+	let loadingUsageHistory = false;
+	let loadingCreditHistory = false;
 	let promoCode = '';
 	let isRedeeming = false;
 	let isUpgrading = false;
@@ -145,16 +147,20 @@
 			return;
 		}
 
+		showUsageHistory = true;
+		loadingUsageHistory = true;
 		try {
 			const data = await api.get<{ success: boolean; history?: UsageEntry[] }>(
 				'/api/credits/history'
 			);
 			if (data.success) {
 				usageHistory = data.history || [];
-				showUsageHistory = true;
 			}
 		} catch (error) {
 			addToast('error', 'Failed to load usage history');
+			showUsageHistory = false;
+		} finally {
+			loadingUsageHistory = false;
 		}
 	}
 
@@ -164,16 +170,20 @@
 			return;
 		}
 
+		showCreditHistory = true;
+		loadingCreditHistory = true;
 		try {
 			const data = await api.get<{ success: boolean; transactions?: CreditTransaction[] }>(
 				'/api/credits/history'
 			);
 			if (data.success) {
 				creditHistory = data.transactions || [];
-				showCreditHistory = true;
 			}
 		} catch (error) {
 			addToast('error', 'Failed to load credit history');
+			showCreditHistory = false;
+		} finally {
+			loadingCreditHistory = false;
 		}
 	}
 
@@ -584,7 +594,11 @@
 			</button>
 
 			{#if showUsageHistory}
-				{#if usageHistory.length > 0}
+				{#if loadingUsageHistory}
+				<div style="display: flex; justify-content: center; padding: 1rem;">
+					<Spinner size="sm" />
+				</div>
+			{:else if usageHistory.length > 0}
 					<div class="history-list">
 						{#each usageHistory.slice(0, 10) as entry}
 							<div class="history-item">
@@ -627,7 +641,11 @@
 			</button>
 
 			{#if showCreditHistory}
-				{#if creditHistory.length > 0}
+				{#if $isLoadingCreditHistory || loadingCreditHistory}
+				<div style="display: flex; justify-content: center; padding: 1rem;">
+					<Spinner size="sm" />
+				</div>
+			{:else if creditHistory.length > 0}
 					<div class="history-list">
 						{#each creditHistory.slice(0, 20) as txn}
 							<div class="history-item">

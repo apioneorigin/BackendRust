@@ -586,6 +586,13 @@
 					</div>
 				{/if}
 
+				{#if $chat?.error && !$isStreaming}
+					<div class="stream-error">
+						<p>{$chat.error}</p>
+						<button on:click={() => chat.clearError()}>Dismiss</button>
+					</div>
+				{/if}
+
 				<!-- Questions -->
 				{#if $questions.length > 0}
 					{#each $questions as q (q.id)}
@@ -607,6 +614,24 @@
 						</div>
 					{/each}
 				{/if}
+			{/if}
+
+			<!-- Scroll to bottom button -->
+			{#if userScrolledUp && $messages.length > 0}
+				<button
+					class="scroll-to-bottom-btn"
+					on:click={() => {
+						userScrolledUp = false;
+						if (messagesContainer) {
+							messagesContainer.scrollTo({ top: messagesContainer.scrollHeight, behavior: 'smooth' });
+						}
+					}}
+					title="Scroll to bottom"
+				>
+					<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="m6 9 6 6 6-6"/>
+					</svg>
+				</button>
 			{/if}
 		</div>
 
@@ -1051,8 +1076,36 @@
 		overflow-x: hidden;
 		padding: 0.375rem calc(0.75rem + 1px) 1.5rem;
 		min-height: 0;
+		position: relative;
 		/* Override global smooth scroll - prevents conflicts during streaming */
 		scroll-behavior: auto;
+	}
+
+	.scroll-to-bottom-btn {
+		position: sticky;
+		bottom: 0.75rem;
+		left: 50%;
+		transform: translateX(-50%);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 36px;
+		height: 36px;
+		margin: 0 auto;
+		background: var(--color-field-surface);
+		border: 1px solid var(--color-veil-thin);
+		border-radius: 50%;
+		color: var(--color-text-manifest);
+		cursor: pointer;
+		box-shadow: var(--shadow-elevated);
+		transition: all 0.15s ease;
+		z-index: 10;
+	}
+
+	.scroll-to-bottom-btn:hover {
+		background: var(--color-accent-subtle);
+		color: var(--color-text-source);
+		transform: translateX(-50%) scale(1.1);
 	}
 
 	/* Welcome screen - ultra minimal */
@@ -1977,6 +2030,42 @@
 		color: var(--color-text-manifest);
 		margin-bottom: 0.375rem;
 		line-height: 1.4;
+	}
+
+	/* Stream error recovery */
+	.stream-error {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		padding: 0.875rem 1rem;
+		margin: 0.5rem 0;
+		background: rgba(239, 68, 68, 0.08);
+		border: 1px solid var(--color-error-500);
+		border-radius: 0.5rem;
+		color: var(--color-error-500);
+		font-size: var(--font-size-sm);
+	}
+
+	.stream-error p {
+		flex: 1;
+		margin: 0;
+	}
+
+	.stream-error button {
+		padding: 0.375rem 0.75rem;
+		background: transparent;
+		border: 1px solid var(--color-error-500);
+		border-radius: 0.375rem;
+		color: var(--color-error-500);
+		font-size: var(--font-size-sm);
+		cursor: pointer;
+		white-space: nowrap;
+		transition: all 0.15s ease;
+	}
+
+	.stream-error button:hover {
+		background: var(--color-error-500);
+		color: #ffffff;
 	}
 
 	/* Responsive */

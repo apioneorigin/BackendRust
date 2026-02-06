@@ -27,6 +27,7 @@
 	}
 
 	let isLoading = true;
+	let isRefreshing = false;
 	let stats: DashboardStats | null = null;
 	let users: UserListItem[] = [];
 	let selectedTab: 'overview' | 'users' | 'analytics' | 'logs' = 'overview';
@@ -43,7 +44,12 @@
 	});
 
 	async function loadDashboard() {
-		isLoading = true;
+		const isInitialLoad = stats === null && users.length === 0;
+		if (isInitialLoad) {
+			isLoading = true;
+		} else {
+			isRefreshing = true;
+		}
 		try {
 			const [dashboardData, usersData] = await Promise.all([
 				api.get<{ stats: DashboardStats }>('/api/admin/dashboard'),
@@ -55,6 +61,7 @@
 			addToast('error', error.message || 'Failed to load dashboard');
 		} finally {
 			isLoading = false;
+			isRefreshing = false;
 		}
 	}
 
@@ -83,24 +90,28 @@
 			<h1>Admin Dashboard</h1>
 			<p>Monitor and manage your platform</p>
 		</div>
-		<Button variant="outline" on:click={loadDashboard}>
-			<svg
-				xmlns="http://www.w3.org/2000/svg"
-				width="16"
-				height="16"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="2"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-			>
-				<path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-				<path d="M3 3v5h5" />
-				<path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
-				<path d="M16 16h5v5" />
-			</svg>
-			Refresh
+		<Button variant="outline" on:click={loadDashboard} disabled={isRefreshing}>
+			{#if isRefreshing}
+				<Spinner size="sm" />
+			{:else}
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					width="16"
+					height="16"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				>
+					<path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+					<path d="M3 3v5h5" />
+					<path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+					<path d="M16 16h5v5" />
+				</svg>
+			{/if}
+			{isRefreshing ? 'Refreshing...' : 'Refresh'}
 		</Button>
 	</div>
 
@@ -162,7 +173,7 @@
 							</svg>
 						</div>
 						<div class="stat-content">
-							<span class="stat-value">{formatNumber(stats?.totalUsers || 0)}</span>
+							<span class="stat-value">{formatNumber(stats?.totalUsers ?? 0)}</span>
 							<span class="stat-label">Total Users</span>
 						</div>
 					</div>
@@ -186,7 +197,7 @@
 							</svg>
 						</div>
 						<div class="stat-content">
-							<span class="stat-value">{formatNumber(stats?.activeUsers || 0)}</span>
+							<span class="stat-value">{formatNumber(stats?.activeUsers ?? 0)}</span>
 							<span class="stat-label">Active Users</span>
 						</div>
 					</div>
@@ -210,7 +221,7 @@
 							</svg>
 						</div>
 						<div class="stat-content">
-							<span class="stat-value">{formatNumber(stats?.totalConversations || 0)}</span>
+							<span class="stat-value">{formatNumber(stats?.totalConversations ?? 0)}</span>
 							<span class="stat-label">Conversations</span>
 						</div>
 					</div>
@@ -234,7 +245,7 @@
 							</svg>
 						</div>
 						<div class="stat-content">
-							<span class="stat-value">{formatNumber(stats?.totalMessages || 0)}</span>
+							<span class="stat-value">{formatNumber(stats?.totalMessages ?? 0)}</span>
 							<span class="stat-label">Messages</span>
 						</div>
 					</div>
@@ -260,7 +271,7 @@
 							</svg>
 						</div>
 						<div class="stat-content">
-							<span class="stat-value">{formatNumber(stats?.creditsUsed || 0)}</span>
+							<span class="stat-value">{formatNumber(stats?.creditsUsed ?? 0)}</span>
 							<span class="stat-label">Credits Used</span>
 						</div>
 					</div>
@@ -285,7 +296,7 @@
 							</svg>
 						</div>
 						<div class="stat-content">
-							<span class="stat-value">${formatNumber(stats?.revenue || 0)}</span>
+							<span class="stat-value">${formatNumber(stats?.revenue ?? 0)}</span>
 							<span class="stat-label">Revenue</span>
 						</div>
 					</div>
@@ -335,7 +346,13 @@
 											<Button variant="ghost" size="sm">Edit</Button>
 										</td>
 									</tr>
-								{/each}
+								{:else}
+								<tr>
+									<td colspan="6" class="empty-state">
+										<p>No users found</p>
+									</td>
+								</tr>
+							{/each}
 							</tbody>
 						</table>
 					</div>
@@ -606,6 +623,16 @@
 	.role-badge.admin {
 		background: var(--color-primary-100);
 		color: var(--color-primary-700);
+	}
+
+	.empty-state {
+		text-align: center;
+		padding: 3rem 1rem;
+		color: var(--color-text-whisper);
+	}
+
+	.empty-state p {
+		font-size: 0.875rem;
 	}
 
 	.placeholder-content {
