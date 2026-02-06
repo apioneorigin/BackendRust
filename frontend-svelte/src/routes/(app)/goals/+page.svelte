@@ -573,17 +573,15 @@
 											{fileName}
 										</span>
 									{/each}
-									{#if discovery.fileSummary}
-										<span class="discovery-summary">{discovery.fileSummary}</span>
-									{/if}
-								</div>
-								<div class="discovery-meta">
 									<span class="meta-item">
 										<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 											<circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" />
 										</svg>
 										{discovery.goalCount} goals
 									</span>
+									{#if discovery.fileSummary}
+										<span class="discovery-summary">{discovery.fileSummary}</span>
+									{/if}
 								</div>
 							</div>
 							<button class="discovery-options-btn" on:click|stopPropagation={(e) => toggleDiscoveryMenu(e, discovery.id)} title="Options">
@@ -1138,14 +1136,6 @@
 		color: var(--color-text-whisper);
 		white-space: nowrap;
 		font-style: italic;
-	}
-
-	.discovery-meta {
-		display: flex;
-		align-items: center;
-		gap: 0.375rem;
-		font-size: 0.6875rem;
-		color: var(--color-text-whisper);
 	}
 
 	.meta-item {
