@@ -506,7 +506,8 @@
 		display: grid;
 		grid-template-columns: 100px repeat(5, 1fr);
 		grid-template-rows: 56px repeat(5, minmax(0, 1fr));
-		gap: 2px;
+		column-gap: 2px;
+		row-gap: 8px;
 		flex: 1;
 		min-height: 0;
 		overflow: hidden;
@@ -515,7 +516,8 @@
 	.compact .matrix-grid {
 		grid-template-columns: 90px repeat(5, 1fr);
 		grid-template-rows: 52px repeat(5, minmax(0, 1fr));
-		gap: 2px;
+		column-gap: 2px;
+		row-gap: 6px;
 	}
 
 	.col-header {

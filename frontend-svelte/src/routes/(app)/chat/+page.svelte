@@ -1467,7 +1467,7 @@
 		color: var(--color-accent);
 		border: 1px solid var(--color-accent);
 		border-radius: 1rem;
-		min-width: 120px;
+		white-space: nowrap;
 		justify-content: center;
 	}
 
