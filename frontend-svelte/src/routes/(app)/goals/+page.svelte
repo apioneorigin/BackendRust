@@ -64,10 +64,27 @@
 	let flashLibraryTab = false;
 	let modalPage = 0;
 	const GOALS_PER_PAGE = 6;
+	let dialogEl: HTMLDialogElement;
 
 	$: modalGoals = modalDiscovery?.goals ?? [];
 	$: totalModalPages = Math.ceil(modalGoals.length / GOALS_PER_PAGE);
 	$: visibleGoals = modalGoals.slice(modalPage * GOALS_PER_PAGE, (modalPage + 1) * GOALS_PER_PAGE);
+
+	$: if (dialogEl) {
+		if (showGoalsModal && !dialogEl.open) {
+			dialogEl.showModal();
+		} else if (!showGoalsModal && dialogEl.open) {
+			dialogEl.close();
+		}
+	}
+
+	function backdropClose(node: HTMLDialogElement) {
+		function onClick(e: MouseEvent) {
+			if (e.target === node) closeGoalsModal();
+		}
+		node.addEventListener('click', onClick);
+		return { destroy: () => node.removeEventListener('click', onClick) };
+	}
 
 	// Discovery row dropdown state
 	let activeDiscoveryMenu: string | null = null;
@@ -250,6 +267,11 @@
 		}
 	}
 
+	function handleDiscoveryRowClick(e: MouseEvent, discovery: FileGoalDiscovery) {
+		if ((e.target as HTMLElement).closest('.discovery-dropdown, .discovery-options-btn')) return;
+		openGoalsModal(discovery);
+	}
+
 	function openGoalsModal(discovery: FileGoalDiscovery) {
 		modalDiscovery = discovery;
 		modalPage = 0;
@@ -418,6 +440,8 @@
 	<title>Goal Discovery | Reality Transformer</title>
 </svelte:head>
 
+<svelte:window on:click={closeDiscoveryMenus} />
+
 <div class="goals-page">
 	<!-- Page header -->
 	<header class="page-header">
@@ -563,10 +587,9 @@
 					<p>Upload files above to discover goals from your data</p>
 				</div>
 			{:else}
-				<!-- svelte-ignore a11y-click-events-have-key-events -->
-				<div class="discoveries-list" on:click={closeDiscoveryMenus}>
+				<div class="discoveries-list">
 					{#each discoveries as discovery (discovery.id)}
-						<div class="discovery-row" on:click={() => openGoalsModal(discovery)} role="button" tabindex="0" on:keydown={(e) => e.key === 'Enter' && openGoalsModal(discovery)}>
+						<div class="discovery-row" on:click={(e) => handleDiscoveryRowClick(e, discovery)} role="button" tabindex="0" on:keydown={(e) => e.key === 'Enter' && openGoalsModal(discovery)}>
 							<span class="discovery-title">
 								<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 									<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
@@ -584,8 +607,7 @@
 								</svg>
 							</button>
 							{#if activeDiscoveryMenu === discovery.id}
-								<!-- svelte-ignore a11y-click-events-have-key-events -->
-								<div class="discovery-dropdown" on:click|stopPropagation role="menu">
+								<div class="discovery-dropdown" role="menu" tabindex="-1">
 									<button class="dropdown-item" on:click={(e) => shareDiscovery(e, discovery.id)}>
 										<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 											<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
@@ -670,9 +692,9 @@
 </div>
 
 <!-- Goals Modal -->
-{#if showGoalsModal && modalDiscovery}
-	<div class="modal-overlay" on:click={closeGoalsModal} on:keydown={(e) => e.key === 'Escape' && closeGoalsModal()} role="dialog" tabindex="-1">
-		<div class="modal-content" on:click|stopPropagation role="document">
+<dialog class="modal-overlay" bind:this={dialogEl} on:close={closeGoalsModal} use:backdropClose>
+	{#if modalDiscovery}
+		<div class="modal-content">
 			<div class="modal-header">
 				<div class="modal-header-row">
 					<h2>Discovered Goals</h2>
@@ -755,8 +777,8 @@
 				</div>
 			{/if}
 		</div>
-	</div>
-{/if}
+	{/if}
+</dialog>
 
 <ConfirmDialog
 	bind:open={showDeleteDiscoveryConfirm}
@@ -1120,7 +1142,7 @@
 		flex: 1;
 		min-width: 0;
 		display: flex;
-		align-items: baseline;
+		align-items: center;
 		gap: 0.375rem;
 		font-size: 13px;
 		font-weight: 400;
@@ -1450,15 +1472,28 @@
 
 	/* Modal */
 	.modal-overlay {
+		border: none;
+		padding: 0.75rem;
+		background: transparent;
 		position: fixed;
 		inset: 0;
-		background: rgba(0, 0, 0, 0.5);
+		width: 100%;
+		height: 100%;
+		max-width: 100%;
+		max-height: 100%;
+		margin: 0;
+		z-index: 1000;
+		animation: fadeIn 0.15s ease;
+	}
+
+	.modal-overlay[open] {
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		z-index: 1000;
-		padding: 0.75rem;
-		animation: fadeIn 0.15s ease;
+	}
+
+	.modal-overlay::backdrop {
+		background: rgba(0, 0, 0, 0.5);
 	}
 
 	.modal-content {
