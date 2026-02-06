@@ -8,6 +8,27 @@
 
 	let isLoading = false;
 	let passwordError = '';
+
+	const handleSubmit: import('@sveltejs/kit').SubmitFunction = ({ cancel }) => {
+		const pwd = (document.getElementById('password') as HTMLInputElement)?.value;
+		const confirmVal = (document.getElementById('confirmPassword') as HTMLInputElement)?.value;
+		if (pwd !== confirmVal) {
+			passwordError = 'Passwords do not match';
+			cancel();
+			return;
+		}
+		if (pwd.length < 8) {
+			passwordError = 'Password must be at least 8 characters';
+			cancel();
+			return;
+		}
+		passwordError = '';
+		isLoading = true;
+		return async ({ update }) => {
+			await update();
+			isLoading = false;
+		};
+	};
 </script>
 
 <svelte:head>
@@ -43,24 +64,7 @@
 		<form
 			method="POST"
 			class="auth-form"
-			use:enhance={() => {
-				const pwd = (document.getElementById('password') as HTMLInputElement)?.value;
-				const confirm = (document.getElementById('confirmPassword') as HTMLInputElement)?.value;
-				if (pwd !== confirm) {
-					passwordError = 'Passwords do not match';
-					return ({ cancel }: { cancel: () => void }) => cancel();
-				}
-				if (pwd.length < 8) {
-					passwordError = 'Password must be at least 8 characters';
-					return ({ cancel }: { cancel: () => void }) => cancel();
-				}
-				passwordError = '';
-				isLoading = true;
-				return async ({ update }) => {
-					await update();
-					isLoading = false;
-				};
-			}}
+			use:enhance={handleSubmit}
 		>
 			{#if form?.error}
 				<div class="error-message" role="alert">
