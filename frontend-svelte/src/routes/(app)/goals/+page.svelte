@@ -630,14 +630,14 @@
 	<div class="modal-overlay" on:click={closeGoalsModal} on:keydown={(e) => e.key === 'Escape' && closeGoalsModal()} role="dialog" tabindex="-1">
 		<div class="modal-content" on:click|stopPropagation role="document">
 			<div class="modal-header">
-				<div class="modal-title-section">
+				<div class="modal-header-row">
 					<h2>Discovered Goals</h2>
-					<div class="modal-file-tags">
-						{#each modalDiscovery.fileNames as fileName}
-							<span class="file-badge">{fileName}</span>
-						{/each}
-						<span class="meta-item modal-date">{formatDate(modalDiscovery.createdAt)}</span>
-					</div>
+					<span class="modal-header-sep">|</span>
+					{#each modalDiscovery.fileNames as fileName}
+						<span class="file-badge">{fileName}</span>
+					{/each}
+					<span class="modal-header-sep">|</span>
+					<span class="modal-date">{formatDate(modalDiscovery.createdAt)}</span>
 				</div>
 				<button class="modal-close" on:click={closeGoalsModal}>
 					<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -660,11 +660,6 @@
 							</div>
 							<h3 class="goal-identity">{g.identity}</h3>
 							<p class="goal-first-move">{g.firstMove}</p>
-							<div class="goal-sources">
-								{#each g.sourceFiles || [] as source}
-									<span class="source-badge">{source}</span>
-								{/each}
-							</div>
 							<div class="goal-actions">
 								<button
 									class="action-btn save-btn"
@@ -1148,10 +1143,6 @@
 		padding-top: 0.375rem;
 	}
 
-	.modal-goals-grid .goal-sources {
-		margin-top: auto;
-	}
-
 	.goal-card {
 		padding: 1.25rem;
 		display: flex;
@@ -1381,23 +1372,32 @@
 		flex-shrink: 0;
 	}
 
-	.modal-title-section h2 {
+	.modal-header-row {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		flex: 1;
+		min-width: 0;
+	}
+
+	.modal-header-row h2 {
 		font-size: 1.125rem;
 		font-weight: 600;
 		color: var(--color-text-source);
-		margin-bottom: 0.25rem;
+		white-space: nowrap;
+		margin: 0;
 	}
 
-	.modal-file-tags {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 0.375rem;
+	.modal-header-sep {
+		color: var(--color-veil-soft);
+		font-size: 0.875rem;
+		flex-shrink: 0;
 	}
 
 	.modal-date {
 		color: var(--color-text-hint);
-		font-size: 0.6875rem;
+		font-size: 0.75rem;
+		white-space: nowrap;
 	}
 
 	.modal-close {
