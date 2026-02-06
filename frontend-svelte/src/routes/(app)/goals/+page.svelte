@@ -414,6 +414,8 @@
 	}
 </script>
 
+<svelte:window on:click={closeDiscoveryMenus} />
+
 <svelte:head>
 	<title>Goal Discovery | Reality Transformer</title>
 </svelte:head>
@@ -556,8 +558,7 @@
 					<p>Upload files above to discover goals from your data</p>
 				</div>
 			{:else}
-				<!-- svelte-ignore a11y-click-events-have-key-events -->
-				<div class="discoveries-list" on:click={closeDiscoveryMenus}>
+				<div class="discoveries-list">
 					{#each discoveries as discovery (discovery.id)}
 						<div class="discovery-row" on:click={() => openGoalsModal(discovery)} role="button" tabindex="0" on:keydown={(e) => e.key === 'Enter' && openGoalsModal(discovery)}>
 							<span class="discovery-title">
@@ -577,8 +578,7 @@
 								</svg>
 							</button>
 							{#if activeDiscoveryMenu === discovery.id}
-								<!-- svelte-ignore a11y-click-events-have-key-events -->
-								<div class="discovery-dropdown" on:click|stopPropagation role="menu">
+																<div class="discovery-dropdown" on:click|stopPropagation on:keydown|stopPropagation role="menu" tabindex="-1">
 									<button class="dropdown-item" on:click={(e) => shareDiscovery(e, discovery.id)}>
 										<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 											<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
@@ -664,8 +664,9 @@
 
 <!-- Goals Modal -->
 {#if showGoalsModal && modalDiscovery}
-	<div class="modal-overlay" on:click={closeGoalsModal} on:keydown={(e) => e.key === 'Escape' && closeGoalsModal()} role="dialog" tabindex="-1">
-		<div class="modal-content" on:click|stopPropagation role="document">
+	<dialog class="modal-overlay" open on:close={closeGoalsModal} on:cancel|preventDefault={closeGoalsModal}>
+		<button class="modal-backdrop" type="button" on:click={closeGoalsModal} aria-label="Close modal"></button>
+		<div class="modal-content">
 			<div class="modal-header">
 				<div class="modal-header-row">
 					<h2>Discovered Goals</h2>
@@ -748,7 +749,7 @@
 				</div>
 			{/if}
 		</div>
-	</div>
+	</dialog>
 {/if}
 
 <ConfirmDialog
@@ -1435,11 +1436,17 @@
 		margin-bottom: 1.25rem;
 	}
 
-	/* Modal */
+	/* Modal — native <dialog> */
 	.modal-overlay {
 		position: fixed;
 		inset: 0;
-		background: rgba(0, 0, 0, 0.5);
+		margin: 0;
+		border: none;
+		background: transparent;
+		width: 100%;
+		height: 100%;
+		max-width: 100%;
+		max-height: 100%;
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -1448,7 +1455,19 @@
 		animation: fadeIn 0.15s ease;
 	}
 
+	.modal-backdrop {
+		position: fixed;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.5);
+		border: none;
+		padding: 0;
+		cursor: default;
+		z-index: 0;
+	}
+
 	.modal-content {
+		position: relative;
+		z-index: 1;
 		background: var(--color-field-surface);
 		border-radius: 0.75rem;
 		width: 100%;
