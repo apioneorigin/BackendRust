@@ -74,17 +74,23 @@
 	let deleteGoalFromDiscoveryInfo: { discoveryId: string; goalId: string } | null = null;
 
 	const goalTypeColors: Record<string, string> = {
-		OPTIMIZE: 'type-optimize',
-		TRANSFORM: 'type-transform',
-		DISCOVER: 'type-discover',
-		QUANTUM: 'type-quantum',
-		HIDDEN: 'type-hidden',
-		INTEGRATION: 'type-integration',
-		DIFFERENTIATION: 'type-differentiation',
-		ANTI_SILOING: 'type-anti-siloing',
-		SYNTHESIS: 'type-synthesis',
-		RECONCILIATION: 'type-reconciliation',
-		ARBITRAGE: 'type-arbitrage'
+		OPTIMIZE: 'type-action',
+		BUILD: 'type-action',
+		LEVERAGE: 'type-action',
+		DISCOVER: 'type-insight',
+		HIDDEN: 'type-insight',
+		QUANTUM: 'type-insight',
+		TRANSFORM: 'type-change',
+		RESOLVE: 'type-change',
+		RELEASE: 'type-change',
+		PROTECT: 'type-shield',
+		ALIGN: 'type-shield',
+		INTEGRATION: 'type-systems',
+		DIFFERENTIATION: 'type-systems',
+		ANTI_SILOING: 'type-systems',
+		SYNTHESIS: 'type-systems',
+		RECONCILIATION: 'type-systems',
+		ARBITRAGE: 'type-systems'
 	};
 
 	onMount(async () => {
@@ -1187,11 +1193,11 @@
 
 	.goal-type {
 		font-size: 0.625rem;
-		font-weight: 600;
+		font-weight: 500;
 		padding: 0.1875rem 0.5rem;
 		border-radius: 9999px;
 		text-transform: uppercase;
-		letter-spacing: 0.025em;
+		letter-spacing: 0.05em;
 	}
 
 	.goal-confidence {
@@ -1215,19 +1221,13 @@
 	.confidence-medium { color: #ca8a04; }
 	.confidence-low { color: #dc2626; }
 
-	/* Goal type colors */
-	.type-optimize { background: #dcfce7; color: #15803d; }
-	.type-transform { background: #dbeafe; color: #1d4ed8; }
-	.type-discover { background: #f3e8ff; color: #7c3aed; }
-	.type-quantum { background: #fef9c3; color: #a16207; }
-	.type-hidden { background: #fee2e2; color: #b91c1c; }
-	.type-integration { background: #cffafe; color: #0e7490; }
-	.type-differentiation { background: #ffedd5; color: #c2410c; }
-	.type-anti-siloing { background: #fce7f3; color: #be185d; }
-	.type-synthesis { background: #e0e7ff; color: #4338ca; }
-	.type-reconciliation { background: #ccfbf1; color: #0f766e; }
-	.type-arbitrage { background: #fef3c7; color: #b45309; }
-	.type-default { background: #f3f4f6; color: #374151; }
+	/* Goal type colors — 5 semantic groups */
+	.type-action { background: #f1f5f9; color: #475569; }
+	.type-insight { background: #eef2ff; color: #3730a3; }
+	.type-change { background: #fefce8; color: #854d0e; }
+	.type-shield { background: #ecfdf5; color: #065f46; }
+	.type-systems { background: #f0fdfa; color: #115e59; }
+	.type-default { background: #f9fafb; color: #6b7280; }
 
 	.goal-identity {
 		font-size: 0.9375rem;
