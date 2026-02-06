@@ -294,8 +294,9 @@
 		removeGoalId = null;
 	}
 
-	function deleteGoalFromDiscovery(discoveryId: string, goalId: string) {
-		deleteGoalFromDiscoveryInfo = { discoveryId, goalId };
+	function deleteGoalFromDiscovery(goalId: string) {
+		if (!modalDiscovery) return;
+		deleteGoalFromDiscoveryInfo = { discoveryId: modalDiscovery.id, goalId };
 		showDeleteGoalFromDiscoveryConfirm = true;
 	}
 
@@ -688,7 +689,7 @@
 									</svg>
 									Chat
 								</button>
-								<button class="action-btn remove-btn" on:click={() => deleteGoalFromDiscovery(modalDiscovery.id, g.id)} title="Delete goal">
+								<button class="action-btn remove-btn" on:click={() => deleteGoalFromDiscovery(g.id)} title="Delete goal">
 									<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 										<path d="M3 6h18" />
 										<path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
