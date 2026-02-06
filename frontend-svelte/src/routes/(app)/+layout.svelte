@@ -240,11 +240,11 @@
 				{/if}
 				<div class="conversations-list">
 					{#each $conversations as conversation (conversation.id)}
-						<div class="conversation-row" class:active={$currentConversation?.id === conversation.id}>
+						<div class="conversation-row" class:active={$page.url.pathname.startsWith('/chat') && $currentConversation?.id === conversation.id}>
 							<button
 								type="button"
 								class="conversation-item"
-								class:active={$currentConversation?.id === conversation.id}
+								class:active={$page.url.pathname.startsWith('/chat') && $currentConversation?.id === conversation.id}
 								disabled={isSelectingConversation}
 								on:click|preventDefault|stopPropagation={() => handleSelectConversation(conversation.id)}
 								title={conversation.title || 'New Chat'}
