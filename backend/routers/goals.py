@@ -173,22 +173,39 @@ _SIGNAL_CATEGORIES = [
 ]
 
 
-def _find_key_recursive(d: Dict[str, Any], target: str, max_depth: int = 3) -> Any:
-    """Search for a key in nested dicts up to max_depth levels."""
-    if target in d:
-        return d[target]
-    if max_depth <= 0:
-        return None
-    for val in d.values():
-        if isinstance(val, dict):
-            found = _find_key_recursive(val, target, max_depth - 1)
-            if found is not None:
-                return found
-    return None
+def normalize_call1_output(raw: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Normalize Call 1 LLM output to the flat schema the backend expects.
 
+    The LLM prompt asks for a nested structure:
+        { signal_extraction: { metrics: [...], ... },
+          consciousness_extraction: { core_operators: { observations: [...] }, s_level: ... },
+          cross_mapping: [...] }
 
-def _extract_signals_from_dict(sig_ext: Dict[str, Any]) -> list:
-    """Extract signal arrays from a signal_extraction dict."""
+    The backend expects a flat structure:
+        { signals: [...], observations: [...], s_level: ..., cross_mapping: [...], file_metadata: ... }
+
+    If the output is already flat (has top-level "signals"), return as-is.
+    """
+    # Already in flat format — nothing to do
+    if "signals" in raw:
+        api_logger.info(f"[GOAL DISCOVERY] normalize: already flat, {len(raw['signals'])} signals")
+        return raw
+
+    sig_ext = raw.get("signal_extraction")
+    if not isinstance(sig_ext, dict):
+        api_logger.error(
+            f"[GOAL DISCOVERY] normalize: MISSING signal_extraction. "
+            f"Top-level keys={list(raw.keys())}, "
+            f"signal_extraction type={type(sig_ext).__name__}"
+        )
+        return raw
+
+    api_logger.info(f"[GOAL DISCOVERY] normalize: signal_extraction keys={list(sig_ext.keys())[:15]}")
+
+    # Flatten all signal category arrays into one list.
+    # Check known categories first, then sweep ALL remaining keys so that
+    # image-derived or model-invented categories are never silently dropped.
     signals = []
     seen_keys: set = set()
     for cat in _SIGNAL_CATEGORIES:
@@ -209,78 +226,24 @@ def _extract_signals_from_dict(sig_ext: Dict[str, Any]) -> list:
                 if isinstance(sig, dict) and "category" not in sig:
                     sig["category"] = key
                 signals.append(sig)
-    return signals
 
-
-def normalize_call1_output(raw: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Normalize Call 1 LLM output to the flat schema the backend expects.
-
-    The LLM prompt asks for a nested structure:
-        { signal_extraction: { metrics: [...], ... },
-          consciousness_extraction: { core_operators: { observations: [...] }, s_level: ... },
-          cross_mapping: [...] }
-
-    The backend expects a flat structure:
-        { signals: [...], observations: [...], s_level: ..., cross_mapping: [...], file_metadata: ... }
-
-    Handles variant nesting (e.g. model wraps output in an extra layer).
-    """
-    # Already in flat format
-    if "signals" in raw:
-        sigs = raw["signals"]
-        if isinstance(sigs, list) and sigs:
-            api_logger.info(f"[GOAL DISCOVERY] normalize: already flat, {len(sigs)} signals")
-            return raw
-        api_logger.warning(f"[GOAL DISCOVERY] normalize: has 'signals' key but value is {type(sigs).__name__}(len={len(sigs) if isinstance(sigs, list) else '?'})")
-
-    # Standard nested path
-    sig_ext = raw.get("signal_extraction")
-    if isinstance(sig_ext, dict):
-        api_logger.info(f"[GOAL DISCOVERY] normalize: found signal_extraction at top level, keys={list(sig_ext.keys())[:10]}")
-        signals = _extract_signals_from_dict(sig_ext)
-    else:
-        # Recursive search: model may wrap output in an extra layer
-        sig_ext = _find_key_recursive(raw, "signal_extraction")
-        if isinstance(sig_ext, dict):
-            api_logger.info(f"[GOAL DISCOVERY] normalize: found signal_extraction via recursive search, keys={list(sig_ext.keys())[:10]}")
-            signals = _extract_signals_from_dict(sig_ext)
-        else:
-            api_logger.warning(
-                f"[GOAL DISCOVERY] normalize: no 'signals' or 'signal_extraction' found. "
-                f"Top-level keys: {list(raw.keys())}"
-            )
-            # Last resort: scan all top-level lists of dicts as potential signals
-            signals = []
-            for key, val in raw.items():
-                if isinstance(val, list) and val and isinstance(val[0], dict):
-                    api_logger.info(f"[GOAL DISCOVERY] normalize: harvesting {len(val)} items from top-level key '{key}'")
-                    for sig in val:
-                        if isinstance(sig, dict) and "category" not in sig:
-                            sig["category"] = key
-                        signals.append(sig)
-
-    # Extract observations — try standard path then recursive
-    cons_ext = raw.get("consciousness_extraction") or _find_key_recursive(raw, "consciousness_extraction") or {}
-    if not isinstance(cons_ext, dict):
-        cons_ext = {}
+    # Extract observations from consciousness_extraction
+    cons_ext = raw.get("consciousness_extraction") or {}
     core_ops = cons_ext.get("core_operators") or {}
     observations = core_ops.get("observations") or []
-    # Also check for observations directly under consciousness_extraction
-    if not observations:
-        observations = cons_ext.get("observations") or []
 
     # Extract s_level
     s_level_obj = cons_ext.get("s_level")
     s_level = s_level_obj
+    # If it's a dict with a "current" key, keep the dict (classifier handles both)
     if isinstance(s_level_obj, dict) and "current" in s_level_obj:
         s_level = s_level_obj
 
     result = {
         "signals": signals,
         "observations": observations,
-        "cross_mapping": raw.get("cross_mapping") or _find_key_recursive(raw, "cross_mapping") or [],
-        "file_metadata": (sig_ext or {}).get("file_summary") or (sig_ext or {}).get("domain_context") or {},
+        "cross_mapping": raw.get("cross_mapping") or [],
+        "file_metadata": sig_ext.get("file_summary") or sig_ext.get("domain_context") or {},
     }
     if s_level is not None:
         result["s_level"] = s_level
