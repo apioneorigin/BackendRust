@@ -442,8 +442,6 @@
 	<title>Goal Discovery | Reality Transformer</title>
 </svelte:head>
 
-<svelte:window on:click={closeDiscoveryMenus} />
-
 <div class="goals-page">
 	<!-- Page header -->
 	<header class="page-header">
