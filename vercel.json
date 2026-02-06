@@ -1,13 +1,5 @@
 {
   "version": 2,
   "buildCommand": "bash scripts/vercel-build.sh",
-  "outputDirectory": "frontend-svelte/.vercel/output",
-  "functions": {
-    "api/*.py": {
-      "runtime": "@vercel/python@4.3.1",
-      "maxDuration": 60,
-      "memory": 1024,
-      "includeFiles": "backend/**,LLM_Call_1.txt,LLM_Call_2.txt,Goal_Discovery_Call_1.txt,Goal_Discovery_Call_2.txt,Goal_Discovery_OOF_Reference.txt,OOF_Math.txt,OOF_Nomenclature.txt,Articulation Bridge Rules.txt,Reverse Causality Mapping Principle.txt,The Evidence Validation Principle.txt"
-    }
-  }
+  "outputDirectory": "frontend-svelte/.vercel/output"
 }
