@@ -1065,94 +1065,85 @@ Return valid JSON only. No markdown, no explanation."""
                 response_text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
                 call1_output = parse_llm_json_response(response_text, "CALL1")
 
-        if call1_output:
-            call1_output = normalize_call1_output(call1_output)
-            signal_count = len(call1_output.get("signals") or [])
-            obs_count = len(call1_output.get("observations") or [])
-            api_logger.info(f"[GOAL DISCOVERY] Call 1 complete: {signal_count} signals, {obs_count} observations")
-        else:
-            api_logger.warning("[GOAL DISCOVERY] Call 1 returned no valid JSON")
-
     except httpx.HTTPStatusError as e:
         api_logger.error(f"[GOAL DISCOVERY] Call 1 HTTP error: {e.response.status_code}")
         api_logger.error(f"[GOAL DISCOVERY] Call 1 response: {e.response.text[:1000]}")
-        call1_output = None
+        raise HTTPException(
+            status_code=502,
+            detail=f"Goal discovery failed: LLM API returned {e.response.status_code} during signal extraction"
+        )
     except Exception as e:
         api_logger.error(f"[GOAL DISCOVERY] Call 1 error: {e}")
-        call1_output = None
+        raise HTTPException(
+            status_code=500,
+            detail=f"Goal discovery failed: signal extraction error — {e}"
+        )
+
+    if not call1_output:
+        raise HTTPException(
+            status_code=500,
+            detail="Goal discovery failed: Call 1 returned no valid JSON"
+        )
+
+    call1_output = normalize_call1_output(call1_output)
+    signal_count = len(call1_output.get("signals") or [])
+    obs_count = len(call1_output.get("observations") or [])
+    api_logger.info(f"[GOAL DISCOVERY] Call 1 complete: {signal_count} signals, {obs_count} observations")
+
+    raw_signals = call1_output.get("signals") or []
+    if not raw_signals:
+        raise HTTPException(
+            status_code=500,
+            detail="Goal discovery failed: no signals could be extracted from the provided files"
+        )
 
     # =========================================================================
     # STEP 2: BACKEND OOF COMPUTATION (enrichment, not classification)
     # =========================================================================
     api_logger.info("[GOAL DISCOVERY] Step 2: Backend OOF computation")
 
-    oof_values = {}
-    raw_signals = []
+    from formulas.inference import OOFInferenceEngine
+    from formulas.operators import SHORT_TO_CANONICAL, CANONICAL_OPERATOR_NAMES
 
-    if call1_output:
-        try:
-            # Import inference engine for OOF computation
-            from formulas.inference import OOFInferenceEngine
-            from formulas.operators import SHORT_TO_CANONICAL, CANONICAL_OPERATOR_NAMES
+    inference_engine = OOFInferenceEngine()
 
-            inference_engine = OOFInferenceEngine()
+    # Extract operators from Call 1 observations
+    observations = call1_output.get("observations") or []
+    operators: Dict[str, float] = {}
+    for obs in observations:
+        var_name = obs.get("var", "")
+        value = obs.get("value")
+        if value is None:
+            continue
+        canonical = SHORT_TO_CANONICAL.get(var_name)
+        if canonical is None and var_name in CANONICAL_OPERATOR_NAMES:
+            canonical = var_name
+        if canonical:
+            try:
+                parsed = float(value) if isinstance(value, (int, float)) else float(re.search(r'-?\d+\.?\d*', str(value)).group())
+                if 0.0 <= parsed <= 1.0:
+                    operators[canonical] = parsed
+            except (TypeError, ValueError, AttributeError):
+                pass
 
-            # Extract operators from Call 1 observations
-            observations = call1_output.get("observations") or []
-            operators: Dict[str, float] = {}
-            for obs in observations:
-                var_name = obs.get("var", "")
-                value = obs.get("value")
-                if value is None:
-                    continue
-                # Map to canonical name
-                canonical = SHORT_TO_CANONICAL.get(var_name)
-                if canonical is None and var_name in CANONICAL_OPERATOR_NAMES:
-                    canonical = var_name
-                if canonical:
-                    try:
-                        parsed = float(value) if isinstance(value, (int, float)) else float(re.search(r'-?\d+\.?\d*', str(value)).group())
-                        if 0.0 <= parsed <= 1.0:
-                            operators[canonical] = parsed
-                    except (TypeError, ValueError, AttributeError):
-                        pass
+    # Parse S-level
+    s_level_raw = call1_output.get("s_level")
+    s_level = None
+    if isinstance(s_level_raw, (int, float)):
+        s_level = float(s_level_raw)
+    elif isinstance(s_level_raw, str):
+        match = re.search(r'S?(\d+\.?\d*)', s_level_raw)
+        if match:
+            s_level = float(match.group(1))
 
-            # Parse S-level
-            s_level_raw = call1_output.get("s_level")
-            s_level = None
-            if isinstance(s_level_raw, (int, float)):
-                s_level = float(s_level_raw)
-            elif isinstance(s_level_raw, str):
-                match = re.search(r'S?(\d+\.?\d*)', s_level_raw)
-                if match:
-                    s_level = float(match.group(1))
+    # Run full OOF inference
+    profile = inference_engine.calculate_full_profile(operators, s_level)
+    oof_values = inference_engine._flatten_profile(profile, {})
 
-            # Run full OOF inference
-            profile = inference_engine.calculate_full_profile(operators, s_level)
-
-            # Flatten profile to get computed values
-            oof_values = inference_engine._flatten_profile(profile, {})
-
-            api_logger.info(
-                f"[GOAL DISCOVERY] OOF computation complete: {len(operators)} operators, "
-                f"s_level={s_level}, {len(oof_values)} computed values"
-            )
-
-            # Extract raw signals for Call 2
-            raw_signals = call1_output.get("signals") or []
-
-        except Exception as e:
-            api_logger.error(f"[GOAL DISCOVERY] OOF computation error: {e}")
-            oof_values = {}
-            raw_signals = call1_output.get("signals") or []
-
-    # Fail if no signals extracted
-    if not raw_signals:
-        api_logger.error("[GOAL DISCOVERY] No signals extracted from files")
-        raise HTTPException(
-            status_code=500,
-            detail="Goal discovery failed: no signals could be extracted from the provided files"
-        )
+    api_logger.info(
+        f"[GOAL DISCOVERY] OOF computation complete: {len(operators)} operators, "
+        f"s_level={s_level}, {len(oof_values)} computed values"
+    )
 
     # =========================================================================
     # STEP 2.5: GOAL CLASSIFICATION (backend-driven type assignment)
@@ -1316,29 +1307,34 @@ Return valid JSON with a "goals" array containing all skeletons with your 6 fiel
                 response_text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
                 articulated_goals = parse_llm_json_response(response_text, "CALL2")
 
-        if articulated_goals:
-            goals_list = articulated_goals.get("goals", [])
-            api_logger.info(f"[GOAL DISCOVERY] Call 2 complete: {len(goals_list)} articulated goals")
-        else:
-            api_logger.warning("[GOAL DISCOVERY] Call 2 returned no valid JSON")
-
     except httpx.HTTPStatusError as e:
         api_logger.error(f"[GOAL DISCOVERY] Call 2 HTTP error: {e.response.status_code}")
-        articulated_goals = None
+        raise HTTPException(
+            status_code=502,
+            detail=f"Goal discovery failed: LLM API returned {e.response.status_code} during goal articulation"
+        )
     except Exception as e:
         api_logger.error(f"[GOAL DISCOVERY] Call 2 error: {e}")
-        articulated_goals = None
+        raise HTTPException(
+            status_code=500,
+            detail=f"Goal discovery failed: goal articulation error — {e}"
+        )
+
+    if not articulated_goals:
+        raise HTTPException(
+            status_code=500,
+            detail="Goal discovery failed: Call 2 returned no valid JSON"
+        )
 
     # =========================================================================
     # STEP 4: POST-FILTER AND RETURN
     # =========================================================================
     api_logger.info("[GOAL DISCOVERY] Step 4: Post-filter and return")
 
-    # Get generated goals directly from Call 2
-    generated_goals = articulated_goals.get("goals", []) if articulated_goals else []
+    generated_goals = articulated_goals.get("goals", [])
+    api_logger.info(f"[GOAL DISCOVERY] Call 2 complete: {len(generated_goals)} articulated goals")
 
     if not generated_goals:
-        api_logger.error("[GOAL DISCOVERY] Call 2 returned no goals")
         raise HTTPException(
             status_code=500,
             detail="Goal discovery failed: no goals were generated"
