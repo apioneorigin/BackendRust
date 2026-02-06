@@ -9,9 +9,9 @@
 		id: string;
 		type: string;
 		identity: string;
-		goalStatement: string;
+		goalStatement?: string;
 		goal_statement?: string;
-		articulation: string;
+		articulation?: string;
 		firstMove: string;
 		first_move?: string;
 		confidence: number;

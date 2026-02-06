@@ -559,37 +559,37 @@ async def send_message(
                 documents = structured_data.get("documents", [])
                 api_logger.info(f"[CHAT SAVE] documents count: {len(documents)}")
 
-                # Update doc-0 with latest context on every response
-                # Additional docs are added via Control Popup [+] button
+                # Merge incoming documents with existing: update matching IDs, preserve the rest
                 if documents:
                     existing_docs = conv.generated_documents or []
-                    new_doc = documents[0] if documents else None
 
-                    if new_doc:
-                        if len(existing_docs) == 0:
-                            # First response - save doc-0
-                            conv.generated_documents = [new_doc]
-                        else:
-                            # Update doc-0 with new labels/titles, preserve user-generated data
-                            updated_docs = existing_docs.copy()
-                            # Update doc-0's matrix_data (row/col labels, titles, selected indices)
-                            # but preserve any generated cells, insights, powerspots, etc.
-                            if updated_docs[0].get("id") == "doc-0":
-                                old_matrix = updated_docs[0].get("matrix_data", {})
-                                new_matrix = new_doc.get("matrix_data", {})
+                    if len(existing_docs) == 0:
+                        # First response - save all incoming documents
+                        conv.generated_documents = documents
+                    else:
+                        # Merge: update existing docs that match by ID, preserve user-added docs
+                        incoming_by_id = {d.get("id"): d for d in documents}
+                        updated_docs = []
+                        for existing in existing_docs:
+                            incoming = incoming_by_id.pop(existing.get("id"), None)
+                            if incoming:
+                                # Update labels/titles from LLM, preserve generated cells/insights
+                                old_matrix = existing.get("matrix_data", {})
+                                new_matrix = incoming.get("matrix_data", {})
+                                existing["name"] = incoming.get("name", existing.get("name"))
+                                if old_matrix and new_matrix:
+                                    old_matrix["row_options"] = new_matrix.get("row_options", old_matrix.get("row_options", []))
+                                    old_matrix["column_options"] = new_matrix.get("column_options", old_matrix.get("column_options", []))
+                                    old_matrix["selected_rows"] = new_matrix.get("selected_rows", old_matrix.get("selected_rows", [0, 1, 2, 3, 4]))
+                                    old_matrix["selected_columns"] = new_matrix.get("selected_columns", old_matrix.get("selected_columns", [0, 1, 2, 3, 4]))
+                            updated_docs.append(existing)
+                        # Append any new docs from LLM that don't exist yet
+                        for doc in incoming_by_id.values():
+                            updated_docs.append(doc)
+                        conv.generated_documents = updated_docs
 
-                                # Update labels and titles, keep generated data
-                                updated_docs[0]["name"] = new_doc.get("name", updated_docs[0].get("name"))
-                                updated_docs[0]["matrix_data"]["row_options"] = new_matrix.get("row_options", old_matrix.get("row_options", []))
-                                updated_docs[0]["matrix_data"]["column_options"] = new_matrix.get("column_options", old_matrix.get("column_options", []))
-                                updated_docs[0]["matrix_data"]["selected_rows"] = new_matrix.get("selected_rows", old_matrix.get("selected_rows", [0,1,2,3,4]))
-                                updated_docs[0]["matrix_data"]["selected_columns"] = new_matrix.get("selected_columns", old_matrix.get("selected_columns", [0,1,2,3,4]))
-                                # Note: cells, leverage_points, etc. are preserved from existing
-
-                            conv.generated_documents = updated_docs
-
-                        flag_modified(conv, "generated_documents")
-                        api_logger.info(f"[CHAT SAVE] Updated generated_documents for conv {conversation_id}")
+                    flag_modified(conv, "generated_documents")
+                    api_logger.info(f"[CHAT SAVE] Updated generated_documents for conv {conversation_id}")
 
                 if structured_data.get("presets"):
                     conv.generated_presets = structured_data["presets"]
