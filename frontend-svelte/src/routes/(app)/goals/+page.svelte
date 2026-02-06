@@ -66,9 +66,6 @@
 	let deleteDiscoveryId: string | null = null;
 	let showRemoveGoalConfirm = false;
 	let removeGoalId: string | null = null;
-	let showDeleteGoalConfirm = false;
-	let deleteGoalDiscoveryId: string | null = null;
-	let deleteGoalId: string | null = null;
 
 	const goalTypeColors: Record<string, string> = {
 		OPTIMIZE: 'type-optimize',
@@ -240,47 +237,6 @@
 		deleteDiscoveryId = null;
 	}
 
-	function deleteGoalFromDiscovery(discoveryId: string, goalId: string) {
-		deleteGoalDiscoveryId = discoveryId;
-		deleteGoalId = goalId;
-		showDeleteGoalConfirm = true;
-	}
-
-	async function confirmDeleteGoal() {
-		if (!deleteGoalDiscoveryId || !deleteGoalId) return;
-		try {
-			const result = await api.delete<{ remaining: number }>(`/api/goal-discoveries/${deleteGoalDiscoveryId}/goals/${deleteGoalId}`);
-			if (result.remaining === 0) {
-				discoveries = discoveries.filter((d) => d.id !== deleteGoalDiscoveryId);
-				closeGoalsModal();
-				addToast('success', 'Goal removed (discovery empty, deleted)');
-			} else {
-				discoveries = discoveries.map((d) => {
-					if (d.id !== deleteGoalDiscoveryId) return d;
-					return {
-						...d,
-						goals: d.goals.filter((g) => g.id !== deleteGoalId),
-						goalCount: result.remaining
-					};
-				});
-				if (modalDiscovery?.id === deleteGoalDiscoveryId) {
-					modalDiscovery = discoveries.find((d) => d.id === deleteGoalDiscoveryId) || null;
-				}
-				addToast('success', 'Goal removed');
-			}
-		} catch (error) {
-			addToast('error', 'Failed to remove goal');
-		} finally {
-			deleteGoalDiscoveryId = null;
-			deleteGoalId = null;
-		}
-	}
-
-	function cancelDeleteGoal() {
-		deleteGoalDiscoveryId = null;
-		deleteGoalId = null;
-	}
-
 	function normalizeGoal(goal: DiscoveredGoal): DiscoveredGoal {
 		return {
 			...goal,
@@ -335,7 +291,7 @@
 		try {
 			const conversation = await api.post<{ id: string }>('/api/chat/conversations', {
 				title: g.identity,
-				context: `Goal: ${g.identity}\n\nFirst Move: ${g.firstMove}\n\nType: ${g.type}\nConfidence: ${formatConfidence(g.confidence)}`
+				context: `Goal: ${g.identity}\n\nFirst Move: ${g.firstMove}\n\nType: ${g.type}\nConfidence: ${g.confidence}%`
 			});
 			await chat.loadConversations();
 			goto(`/chat`);
@@ -350,14 +306,10 @@
 	}
 
 	function getConfidenceColor(confidence: number): string {
-		if (confidence >= 0.75) return 'confidence-high';
-		if (confidence >= 0.50) return 'confidence-good';
-		if (confidence >= 0.25) return 'confidence-medium';
+		if (confidence >= 90) return 'confidence-high';
+		if (confidence >= 70) return 'confidence-good';
+		if (confidence >= 50) return 'confidence-medium';
 		return 'confidence-low';
-	}
-
-	function formatConfidence(confidence: number): string {
-		return `${Math.round(confidence * 100)}%`;
 	}
 
 	function formatDate(dateStr: string): string {
@@ -584,7 +536,7 @@
 									{g.type.replace('_', ' ')}
 								</span>
 								<span class="goal-confidence {getConfidenceColor(g.confidence)}">
-									{formatConfidence(g.confidence)}
+									{g.confidence}%<span class="confidence-label">confidence</span>
 								</span>
 							</div>
 							<h3 class="goal-identity">{g.identity}</h3>
@@ -648,7 +600,7 @@
 									{g.type.replace('_', ' ')}
 								</span>
 								<span class="goal-confidence {getConfidenceColor(g.confidence)}">
-									{formatConfidence(g.confidence)}
+									{g.confidence}%<span class="confidence-label">confidence</span>
 								</span>
 							</div>
 							<h3 class="goal-identity">{g.identity}</h3>
@@ -682,14 +634,6 @@
 									</svg>
 									Start Chat
 								</button>
-								<button class="action-btn remove-btn" on:click={() => deleteGoalFromDiscovery(modalDiscovery.id, g.id)}>
-									<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-										<path d="M3 6h18" />
-										<path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-										<path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-									</svg>
-									Delete
-								</button>
 							</div>
 						</div>
 					{/each}
@@ -717,16 +661,6 @@
 	variant="danger"
 	on:confirm={confirmRemoveFromInventory}
 	on:cancel={cancelRemoveFromInventory}
-/>
-
-<ConfirmDialog
-	bind:open={showDeleteGoalConfirm}
-	title="Delete Goal"
-	message="Are you sure you want to delete this goal from the discovery?"
-	confirmText="Delete"
-	variant="danger"
-	on:confirm={confirmDeleteGoal}
-	on:cancel={cancelDeleteGoal}
 />
 
 <style>
@@ -1109,6 +1043,16 @@
 	.goal-confidence {
 		font-size: 0.75rem;
 		font-weight: 600;
+		display: flex;
+		align-items: baseline;
+		gap: 0.25rem;
+	}
+
+	.confidence-label {
+		font-size: 0.625rem;
+		font-weight: 400;
+		opacity: 0.6;
+		text-transform: lowercase;
 	}
 
 	/* Confidence colors */
