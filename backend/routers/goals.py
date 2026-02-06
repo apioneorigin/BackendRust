@@ -975,17 +975,21 @@ Return valid JSON only. No markdown, no explanation."""
     # =========================================================================
     api_logger.info("[GOAL DISCOVERY] Step 3: Call 2 - Articulation")
 
-    call2_dynamic_prompt = """You are articulating pre-classified goal skeletons.
+    call2_dynamic_prompt = """You are articulating pre-classified goal skeletons using the UGE framework.
 
 YOUR TASK:
-For each goal skeleton provided, write:
-- identity: 10-15 words describing the goal in action-oriented language
-- firstMove: 20-30 words describing the first concrete action, starting with imperative verb
+For each goal skeleton, write 6 fields:
+- goal_statement: Name the identity shift (5-15 words)
+- evidence: Point to their specific dots they can verify (40-60 words)
+- pattern: Name what the dots reveal — surprising but verifiable (30-40 words)
+- shadow: Name the fear + PRESENT cost, not future threat (40-60 words)
+- dharma: Produce self-recognition — homecoming, not arrival (40-60 words)
+- first_move: Convert dharma's recognition into imperative action (20-30 words)
 
-Use the consciousness_context to shape tone and language.
-Ground your articulation in the file summaries provided.
+Use consciousness_context to shape tone. Ground in file summaries.
+No template strings — full linguistic freedom within logical frame.
 
-Return valid JSON with a "goals" array containing all skeletons with identity and firstMove added."""
+Return valid JSON with a "goals" array containing all skeletons with these 6 fields added."""
 
     call2_user_prompt = build_call2_user_prompt(goal_skeletons, parse_result)
 
@@ -1099,9 +1103,12 @@ Return valid JSON with a "goals" array containing all skeletons with identity an
     # =========================================================================
     api_logger.info("[GOAL DISCOVERY] Step 4: Merge and return")
 
-    # Merge articulated identity/firstMove into skeletons
+    # Merge articulated UGE fields into skeletons
     final_goals = []
     articulated_list = articulated_goals.get("goals", []) if articulated_goals else []
+
+    # Required UGE fields from Call 2
+    UGE_REQUIRED_FIELDS = ["goal_statement", "evidence", "pattern", "shadow", "dharma", "first_move"]
 
     # Create lookup by type for merging
     articulated_by_type: Dict[str, List[Dict]] = {}
@@ -1115,7 +1122,7 @@ Return valid JSON with a "goals" array containing all skeletons with identity an
         goal_type = skeleton.get("type", "UNKNOWN")
         merged_goal = {**skeleton}
 
-        # Find matching articulation (LLM returns camelCase, we store snake_case)
+        # Find matching articulation
         if goal_type not in articulated_by_type or not articulated_by_type[goal_type]:
             api_logger.error(f"[GOAL DISCOVERY] No articulation found for goal type: {goal_type}")
             raise HTTPException(
@@ -1124,15 +1131,23 @@ Return valid JSON with a "goals" array containing all skeletons with identity an
             )
 
         articulated = articulated_by_type[goal_type].pop(0)
-        if not articulated.get("identity") or not articulated.get("firstMove"):
-            api_logger.error(f"[GOAL DISCOVERY] Incomplete articulation for goal type: {goal_type}")
+
+        # Validate all UGE fields present
+        missing_fields = [f for f in UGE_REQUIRED_FIELDS if not articulated.get(f)]
+        if missing_fields:
+            api_logger.error(f"[GOAL DISCOVERY] Incomplete UGE articulation for {goal_type}: missing {missing_fields}")
             raise HTTPException(
                 status_code=500,
-                detail=f"Goal articulation incomplete: missing identity or firstMove for goal type '{goal_type}'"
+                detail=f"Goal articulation incomplete: missing {missing_fields} for goal type '{goal_type}'"
             )
 
-        merged_goal["identity"] = articulated["identity"]
-        merged_goal["first_move"] = articulated["firstMove"]
+        # Add all 6 UGE fields
+        merged_goal["goal_statement"] = articulated["goal_statement"]
+        merged_goal["evidence"] = articulated["evidence"]
+        merged_goal["pattern"] = articulated["pattern"]
+        merged_goal["shadow"] = articulated["shadow"]
+        merged_goal["dharma"] = articulated["dharma"]
+        merged_goal["first_move"] = articulated["first_move"]
 
         # Add UUID and timestamp
         merged_goal["id"] = generate_id()

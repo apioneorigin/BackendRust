@@ -1,5 +1,5 @@
-# GOAL DISCOVERY CALL 2: GOAL ARTICULATION
-# ONE JOB: Write identity and firstMove for pre-classified goal skeletons
+# GOAL DISCOVERY CALL 2: UGE ARTICULATION
+# ONE JOB: Write 6-field articulation for pre-classified goal skeletons
 # Do NOT modify type, confidence, sourceFiles, or any backend fields
 
 ================================================================================
@@ -14,28 +14,57 @@ You receive pre-classified goal skeletons containing:
 - classification_reason: why this type
 - consciousness_context: matrix positions, bottlenecks, drives (optional)
 
-**YOUR JOB:** Write `identity` (10-15 words) and `firstMove` (20-30 words) for each.
+**YOUR JOB:** Write 6 fields for each skeleton:
+
+| Field | Words | Purpose |
+|-------|-------|---------|
+| goal_statement | 5-15 | Name the identity shift — who they're becoming, what they're leaving behind |
+| evidence | 40-60 | Point to their specific work/actions — undeniable dots they can verify |
+| pattern | 30-40 | Name what the evidence reveals — surprising but verifiable synthesis |
+| shadow | 40-60 | Name the specific fear + its PRESENT cost (not future threat) |
+| dharma | 40-60 | Produce self-recognition — homecoming, not arrival |
+| first_move | 20-30 | Convert dharma's recognition into concrete imperative action |
 
 ================================================================================
-SECTION 2: GOAL TYPE DEFINITIONS
+SECTION 2: FIELD PURPOSES
 ================================================================================
 
-| Type | Intent | Verbs | Articulation Pattern |
-|------|--------|-------|---------------------|
-| OPTIMIZE | Improve performance | Increase, Reduce, Accelerate | "Pushing [metric] from [current] to [target]" |
-| TRANSFORM | Fundamental change | Become, Evolve, Reinvent | "Evolving from [current] into [future]" |
-| DISCOVER | Find hidden value | Explore, Uncover, Find | "Revealing [hidden] within [domain]" |
-| PROTECT | Defend value | Secure, Defend, Preserve | "Protecting [asset] against [threat]" |
-| RESOLVE | Fix problems | Fix, Eliminate, Clear | "Clearing [obstacle] blocking [outcome]" |
-| BUILD | Create new | Create, Develop, Launch | "Building [capability] to enable [outcome]" |
-| ALIGN | Harmonize | Integrate, Unify, Synchronize | "Aligning [A] with [B]" |
-| LEVERAGE | Exploit potential | Activate, Deploy, Harness | "Activating untapped [resource]" |
-| RELEASE | Let go | Release, Stop, Abandon | "Releasing [attachment] to free [capacity]" |
-| QUANTUM | Breakthrough | Leap, Transcend, Catalyze | "Catalyzing [shift] through [mechanism]" |
-| HIDDEN | Blind spot | Surface, Face, Recognize | "Surfacing [pattern] driving [symptom]" |
+No template strings. Full linguistic freedom within the logical frame.
 
-**identity rules:** 10-15 words, action-oriented, grounded in specific signal data
-**firstMove rules:** 20-30 words, imperative verb start, ONE specific from signals
+GOAL_STATEMENT
+- Names the transformation
+- Any phrasing: statement, question, metaphor, contrast, single phrase
+- Must capture: who they're becoming AND/OR what they're leaving
+
+EVIDENCE
+- Points to THEIR actual work, not general observations
+- Specific enough they can verify each point
+- Engages memory as ally — these are their dots
+- Voice: observational, pointing, specific
+
+PATTERN
+- Names what the dots reveal when connected
+- Should NOT be obvious (or they'd have named it themselves)
+- Creates "I never saw it that way, but yes" response
+- Voice: discovery, naming what was latent, synthesizing
+
+SHADOW
+- Names the specific fear they're not naming
+- PRESENT TENSE cost — "is costing" not "will cost"
+- Makes staying still uncomfortable RIGHT NOW
+- Voice: direct but compassionate, naming not accusing
+
+DHARMA
+- Frame as recognition, not revelation
+- Shows the path was always there
+- Movement as homecoming, not journey
+- Voice: affirming what already exists, relief not effort
+
+FIRST_MOVE
+- Derived from dharma's recognition
+- Makes the insight actionable
+- Imperative verb start
+- One specific action from the signals/recognition
 
 ================================================================================
 SECTION 3: CONSCIOUSNESS-INFORMED ARTICULATION
@@ -63,54 +92,86 @@ When consciousness_context provided, use it to shape tone and language:
 - Love → connection: "deepen", "nurture", "unite"
 - Peace → harmony: "balance", "settle", "integrate"
 
-**Death Architecture → Release Hints (for TRANSFORM/RELEASE):**
-- D3 → "letting your track record speak for itself"
-- D4 → "stepping beyond the title you've outgrown"
-
 **CRITICAL:** Zero OOF terminology in output. Translate everything.
 
 ================================================================================
 SECTION 4: EXAMPLES
 ================================================================================
 
-**EXAMPLE 1: OPTIMIZE + Achievement drive**
-```json
-// Input skeleton:
-{"type": "OPTIMIZE", "supporting_signals": [{"description": "Q4 revenue $1.8M vs $2.1M target"}, {"description": "Deal cycle 127 days (was 82)"}], "confidence": 0.85, "consciousness_context": {"drive_profile": {"dominant": "achievement"}}}
+**EXAMPLE 1: HIDDEN type + Resistance bottleneck**
 
-// Output:
-{"identity": "Reclaiming the $300K gap to reassert market leadership in Q1",
- "firstMove": "Start by mapping the 127-day deal cycle bottleneck, identifying where the extra 45 days hide, then compress the three longest stages to reclaim your edge."}
+Input skeleton:
+```json
+{"type": "HIDDEN", "supporting_signals": [{"description": "Q4 revenue $1.8M vs $2.1M target"}, {"description": "Deal cycle 127 days (was 82)"}, {"description": "Win rate dropped 34% to 21%"}, {"description": "No competitor win/loss analysis"}], "confidence": 0.78, "consciousness_context": {"bottleneck_data": {"primary": "resistance", "value": 0.71}}}
 ```
 
-**EXAMPLE 2: HIDDEN + Resistance bottleneck**
+Output:
 ```json
-// Input skeleton:
-{"type": "HIDDEN", "supporting_signals": [{"description": "No competitor win/loss analysis"}, {"description": "Top performer dropped 145%→67%"}], "confidence": 0.72, "consciousness_context": {"bottleneck_data": {"primary": "resistance", "value": 0.71}}}
-
-// Output:
-{"identity": "Facing the competitive reality I've been sidestepping since market shifts began",
- "firstMove": "Acknowledge the competitor blind spot by running the win/loss analysis you've postponed, starting with Q4 losses, then letting data tell you what's happening."}
+{
+  "goal_statement": "The Mirror You've Been Avoiding",
+  "evidence": "Your Q4 numbers tell a story you haven't read yet. Revenue missed by $300K. Cycles stretched 45 days. Win rates halved. Your best closer dropped from 145% to 67%. And somewhere in the quarter, you stopped asking why competitors were winning.",
+  "pattern": "This isn't a performance problem. It's a perception problem. You've been optimizing inside a market that moved. The data knows. You've been looking away.",
+  "shadow": "The analysis you haven't run isn't missing because you're busy. It's missing because you suspect what it'll show. Every week without it, you're building strategy on a map that stopped matching the territory months ago.",
+  "dharma": "You already know the deals you're losing feel different than they used to. The question isn't whether to look—it's whether you'll look before Q1 locks in the same blind spots.",
+  "first_move": "Pull your Q4 losses into one view, read the competitor mentions you've been skipping, and let the pattern you've been sensing become visible."
+}
 ```
 
-**EXAMPLE 3: QUANTUM + Creation matrix**
-```json
-// Input skeleton:
-{"type": "QUANTUM", "supporting_signals": [{"description": "340 high-scoring SMB leads unworked"}, {"description": "94% retention (industry: 87%)"}], "confidence": 0.68, "consciousness_context": {"matrix_positions": {"creation": "Manifesting"}, "drive_profile": {"dominant": "freedom"}}}
+**EXAMPLE 2: TRANSFORM type + Freedom drive**
 
-// Output:
-{"identity": "Unlocking the SMB segment to break free from enterprise dependency",
- "firstMove": "Trigger the SMB breakthrough by activating those 340 dormant leads this week, applying retention magic to a new segment, watching a revenue stream emerge."}
+Input skeleton:
+```json
+{"type": "TRANSFORM", "supporting_signals": [{"description": "Translated 2am emotional chaos into brand content"}, {"description": "Created 'Serotonin dealer, not drug dealer' for Maggi pitch"}, {"description": "References concern about 'aging out' of Gen Z authenticity"}], "confidence": 0.82, "consciousness_context": {"drive_profile": {"dominant": "freedom"}, "matrix_positions": {"creation": "Manifesting"}}}
 ```
 
-**EXAMPLE 4: ALIGN + Low unity (multi-file)**
+Output:
 ```json
-// Input skeleton:
-{"type": "ALIGN", "supporting_signals": [{"description": "Sales targets don't match MQL projections"}, {"description": "Marketing: 500 MQLs; Sales: capacity for 200"}], "confidence": 0.77, "sourceFiles": ["sales.xlsx", "marketing.xlsx"], "consciousness_context": {"unity_metrics": {"net_unity": -0.15}}}
+{
+  "goal_statement": "Translator, Not Native",
+  "evidence": "You didn't write Gen Z content for Maggi. You translated. '2am emotional chaos' became something a corporation could purchase. 'Serotonin dealer, not drug dealer'—that's not copywriting. That's naming a transaction their team couldn't see.",
+  "pattern": "You sit between two worlds that don't understand each other. You're not a creator who 'gets' Gen Z. You're a bridge. The mess isn't your content—it's your source language.",
+  "shadow": "Growing up feels like losing your edge. If you stop living the disaster, can you still write it? Every month you stay in the mess to stay relevant, you're teaching yourself that translation requires native suffering.",
+  "dharma": "Translators don't need to be natives forever. They need to have been natives who learned to see from outside. That's exactly where you're standing. The bridge position was always the play.",
+  "first_move": "Take one piece of past chaos-content and rewrite it from distance—proving the translation works without the live wire."
+}
+```
 
-// Output:
-{"identity": "Bridging the sales-marketing divide that's been leaking opportunity",
- "firstMove": "Bring sales and marketing together with one number: the 300-lead gap between MQL projections and sales capacity. Resolve before Q2, creating shared accountability."}
+**EXAMPLE 3: ALIGN type + Multi-file + Low unity**
+
+Input skeleton:
+```json
+{"type": "ALIGN", "supporting_signals": [{"description": "Marketing projects 500 MQLs for Q2"}, {"description": "Sales capacity: 200 leads/quarter"}, {"description": "No shared definition of 'qualified'"}, {"description": "Marketing bonus: MQL volume; Sales bonus: closed revenue"}], "confidence": 0.85, "sourceFiles": ["marketing_plan.pdf", "sales_forecast.xlsx"], "consciousness_context": {"unity_metrics": {"net_unity": -0.22}}}
+```
+
+Output:
+```json
+{
+  "goal_statement": "One Number, One Team",
+  "evidence": "Marketing's plan: 500 MQLs. Sales' capacity: 200. That's not a pipeline—it's two departments optimizing different games. Marketing gets bonused on volume. Sales gets bonused on close. The 300-lead gap isn't a bug.",
+  "pattern": "You don't have a lead quality problem. You have a definition problem wearing a volume costume. 'Qualified' means different things in different rooms.",
+  "shadow": "Every quarter this runs, marketing hits their number and sales misses theirs. Both are right. Both are frustrated. The cost isn't the 300 wasted leads—it's the trust bleeding out between two teams who think they're being sabotaged.",
+  "dharma": "The fix isn't more leads or better filtering. It's one shared number that both teams own. You've known this. The question is whether you'll name it before Q2 locks in another quarter of mutual suspicion.",
+  "first_move": "Get both leads in one room with one question: what does 'qualified' mean if we're both accountable for the same outcome?"
+}
+```
+
+**EXAMPLE 4: OPTIMIZE type + Achievement drive**
+
+Input skeleton:
+```json
+{"type": "OPTIMIZE", "supporting_signals": [{"description": "Current NPS: 34"}, {"description": "Support ticket resolution: 4.2 days avg"}, {"description": "Churn concentrated in days 14-30"}, {"description": "No onboarding sequence after signup"}], "confidence": 0.81, "consciousness_context": {"drive_profile": {"dominant": "achievement"}}}
+```
+
+Output:
+```json
+{
+  "goal_statement": "The First 30 Days You're Losing",
+  "evidence": "NPS at 34. Resolution taking 4+ days. Churn spiking in the window between signup excitement and product mastery. No structured path from 'I bought this' to 'I use this daily.'",
+  "pattern": "You're not losing customers to competitors. You're losing them to confusion. The product works—they just never find out. Days 14-30 is when hope turns to doubt, and doubt turns to cancellation.",
+  "shadow": "Every new signup that churns in that window costs you more than the acquisition. You're paying to fill a bucket with a hole in it. The hole isn't the product. It's the silence after 'Welcome aboard.'",
+  "dharma": "The customers who stay figured it out despite you, not because of you. The path from signup to success already exists in their behavior—you just haven't paved it for everyone else yet.",
+  "first_move": "Map the first 30 days of your ten longest-retained customers and find the three actions they all took that your churned users didn't."
+}
 ```
 
 ================================================================================
@@ -122,23 +183,28 @@ SECTION 5: OUTPUT FORMAT
   "goals": [
     {
       ...all skeleton fields passed through unchanged...,
-      "identity": "10-15 words written by you",
-      "firstMove": "20-30 words written by you"
+      "goal_statement": "written by you",
+      "evidence": "written by you",
+      "pattern": "written by you",
+      "shadow": "written by you",
+      "dharma": "written by you",
+      "first_move": "written by you"
     }
   ]
 }
 ```
 
 ================================================================================
-CRITICAL RULES
+SECTION 6: CRITICAL RULES
 ================================================================================
 
 1. Do NOT modify backend fields (type, confidence, sourceFiles, etc.)
-2. identity = 10-15 words, action-oriented, grounded in signal data
-3. firstMove = 20-30 words, imperative verb, ONE specific from signals
-4. Framework concealment: NEVER use Maya, S-level, Karma, operator, matrix names
-5. Valid JSON only
-6. Translate bottlenecks to domain effects, never name them
+2. No template strings — full linguistic freedom within the logical frame
+3. Shadow MUST be present tense ("is costing" not "will cost")
+4. Evidence MUST be their specific dots, not generic observations
+5. first_move MUST be derived from dharma's recognition, imperative verb start
+6. Framework concealment: NEVER use Maya, S-level, Karma, operator names
+7. Valid JSON only
 
 ================================================================================
 END
