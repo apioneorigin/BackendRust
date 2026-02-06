@@ -56,6 +56,7 @@
 	let isLoading = true;
 	let activeTab: 'discover' | 'saved' = 'discover';
 	let dragOver = false;
+	let webSearchEnabled = true; // Web search enriches signals with real-world data
 
 	// Modal state
 	let showGoalsModal = false;
@@ -191,7 +192,8 @@
 		try {
 			await api.post('/api/goals/discover-from-files', {
 				files: uploadedFiles,
-				existing_goals: []
+				existing_goals: [],
+				web_search: webSearchEnabled
 			}, { timeout: 300000 });
 			addToast('success', 'Goals discovered and saved');
 			uploadedFiles = [];
@@ -420,6 +422,15 @@
 				{/if}
 			</div>
 			<div class="upload-bar-actions">
+				<label class="web-search-toggle" title="Enrich with real-world data: benchmarks, trends, comparables">
+					<input type="checkbox" bind:checked={webSearchEnabled} />
+					<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<circle cx="12" cy="12" r="10" />
+						<path d="M2 12h20" />
+						<path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+					</svg>
+					<span>Web Search</span>
+				</label>
 				<label for="file-input" class="browse-btn">
 					<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 						<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -435,7 +446,7 @@
 				>
 					{#if isDiscovering}
 						<Spinner size="sm" />
-						Analyzing...
+						{webSearchEnabled ? 'Researching...' : 'Analyzing...'}
 					{:else}
 						<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 							<circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" />
@@ -892,6 +903,46 @@
 	.discover-btn:disabled {
 		opacity: 0.5;
 		cursor: not-allowed;
+	}
+
+	/* Web search toggle */
+	.web-search-toggle {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.375rem;
+		padding: 0.375rem 0.625rem;
+		background: var(--color-field-depth);
+		border: 1px solid var(--color-veil-soft);
+		border-radius: 0.375rem;
+		font-size: 0.75rem;
+		font-weight: 500;
+		color: var(--color-text-manifest);
+		cursor: pointer;
+		transition: all 0.15s ease;
+		user-select: none;
+	}
+
+	.web-search-toggle:hover {
+		background: var(--color-veil-thin);
+	}
+
+	.web-search-toggle input[type="checkbox"] {
+		display: none;
+	}
+
+	.web-search-toggle:has(input:checked) {
+		background: var(--color-primary-50);
+		border-color: var(--color-primary-400);
+		color: var(--color-primary-600);
+	}
+
+	.web-search-toggle:has(input:checked) svg {
+		color: var(--color-primary-500);
+	}
+
+	.web-search-toggle svg {
+		color: var(--color-text-whisper);
+		transition: color 0.15s ease;
 	}
 
 	.hidden {
