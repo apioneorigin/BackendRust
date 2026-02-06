@@ -729,7 +729,7 @@ class GoalClassifier:
                 cross_validation * 0.20
             )
 
-            candidate["confidence"] = confidence
+            candidate["confidence"] = round(confidence * 100, 2)
             candidate["confidence_breakdown"] = {
                 "signal_quality": signal_quality,
                 "consciousness_support": consciousness_support,
