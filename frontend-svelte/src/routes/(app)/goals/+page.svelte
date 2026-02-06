@@ -486,6 +486,17 @@
 				class="hidden"
 			/>
 			<div class="upload-bar-left">
+				<span class="upload-hint">
+					{#if dragOver}
+						Drop files here
+					{:else if uploadedFiles.length === 0}
+						Drag files here or click browse
+					{:else}
+						{uploadedFiles.length} file{uploadedFiles.length > 1 ? 's' : ''} ready
+					{/if}
+				</span>
+			</div>
+			<div class="upload-bar-actions">
 				{#if uploadedFiles.length > 0}
 					<div class="staged-files">
 						{#each uploadedFiles as file (file.name)}
@@ -503,13 +514,7 @@
 							</span>
 						{/each}
 					</div>
-				{:else}
-					<span class="upload-hint">
-						{dragOver ? 'Drop files here' : 'Drag files here or click browse'}
-					</span>
 				{/if}
-			</div>
-			<div class="upload-bar-actions">
 				<label for="file-input" class="browse-btn">
 					<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 						<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -955,6 +960,9 @@
 		display: flex;
 		flex-wrap: wrap;
 		gap: 0.375rem;
+		padding-right: 0.5rem;
+		border-right: 1px solid var(--color-veil-thin);
+		margin-right: 0.125rem;
 	}
 
 	.file-tag {
@@ -994,7 +1002,9 @@
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
-		flex-shrink: 0;
+		flex-shrink: 1;
+		flex-wrap: wrap;
+		justify-content: flex-end;
 	}
 
 	.browse-btn {
