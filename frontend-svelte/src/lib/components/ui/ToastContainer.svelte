@@ -76,31 +76,52 @@
 		align-items: center;
 		gap: 12px;
 		padding: 12px 16px;
-		border-radius: 12px;
+		border-radius: 8px;
 		box-shadow: var(--shadow-lg);
 		min-width: 280px;
 		max-width: 400px;
-		color: #ffffff;
+		background: var(--color-field-surface);
+		border: 1px solid var(--color-veil-thin);
+		border-left-width: 3px;
+		color: var(--color-text-source);
 	}
 
+	/* Muted professional accent colors - left border only */
 	.toast-success {
-		background: var(--color-success-500);
+		border-left-color: hsl(160, 12%, 45%);
 	}
 
 	.toast-error {
-		background: var(--color-error-500);
+		border-left-color: hsl(355, 14%, 42%);
 	}
 
 	.toast-warning {
-		background: var(--color-warning-500);
+		border-left-color: hsl(35, 18%, 50%);
 	}
 
 	.toast-info {
-		background: var(--color-primary-500);
+		border-left-color: hsl(220, 10%, 52%);
 	}
 
 	.toast-icon {
 		flex-shrink: 0;
+	}
+
+	/* Icon colors match their respective border accents */
+	.toast-success .toast-icon {
+		color: hsl(160, 12%, 45%);
+	}
+
+	.toast-error .toast-icon {
+		color: hsl(355, 14%, 42%);
+	}
+
+	.toast-warning .toast-icon {
+		color: hsl(35, 18%, 50%);
+	}
+
+	.toast-info .toast-icon {
+		color: hsl(220, 10%, 52%);
 	}
 
 	.toast-icon :global(.icon) {
@@ -121,13 +142,14 @@
 		background: transparent;
 		border: none;
 		border-radius: 50%;
-		color: currentColor;
+		color: var(--color-text-whisper);
 		cursor: pointer;
-		transition: background-color var(--duration-fast) ease;
+		transition: background-color var(--duration-fast) ease, color var(--duration-fast) ease;
 	}
 
 	.toast-close:hover {
-		background: rgba(255, 255, 255, 0.2);
+		background: var(--color-field-depth);
+		color: var(--color-text-source);
 	}
 
 	.close-icon {
