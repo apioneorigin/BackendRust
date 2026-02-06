@@ -65,6 +65,9 @@
 	let goalsSavedDuringModal = false;
 	let flashLibraryTab = false;
 
+	// Discovery row dropdown state
+	let activeDiscoveryMenu: string | null = null;
+
 	// Delete confirmation state
 	let showDeleteDiscoveryConfirm = false;
 	let deleteDiscoveryId: string | null = null;
@@ -90,6 +93,27 @@
 	onMount(async () => {
 		await Promise.all([loadDiscoveries(), loadSavedGoals()]);
 	});
+
+	function toggleDiscoveryMenu(e: Event, discoveryId: string) {
+		e.stopPropagation();
+		activeDiscoveryMenu = activeDiscoveryMenu === discoveryId ? null : discoveryId;
+	}
+
+	function closeDiscoveryMenus() {
+		activeDiscoveryMenu = null;
+	}
+
+	async function shareDiscovery(e: Event, discoveryId: string) {
+		e.stopPropagation();
+		activeDiscoveryMenu = null;
+		try {
+			const url = `${window.location.origin}/goals?discovery=${discoveryId}`;
+			await navigator.clipboard.writeText(url);
+			addToast('success', 'Link copied to clipboard');
+		} catch {
+			addToast('error', 'Failed to copy link');
+		}
+	}
 
 	async function loadDiscoveries() {
 		try {
@@ -528,9 +552,10 @@
 					<p>Upload files above to discover goals from your data</p>
 				</div>
 			{:else}
-				<div class="discoveries-list">
+				<!-- svelte-ignore a11y-click-events-have-key-events -->
+				<div class="discoveries-list" on:click={closeDiscoveryMenus}>
 					{#each discoveries as discovery (discovery.id)}
-						<div class="discovery-row">
+						<div class="discovery-row" on:click={() => openGoalsModal(discovery)} role="button" tabindex="0" on:keydown={(e) => e.key === 'Enter' && openGoalsModal(discovery)}>
 							<div class="discovery-info">
 								<div class="discovery-files">
 									{#each discovery.fileNames as fileName}
@@ -542,7 +567,7 @@
 											{fileName}
 										</span>
 									{/each}
-										{#if discovery.fileSummary}
+									{#if discovery.fileSummary}
 										<span class="discovery-summary">{discovery.fileSummary}</span>
 									{/if}
 								</div>
@@ -555,21 +580,32 @@
 									</span>
 								</div>
 							</div>
-							<div class="discovery-actions">
-								<button class="icon-btn view-btn" on:click={() => openGoalsModal(discovery)} title="View goals">
-									<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-										<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-										<circle cx="12" cy="12" r="3" />
-									</svg>
-								</button>
-								<button class="icon-btn delete-btn" on:click={() => deleteDiscovery(discovery.id)} title="Delete discovery">
-									<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-										<path d="M3 6h18" />
-										<path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-										<path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-									</svg>
-								</button>
-							</div>
+							<button class="discovery-options-btn" on:click|stopPropagation={(e) => toggleDiscoveryMenu(e, discovery.id)} title="Options">
+								<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<path d="m6 9 6 6 6-6"/>
+								</svg>
+							</button>
+							{#if activeDiscoveryMenu === discovery.id}
+								<!-- svelte-ignore a11y-click-events-have-key-events -->
+								<div class="discovery-dropdown" on:click|stopPropagation role="menu">
+									<button class="dropdown-item" on:click={(e) => shareDiscovery(e, discovery.id)}>
+										<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+											<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+											<polyline points="16 6 12 2 8 6"/>
+											<line x1="12" x2="12" y1="2" y2="15"/>
+										</svg>
+										<span>Share link</span>
+									</button>
+									<button class="dropdown-item delete" on:click|stopPropagation={() => { activeDiscoveryMenu = null; deleteDiscovery(discovery.id); }}>
+										<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+											<path d="M3 6h18"/>
+											<path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+											<path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+										</svg>
+										<span>Delete</span>
+									</button>
+								</div>
+							{/if}
 						</div>
 					{/each}
 				</div>
@@ -1045,13 +1081,14 @@
 	}
 
 	.discovery-row {
+		position: relative;
 		display: flex;
 		align-items: center;
-		justify-content: space-between;
 		padding: 0.875rem 1rem;
 		background: var(--color-field-surface);
 		border: 1px solid var(--color-veil-thin);
 		border-radius: 0.5rem;
+		cursor: pointer;
 		transition: border-color 0.15s ease, box-shadow 0.15s ease;
 	}
 
@@ -1111,38 +1148,74 @@
 		gap: 0.25rem;
 	}
 
-	.discovery-actions {
-		display: flex;
-		align-items: center;
-		gap: 0.375rem;
-		flex-shrink: 0;
-		margin-left: 1rem;
-	}
-
-	.icon-btn {
-		width: 34px;
-		height: 34px;
+	.discovery-options-btn {
+		position: absolute;
+		right: 0.625rem;
+		opacity: 0;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		background: transparent;
+		width: 24px;
+		height: 24px;
+		padding: 0;
+		background: var(--color-field-surface);
+		border: none;
+		border-radius: 0.25rem;
+		color: var(--color-text-whisper);
+		cursor: pointer;
+		transition: opacity 0.1s ease;
+	}
+
+	.discovery-row:hover .discovery-options-btn {
+		opacity: 1;
+	}
+
+	.discovery-options-btn:hover {
+		background: var(--color-veil-present, var(--color-field-depth));
+		color: var(--color-text-source);
+	}
+
+	.discovery-dropdown {
+		position: absolute;
+		top: 100%;
+		right: 0;
+		z-index: 50;
+		min-width: 140px;
+		padding: 0.25rem;
+		background: var(--color-field-surface);
 		border: 1px solid var(--color-veil-thin);
 		border-radius: 0.375rem;
+		box-shadow: var(--shadow-elevated);
+	}
+
+	.dropdown-item {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		width: 100%;
+		padding: 0.5rem 0.625rem;
+		background: transparent;
+		border: none;
+		border-radius: 0.25rem;
+		font-size: 13px;
+		color: var(--color-text-manifest);
 		cursor: pointer;
-		color: var(--color-text-whisper);
-		transition: all 0.15s ease;
+		transition: all 0.1s ease;
+		text-align: left;
 	}
 
-	.view-btn:hover {
-		border-color: var(--color-primary-400);
-		color: var(--color-primary-500);
-		background: var(--color-primary-50);
+	.dropdown-item:hover {
+		background: var(--color-accent-subtle, var(--color-field-depth));
+		color: var(--color-text-source);
 	}
 
-	.delete-btn:hover {
-		border-color: var(--color-error-400);
-		color: var(--color-error-500);
+	.dropdown-item.delete:hover {
 		background: var(--color-error-50);
+		color: var(--color-error-500);
+	}
+
+	.dropdown-item svg {
+		flex-shrink: 0;
 	}
 
 	/* Goals grid (used in library) */
