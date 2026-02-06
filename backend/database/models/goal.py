@@ -322,6 +322,9 @@ class FileGoalDiscovery(Base):
     file_names: Mapped[dict] = mapped_column(JSON, nullable=False)  # List of file names
     file_count: Mapped[int] = mapped_column(Integer, nullable=False)
 
+    # File summary (derived from file content, not goals)
+    file_summary: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+
     # Discovered goals data
     goals: Mapped[dict] = mapped_column(JSON, nullable=False)  # Full goals array
     goal_count: Mapped[int] = mapped_column(Integer, nullable=False)

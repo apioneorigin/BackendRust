@@ -29,6 +29,7 @@
 		id: string;
 		fileNames: string[];
 		fileCount: number;
+		fileSummary: string;
 		goals: DiscoveredGoal[];
 		goalCount: number;
 		createdAt: string;
@@ -61,6 +62,8 @@
 	// Modal state
 	let showGoalsModal = false;
 	let modalDiscovery: FileGoalDiscovery | null = null;
+	let goalsSavedDuringModal = false;
+	let flashLibraryTab = false;
 
 	// Delete confirmation state
 	let showDeleteDiscoveryConfirm = false;
@@ -216,11 +219,16 @@
 	function openGoalsModal(discovery: FileGoalDiscovery) {
 		modalDiscovery = discovery;
 		showGoalsModal = true;
+		goalsSavedDuringModal = false;
 	}
 
 	function closeGoalsModal() {
 		showGoalsModal = false;
 		modalDiscovery = null;
+		if (goalsSavedDuringModal) {
+			flashLibraryTab = true;
+			setTimeout(() => { flashLibraryTab = false; }, 2000);
+		}
 	}
 
 	function deleteDiscovery(discoveryId: string) {
@@ -265,6 +273,7 @@
 		savedGoals = [...savedGoals, savedGoal];
 		try {
 			await api.post('/api/goal-inventory/save', { goals: savedGoals });
+			goalsSavedDuringModal = true;
 			addToast('success', 'Goal saved to library');
 		} catch (error) {
 			addToast('error', 'Failed to save goal');
@@ -294,8 +303,9 @@
 		removeGoalId = null;
 	}
 
-	function deleteGoalFromDiscovery(discoveryId: string, goalId: string) {
-		deleteGoalFromDiscoveryInfo = { discoveryId, goalId };
+	function deleteGoalFromDiscovery(goalId: string) {
+		if (!modalDiscovery) return;
+		deleteGoalFromDiscoveryInfo = { discoveryId: modalDiscovery.id, goalId };
 		showDeleteGoalFromDiscoveryConfirm = true;
 	}
 
@@ -413,7 +423,7 @@
 			</svg>
 			Discoveries
 		</button>
-		<button class="tab" class:active={activeTab === 'saved'} on:click={() => (activeTab = 'saved')}>
+		<button class="tab" class:active={activeTab === 'saved'} class:flash={flashLibraryTab} on:click={() => (activeTab = 'saved')}>
 			<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 				<path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
 			</svg>
@@ -465,6 +475,14 @@
 				{/if}
 			</div>
 			<div class="upload-bar-actions">
+				<label for="file-input" class="browse-btn">
+					<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+						<polyline points="17 8 12 3 7 8" />
+						<line x1="12" x2="12" y1="3" y2="15" />
+					</svg>
+					Browse
+				</label>
 				<label class="web-search-toggle" title="Enrich with real-world data: benchmarks, trends, comparables">
 					<input type="checkbox" bind:checked={webSearchEnabled} />
 					<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -473,14 +491,6 @@
 						<path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
 					</svg>
 					<span>Web Search</span>
-				</label>
-				<label for="file-input" class="browse-btn">
-					<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-						<polyline points="17 8 12 3 7 8" />
-						<line x1="12" x2="12" y1="3" y2="15" />
-					</svg>
-					Browse
 				</label>
 				<button
 					class="discover-btn"
@@ -532,6 +542,9 @@
 											{fileName}
 										</span>
 									{/each}
+										{#if discovery.fileSummary}
+										<span class="discovery-summary">{discovery.fileSummary}</span>
+									{/if}
 								</div>
 								<div class="discovery-meta">
 									<span class="meta-item">
@@ -540,8 +553,6 @@
 										</svg>
 										{discovery.goalCount} goals
 									</span>
-									<span class="meta-separator">·</span>
-									<span class="meta-item">{formatDate(discovery.createdAt)}</span>
 								</div>
 							</div>
 							<div class="discovery-actions">
@@ -629,14 +640,14 @@
 	<div class="modal-overlay" on:click={closeGoalsModal} on:keydown={(e) => e.key === 'Escape' && closeGoalsModal()} role="dialog" tabindex="-1">
 		<div class="modal-content" on:click|stopPropagation role="document">
 			<div class="modal-header">
-				<div class="modal-title-section">
+				<div class="modal-header-row">
 					<h2>Discovered Goals</h2>
-					<div class="modal-file-tags">
-						{#each modalDiscovery.fileNames as fileName}
-							<span class="file-badge">{fileName}</span>
-						{/each}
-						<span class="meta-item modal-date">{formatDate(modalDiscovery.createdAt)}</span>
-					</div>
+					<span class="modal-header-sep">|</span>
+					{#each modalDiscovery.fileNames as fileName}
+						<span class="file-badge">{fileName}</span>
+					{/each}
+					<span class="modal-header-sep">|</span>
+					<span class="modal-date">{formatDate(modalDiscovery.createdAt)}</span>
 				</div>
 				<button class="modal-close" on:click={closeGoalsModal}>
 					<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -659,11 +670,6 @@
 							</div>
 							<h3 class="goal-identity">{g.identity}</h3>
 							<p class="goal-first-move">{g.firstMove}</p>
-							<div class="goal-sources">
-								{#each g.sourceFiles || [] as source}
-									<span class="source-badge">{source}</span>
-								{/each}
-							</div>
 							<div class="goal-actions">
 								<button
 									class="action-btn save-btn"
@@ -688,7 +694,7 @@
 									</svg>
 									Chat
 								</button>
-								<button class="action-btn remove-btn" on:click={() => deleteGoalFromDiscovery(modalDiscovery.id, g.id)} title="Delete goal">
+								<button class="action-btn remove-btn" on:click={() => deleteGoalFromDiscovery(g.id)} title="Delete goal">
 									<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 										<path d="M3 6h18" />
 										<path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
@@ -844,6 +850,18 @@
 		background: var(--color-primary-500);
 		border-color: var(--color-primary-500);
 		color: white;
+	}
+
+	@keyframes flashPulse {
+		0%, 100% { box-shadow: none; }
+		50% { box-shadow: 0 0 0 3px var(--color-primary-200); }
+	}
+
+	.tab.flash {
+		animation: flashPulse 0.5s ease 4;
+		border-color: var(--color-primary-400);
+		color: var(--color-primary-600);
+		background: var(--color-primary-50);
 	}
 
 	/* Upload bar */
@@ -1072,6 +1090,13 @@
 		flex-shrink: 0;
 	}
 
+	.discovery-summary {
+		font-size: 0.6875rem;
+		color: var(--color-text-whisper);
+		white-space: nowrap;
+		font-style: italic;
+	}
+
 	.discovery-meta {
 		display: flex;
 		align-items: center;
@@ -1084,10 +1109,6 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 0.25rem;
-	}
-
-	.meta-separator {
-		color: var(--color-text-hint);
 	}
 
 	.discovery-actions {
@@ -1135,7 +1156,16 @@
 	.modal-goals-grid {
 		display: grid;
 		grid-template-columns: repeat(3, 1fr);
-		gap: 0.75rem;
+		gap: 0.625rem;
+	}
+
+	.modal-goals-grid .goal-card {
+		padding: 0.75rem;
+		gap: 0.375rem;
+	}
+
+	.modal-goals-grid .goal-actions {
+		padding-top: 0.375rem;
 	}
 
 	.goal-card {
@@ -1342,7 +1372,7 @@
 		align-items: center;
 		justify-content: center;
 		z-index: 1000;
-		padding: 1.5rem;
+		padding: 0.75rem;
 		animation: fadeIn 0.15s ease;
 	}
 
@@ -1351,7 +1381,7 @@
 		border-radius: 0.75rem;
 		width: 100%;
 		max-width: 1200px;
-		max-height: 92vh;
+		max-height: 96vh;
 		display: flex;
 		flex-direction: column;
 		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
@@ -1362,28 +1392,37 @@
 		display: flex;
 		align-items: flex-start;
 		justify-content: space-between;
-		padding: 1rem 1.5rem;
+		padding: 0.75rem 1rem;
 		border-bottom: 1px solid var(--color-veil-thin);
 		flex-shrink: 0;
 	}
 
-	.modal-title-section h2 {
+	.modal-header-row {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		flex: 1;
+		min-width: 0;
+	}
+
+	.modal-header-row h2 {
 		font-size: 1.125rem;
 		font-weight: 600;
 		color: var(--color-text-source);
-		margin-bottom: 0.375rem;
+		white-space: nowrap;
+		margin: 0;
 	}
 
-	.modal-file-tags {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 0.375rem;
+	.modal-header-sep {
+		color: var(--color-veil-soft);
+		font-size: 0.875rem;
+		flex-shrink: 0;
 	}
 
 	.modal-date {
 		color: var(--color-text-hint);
-		font-size: 0.6875rem;
+		font-size: 0.75rem;
+		white-space: nowrap;
 	}
 
 	.modal-close {
@@ -1404,7 +1443,7 @@
 	}
 
 	.modal-body {
-		padding: 1rem 1.5rem;
+		padding: 0.75rem 1rem;
 		overflow-y: auto;
 		flex: 1;
 	}
