@@ -67,6 +67,8 @@
 	let deleteDiscoveryId: string | null = null;
 	let showRemoveGoalConfirm = false;
 	let removeGoalId: string | null = null;
+	let showDeleteGoalFromDiscoveryConfirm = false;
+	let deleteGoalFromDiscoveryInfo: { discoveryId: string; goalId: string } | null = null;
 
 	const goalTypeColors: Record<string, string> = {
 		OPTIMIZE: 'type-optimize',
@@ -199,6 +201,10 @@
 			uploadedFiles = [];
 			// Reload the persisted discoveries
 			await loadDiscoveries();
+			// Auto-show the goals modal for the newest discovery
+			if (discoveries.length > 0) {
+				openGoalsModal(discoveries[0]);
+			}
 		} catch (error: any) {
 			addToast('error', error.message || 'Failed to discover goals');
 		} finally {
@@ -286,6 +292,43 @@
 
 	function cancelRemoveFromInventory() {
 		removeGoalId = null;
+	}
+
+	function deleteGoalFromDiscovery(discoveryId: string, goalId: string) {
+		deleteGoalFromDiscoveryInfo = { discoveryId, goalId };
+		showDeleteGoalFromDiscoveryConfirm = true;
+	}
+
+	async function confirmDeleteGoalFromDiscovery() {
+		if (!deleteGoalFromDiscoveryInfo) return;
+		const { discoveryId, goalId } = deleteGoalFromDiscoveryInfo;
+		try {
+			await api.delete(`/api/goal-discoveries/${discoveryId}/goals/${goalId}`);
+			// Update local state
+			const disc = discoveries.find((d) => d.id === discoveryId);
+			if (disc) {
+				disc.goals = disc.goals.filter((g) => g.id !== goalId);
+				disc.goalCount = disc.goals.length;
+				if (disc.goals.length === 0) {
+					discoveries = discoveries.filter((d) => d.id !== discoveryId);
+					closeGoalsModal();
+				} else {
+					discoveries = [...discoveries];
+					if (modalDiscovery && modalDiscovery.id === discoveryId) {
+						modalDiscovery = { ...disc };
+					}
+				}
+			}
+			addToast('success', 'Goal removed');
+		} catch (error) {
+			addToast('error', 'Failed to remove goal');
+		} finally {
+			deleteGoalFromDiscoveryInfo = null;
+		}
+	}
+
+	function cancelDeleteGoalFromDiscovery() {
+		deleteGoalFromDiscoveryInfo = null;
 	}
 
 	async function startChatWithGoal(goal: DiscoveredGoal | SavedGoal) {
@@ -602,7 +645,7 @@
 				</button>
 			</div>
 			<div class="modal-body">
-				<div class="goals-grid">
+				<div class="modal-goals-grid">
 					{#each modalDiscovery.goals as goal (goal.id)}
 						{@const g = normalizeGoal(goal)}
 						<div class="goal-card">
@@ -636,14 +679,22 @@
 										<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 											<path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
 										</svg>
-										Save to Library
+										Save
 									{/if}
 								</button>
 								<button class="action-btn chat-btn" on:click={() => startChatWithGoal(g)}>
 									<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 										<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
 									</svg>
-									Start Chat
+									Chat
+								</button>
+								<button class="action-btn remove-btn" on:click={() => deleteGoalFromDiscovery(modalDiscovery.id, g.id)} title="Delete goal">
+									<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+										<path d="M3 6h18" />
+										<path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+										<path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+									</svg>
+									Delete
 								</button>
 							</div>
 						</div>
@@ -672,6 +723,16 @@
 	variant="danger"
 	on:confirm={confirmRemoveFromInventory}
 	on:cancel={cancelRemoveFromInventory}
+/>
+
+<ConfirmDialog
+	bind:open={showDeleteGoalFromDiscoveryConfirm}
+	title="Delete Goal"
+	message="Are you sure you want to delete this goal from the discovery?"
+	confirmText="Delete"
+	variant="danger"
+	on:confirm={confirmDeleteGoalFromDiscovery}
+	on:cancel={cancelDeleteGoalFromDiscovery}
 />
 
 <style>
@@ -905,7 +966,7 @@
 		cursor: not-allowed;
 	}
 
-	/* Web search toggle */
+	/* Web search toggle - visible checkbox */
 	.web-search-toggle {
 		display: inline-flex;
 		align-items: center;
@@ -927,7 +988,12 @@
 	}
 
 	.web-search-toggle input[type="checkbox"] {
-		display: none;
+		width: 14px;
+		height: 14px;
+		margin: 0;
+		cursor: pointer;
+		accent-color: var(--color-primary-500);
+		flex-shrink: 0;
 	}
 
 	.web-search-toggle:has(input:checked) {
@@ -1058,11 +1124,18 @@
 		background: var(--color-error-50);
 	}
 
-	/* Goals grid (used in modal and library) */
+	/* Goals grid (used in library) */
 	.goals-grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
 		gap: 1rem;
+	}
+
+	/* Modal goals grid - 3 columns to fit 6 goals (2 rows x 3 cols) */
+	.modal-goals-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 0.75rem;
 	}
 
 	.goal-card {
@@ -1269,7 +1342,7 @@
 		align-items: center;
 		justify-content: center;
 		z-index: 1000;
-		padding: 2rem;
+		padding: 1.5rem;
 		animation: fadeIn 0.15s ease;
 	}
 
@@ -1277,8 +1350,8 @@
 		background: var(--color-field-surface);
 		border-radius: 0.75rem;
 		width: 100%;
-		max-width: 960px;
-		max-height: 80vh;
+		max-width: 1200px;
+		max-height: 92vh;
 		display: flex;
 		flex-direction: column;
 		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
@@ -1289,7 +1362,7 @@
 		display: flex;
 		align-items: flex-start;
 		justify-content: space-between;
-		padding: 1.25rem 1.5rem;
+		padding: 1rem 1.5rem;
 		border-bottom: 1px solid var(--color-veil-thin);
 		flex-shrink: 0;
 	}
@@ -1331,7 +1404,7 @@
 	}
 
 	.modal-body {
-		padding: 1.25rem 1.5rem;
+		padding: 1rem 1.5rem;
 		overflow-y: auto;
 		flex: 1;
 	}
@@ -1340,6 +1413,10 @@
 	@media (max-width: 1200px) {
 		.goals-grid {
 			grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+		}
+
+		.modal-goals-grid {
+			grid-template-columns: repeat(2, 1fr);
 		}
 	}
 
@@ -1370,6 +1447,10 @@
 		}
 
 		.goals-grid {
+			grid-template-columns: 1fr;
+		}
+
+		.modal-goals-grid {
 			grid-template-columns: 1fr;
 		}
 

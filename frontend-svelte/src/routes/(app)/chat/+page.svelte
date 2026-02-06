@@ -1516,7 +1516,12 @@
 	}
 
 	.web-search-toggle input {
-		display: none;
+		width: 14px;
+		height: 14px;
+		margin: 0;
+		cursor: pointer;
+		accent-color: var(--color-primary-500, #6366f1);
+		flex-shrink: 0;
 	}
 
 	.web-search-toggle svg {
