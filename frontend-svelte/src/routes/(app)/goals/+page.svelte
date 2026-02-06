@@ -562,30 +562,17 @@
 				<div class="discoveries-list" on:click={closeDiscoveryMenus}>
 					{#each discoveries as discovery (discovery.id)}
 						<div class="discovery-row" on:click={() => openGoalsModal(discovery)} role="button" tabindex="0" on:keydown={(e) => e.key === 'Enter' && openGoalsModal(discovery)}>
-							<div class="discovery-info">
-								<div class="discovery-files">
-									{#each discovery.fileNames as fileName}
-										<span class="file-badge">
-											<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-												<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
-												<polyline points="14 2 14 8 20 8" />
-											</svg>
-											{fileName}
-										</span>
-									{/each}
-									{#if discovery.fileSummary}
-										<span class="discovery-summary">{discovery.fileSummary}</span>
-									{/if}
-								</div>
-								<div class="discovery-meta">
-									<span class="meta-item">
-										<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-											<circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" />
-										</svg>
-										{discovery.goalCount} goals
-									</span>
-								</div>
-							</div>
+							<span class="discovery-title">
+								<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+									<polyline points="14 2 14 8 20 8" />
+								</svg>
+								{discovery.fileNames.join(', ')}
+								<span class="discovery-goal-count">{discovery.goalCount} goals</span>
+								{#if discovery.fileSummary}
+									<span class="discovery-summary">{discovery.fileSummary}</span>
+								{/if}
+							</span>
 							<button class="discovery-options-btn" on:click|stopPropagation={(e) => toggleDiscoveryMenu(e, discovery.id)} title="Options">
 								<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 									<path d="m6 9 6 6 6-6"/>
@@ -1083,75 +1070,62 @@
 	.discoveries-list {
 		display: flex;
 		flex-direction: column;
-		gap: 0.5rem;
+		gap: 0.125rem;
 	}
 
 	.discovery-row {
 		position: relative;
 		display: flex;
 		align-items: center;
-		padding: 0.875rem 1rem;
-		background: var(--color-field-surface);
-		border: 1px solid var(--color-veil-thin);
-		border-radius: 0.5rem;
+		padding: 0.5rem 0.625rem;
+		background: transparent;
+		border: none;
+		border-radius: 0.375rem;
 		cursor: pointer;
-		transition: border-color 0.15s ease, box-shadow 0.15s ease;
+		transition: all 0.1s ease;
 	}
 
 	.discovery-row:hover {
-		border-color: var(--color-veil-soft);
-		box-shadow: var(--shadow-elevated);
+		background: var(--color-accent-subtle, var(--color-field-depth));
 	}
 
-	.discovery-info {
-		display: flex;
-		flex-direction: column;
-		gap: 0.375rem;
-		min-width: 0;
+	.discovery-title {
 		flex: 1;
-	}
-
-	.discovery-files {
+		min-width: 0;
 		display: flex;
-		flex-wrap: wrap;
-		gap: 0.375rem;
-	}
-
-	.file-badge {
-		display: inline-flex;
 		align-items: center;
-		gap: 0.25rem;
-		padding: 0.1875rem 0.5rem;
-		background: var(--color-field-depth);
-		border-radius: 0.25rem;
-		font-size: 0.75rem;
+		gap: 0.375rem;
+		font-size: 13px;
+		font-weight: 400;
 		color: var(--color-text-manifest);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
-	.file-badge svg {
+	.discovery-row:hover .discovery-title {
+		color: var(--color-text-source);
+	}
+
+	.discovery-title svg {
 		color: var(--color-primary-500);
 		flex-shrink: 0;
 	}
 
+	.discovery-goal-count {
+		color: var(--color-text-whisper);
+		font-size: 12px;
+		flex-shrink: 0;
+	}
+
 	.discovery-summary {
-		font-size: 0.6875rem;
-		color: var(--color-text-whisper);
-		white-space: nowrap;
+		color: var(--color-text-hint);
+		font-size: 12px;
 		font-style: italic;
-	}
-
-	.discovery-meta {
-		display: flex;
-		align-items: center;
-		gap: 0.375rem;
-		font-size: 0.6875rem;
-		color: var(--color-text-whisper);
-	}
-
-	.meta-item {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.25rem;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		min-width: 0;
 	}
 
 	.discovery-options-btn {
@@ -1231,20 +1205,24 @@
 		gap: 1rem;
 	}
 
-	/* Modal goals grid - 3 columns to fit 6 goals (2 rows x 3 cols) */
+	/* Modal goals grid - exactly 6 goals visible (2 rows x 3 cols), no scroll */
 	.modal-goals-grid {
 		display: grid;
 		grid-template-columns: repeat(3, 1fr);
-		gap: 0.625rem;
+		grid-template-rows: 1fr 1fr;
+		gap: 0.75rem;
+		height: 100%;
+		overflow: hidden;
 	}
 
 	.modal-goals-grid .goal-card {
-		padding: 0.75rem;
-		gap: 0.375rem;
+		padding: 1rem;
+		gap: 0.5rem;
+		overflow: hidden;
 	}
 
 	.modal-goals-grid .goal-actions {
-		padding-top: 0.375rem;
+		padding-top: 0.5rem;
 	}
 
 	.goal-card {
@@ -1313,6 +1291,7 @@
 		font-size: 0.8125rem;
 		color: var(--color-text-manifest);
 		line-height: 1.5;
+		flex: 1;
 	}
 
 	.goal-sources {
@@ -1454,7 +1433,7 @@
 		border-radius: 0.75rem;
 		width: 100%;
 		max-width: 1200px;
-		max-height: 96vh;
+		height: 96vh;
 		display: flex;
 		flex-direction: column;
 		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
@@ -1517,8 +1496,9 @@
 
 	.modal-body {
 		padding: 0.75rem 1rem;
-		overflow-y: auto;
+		overflow: hidden;
 		flex: 1;
+		min-height: 0;
 	}
 
 	/* Responsive */
