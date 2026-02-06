@@ -436,6 +436,8 @@
 	}
 </script>
 
+<svelte:window on:click={closeDiscoveryMenus} />
+
 <svelte:head>
 	<title>Goal Discovery | Reality Transformer</title>
 </svelte:head>
@@ -474,33 +476,30 @@
 		</div>
 	</header>
 
-	<!-- Tabs -->
-	<div class="tabs">
-		<button class="tab" class:active={activeTab === 'discover'} on:click={() => (activeTab = 'discover')}>
-			<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-				<circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" />
-			</svg>
-			Discoveries
-		</button>
-		<button class="tab" class:active={activeTab === 'saved'} class:flash={flashLibraryTab} on:click={() => (activeTab = 'saved')}>
-			<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-				<path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
-			</svg>
-			My Library ({savedGoals.length})
-		</button>
-	</div>
-
-	{#if activeTab === 'discover'}
-		<!-- Upload bar -->
-		<div
-			class="upload-bar"
-			class:drag-over={dragOver}
-			on:drop={handleDrop}
-			on:dragover={handleDragOver}
-			on:dragleave={handleDragLeave}
-			role="button"
-			tabindex="0"
-		>
+	<!-- Unified toolbar: tabs + upload actions -->
+	<!-- svelte-ignore a11y-no-static-element-interactions -->
+	<div
+		class="toolbar"
+		class:drag-over={dragOver && activeTab === 'discover'}
+		on:drop={activeTab === 'discover' ? handleDrop : undefined}
+		on:dragover={activeTab === 'discover' ? handleDragOver : undefined}
+		on:dragleave={activeTab === 'discover' ? handleDragLeave : undefined}
+	>
+		<div class="toolbar-left">
+			<button class="tab" class:active={activeTab === 'discover'} on:click={() => (activeTab = 'discover')}>
+				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" />
+				</svg>
+				Discoveries
+			</button>
+			<button class="tab" class:active={activeTab === 'saved'} class:flash={flashLibraryTab} on:click={() => (activeTab = 'saved')}>
+				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
+				</svg>
+				My Library ({savedGoals.length})
+			</button>
+		</div>
+		{#if activeTab === 'discover'}
 			<input
 				type="file"
 				id="file-input"
@@ -509,7 +508,7 @@
 				on:change={handleFileSelect}
 				class="hidden"
 			/>
-			<div class="upload-bar-left">
+			<div class="toolbar-right">
 				{#if uploadedFiles.length > 0}
 					<div class="staged-files">
 						{#each uploadedFiles as file (file.name)}
@@ -527,13 +526,7 @@
 							</span>
 						{/each}
 					</div>
-				{:else}
-					<span class="upload-hint">
-						{dragOver ? 'Drop files here' : 'Drag files here or click browse'}
-					</span>
 				{/if}
-			</div>
-			<div class="upload-bar-actions">
 				<label for="file-input" class="browse-btn">
 					<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 						<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -567,8 +560,10 @@
 					{/if}
 				</button>
 			</div>
-		</div>
+		{/if}
+	</div>
 
+	{#if activeTab === 'discover'}
 		<!-- Discoveries list -->
 		<section class="discoveries-section">
 			{#if isLoading}
@@ -889,18 +884,47 @@
 		letter-spacing: 0.025em;
 	}
 
-	/* Tabs */
-	.tabs {
+	/* Unified toolbar: tabs + upload actions in one row */
+	.toolbar {
 		display: flex;
-		gap: 0.375rem;
+		align-items: center;
+		justify-content: space-between;
+		padding: 0.5rem 0.75rem;
+		background: var(--color-field-surface);
+		border: 1px solid var(--color-veil-thin);
+		border-radius: 0.5rem;
 		margin-bottom: 1rem;
+		gap: 0.75rem;
+		transition: border-color 0.15s ease, background 0.15s ease;
+		min-height: 44px;
+	}
+
+	.toolbar.drag-over {
+		border-color: var(--color-primary-400);
+		background: var(--color-primary-50);
+	}
+
+	.toolbar-left {
+		display: flex;
+		align-items: center;
+		gap: 0.375rem;
+		flex-shrink: 0;
+	}
+
+	.toolbar-right {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		flex-shrink: 1;
+		flex-wrap: wrap;
+		justify-content: flex-end;
 	}
 
 	.tab {
 		display: flex;
 		align-items: center;
 		gap: 0.375rem;
-		padding: 0.5rem 1rem;
+		padding: 0.375rem 0.75rem;
 		background: transparent;
 		border: 1px solid var(--color-veil-thin);
 		border-radius: 0.375rem;
@@ -942,41 +966,13 @@
 		font-weight: 700;
 	}
 
-	/* Upload bar */
-	.upload-bar {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		padding: 0.625rem 0.75rem;
-		background: var(--color-field-surface);
-		border: 1px solid var(--color-veil-thin);
-		border-radius: 0.5rem;
-		margin-bottom: 1.25rem;
-		gap: 0.75rem;
-		transition: border-color 0.15s ease, background 0.15s ease;
-		min-height: 44px;
-	}
-
-	.upload-bar.drag-over {
-		border-color: var(--color-primary-400);
-		background: var(--color-primary-50);
-	}
-
-	.upload-bar-left {
-		flex: 1;
-		min-width: 0;
-		overflow: hidden;
-	}
-
-	.upload-hint {
-		font-size: 0.8125rem;
-		color: var(--color-text-hint);
-	}
-
 	.staged-files {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 0.375rem;
+		padding-right: 0.5rem;
+		border-right: 1px solid var(--color-veil-thin);
+		margin-right: 0.125rem;
 	}
 
 	.file-tag {
@@ -1010,13 +1006,6 @@
 	.file-tag-remove:hover {
 		color: var(--color-error-500);
 		background: var(--color-error-50);
-	}
-
-	.upload-bar-actions {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		flex-shrink: 0;
 	}
 
 	.browse-btn {
@@ -1470,7 +1459,7 @@
 		margin-bottom: 1.25rem;
 	}
 
-	/* Modal */
+	/* Modal — native <dialog> with showModal() */
 	.modal-overlay {
 		border: none;
 		padding: 0.75rem;
@@ -1645,13 +1634,13 @@
 			justify-content: flex-start;
 		}
 
-		.upload-bar {
-			flex-direction: column;
-			align-items: stretch;
+		.toolbar {
+			flex-wrap: wrap;
 			gap: 0.5rem;
 		}
 
-		.upload-bar-actions {
+		.toolbar-right {
+			width: 100%;
 			justify-content: flex-end;
 		}
 
