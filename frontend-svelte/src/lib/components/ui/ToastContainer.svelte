@@ -63,7 +63,7 @@
 		position: fixed;
 		bottom: 16px;
 		right: 16px;
-		z-index: 100;
+		z-index: 10000;
 		display: flex;
 		flex-direction: column;
 		gap: 8px;

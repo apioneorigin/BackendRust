@@ -1136,7 +1136,20 @@
 	.modal-goals-grid {
 		display: grid;
 		grid-template-columns: repeat(3, 1fr);
-		gap: 0.75rem;
+		gap: 0.625rem;
+	}
+
+	.modal-goals-grid .goal-card {
+		padding: 0.75rem;
+		gap: 0.375rem;
+	}
+
+	.modal-goals-grid .goal-actions {
+		padding-top: 0.375rem;
+	}
+
+	.modal-goals-grid .goal-sources {
+		margin-top: auto;
 	}
 
 	.goal-card {
@@ -1343,7 +1356,7 @@
 		align-items: center;
 		justify-content: center;
 		z-index: 1000;
-		padding: 1.5rem;
+		padding: 0.75rem;
 		animation: fadeIn 0.15s ease;
 	}
 
@@ -1352,7 +1365,7 @@
 		border-radius: 0.75rem;
 		width: 100%;
 		max-width: 1200px;
-		max-height: 92vh;
+		max-height: 96vh;
 		display: flex;
 		flex-direction: column;
 		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
@@ -1363,7 +1376,7 @@
 		display: flex;
 		align-items: flex-start;
 		justify-content: space-between;
-		padding: 1rem 1.5rem;
+		padding: 0.75rem 1rem;
 		border-bottom: 1px solid var(--color-veil-thin);
 		flex-shrink: 0;
 	}
@@ -1372,7 +1385,7 @@
 		font-size: 1.125rem;
 		font-weight: 600;
 		color: var(--color-text-source);
-		margin-bottom: 0.375rem;
+		margin-bottom: 0.25rem;
 	}
 
 	.modal-file-tags {
@@ -1405,7 +1418,7 @@
 	}
 
 	.modal-body {
-		padding: 1rem 1.5rem;
+		padding: 0.75rem 1rem;
 		overflow-y: auto;
 		flex: 1;
 	}
