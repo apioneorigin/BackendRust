@@ -18,7 +18,7 @@
 		addToast
 	} from '$lib/stores';
 	import type { ArticulatedInsight, RowOption, ColumnOption, DocumentPreview } from '$lib/stores/matrix';
-	import { Button } from '$lib/components/ui';
+	import { Button, ConfirmDialog } from '$lib/components/ui';
 	import InsightPopup from './InsightPopup.svelte';
 
 	export let open = false;
@@ -122,19 +122,32 @@
 	}
 
 	let deletingDocId: string | null = null;
+	let showDeleteDocConfirm = false;
+	let deleteDocId: string | null = null;
 
 	function handleDocumentTabClick(docId: string) {
 		matrix.setActiveDocument(docId);
 	}
 
-	async function handleDeleteDocument(docId: string) {
+	function handleDeleteDocument(docId: string) {
 		if ($matrixDocuments.length <= 1) return;
-		deletingDocId = docId;
+		deleteDocId = docId;
+		showDeleteDocConfirm = true;
+	}
+
+	async function confirmDeleteDocument() {
+		if (!deleteDocId) return;
+		deletingDocId = deleteDocId;
 		try {
-			await matrix.deleteDocument(docId);
+			await matrix.deleteDocument(deleteDocId);
 		} finally {
 			deletingDocId = null;
+			deleteDocId = null;
 		}
+	}
+
+	function cancelDeleteDocument() {
+		deleteDocId = null;
 	}
 
 	function handleToggleRow(index: number) {
@@ -476,6 +489,16 @@
 	optionLabel={selectedOptionLabel}
 	optionType={selectedOptionType}
 	on:close={handleCloseInsight}
+/>
+
+<ConfirmDialog
+	bind:open={showDeleteDocConfirm}
+	title="Delete Document"
+	message="Are you sure you want to delete this document? The matrix data for this document will be permanently removed."
+	confirmText="Delete"
+	variant="danger"
+	on:confirm={confirmDeleteDocument}
+	on:cancel={cancelDeleteDocument}
 />
 
 <style>

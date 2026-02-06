@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { addToast, auth, chat, llmManualBusy } from '$lib/stores';
-	import { Button, Spinner } from '$lib/components/ui';
+	import { Button, Spinner, ConfirmDialog } from '$lib/components/ui';
 	import { api } from '$lib/utils/api';
 
 	export let params: Record<string, string> = {};
@@ -60,6 +60,12 @@
 	// Modal state
 	let showGoalsModal = false;
 	let modalDiscovery: FileGoalDiscovery | null = null;
+
+	// Delete confirmation state
+	let showDeleteDiscoveryConfirm = false;
+	let deleteDiscoveryId: string | null = null;
+	let showRemoveGoalConfirm = false;
+	let removeGoalId: string | null = null;
 
 	const goalTypeColors: Record<string, string> = {
 		OPTIMIZE: 'type-optimize',
@@ -209,14 +215,26 @@
 		modalDiscovery = null;
 	}
 
-	async function deleteDiscovery(discoveryId: string) {
+	function deleteDiscovery(discoveryId: string) {
+		deleteDiscoveryId = discoveryId;
+		showDeleteDiscoveryConfirm = true;
+	}
+
+	async function confirmDeleteDiscovery() {
+		if (!deleteDiscoveryId) return;
 		try {
-			await api.delete(`/api/goal-discoveries/${discoveryId}`);
-			discoveries = discoveries.filter((d) => d.id !== discoveryId);
+			await api.delete(`/api/goal-discoveries/${deleteDiscoveryId}`);
+			discoveries = discoveries.filter((d) => d.id !== deleteDiscoveryId);
 			addToast('success', 'Discovery removed');
 		} catch (error) {
 			addToast('error', 'Failed to remove discovery');
+		} finally {
+			deleteDiscoveryId = null;
 		}
+	}
+
+	function cancelDeleteDiscovery() {
+		deleteDiscoveryId = null;
 	}
 
 	function normalizeGoal(goal: DiscoveredGoal): DiscoveredGoal {
@@ -245,15 +263,27 @@
 		}
 	}
 
-	async function removeFromInventory(goalId: string) {
-		const updatedGoals = savedGoals.filter((g) => g.id !== goalId);
+	function removeFromInventory(goalId: string) {
+		removeGoalId = goalId;
+		showRemoveGoalConfirm = true;
+	}
+
+	async function confirmRemoveFromInventory() {
+		if (!removeGoalId) return;
+		const updatedGoals = savedGoals.filter((g) => g.id !== removeGoalId);
 		try {
 			await api.post('/api/goal-inventory/save', { goals: updatedGoals });
 			savedGoals = updatedGoals;
 			addToast('success', 'Goal removed from library');
 		} catch (error) {
 			addToast('error', 'Failed to remove goal');
+		} finally {
+			removeGoalId = null;
 		}
+	}
+
+	function cancelRemoveFromInventory() {
+		removeGoalId = null;
 	}
 
 	async function startChatWithGoal(goal: DiscoveredGoal | SavedGoal) {
@@ -612,6 +642,26 @@
 		</div>
 	</div>
 {/if}
+
+<ConfirmDialog
+	bind:open={showDeleteDiscoveryConfirm}
+	title="Delete Discovery"
+	message="Are you sure you want to delete this discovery? All discovered goals from this batch will be removed."
+	confirmText="Delete"
+	variant="danger"
+	on:confirm={confirmDeleteDiscovery}
+	on:cancel={cancelDeleteDiscovery}
+/>
+
+<ConfirmDialog
+	bind:open={showRemoveGoalConfirm}
+	title="Remove from Library"
+	message="Are you sure you want to remove this goal from your library?"
+	confirmText="Remove"
+	variant="danger"
+	on:confirm={confirmRemoveFromInventory}
+	on:cancel={cancelRemoveFromInventory}
+/>
 
 <style>
 	.goals-page {
