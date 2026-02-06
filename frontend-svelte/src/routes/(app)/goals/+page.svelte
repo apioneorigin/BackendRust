@@ -1199,20 +1199,24 @@
 		gap: 1rem;
 	}
 
-	/* Modal goals grid - 3 columns to fit 6 goals (2 rows x 3 cols) */
+	/* Modal goals grid - exactly 6 goals visible (2 rows x 3 cols), no scroll */
 	.modal-goals-grid {
 		display: grid;
 		grid-template-columns: repeat(3, 1fr);
-		gap: 0.625rem;
+		grid-template-rows: 1fr 1fr;
+		gap: 0.75rem;
+		height: 100%;
+		overflow: hidden;
 	}
 
 	.modal-goals-grid .goal-card {
-		padding: 0.75rem;
-		gap: 0.375rem;
+		padding: 1rem;
+		gap: 0.5rem;
+		overflow: hidden;
 	}
 
 	.modal-goals-grid .goal-actions {
-		padding-top: 0.375rem;
+		padding-top: 0.5rem;
 	}
 
 	.goal-card {
@@ -1287,6 +1291,7 @@
 		font-size: 0.8125rem;
 		color: var(--color-text-manifest);
 		line-height: 1.5;
+		flex: 1;
 	}
 
 	.goal-sources {
@@ -1428,7 +1433,7 @@
 		border-radius: 0.75rem;
 		width: 100%;
 		max-width: 1200px;
-		max-height: 96vh;
+		height: 96vh;
 		display: flex;
 		flex-direction: column;
 		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
@@ -1491,8 +1496,9 @@
 
 	.modal-body {
 		padding: 0.75rem 1rem;
-		overflow-y: auto;
+		overflow: hidden;
 		flex: 1;
+		min-height: 0;
 	}
 
 	/* Responsive */
