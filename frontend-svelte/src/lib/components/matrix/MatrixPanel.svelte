@@ -616,26 +616,25 @@
 		background: rgba(220, 38, 38, 0.08);
 	}
 
-	/* Top 50% - click to open dimensions popup */
+	/* Top area - click to open dimensions popup */
 	.cell-top-area {
-		flex: 1;
+		flex: 2;
 		background: transparent;
 		border: none;
 		cursor: pointer;
-		min-height: 50%;
+		min-height: 0;
 	}
 
 	.cell-top-area:hover {
 		background: rgba(0, 0, 0, 0.05);
 	}
 
-	/* Bottom 50% - 5-segment bar */
+	/* Bottom thin bar strip */
 	.cell-bar {
 		display: flex;
 		gap: 2px;
-		padding: 0.25rem;
-		min-height: 50%;
-		align-items: stretch;
+		padding: 2px 3px;
+		flex-shrink: 0;
 	}
 
 	.compact .cell-bar {
@@ -644,13 +643,13 @@
 	}
 
 	.cell-bar-segment {
-		flex: 1;
+		width: 28px;
+		height: 8px;
 		background: var(--color-veil-thin);
 		border: none;
 		border-radius: 2px;
 		cursor: pointer;
 		transition: all 0.1s ease;
-		min-height: 8px;
 	}
 
 	.cell-bar-segment:hover {
@@ -778,16 +777,16 @@
 
 	.dim-bar {
 		display: flex;
-		gap: 4px;
+		gap: 2px;
 		flex-shrink: 0;
 	}
 
 	.dim-bar-segment {
 		width: 28px;
-		height: 16px;
+		height: 8px;
 		background: var(--color-veil-thin);
 		border: none;
-		border-radius: 3px;
+		border-radius: 2px;
 		cursor: pointer;
 		transition: all 0.1s ease;
 	}
