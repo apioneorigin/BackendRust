@@ -928,8 +928,10 @@ Return valid JSON only. No markdown, no explanation."""
     call1_user_content = build_call1_user_content(parse_result, request.files, request.existing_goals, provider)
 
     call1_output = None
-    # Longer timeout when Anthropic web search is enabled (server-side searches add latency)
-    call1_timeout = 300.0 if (request.web_search and provider == "anthropic") else 180.0
+    # Granular timeout: short connect/write for fast network failure detection,
+    # long read timeout for LLM generation (37KB+ context + 16K max tokens)
+    call1_read = 360.0 if (request.web_search and provider == "anthropic") else 300.0
+    call1_timeout = httpx.Timeout(connect=30.0, read=call1_read, write=30.0, pool=30.0)
     try:
         async with httpx.AsyncClient(timeout=call1_timeout) as client:
             if provider == "anthropic":
@@ -1112,7 +1114,7 @@ Return valid JSON only. No markdown, no explanation."""
         elapsed = time.time() - start_time
         api_logger.error(
             f"[GOAL DISCOVERY] Call 1 timed out after {elapsed:.1f}s "
-            f"(limit={call1_timeout}s, provider={provider}, web_search={request.web_search})"
+            f"(read_limit={call1_timeout.read}s, provider={provider}, web_search={request.web_search})"
         )
         raise HTTPException(
             status_code=504,
@@ -1296,7 +1298,7 @@ Return valid JSON with a "goals" array containing all skeletons with your 6 fiel
     )
 
     articulated_goals = None
-    call2_timeout = 180.0
+    call2_timeout = httpx.Timeout(connect=30.0, read=300.0, write=30.0, pool=30.0)
     try:
         async with httpx.AsyncClient(timeout=call2_timeout) as client:
             if provider == "anthropic":
@@ -1395,7 +1397,7 @@ Return valid JSON with a "goals" array containing all skeletons with your 6 fiel
         elapsed = time.time() - start_time
         api_logger.error(
             f"[GOAL DISCOVERY] Call 2 timed out after {elapsed:.1f}s "
-            f"(limit={call2_timeout}s, provider={provider})"
+            f"(read_limit={call2_timeout.read}s, provider={provider})"
         )
         raise HTTPException(
             status_code=504,
