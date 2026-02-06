@@ -574,9 +574,12 @@
 	}
 
 	.conversation-row.active {
-		background: var(--color-accent-subtle);
 		border-left: 2px solid var(--color-primary-500);
 		margin-left: -2px;
+	}
+
+	.conversation-row.active .conversation-title {
+		font-weight: 600;
 	}
 
 	.conversation-item {
