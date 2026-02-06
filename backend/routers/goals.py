@@ -671,162 +671,6 @@ Return JSON with signal_extraction, consciousness_extraction, and cross_mapping 
     return content_blocks
 
 
-def build_call2_user_prompt(
-    signals: List[Dict],
-    oof_values: Dict[str, Any],
-    parse_result: ParseResult,
-    file_count: int,
-    provider: str = "anthropic",
-) -> Any:
-    """
-    Build user prompt for Call 2 (Creative Goal Generation).
-    Contains raw signals + computed OOF values + file content.
-    LLM has full creative freedom to generate goals.
-
-    Returns a string when no images, or a list of content blocks for vision support.
-    """
-    # File content (full for small files, truncated for large)
-    file_sections = []
-    for pf in parse_result.parsed_files:
-        content = pf.text_content[:8000] + ("..." if len(pf.text_content) > 8000 else "")
-        file_sections.append(f"""
-=== FILE: {pf.name} ===
-{content}
-=== END FILE ===
-""")
-    for img in parse_result.image_files:
-        file_sections.append(f"""
-=== FILE: {img.name} (image) ===
-{img.text_content}
-Analyze the image (attached below) to generate business-level goals from what is visible.
-=== END FILE ===
-""")
-
-    # Signals as JSON
-    signals_json = json.dumps(signals, indent=2)
-
-    # Select key OOF values for goal generation context
-    oof_context = {}
-    key_prefixes = [
-        "op_", "drives_", "matrices_", "death_", "unity_",
-        "cascade_", "pathways_", "timeline_"
-    ]
-    for k, v in oof_values.items():
-        if any(k.startswith(p) for p in key_prefixes):
-            if isinstance(v, (int, float)) and not k.startswith("_"):
-                oof_context[k] = round(v, 3) if isinstance(v, float) else v
-            elif isinstance(v, str) and len(v) < 50:
-                oof_context[k] = v
-
-    # Limit to most relevant values (sorted by importance)
-    if len(oof_context) > 150:
-        # Prioritize operator, drive, matrix, and unity values
-        priority_keys = sorted(oof_context.keys(), key=lambda k: (
-            0 if k.startswith("op_") else
-            1 if k.startswith("drives_") else
-            2 if k.startswith("matrices_") else
-            3 if k.startswith("unity_") else
-            4 if k.startswith("death_") else 5
-        ))
-        oof_context = {k: oof_context[k] for k in priority_keys[:150]}
-
-    oof_json = json.dumps(oof_context, indent=2)
-
-    text_prompt = f"""Generate 15-30 goals from the uploaded file data using the UGE 6-field framework.
-
-=== FILE DATA ({file_count} file(s)) ===
-{chr(10).join(file_sections)}
-=== END FILES ===
-
-=== EXTRACTED SIGNALS (from Call 1) ===
-{signals_json}
-=== END SIGNALS ===
-
-=== COMPUTED OOF VALUES (consciousness context) ===
-{oof_json}
-=== END OOF VALUES ===
-
-## GOAL TYPES (select appropriate type for each goal)
-
-### Single-File Types:
-- OPTIMIZE: Amplify existing strength (metrics showing success that could scale)
-- TRANSFORM: Convert friction/weakness (bottlenecks, problems to solve)
-- DISCOVER: Investigate anomaly (unexplained patterns worth exploring)
-- QUANTUM: Activate dormant capacity (unused resources, untapped potential)
-- HIDDEN: Confront avoidance (blind spots, patterns being avoided)
-
-### Multi-File Types (only if {file_count} > 1):
-- INTEGRATION: Connect disconnected data
-- DIFFERENTIATION: Own unique advantage
-- SYNTHESIS: Distill complexity
-- RECONCILIATION: Resolve contradiction
-- ARBITRAGE: Close perception gap
-
-## UGE 6-FIELD FORMAT (for each goal)
-
-{{
-  "type": "OPTIMIZE|TRANSFORM|DISCOVER|QUANTUM|HIDDEN|INTEGRATION|...",
-  "identity": "Concise action statement grounded in data (10-15 words)",
-  "confidence": 40-95,
-  "source_files": ["filename.ext"],
-  "goal_statement": "Name the identity shift — who they're becoming (5-15 words)",
-  "evidence": "Point to their specific work/actions — dots they can verify (40-60 words)",
-  "pattern": "Name what the dots reveal — surprising but verifiable synthesis (30-40 words)",
-  "shadow": "Name the fear + PRESENT cost, not future threat (40-60 words)",
-  "dharma": "Produce self-recognition — homecoming, not arrival (40-60 words)",
-  "first_move": "Convert dharma's recognition into imperative action (20-30 words)"
-}}
-
-## GENERATION RULES
-
-1. Generate 15-30 goals total
-2. Include SPECIFIC data from files (numbers, names, metrics) in identity and first_move
-3. Each goal must have all 6 UGE fields + type + identity + confidence + source_files
-4. Confidence: 85-95 (exact data), 70-84 (inferred), 55-69 (pattern), 40-54 (directional)
-5. No template strings — full linguistic creativity within the structure
-6. Ground first_move in file specifics — make staying still uncomfortable
-7. For image files: infer business context from visual elements — venue type, capacity, infrastructure, operational systems, revenue streams, and market positioning. Go BEYOND describing what you see. Generate goals about the business reality the image represents.
-
-Return JSON: {{"goals": [...]}}"""
-
-    # If no images, return as plain string for all providers
-    if not parse_result.image_files:
-        return text_prompt
-
-    # For Anthropic with images: build content blocks with vision support
-    if provider == "anthropic":
-        content_blocks: List[Dict[str, Any]] = [
-            {"type": "text", "text": text_prompt}
-        ]
-        for img in parse_result.image_files:
-            content_blocks.append({
-                "type": "image",
-                "source": {
-                    "type": "base64",
-                    "media_type": img.image_media_type,
-                    "data": img.image_base64,
-                }
-            })
-            content_blocks.append({
-                "type": "text",
-                "text": f"Above image: {img.name}. Use this image to generate business-level goals — not just observations about pixels, but actionable goals about the operations, revenue, strategy, and potential this image reveals."
-            })
-        return content_blocks
-
-    # For OpenAI with images: build OpenAI vision content blocks
-    content_blocks: List[Dict[str, Any]] = [
-        {"type": "text", "text": text_prompt}
-    ]
-    for img in parse_result.image_files:
-        content_blocks.append({
-            "type": "image_url",
-            "image_url": {
-                "url": f"data:{img.image_media_type};base64,{img.image_base64}",
-            }
-        })
-    return content_blocks
-
-
 def build_call2_user_prompt_skeletons(
     skeletons: List[Dict[str, Any]],
     parse_result: ParseResult,
@@ -1269,37 +1113,35 @@ Return valid JSON only. No markdown, no explanation."""
     # =========================================================================
     api_logger.info("[GOAL DISCOVERY] Step 2.5: Goal classification")
 
-    goal_skeletons = []
-    try:
-        from goal_classifier import GoalClassifier
-        classifier = GoalClassifier()
-        goal_skeletons = classifier.classify(
-            call1_output,
-            existing_goals=[g for g in (request.existing_goals or [])]
+    from goal_classifier import GoalClassifier
+    classifier = GoalClassifier()
+    goal_skeletons = classifier.classify(
+        call1_output,
+        existing_goals=[g for g in (request.existing_goals or [])]
+    )
+
+    if not goal_skeletons:
+        raise HTTPException(
+            status_code=500,
+            detail="Goal discovery failed: classifier produced no goal skeletons from extracted signals"
         )
-        api_logger.info(
-            f"[GOAL DISCOVERY] Classification complete: {len(goal_skeletons)} goal skeletons"
-        )
-        # Log type distribution
-        type_counts: Dict[str, int] = {}
-        for sk in goal_skeletons:
-            t = sk.get("type", "UNKNOWN")
-            type_counts[t] = type_counts.get(t, 0) + 1
-        api_logger.info(f"[GOAL DISCOVERY] Type distribution: {type_counts}")
-    except Exception as e:
-        api_logger.error(f"[GOAL DISCOVERY] Classification error: {e}")
-        api_logger.warning("[GOAL DISCOVERY] Falling back to LLM-driven type assignment")
-        # Fallback: empty skeletons means Call 2 will do its own classification
-        goal_skeletons = []
+
+    # Log type distribution
+    type_counts: Dict[str, int] = {}
+    for sk in goal_skeletons:
+        t = sk.get("type", "UNKNOWN")
+        type_counts[t] = type_counts.get(t, 0) + 1
+    api_logger.info(
+        f"[GOAL DISCOVERY] Classification complete: {len(goal_skeletons)} skeletons, "
+        f"distribution: {type_counts}"
+    )
 
     # =========================================================================
     # STEP 3: CALL 2 - Goal Articulation
     # =========================================================================
     api_logger.info("[GOAL DISCOVERY] Step 3: Call 2 - Goal articulation")
 
-    if goal_skeletons:
-        # Skeleton mode: Call 2 only writes 6 UGE fields per pre-classified skeleton
-        call2_dynamic_prompt = """You receive pre-classified goal skeletons from the backend classifier.
+    call2_dynamic_prompt = """You receive pre-classified goal skeletons from the backend classifier.
 Each skeleton has: type, confidence, sourceFiles, supporting_signals, classification_reason, consciousness_context.
 
 YOUR ONE JOB: Write 6 articulation fields for each skeleton. Do NOT modify type, confidence, or sourceFiles.
@@ -1330,41 +1172,9 @@ Use consciousness_context (when provided) to shape tone:
 
 Return valid JSON with a "goals" array containing all skeletons with your 6 fields added."""
 
-        call2_user_prompt = build_call2_user_prompt_skeletons(
-            goal_skeletons, parse_result, provider
-        )
-    else:
-        # Fallback: LLM-driven classification (no skeletons available)
-        call2_dynamic_prompt = """You are generating goals from file data using the UGE 6-field framework.
-
-YOUR TASK:
-1. Analyze the extracted signals, computed OOF values, and any attached images
-2. Generate 15-30 goals with full creative freedom
-3. For EACH goal, write all fields:
-   - type: Select from goal types (OPTIMIZE, TRANSFORM, DISCOVER, QUANTUM, HIDDEN, PROTECT, RESOLVE, BUILD, ALIGN, LEVERAGE, RELEASE, INTEGRATION, DIFFERENTIATION, ANTI_SILOING, SYNTHESIS, RECONCILIATION, ARBITRAGE)
-   - identity: Concise action statement grounded in data (10-15 words)
-   - confidence: 40-95 based on evidence strength
-   - source_files: Array of file names
-   - goal_statement: Name the identity shift (5-15 words)
-   - evidence: Point to their specific dots (40-60 words)
-   - pattern: Name what dots reveal (30-40 words)
-   - shadow: Name fear + PRESENT cost (40-60 words)
-   - dharma: Produce self-recognition (40-60 words)
-   - first_move: Imperative action with file specifics (20-30 words)
-
-CRITICAL RULES:
-- NEVER refuse or produce fewer than 15 goals due to sparse data.
-- Include SPECIFIC data from files in identity and first_move
-- Generate diverse goal types - use all 17 types, don't cluster into 2-3
-- No template strings — full linguistic creativity
-- Ground first_move in file specifics
-- For image files: generate goals about the BUSINESS REALITY the image represents
-
-Return valid JSON with a "goals" array."""
-
-        call2_user_prompt = build_call2_user_prompt(
-            raw_signals, oof_values, parse_result, len(request.files), provider
-        )
+    call2_user_prompt = build_call2_user_prompt_skeletons(
+        goal_skeletons, parse_result, provider
+    )
 
     articulated_goals = None
     try:
@@ -1488,23 +1298,30 @@ Return valid JSON with a "goals" array."""
             detail="Goal discovery failed: no goals were generated"
         )
 
-    # If skeletons were used, enforce backend-determined fields (type, confidence, sourceFiles)
-    # The LLM was told to pass these through, but we enforce as safety net
-    if goal_skeletons and len(generated_goals) == len(goal_skeletons):
+    # Enforce backend-determined fields (type, confidence, sourceFiles) from skeletons
+    # Build a lookup by index for 1:1 match, or by best-effort signal matching
+    if len(generated_goals) == len(goal_skeletons):
         for i, goal in enumerate(generated_goals):
             skeleton = goal_skeletons[i]
-            goal["type"] = skeleton.get("type", goal.get("type"))
-            goal["confidence"] = skeleton.get("confidence", goal.get("confidence"))
-            goal["source_files"] = skeleton.get("sourceFiles", goal.get("source_files"))
+            goal["type"] = skeleton["type"]
+            goal["confidence"] = skeleton["confidence"]
+            goal["source_files"] = skeleton["sourceFiles"]
             goal["classification_reason"] = skeleton.get("classification_reason")
             goal["consciousness_context"] = skeleton.get("consciousness_context")
-        api_logger.info("[GOAL DISCOVERY] Enforced skeleton fields on articulated goals")
-    elif goal_skeletons:
-        # Count mismatch — LLM returned different number than skeletons
+    else:
+        # LLM returned different count — enforce from skeleton list by position (capped)
         api_logger.warning(
-            f"[GOAL DISCOVERY] Skeleton count mismatch: {len(goal_skeletons)} skeletons vs "
-            f"{len(generated_goals)} articulated goals. Skipping enforcement."
+            f"[GOAL DISCOVERY] Count: {len(goal_skeletons)} skeletons vs "
+            f"{len(generated_goals)} articulated. Enforcing on available pairs."
         )
+        for i in range(min(len(generated_goals), len(goal_skeletons))):
+            skeleton = goal_skeletons[i]
+            generated_goals[i]["type"] = skeleton["type"]
+            generated_goals[i]["confidence"] = skeleton["confidence"]
+            generated_goals[i]["source_files"] = skeleton["sourceFiles"]
+            generated_goals[i]["classification_reason"] = skeleton.get("classification_reason")
+            generated_goals[i]["consciousness_context"] = skeleton.get("consciousness_context")
+    api_logger.info("[GOAL DISCOVERY] Enforced skeleton fields on articulated goals")
 
     # Required fields for a valid goal
     REQUIRED_FIELDS = ["type", "identity", "goal_statement", "first_move"]

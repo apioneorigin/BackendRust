@@ -74,6 +74,12 @@
 		DISCOVER: 'type-discover',
 		QUANTUM: 'type-quantum',
 		HIDDEN: 'type-hidden',
+		PROTECT: 'type-protect',
+		RESOLVE: 'type-resolve',
+		BUILD: 'type-build',
+		ALIGN: 'type-align',
+		LEVERAGE: 'type-leverage',
+		RELEASE: 'type-release',
 		INTEGRATION: 'type-integration',
 		DIFFERENTIATION: 'type-differentiation',
 		ANTI_SILOING: 'type-anti-siloing',
@@ -1112,12 +1118,18 @@
 	.confidence-medium { color: #ca8a04; }
 	.confidence-low { color: #dc2626; }
 
-	/* Goal type colors */
+	/* Goal type colors — all 17 types */
 	.type-optimize { background: #dcfce7; color: #15803d; }
 	.type-transform { background: #dbeafe; color: #1d4ed8; }
 	.type-discover { background: #f3e8ff; color: #7c3aed; }
 	.type-quantum { background: #fef9c3; color: #a16207; }
 	.type-hidden { background: #fee2e2; color: #b91c1c; }
+	.type-protect { background: #d1fae5; color: #065f46; }
+	.type-resolve { background: #fef2f2; color: #991b1b; }
+	.type-build { background: #ede9fe; color: #5b21b6; }
+	.type-align { background: #f0fdf4; color: #166534; }
+	.type-leverage { background: #fff7ed; color: #9a3412; }
+	.type-release { background: #fdf2f8; color: #9d174d; }
 	.type-integration { background: #cffafe; color: #0e7490; }
 	.type-differentiation { background: #ffedd5; color: #c2410c; }
 	.type-anti-siloing { background: #fce7f3; color: #be185d; }
