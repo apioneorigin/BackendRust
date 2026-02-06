@@ -585,13 +585,18 @@ function createChatStore() {
 		},
 
 		async answerQuestion(questionId: string, optionId: string) {
-			// Update locally first for immediate UI response
-			update(state => ({
-				...state,
-				questions: state.questions.map(q =>
-					q.id === questionId ? { ...q, selectedOption: optionId } : q
-				),
-			}));
+			// Save previous selection for rollback
+			let previousOption: string | undefined;
+			update(state => {
+				const q = state.questions.find(q => q.id === questionId);
+				previousOption = q?.selectedOption;
+				return {
+					...state,
+					questions: state.questions.map(q =>
+						q.id === questionId ? { ...q, selectedOption: optionId } : q
+					),
+				};
+			});
 
 			// Persist to backend
 			let conversationId: string | null = null;
@@ -607,18 +612,31 @@ function createChatStore() {
 					});
 				} catch (error) {
 					console.error('Failed to persist question answer:', error);
+					// Rollback on failure
+					update(state => ({
+						...state,
+						questions: state.questions.map(q =>
+							q.id === questionId ? { ...q, selectedOption: previousOption } : q
+						),
+					}));
+					addToast('error', 'Failed to save answer');
 				}
 			}
 		},
 
 		async rateMessage(messageId: string, feedback: 'up' | 'down' | null) {
-			// Update locally first for immediate UI response
-			update(state => ({
-				...state,
-				messages: state.messages.map(m =>
-					m.id === messageId ? { ...m, feedback } : m
-				),
-			}));
+			// Save previous feedback for rollback
+			let previousFeedback: 'up' | 'down' | null | undefined;
+			update(state => {
+				const m = state.messages.find(m => m.id === messageId);
+				previousFeedback = m?.feedback ?? null;
+				return {
+					...state,
+					messages: state.messages.map(m =>
+						m.id === messageId ? { ...m, feedback } : m
+					),
+				};
+			});
 
 			// Persist to backend
 			let conversationId: string | null = null;
@@ -634,6 +652,14 @@ function createChatStore() {
 					});
 				} catch (error) {
 					console.error('Failed to persist message feedback:', error);
+					// Rollback on failure
+					update(state => ({
+						...state,
+						messages: state.messages.map(m =>
+							m.id === messageId ? { ...m, feedback: previousFeedback ?? null } : m
+						),
+					}));
+					addToast('error', 'Failed to save feedback');
 				}
 			}
 		},

@@ -17,6 +17,8 @@
 	let isRedeeming = false;
 	let isCheckingCredits = true;
 
+	let loadError = '';
+
 	onMount(async () => {
 		// Wait for auth to settle
 		await new Promise((resolve) => setTimeout(resolve, 100));
@@ -26,13 +28,18 @@
 			return;
 		}
 
-		// Check current credits
-		await credits.loadBalance();
-		isCheckingCredits = false;
+		try {
+			// Check current credits
+			await credits.loadBalance();
+			isCheckingCredits = false;
 
-		// If user has credits, redirect to chat
-		if ($creditBalance && $creditBalance.creditQuota && $creditBalance.creditQuota > 0) {
-			goto('/chat');
+			// If user has credits, redirect to chat
+			if ($creditBalance && $creditBalance.creditQuota && $creditBalance.creditQuota > 0) {
+				goto('/chat');
+			}
+		} catch (error: any) {
+			isCheckingCredits = false;
+			loadError = error.message || 'Failed to load credits';
 		}
 	});
 
@@ -79,6 +86,11 @@
 	{#if isCheckingCredits}
 		<div class="loading-container">
 			<Spinner size="lg" />
+		</div>
+	{:else if loadError}
+		<div class="loading-container">
+			<p style="color: var(--color-error-500); margin-bottom: 1rem;">{loadError}</p>
+			<button on:click={() => location.reload()} style="padding: 0.5rem 1rem; background: var(--gradient-primary); color: white; border: none; border-radius: 0.5rem; cursor: pointer;">Retry</button>
 		</div>
 	{:else}
 		<div class="credits-card">

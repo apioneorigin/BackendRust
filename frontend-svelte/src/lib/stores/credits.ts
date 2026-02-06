@@ -33,6 +33,7 @@ interface CreditsState {
 	redemptions: Redemption[];
 	usageHistory: UsageRecord[];
 	isLoading: boolean;
+	isLoadingHistory: boolean;
 	error: string | null;
 }
 
@@ -41,6 +42,7 @@ const initialState: CreditsState = {
 	redemptions: [],
 	usageHistory: [],
 	isLoading: false,
+	isLoadingHistory: false,
 	error: null,
 };
 
@@ -118,6 +120,7 @@ function createCreditsStore() {
 		},
 
 		async loadRedemptionHistory(limit: number = 20) {
+			update(state => ({ ...state, isLoadingHistory: true }));
 			try {
 				const response = await api.get<Array<{
 					id: string;
@@ -134,13 +137,15 @@ function createCreditsStore() {
 						credits: r.credits,
 						redeemedAt: new Date(r.redeemed_at),
 					})),
+					isLoadingHistory: false,
 				}));
 			} catch (error: any) {
-				update(state => ({ ...state, error: error.message }));
+				update(state => ({ ...state, error: error.message, isLoadingHistory: false }));
 			}
 		},
 
 		async loadUsageHistory(limit: number = 50) {
+			update(state => ({ ...state, isLoadingHistory: true }));
 			try {
 				const response = await api.get<Array<{
 					id: string;
@@ -159,9 +164,10 @@ function createCreditsStore() {
 						metadata: r.metadata,
 						createdAt: new Date(r.created_at),
 					})),
+					isLoadingHistory: false,
 				}));
 			} catch (error: any) {
-				update(state => ({ ...state, error: error.message }));
+				update(state => ({ ...state, error: error.message, isLoadingHistory: false }));
 			}
 		},
 
@@ -179,6 +185,7 @@ export const credits = createCreditsStore();
 
 // Derived stores
 export const creditBalance = derived(credits, $credits => $credits.balance);
+export const isLoadingCreditHistory = derived(credits, $credits => $credits.isLoadingHistory);
 export const isLowCredits = derived(credits, $credits => {
 	if (!$credits.balance) return false;
 	return $credits.balance.percentageUsed >= 80;

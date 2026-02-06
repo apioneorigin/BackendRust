@@ -67,11 +67,16 @@
 		// Store handles cancellation of in-flight requests (no guard needed)
 		if ($currentConversation?.id === conversationId) return;
 
+		isSelectingConversation = true;
 		// Navigate first for instant feedback, then load data
 		if (!$page.url.pathname.startsWith('/chat')) {
 			goto('/chat');
 		}
-		await chat.selectConversation(conversationId);
+		try {
+			await chat.selectConversation(conversationId);
+		} finally {
+			isSelectingConversation = false;
+		}
 	}
 
 	function formatConversationDate(date: Date | string | undefined): string {

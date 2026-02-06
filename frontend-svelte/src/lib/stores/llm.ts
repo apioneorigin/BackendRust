@@ -6,12 +6,13 @@
 
 import { derived, writable } from 'svelte/store';
 import { chat } from './chat';
+import { matrix } from './matrix';
 
 /** Writable flag for non-chat LLM calls (goal discovery, etc.) */
 export const llmManualBusy = writable(false);
 
-/** Derived: true when any LLM call is active */
+/** Derived: true when any LLM call is active (chat streaming, matrix processing, or manual) */
 export const llmBusy = derived(
-	[chat, llmManualBusy],
-	([$chat, $manual]) => $chat.isStreaming || $manual
+	[chat, matrix, llmManualBusy],
+	([$chat, $matrix, $manual]) => $chat.isStreaming || $matrix.isProcessing || $manual
 );

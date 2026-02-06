@@ -15,8 +15,13 @@
 	let deleteDocId: string | null = null;
 
 	onMount(async () => {
-		await documents.loadDocuments();
-		isLoading = false;
+		try {
+			await documents.loadDocuments();
+		} catch (error: any) {
+			addToast('error', error.message || 'Failed to load documents');
+		} finally {
+			isLoading = false;
+		}
 	});
 
 	$: filteredDocs = $documentList.filter((d) => {
@@ -212,7 +217,7 @@
 							{formatRelativeTime(doc.lastUpdatedAt)}
 						</span>
 						<div class="document-actions">
-							<a href="/documents/{doc.id}" class="action-btn view-btn">
+							<a href="/api/documents/{doc.id}/download" target="_blank" rel="noopener" class="action-btn view-btn">
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
 									width="16"
