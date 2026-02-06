@@ -827,6 +827,67 @@ Return JSON: {{"goals": [...]}}"""
     return content_blocks
 
 
+def build_call2_user_prompt_skeletons(
+    skeletons: List[Dict[str, Any]],
+    parse_result: ParseResult,
+    provider: str = "anthropic",
+) -> Any:
+    """
+    Build user prompt for Call 2 when pre-classified skeletons are available.
+    Passes skeletons as JSON for the LLM to articulate.
+    Returns multimodal content blocks when images are present.
+    """
+    skeletons_json = json.dumps(skeletons, indent=2)
+
+    text_prompt = f"""Articulate the following {len(skeletons)} pre-classified goal skeletons.
+
+For each skeleton, write: identity, goal_statement, evidence, pattern, shadow, dharma, first_move.
+Pass through type, confidence, sourceFiles unchanged.
+
+=== PRE-CLASSIFIED GOAL SKELETONS ===
+{skeletons_json}
+=== END SKELETONS ===
+
+Return JSON: {{"goals": [...]}} where each goal has all skeleton fields + your 6 articulation fields."""
+
+    # If no images, return as plain string
+    if not parse_result.image_files:
+        return text_prompt
+
+    # For Anthropic with images
+    if provider == "anthropic":
+        content_blocks: List[Dict[str, Any]] = [
+            {"type": "text", "text": text_prompt}
+        ]
+        for img in parse_result.image_files:
+            content_blocks.append({
+                "type": "image",
+                "source": {
+                    "type": "base64",
+                    "media_type": img.image_media_type,
+                    "data": img.image_base64,
+                }
+            })
+            content_blocks.append({
+                "type": "text",
+                "text": f"Above image: {img.name}. Use visual context from this image to write richer, business-grounded articulations for the skeletons sourced from this file."
+            })
+        return content_blocks
+
+    # For OpenAI with images
+    content_blocks: List[Dict[str, Any]] = [
+        {"type": "text", "text": text_prompt}
+    ]
+    for img in parse_result.image_files:
+        content_blocks.append({
+            "type": "image_url",
+            "image_url": {
+                "url": f"data:{img.image_media_type};base64,{img.image_base64}",
+            }
+        })
+    return content_blocks
+
+
 def get_goal_discovery_model_config(model: str) -> Dict[str, Any]:
     """Get model configuration for goal discovery."""
     configs = {
@@ -1204,17 +1265,83 @@ Return valid JSON only. No markdown, no explanation."""
         )
 
     # =========================================================================
-    # STEP 3: CALL 2 - Creative Goal Generation
+    # STEP 2.5: GOAL CLASSIFICATION (backend-driven type assignment)
     # =========================================================================
-    api_logger.info("[GOAL DISCOVERY] Step 3: Call 2 - Goal generation")
+    api_logger.info("[GOAL DISCOVERY] Step 2.5: Goal classification")
 
-    call2_dynamic_prompt = """You are generating goals from file data using the UGE 6-field framework.
+    goal_skeletons = []
+    try:
+        from goal_classifier import GoalClassifier
+        classifier = GoalClassifier()
+        goal_skeletons = classifier.classify(
+            call1_output,
+            existing_goals=[g for g in (request.existing_goals or [])]
+        )
+        api_logger.info(
+            f"[GOAL DISCOVERY] Classification complete: {len(goal_skeletons)} goal skeletons"
+        )
+        # Log type distribution
+        type_counts: Dict[str, int] = {}
+        for sk in goal_skeletons:
+            t = sk.get("type", "UNKNOWN")
+            type_counts[t] = type_counts.get(t, 0) + 1
+        api_logger.info(f"[GOAL DISCOVERY] Type distribution: {type_counts}")
+    except Exception as e:
+        api_logger.error(f"[GOAL DISCOVERY] Classification error: {e}")
+        api_logger.warning("[GOAL DISCOVERY] Falling back to LLM-driven type assignment")
+        # Fallback: empty skeletons means Call 2 will do its own classification
+        goal_skeletons = []
+
+    # =========================================================================
+    # STEP 3: CALL 2 - Goal Articulation
+    # =========================================================================
+    api_logger.info("[GOAL DISCOVERY] Step 3: Call 2 - Goal articulation")
+
+    if goal_skeletons:
+        # Skeleton mode: Call 2 only writes 6 UGE fields per pre-classified skeleton
+        call2_dynamic_prompt = """You receive pre-classified goal skeletons from the backend classifier.
+Each skeleton has: type, confidence, sourceFiles, supporting_signals, classification_reason, consciousness_context.
+
+YOUR ONE JOB: Write 6 articulation fields for each skeleton. Do NOT modify type, confidence, or sourceFiles.
+
+For EACH skeleton, write:
+- identity: Concise action statement grounded in signal data (10-15 words)
+- goal_statement: Name the identity shift — who they're becoming (5-15 words)
+- evidence: Point to their specific work/actions — undeniable dots they can verify (40-60 words)
+- pattern: Name what the evidence reveals — surprising but verifiable synthesis (30-40 words)
+- shadow: Name the fear + its PRESENT cost, not future threat (40-60 words)
+- dharma: Produce self-recognition — homecoming, not arrival (40-60 words)
+- first_move: Convert dharma's recognition into concrete imperative action (20-30 words)
+
+CRITICAL RULES:
+- NEVER refuse or skip skeletons. Articulate ALL of them.
+- Pass through type, confidence, sourceFiles unchanged from each skeleton.
+- No template strings — full linguistic creativity within the logical frame.
+- Shadow MUST be present tense ("is costing" not "will cost").
+- Evidence MUST cite specific dots from the supporting_signals.
+- first_move MUST start with imperative verb and reference file specifics.
+- Framework concealment: NEVER use Maya, S-level, Karma, operator names.
+- For image-sourced goals: generate business-level articulation, not visual descriptions.
+
+Use consciousness_context (when provided) to shape tone:
+- Matrix positions inform language style (Power at Victim = empowerment, Truth at Delusion = honest confrontation)
+- Bottleneck data informs shadow framing (but NEVER name operators directly)
+- Drive profile informs vocabulary (Achievement = competitive, Freedom = liberation, Love = connection)
+
+Return valid JSON with a "goals" array containing all skeletons with your 6 fields added."""
+
+        call2_user_prompt = build_call2_user_prompt_skeletons(
+            goal_skeletons, parse_result, provider
+        )
+    else:
+        # Fallback: LLM-driven classification (no skeletons available)
+        call2_dynamic_prompt = """You are generating goals from file data using the UGE 6-field framework.
 
 YOUR TASK:
 1. Analyze the extracted signals, computed OOF values, and any attached images
 2. Generate 15-30 goals with full creative freedom
 3. For EACH goal, write all fields:
-   - type: Select from the 11 goal types
+   - type: Select from goal types (OPTIMIZE, TRANSFORM, DISCOVER, QUANTUM, HIDDEN, PROTECT, RESOLVE, BUILD, ALIGN, LEVERAGE, RELEASE, INTEGRATION, DIFFERENTIATION, ANTI_SILOING, SYNTHESIS, RECONCILIATION, ARBITRAGE)
    - identity: Concise action statement grounded in data (10-15 words)
    - confidence: 40-95 based on evidence strength
    - source_files: Array of file names
@@ -1226,18 +1353,18 @@ YOUR TASK:
    - first_move: Imperative action with file specifics (20-30 words)
 
 CRITICAL RULES:
-- NEVER refuse or produce fewer than 15 goals due to sparse data. Work with whatever exists. Sparse data = lower confidence, NOT fewer goals.
-- Include SPECIFIC data from files (numbers, names, metrics) in identity and first_move
-- Generate diverse goal types - don't cluster into just 2-3 types
+- NEVER refuse or produce fewer than 15 goals due to sparse data.
+- Include SPECIFIC data from files in identity and first_move
+- Generate diverse goal types - use all 17 types, don't cluster into 2-3
 - No template strings — full linguistic creativity
-- Ground first_move in file specifics — make staying still uncomfortable
-- For image files: generate goals about the BUSINESS REALITY the image represents — revenue optimization, operational efficiency, market positioning, capacity utilization, monetization strategies — not just observations about what is visible
+- Ground first_move in file specifics
+- For image files: generate goals about the BUSINESS REALITY the image represents
 
 Return valid JSON with a "goals" array."""
 
-    call2_user_prompt = build_call2_user_prompt(
-        raw_signals, oof_values, parse_result, len(request.files), provider
-    )
+        call2_user_prompt = build_call2_user_prompt(
+            raw_signals, oof_values, parse_result, len(request.files), provider
+        )
 
     articulated_goals = None
     try:
@@ -1359,6 +1486,24 @@ Return valid JSON with a "goals" array."""
         raise HTTPException(
             status_code=500,
             detail="Goal discovery failed: no goals were generated"
+        )
+
+    # If skeletons were used, enforce backend-determined fields (type, confidence, sourceFiles)
+    # The LLM was told to pass these through, but we enforce as safety net
+    if goal_skeletons and len(generated_goals) == len(goal_skeletons):
+        for i, goal in enumerate(generated_goals):
+            skeleton = goal_skeletons[i]
+            goal["type"] = skeleton.get("type", goal.get("type"))
+            goal["confidence"] = skeleton.get("confidence", goal.get("confidence"))
+            goal["source_files"] = skeleton.get("sourceFiles", goal.get("source_files"))
+            goal["classification_reason"] = skeleton.get("classification_reason")
+            goal["consciousness_context"] = skeleton.get("consciousness_context")
+        api_logger.info("[GOAL DISCOVERY] Enforced skeleton fields on articulated goals")
+    elif goal_skeletons:
+        # Count mismatch — LLM returned different number than skeletons
+        api_logger.warning(
+            f"[GOAL DISCOVERY] Skeleton count mismatch: {len(goal_skeletons)} skeletons vs "
+            f"{len(generated_goals)} articulated goals. Skipping enforcement."
         )
 
     # Required fields for a valid goal
