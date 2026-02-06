@@ -45,7 +45,7 @@ if [ ! -d "backend/venv" ]; then
     fi
     echo "    Installing dependencies..."
     source venv/bin/activate
-    pip install -r requirements.txt
+    pip install -r backend/requirements.txt
     if [ $? -ne 0 ]; then
         echo "ERROR: Failed to install dependencies."
         exit 1
