@@ -11,6 +11,7 @@ import os
 import json
 import re
 import time
+import traceback
 import httpx
 from datetime import datetime
 from typing import Optional, List, Dict, Any
@@ -961,8 +962,10 @@ Return valid JSON only. No markdown, no explanation."""
     call1_user_content = build_call1_user_content(parse_result, request.files, request.existing_goals, provider)
 
     call1_output = None
+    # Longer timeout when web search is enabled (server-side searches add latency)
+    call1_timeout = 300.0 if request.web_search else 180.0
     try:
-        async with httpx.AsyncClient(timeout=120.0) as client:
+        async with httpx.AsyncClient(timeout=call1_timeout) as client:
             if provider == "anthropic":
                 # Anthropic with prompt caching
                 system_content = [
@@ -1026,24 +1029,26 @@ Return valid JSON only. No markdown, no explanation."""
 
                 # Diagnostic: stop reason and content block types
                 stop_reason = data.get("stop_reason", "unknown")
-                block_types = [b.get("type") for b in data.get("content", [])]
+                content_blocks = data.get("content") or []
+                block_types = [b.get("type") for b in content_blocks]
                 api_logger.info(
                     f"[GOAL DISCOVERY] Call 1 Anthropic response: stop_reason={stop_reason}, "
                     f"blocks={block_types}, output_tokens={data.get('usage', {}).get('output_tokens', '?')}"
                 )
 
                 # Extract usage
-                usage = data.get("usage", {})
+                usage = data.get("usage") or {}
                 total_usage["call1_input_tokens"] = usage.get("input_tokens", 0)
                 total_usage["call1_output_tokens"] = usage.get("output_tokens", 0)
                 total_usage["cache_read_tokens"] += usage.get("cache_read_input_tokens", 0)
                 total_usage["cache_write_tokens"] += usage.get("cache_creation_input_tokens", 0)
 
-                # Log web search queries
-                content_blocks = data.get("content", [])
+                # Log web search queries (server-side tools use "server_tool_use" type)
                 search_count = 0
                 for block in content_blocks:
-                    if block.get("type") == "tool_use" and block.get("name") == "web_search":
+                    block_type = block.get("type", "")
+                    block_name = block.get("name", "")
+                    if block_name == "web_search" and block_type in ("tool_use", "server_tool_use"):
                         query = block.get("input", {}).get("query", "")
                         if query:
                             search_count += 1
@@ -1100,9 +1105,20 @@ Return valid JSON only. No markdown, no explanation."""
                 total_usage["call1_output_tokens"] = usage.get("completion_tokens", 0)
 
                 # Extract response text
-                response_text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                choices = data.get("choices") or [{}]
+                response_text = choices[0].get("message", {}).get("content", "") if choices else ""
                 call1_output = parse_llm_json_response(response_text, "CALL1")
 
+    except httpx.TimeoutException:
+        elapsed = time.time() - start_time
+        api_logger.error(
+            f"[GOAL DISCOVERY] Call 1 timed out after {elapsed:.1f}s "
+            f"(limit={call1_timeout}s, provider={provider}, web_search={request.web_search})"
+        )
+        raise HTTPException(
+            status_code=504,
+            detail=f"Goal discovery timed out during signal extraction ({elapsed:.0f}s). Try again or disable web search."
+        )
     except httpx.HTTPStatusError as e:
         api_logger.error(f"[GOAL DISCOVERY] Call 1 HTTP error: {e.response.status_code}")
         api_logger.error(f"[GOAL DISCOVERY] Call 1 response: {e.response.text[:1000]}")
@@ -1111,10 +1127,11 @@ Return valid JSON only. No markdown, no explanation."""
             detail=f"Goal discovery failed: LLM API returned {e.response.status_code} during signal extraction"
         )
     except Exception as e:
-        api_logger.error(f"[GOAL DISCOVERY] Call 1 error: {e}")
+        api_logger.error(f"[GOAL DISCOVERY] Call 1 error ({type(e).__name__}): {e}")
+        api_logger.error(f"[GOAL DISCOVERY] Call 1 traceback:\n{traceback.format_exc()}")
         raise HTTPException(
             status_code=500,
-            detail=f"Goal discovery failed: signal extraction error — {e}"
+            detail=f"Goal discovery failed: signal extraction error — {type(e).__name__}: {e}"
         )
 
     if not call1_output:
@@ -1140,60 +1157,76 @@ Return valid JSON only. No markdown, no explanation."""
     # =========================================================================
     api_logger.info("[GOAL DISCOVERY] Step 2: Backend OOF computation")
 
-    from formulas.inference import OOFInferenceEngine
-    from formulas.operators import SHORT_TO_CANONICAL, CANONICAL_OPERATOR_NAMES
+    try:
+        from formulas.inference import OOFInferenceEngine
+        from formulas.operators import SHORT_TO_CANONICAL, CANONICAL_OPERATOR_NAMES
 
-    inference_engine = OOFInferenceEngine()
+        inference_engine = OOFInferenceEngine()
 
-    # Extract operators from Call 1 observations
-    observations = call1_output.get("observations") or []
-    operators: Dict[str, float] = {}
-    for obs in observations:
-        var_name = obs.get("var", "")
-        value = obs.get("value")
-        if value is None:
-            continue
-        canonical = SHORT_TO_CANONICAL.get(var_name)
-        if canonical is None and var_name in CANONICAL_OPERATOR_NAMES:
-            canonical = var_name
-        if canonical:
-            try:
-                parsed = float(value) if isinstance(value, (int, float)) else float(re.search(r'-?\d+\.?\d*', str(value)).group())
-                if 0.0 <= parsed <= 1.0:
-                    operators[canonical] = parsed
-            except (TypeError, ValueError, AttributeError):
-                pass
+        # Extract operators from Call 1 observations
+        observations = call1_output.get("observations") or []
+        operators: Dict[str, float] = {}
+        for obs in observations:
+            var_name = obs.get("var", "")
+            value = obs.get("value")
+            if value is None:
+                continue
+            canonical = SHORT_TO_CANONICAL.get(var_name)
+            if canonical is None and var_name in CANONICAL_OPERATOR_NAMES:
+                canonical = var_name
+            if canonical:
+                try:
+                    parsed = float(value) if isinstance(value, (int, float)) else float(re.search(r'-?\d+\.?\d*', str(value)).group())
+                    if 0.0 <= parsed <= 1.0:
+                        operators[canonical] = parsed
+                except (TypeError, ValueError, AttributeError):
+                    pass
 
-    # Parse S-level
-    s_level_raw = call1_output.get("s_level")
-    s_level = None
-    if isinstance(s_level_raw, (int, float)):
-        s_level = float(s_level_raw)
-    elif isinstance(s_level_raw, str):
-        match = re.search(r'S?(\d+\.?\d*)', s_level_raw)
-        if match:
-            s_level = float(match.group(1))
+        # Parse S-level
+        s_level_raw = call1_output.get("s_level")
+        s_level = None
+        if isinstance(s_level_raw, (int, float)):
+            s_level = float(s_level_raw)
+        elif isinstance(s_level_raw, str):
+            match = re.search(r'S?(\d+\.?\d*)', s_level_raw)
+            if match:
+                s_level = float(match.group(1))
 
-    # Run full OOF inference
-    profile = inference_engine.calculate_full_profile(operators, s_level)
-    oof_values = inference_engine._flatten_profile(profile, {})
+        # Run full OOF inference
+        profile = inference_engine.calculate_full_profile(operators, s_level)
+        oof_values = inference_engine._flatten_profile(profile, {})
 
-    api_logger.info(
-        f"[GOAL DISCOVERY] OOF computation complete: {len(operators)} operators, "
-        f"s_level={s_level}, {len(oof_values)} computed values"
-    )
+        api_logger.info(
+            f"[GOAL DISCOVERY] OOF computation complete: {len(operators)} operators, "
+            f"s_level={s_level}, {len(oof_values)} computed values"
+        )
+    except Exception as e:
+        api_logger.error(f"[GOAL DISCOVERY] Step 2 OOF computation error ({type(e).__name__}): {e}")
+        api_logger.error(f"[GOAL DISCOVERY] Step 2 traceback:\n{traceback.format_exc()}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Goal discovery failed: OOF computation error — {type(e).__name__}: {e}"
+        )
 
     # =========================================================================
     # STEP 2.5: GOAL CLASSIFICATION (backend-driven type assignment)
     # =========================================================================
     api_logger.info("[GOAL DISCOVERY] Step 2.5: Goal classification")
 
-    from goal_classifier import GoalClassifier
-    classifier = GoalClassifier()
-    goal_skeletons = classifier.classify(
-        call1_output,
-        existing_goals=[g for g in (request.existing_goals or [])]
-    )
+    try:
+        from goal_classifier import GoalClassifier
+        classifier = GoalClassifier()
+        goal_skeletons = classifier.classify(
+            call1_output,
+            existing_goals=[g for g in (request.existing_goals or [])]
+        )
+    except Exception as e:
+        api_logger.error(f"[GOAL DISCOVERY] Step 2.5 classification error ({type(e).__name__}): {e}")
+        api_logger.error(f"[GOAL DISCOVERY] Step 2.5 traceback:\n{traceback.format_exc()}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Goal discovery failed: classification error — {type(e).__name__}: {e}"
+        )
 
     if not goal_skeletons:
         raise HTTPException(
@@ -1252,8 +1285,9 @@ Return valid JSON with a "goals" array containing all skeletons with your 6 fiel
     )
 
     articulated_goals = None
+    call2_timeout = 180.0
     try:
-        async with httpx.AsyncClient(timeout=120.0) as client:
+        async with httpx.AsyncClient(timeout=call2_timeout) as client:
             if provider == "anthropic":
                 # Same cached prefix guarantees cache HIT from Call 1
                 system_content = [
@@ -1295,14 +1329,14 @@ Return valid JSON with a "goals" array containing all skeletons with your 6 fiel
                 data = response.json()
 
                 # Extract usage
-                usage = data.get("usage", {})
+                usage = data.get("usage") or {}
                 total_usage["call2_input_tokens"] = usage.get("input_tokens", 0)
                 total_usage["call2_output_tokens"] = usage.get("output_tokens", 0)
                 total_usage["cache_read_tokens"] += usage.get("cache_read_input_tokens", 0)
                 total_usage["cache_write_tokens"] += usage.get("cache_creation_input_tokens", 0)
 
                 response_text = ""
-                for block in data.get("content", []):
+                for block in (data.get("content") or []):
                     if block.get("type") == "text":
                         response_text += block.get("text", "")
 
@@ -1338,13 +1372,24 @@ Return valid JSON with a "goals" array containing all skeletons with your 6 fiel
                 response.raise_for_status()
                 data = response.json()
 
-                usage = data.get("usage", {})
+                usage = data.get("usage") or {}
                 total_usage["call2_input_tokens"] = usage.get("prompt_tokens", 0)
                 total_usage["call2_output_tokens"] = usage.get("completion_tokens", 0)
 
-                response_text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                choices = data.get("choices") or [{}]
+                response_text = choices[0].get("message", {}).get("content", "") if choices else ""
                 articulated_goals = parse_llm_json_response(response_text, "CALL2")
 
+    except httpx.TimeoutException:
+        elapsed = time.time() - start_time
+        api_logger.error(
+            f"[GOAL DISCOVERY] Call 2 timed out after {elapsed:.1f}s "
+            f"(limit={call2_timeout}s, provider={provider})"
+        )
+        raise HTTPException(
+            status_code=504,
+            detail=f"Goal discovery timed out during goal articulation ({elapsed:.0f}s). Try again."
+        )
     except httpx.HTTPStatusError as e:
         api_logger.error(f"[GOAL DISCOVERY] Call 2 HTTP error: {e.response.status_code}")
         raise HTTPException(
@@ -1352,10 +1397,11 @@ Return valid JSON with a "goals" array containing all skeletons with your 6 fiel
             detail=f"Goal discovery failed: LLM API returned {e.response.status_code} during goal articulation"
         )
     except Exception as e:
-        api_logger.error(f"[GOAL DISCOVERY] Call 2 error: {e}")
+        api_logger.error(f"[GOAL DISCOVERY] Call 2 error ({type(e).__name__}): {e}")
+        api_logger.error(f"[GOAL DISCOVERY] Call 2 traceback:\n{traceback.format_exc()}")
         raise HTTPException(
             status_code=500,
-            detail=f"Goal discovery failed: goal articulation error — {e}"
+            detail=f"Goal discovery failed: goal articulation error — {type(e).__name__}: {e}"
         )
 
     if not articulated_goals:
@@ -1478,23 +1524,26 @@ Return valid JSON with a "goals" array containing all skeletons with your 6 fiel
     )
 
     # Persist this discovery to the database so it survives refreshes/sessions
-    discovery_id = generate_id()
-    file_names = [f.name for f in request.files]
-    file_summary = generate_file_summary(parse_result)
-    discovery = FileGoalDiscovery(
-        id=discovery_id,
-        user_id=current_user.id,
-        organization_id=current_user.organization_id,
-        file_names=file_names,
-        file_count=len(request.files),
-        file_summary=file_summary,
-        goals=final_goals,
-        goal_count=len(final_goals),
-    )
-    db.add(discovery)
-    await db.commit()
-
-    api_logger.info(f"[GOAL DISCOVERY] Persisted discovery {discovery_id} with {len(final_goals)} goals")
+    try:
+        discovery_id = generate_id()
+        file_names = [f.name for f in request.files]
+        file_summary = generate_file_summary(parse_result)
+        discovery = FileGoalDiscovery(
+            id=discovery_id,
+            user_id=current_user.id,
+            organization_id=current_user.organization_id,
+            file_names=file_names,
+            file_count=len(request.files),
+            file_summary=file_summary,
+            goals=final_goals,
+            goal_count=len(final_goals),
+        )
+        db.add(discovery)
+        await db.commit()
+        api_logger.info(f"[GOAL DISCOVERY] Persisted discovery {discovery_id} with {len(final_goals)} goals")
+    except Exception as e:
+        api_logger.error(f"[GOAL DISCOVERY] DB persist failed ({type(e).__name__}): {e}")
+        await db.rollback()
 
     return DiscoverGoalsResponse(
         success=True,
