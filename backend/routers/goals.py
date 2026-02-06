@@ -25,8 +25,7 @@ from routers.auth import get_current_user, generate_id
 from utils import get_or_404, paginate, to_response, to_response_list, CamelModel
 from logging_config import api_logger
 
-# Goal classifier (backend intelligence between Call 1 and Call 2)
-from goal_classifier import GoalClassifier, classify_goals
+# File parser for processing uploads
 from file_parser import parse_all_files, ParseResult, ParsedFile
 
 router = APIRouter(prefix="/api", tags=["goals"])
@@ -568,6 +567,7 @@ class DiscoverGoalsRequest(BaseModel):
     files: List[FileData]
     existing_goals: Optional[List[Dict[str, Any]]] = None
     model: str = "gpt-5.2"
+    web_search: bool = True  # Enable web search for entity identification, benchmarks, trends
 
 
 class DiscoverGoalsResponse(CamelModel):
@@ -672,54 +672,117 @@ Return JSON with signal_extraction, consciousness_extraction, and cross_mapping 
 
 
 def build_call2_user_prompt(
-    goal_skeletons: List[Dict],
+    signals: List[Dict],
+    oof_values: Dict[str, Any],
     parse_result: ParseResult,
+    file_count: int,
 ) -> str:
     """
-    Build user prompt for Call 2 (UGE Articulation).
-    Contains goal skeletons + file summaries (not full content).
+    Build user prompt for Call 2 (Creative Goal Generation).
+    Contains raw signals + computed OOF values + file content.
+    LLM has full creative freedom to generate goals.
     """
-    # File summaries (first 2000 chars each to save tokens)
-    file_summaries = []
+    # File content (full for small files, truncated for large)
+    file_sections = []
     for pf in parse_result.parsed_files:
-        summary = pf.text_content[:2000] + ("..." if len(pf.text_content) > 2000 else "")
-        file_summaries.append(f"""
-=== FILE SUMMARY: {pf.name} ===
-{summary}
-=== END SUMMARY ===
+        content = pf.text_content[:8000] + ("..." if len(pf.text_content) > 8000 else "")
+        file_sections.append(f"""
+=== FILE: {pf.name} ===
+{content}
+=== END FILE ===
 """)
     for img in parse_result.image_files:
-        file_summaries.append(f"""
-=== FILE SUMMARY: {img.name} ===
+        file_sections.append(f"""
+=== FILE: {img.name} (image) ===
 {img.text_content}
-=== END SUMMARY ===
+=== END FILE ===
 """)
 
-    # Goal skeletons as JSON
-    skeletons_json = json.dumps(goal_skeletons, indent=2)
+    # Signals as JSON
+    signals_json = json.dumps(signals, indent=2)
 
-    return f"""Articulate the following goal skeletons using the UGE 6-field framework.
+    # Select key OOF values for goal generation context
+    oof_context = {}
+    key_prefixes = [
+        "op_", "drives_", "matrices_", "death_", "unity_",
+        "cascade_", "pathways_", "timeline_"
+    ]
+    for k, v in oof_values.items():
+        if any(k.startswith(p) for p in key_prefixes):
+            if isinstance(v, (int, float)) and not k.startswith("_"):
+                oof_context[k] = round(v, 3) if isinstance(v, float) else v
+            elif isinstance(v, str) and len(v) < 50:
+                oof_context[k] = v
 
-=== GOAL SKELETONS (from backend classification) ===
-{skeletons_json}
-=== END SKELETONS ===
+    # Limit to most relevant values (sorted by importance)
+    if len(oof_context) > 150:
+        # Prioritize operator, drive, matrix, and unity values
+        priority_keys = sorted(oof_context.keys(), key=lambda k: (
+            0 if k.startswith("op_") else
+            1 if k.startswith("drives_") else
+            2 if k.startswith("matrices_") else
+            3 if k.startswith("unity_") else
+            4 if k.startswith("death_") else 5
+        ))
+        oof_context = {k: oof_context[k] for k in priority_keys[:150]}
 
-=== FILE SUMMARIES (for grounding) ===
-{chr(10).join(file_summaries)}
-=== END FILE SUMMARIES ===
+    oof_json = json.dumps(oof_context, indent=2)
 
-For each goal skeleton, write these 6 fields:
-- goal_statement: Name the identity shift — who they're becoming (5-15 words)
-- evidence: Point to their specific work/actions — dots they can verify (40-60 words)
-- pattern: Name what the dots reveal — surprising but verifiable synthesis (30-40 words)
-- shadow: Name the specific fear + its PRESENT cost, not future threat (40-60 words)
-- dharma: Produce self-recognition — homecoming, not arrival (40-60 words)
-- first_move: Convert dharma's recognition into imperative action (20-30 words)
+    return f"""Generate 15-30 goals from the uploaded file data using the UGE 6-field framework.
 
-Use consciousness_context (if present) to shape tone. Ground in their specific signals.
-No template strings. Full linguistic freedom within the logical frame.
+=== FILE DATA ({file_count} file(s)) ===
+{chr(10).join(file_sections)}
+=== END FILES ===
 
-Return JSON: {{"goals": [{{...skeleton fields..., "goal_statement": "...", "evidence": "...", "pattern": "...", "shadow": "...", "dharma": "...", "first_move": "..."}}]}}"""
+=== EXTRACTED SIGNALS (from Call 1) ===
+{signals_json}
+=== END SIGNALS ===
+
+=== COMPUTED OOF VALUES (consciousness context) ===
+{oof_json}
+=== END OOF VALUES ===
+
+## GOAL TYPES (select appropriate type for each goal)
+
+### Single-File Types:
+- OPTIMIZE: Amplify existing strength (metrics showing success that could scale)
+- TRANSFORM: Convert friction/weakness (bottlenecks, problems to solve)
+- DISCOVER: Investigate anomaly (unexplained patterns worth exploring)
+- QUANTUM: Activate dormant capacity (unused resources, untapped potential)
+- HIDDEN: Confront avoidance (blind spots, patterns being avoided)
+
+### Multi-File Types (only if {file_count} > 1):
+- INTEGRATION: Connect disconnected data
+- DIFFERENTIATION: Own unique advantage
+- SYNTHESIS: Distill complexity
+- RECONCILIATION: Resolve contradiction
+- ARBITRAGE: Close perception gap
+
+## UGE 6-FIELD FORMAT (for each goal)
+
+{{
+  "type": "OPTIMIZE|TRANSFORM|DISCOVER|QUANTUM|HIDDEN|INTEGRATION|...",
+  "identity": "Concise action statement grounded in data (10-15 words)",
+  "confidence": 40-95,
+  "source_files": ["filename.ext"],
+  "goal_statement": "Name the identity shift — who they're becoming (5-15 words)",
+  "evidence": "Point to their specific work/actions — dots they can verify (40-60 words)",
+  "pattern": "Name what the dots reveal — surprising but verifiable synthesis (30-40 words)",
+  "shadow": "Name the fear + PRESENT cost, not future threat (40-60 words)",
+  "dharma": "Produce self-recognition — homecoming, not arrival (40-60 words)",
+  "first_move": "Convert dharma's recognition into imperative action (20-30 words)"
+}}
+
+## GENERATION RULES
+
+1. Generate 15-30 goals total
+2. Include SPECIFIC data from files (numbers, names, metrics) in identity and first_move
+3. Each goal must have all 6 UGE fields + type + identity + confidence + source_files
+4. Confidence: 85-95 (exact data), 70-84 (inferred), 55-69 (pattern), 40-54 (directional)
+5. No template strings — full linguistic creativity within the structure
+6. Ground first_move in file specifics — make staying still uncomfortable
+
+Return JSON: {{"goals": [...]}}"""
 
 
 def get_goal_discovery_model_config(model: str) -> Dict[str, Any]:
@@ -763,10 +826,10 @@ async def discover_goals_from_files(
     Discover goals from uploaded files using 2-call LLM architecture.
 
     Flow:
-    1. Call 1: Extract signals + consciousness operators from files
-    2. Backend: Classify signals into goal skeletons using OOF inference
-    3. Call 2: Articulate goal skeletons with identity + firstMove
-    4. Return merged results
+    1. Call 1: Extract signals + consciousness operators from files (with web search if enabled)
+    2. Backend: Compute OOF values (~2000 derived values from 287 formulas)
+    3. Call 2: Generate goals with full creative freedom (signals + OOF values + file data)
+    4. Post-filter and return (dedup, cap at 30)
     """
     start_time = time.time()
     api_logger.info(f"[GOAL DISCOVERY] Starting for user {current_user.id}, {len(request.files)} files")
@@ -824,13 +887,45 @@ async def discover_goals_from_files(
     # =========================================================================
     api_logger.info("[GOAL DISCOVERY] Step 1: Call 1 - Signal extraction")
 
+    # Web search instructions - only when enabled
+    web_search_instructions = ""
+    if request.web_search:
+        web_search_instructions = """
+
+WEB SEARCH PROTOCOL (REQUIRED):
+Use the web_search tool to gather current real-world data. Execute 5-8 searches to:
+
+1. **Entity Identification**: Identify specific entities in the file data (companies, venues, products, people)
+   - Search: "[entity name] official website" or "[entity name] wikipedia"
+
+2. **Current Benchmarks**: Get 2024-2025 industry benchmarks and standards
+   - Search: "[industry] benchmarks 2025" or "[metric type] industry average"
+
+3. **Market Data**: Current market size, growth rates, competitive landscape
+   - Search: "[market/industry] market size 2025" or "[industry] growth rate"
+
+4. **Comparables**: Similar entities/cases for context
+   - Search: "[entity type] revenue comparison" or "top [entity type] by [metric]"
+
+5. **Innovation/Trends**: Recent developments and emerging opportunities
+   - Search: "[industry] innovation trends 2025" or "[domain] technology adoption"
+
+SEARCH QUERY GUIDELINES:
+- Be specific: "NFL stadium naming rights revenue 2025" not "stadium revenue"
+- Include year for current data: "2024" or "2025"
+- Use entity names from file: if file mentions "Lumen Field", search "Lumen Field Seattle Seahawks"
+- Target quantitative data: revenue, attendance, capacity, growth rates
+
+Include ALL search results in your signal extraction - they provide crucial context for accurate goal discovery."""
+
     call1_dynamic_prompt = f"""You are analyzing {len(request.files)} file(s) for goal discovery.
 Multi-file mode: {len(request.files) > 1}
-
+{web_search_instructions}
 YOUR TASK:
 1. Extract signals from each file using the three-layer protocol (LITERAL, INFERRED, ABSENT)
 2. Extract consciousness operators (25 operators + S-level)
 3. If multiple files, identify cross-file patterns
+{f"4. Use web_search to enrich signals with current benchmarks, entity data, and market context" if request.web_search else ""}
 
 Return valid JSON only. No markdown, no explanation."""
 
@@ -863,14 +958,26 @@ Return valid JSON only. No markdown, no explanation."""
                     ]
                 }
 
+                # Add web search tool if enabled
+                if request.web_search:
+                    request_body["tools"] = [{
+                        "type": "web_search_20250305",
+                        "name": "web_search",
+                        "max_uses": 10
+                    }]
+
                 headers = {
                     "x-api-key": api_key,
                     "anthropic-version": "2023-06-01",
                     "Content-Type": "application/json"
                 }
 
+                # Add web-search beta header if enabled
+                if request.web_search:
+                    headers["anthropic-beta"] = "web-search-2025-03-05"
+
                 content_size = len(str(call1_user_content))
-                api_logger.debug(f"[GOAL DISCOVERY] Call 1 request to Anthropic: {content_size} chars")
+                api_logger.info(f"[GOAL DISCOVERY] Call 1 request to Anthropic: {content_size} chars, web_search={request.web_search}")
                 response = await client.post(
                     model_config["endpoint"],
                     headers=headers,
@@ -886,9 +993,22 @@ Return valid JSON only. No markdown, no explanation."""
                 total_usage["cache_read_tokens"] += usage.get("cache_read_input_tokens", 0)
                 total_usage["cache_write_tokens"] += usage.get("cache_creation_input_tokens", 0)
 
+                # Log web search queries
+                content_blocks = data.get("content", [])
+                search_count = 0
+                for block in content_blocks:
+                    if block.get("type") == "tool_use" and block.get("name") == "web_search":
+                        query = block.get("input", {}).get("query", "")
+                        if query:
+                            search_count += 1
+                            api_logger.info(f"[GOAL DISCOVERY] Web search #{search_count}: {query}")
+
+                if search_count > 0:
+                    api_logger.info(f"[GOAL DISCOVERY] Call 1 executed {search_count} web searches")
+
                 # Extract response text
                 response_text = ""
-                for block in data.get("content", []):
+                for block in content_blocks:
                     if block.get("type") == "text":
                         response_text += block.get("text", "")
 
@@ -952,53 +1072,111 @@ Return valid JSON only. No markdown, no explanation."""
         call1_output = None
 
     # =========================================================================
-    # STEP 2: BACKEND CLASSIFICATION
+    # STEP 2: BACKEND OOF COMPUTATION (enrichment, not classification)
     # =========================================================================
-    api_logger.info("[GOAL DISCOVERY] Step 2: Backend classification")
+    api_logger.info("[GOAL DISCOVERY] Step 2: Backend OOF computation")
 
-    goal_skeletons = []
+    oof_values = {}
+    raw_signals = []
+
     if call1_output:
         try:
-            classifier = GoalClassifier()
-            goal_skeletons = classifier.classify(
-                call1_output,
-                request.existing_goals
-            )
-            api_logger.info(f"[GOAL DISCOVERY] Classified {len(goal_skeletons)} goal skeletons")
-        except Exception as e:
-            api_logger.error(f"[GOAL DISCOVERY] Classification error: {e}")
-            goal_skeletons = []
+            # Import inference engine for OOF computation
+            from formulas.inference import OOFInferenceEngine
+            from formulas.operators import SHORT_TO_CANONICAL, CANONICAL_OPERATOR_NAMES
 
-    # No fallback - fail if classification produces no results
-    if not goal_skeletons:
-        api_logger.error("[GOAL DISCOVERY] Classification produced no goal skeletons")
+            inference_engine = OOFInferenceEngine()
+
+            # Extract operators from Call 1 observations
+            observations = call1_output.get("observations") or []
+            operators: Dict[str, float] = {}
+            for obs in observations:
+                var_name = obs.get("var", "")
+                value = obs.get("value")
+                if value is None:
+                    continue
+                # Map to canonical name
+                canonical = SHORT_TO_CANONICAL.get(var_name)
+                if canonical is None and var_name in CANONICAL_OPERATOR_NAMES:
+                    canonical = var_name
+                if canonical:
+                    try:
+                        parsed = float(value) if isinstance(value, (int, float)) else float(re.search(r'-?\d+\.?\d*', str(value)).group())
+                        if 0.0 <= parsed <= 1.0:
+                            operators[canonical] = parsed
+                    except (TypeError, ValueError, AttributeError):
+                        pass
+
+            # Parse S-level
+            s_level_raw = call1_output.get("s_level")
+            s_level = None
+            if isinstance(s_level_raw, (int, float)):
+                s_level = float(s_level_raw)
+            elif isinstance(s_level_raw, str):
+                match = re.search(r'S?(\d+\.?\d*)', s_level_raw)
+                if match:
+                    s_level = float(match.group(1))
+
+            # Run full OOF inference
+            profile = inference_engine.calculate_full_profile(operators, s_level)
+
+            # Flatten profile to get computed values
+            oof_values = inference_engine._flatten_profile(profile, {})
+
+            api_logger.info(
+                f"[GOAL DISCOVERY] OOF computation complete: {len(operators)} operators, "
+                f"s_level={s_level}, {len(oof_values)} computed values"
+            )
+
+            # Extract raw signals for Call 2
+            raw_signals = call1_output.get("signals") or []
+
+        except Exception as e:
+            api_logger.error(f"[GOAL DISCOVERY] OOF computation error: {e}")
+            oof_values = {}
+            raw_signals = call1_output.get("signals") or []
+
+    # Fail if no signals extracted
+    if not raw_signals:
+        api_logger.error("[GOAL DISCOVERY] No signals extracted from files")
         raise HTTPException(
             status_code=500,
-            detail="Goal discovery failed: no goals could be extracted from the provided files"
+            detail="Goal discovery failed: no signals could be extracted from the provided files"
         )
 
     # =========================================================================
-    # STEP 3: CALL 2 - Articulation
+    # STEP 3: CALL 2 - Creative Goal Generation
     # =========================================================================
-    api_logger.info("[GOAL DISCOVERY] Step 3: Call 2 - Articulation")
+    api_logger.info("[GOAL DISCOVERY] Step 3: Call 2 - Goal generation")
 
-    call2_dynamic_prompt = """You are articulating pre-classified goal skeletons using the UGE framework.
+    call2_dynamic_prompt = """You are generating goals from file data using the UGE 6-field framework.
 
 YOUR TASK:
-For each goal skeleton, write 6 fields:
-- goal_statement: Name the identity shift (5-15 words)
-- evidence: Point to their specific dots they can verify (40-60 words)
-- pattern: Name what the dots reveal — surprising but verifiable (30-40 words)
-- shadow: Name the fear + PRESENT cost, not future threat (40-60 words)
-- dharma: Produce self-recognition — homecoming, not arrival (40-60 words)
-- first_move: Convert dharma's recognition into imperative action (20-30 words)
+1. Analyze the extracted signals and computed OOF values
+2. Generate 15-30 goals with full creative freedom
+3. For EACH goal, write all fields:
+   - type: Select from the 11 goal types
+   - identity: Concise action statement grounded in data (10-15 words)
+   - confidence: 40-95 based on evidence strength
+   - source_files: Array of file names
+   - goal_statement: Name the identity shift (5-15 words)
+   - evidence: Point to their specific dots (40-60 words)
+   - pattern: Name what dots reveal (30-40 words)
+   - shadow: Name fear + PRESENT cost (40-60 words)
+   - dharma: Produce self-recognition (40-60 words)
+   - first_move: Imperative action with file specifics (20-30 words)
 
-Use consciousness_context to shape tone. Ground in file summaries.
-No template strings — full linguistic freedom within logical frame.
+CRITICAL RULES:
+- Include SPECIFIC data from files (numbers, names, metrics) in identity and first_move
+- Generate diverse goal types - don't cluster into just 2-3 types
+- No template strings — full linguistic creativity
+- Ground first_move in file specifics — make staying still uncomfortable
 
-Return valid JSON with a "goals" array containing all skeletons with these 6 fields added."""
+Return valid JSON with a "goals" array."""
 
-    call2_user_prompt = build_call2_user_prompt(goal_skeletons, parse_result)
+    call2_user_prompt = build_call2_user_prompt(
+        raw_signals, oof_values, parse_result, len(request.files)
+    )
 
     articulated_goals = None
     try:
@@ -1106,80 +1284,83 @@ Return valid JSON with a "goals" array containing all skeletons with these 6 fie
         articulated_goals = None
 
     # =========================================================================
-    # STEP 4: MERGE AND RETURN
+    # STEP 4: POST-FILTER AND RETURN
     # =========================================================================
-    api_logger.info("[GOAL DISCOVERY] Step 4: Merge and return")
+    api_logger.info("[GOAL DISCOVERY] Step 4: Post-filter and return")
 
-    # Merge articulated UGE fields into skeletons
-    final_goals = []
-    articulated_list = articulated_goals.get("goals", []) if articulated_goals else []
+    # Get generated goals directly from Call 2
+    generated_goals = articulated_goals.get("goals", []) if articulated_goals else []
 
-    # Required UGE fields from Call 2 (snake_case)
-    UGE_REQUIRED_FIELDS = ["goal_statement", "evidence", "pattern", "shadow", "dharma", "first_move"]
+    if not generated_goals:
+        api_logger.error("[GOAL DISCOVERY] Call 2 returned no goals")
+        raise HTTPException(
+            status_code=500,
+            detail="Goal discovery failed: no goals were generated"
+        )
 
-    # LLM may return camelCase — normalize to snake_case
+    # Required fields for a valid goal
+    REQUIRED_FIELDS = ["type", "identity", "goal_statement", "first_move"]
+
+    # Normalize field names (LLM may return camelCase)
     CAMEL_TO_SNAKE = {
         "goalStatement": "goal_statement",
-        "goal_statement": "goal_statement",
         "firstMove": "first_move",
-        "first_move": "first_move",
+        "sourceFiles": "source_files",
     }
 
-    def normalize_uge_fields(art: Dict) -> Dict:
-        """Normalize LLM response field names to snake_case."""
+    def normalize_goal(goal: Dict) -> Dict:
+        """Normalize goal field names to snake_case."""
         normalized = {}
-        for key, value in art.items():
+        for key, value in goal.items():
             norm_key = CAMEL_TO_SNAKE.get(key, key)
             normalized[norm_key] = value
         return normalized
 
-    # Create lookup by type for merging
-    articulated_by_type: Dict[str, List[Dict]] = {}
-    for ag in articulated_list:
-        goal_type = ag.get("type", "UNKNOWN")
-        if goal_type not in articulated_by_type:
-            articulated_by_type[goal_type] = []
-        articulated_by_type[goal_type].append(normalize_uge_fields(ag))
+    # Light post-filtering
+    final_goals = []
+    seen_identities = set()
 
-    for skeleton in goal_skeletons:
-        goal_type = skeleton.get("type", "UNKNOWN")
-        merged_goal = {**skeleton}
+    for goal in generated_goals:
+        # Normalize field names
+        goal = normalize_goal(goal)
 
-        # Find matching articulation
-        if goal_type not in articulated_by_type or not articulated_by_type[goal_type]:
-            api_logger.error(f"[GOAL DISCOVERY] No articulation found for goal type: {goal_type}")
-            raise HTTPException(
-                status_code=500,
-                detail=f"Goal articulation failed: no articulation returned for goal type '{goal_type}'"
-            )
+        # Skip if missing required fields
+        missing = [f for f in REQUIRED_FIELDS if not goal.get(f)]
+        if missing:
+            api_logger.warning(f"[GOAL DISCOVERY] Skipping goal missing fields: {missing}")
+            continue
 
-        articulated = articulated_by_type[goal_type].pop(0)
+        # Dedup by identity (case-insensitive)
+        identity_key = goal.get("identity", "").lower().strip()
+        if identity_key in seen_identities:
+            api_logger.debug(f"[GOAL DISCOVERY] Skipping duplicate: {identity_key[:50]}")
+            continue
+        seen_identities.add(identity_key)
 
-        # Validate all UGE fields present
-        missing_fields = [f for f in UGE_REQUIRED_FIELDS if not articulated.get(f)]
-        if missing_fields:
-            # Log what fields WERE returned for debugging
-            returned_fields = list(articulated.keys())
-            api_logger.error(f"[GOAL DISCOVERY] Incomplete UGE articulation for {goal_type}: missing {missing_fields}, got {returned_fields}")
-            raise HTTPException(
-                status_code=500,
-                detail=f"Goal articulation incomplete: missing {missing_fields} for goal type '{goal_type}'"
-            )
+        # Add UUID, timestamp, user_id
+        goal["id"] = generate_id()
+        goal["created_at"] = datetime.utcnow().isoformat()
+        goal["user_id"] = current_user.id
 
-        # Add all 6 UGE fields
-        merged_goal["goal_statement"] = articulated["goal_statement"]
-        merged_goal["evidence"] = articulated["evidence"]
-        merged_goal["pattern"] = articulated["pattern"]
-        merged_goal["shadow"] = articulated["shadow"]
-        merged_goal["dharma"] = articulated["dharma"]
-        merged_goal["first_move"] = articulated["first_move"]
+        # Ensure source_files is a list
+        if not goal.get("source_files"):
+            goal["source_files"] = [f.name for f in request.files]
+        elif isinstance(goal["source_files"], str):
+            goal["source_files"] = [goal["source_files"]]
 
-        # Add UUID and timestamp
-        merged_goal["id"] = generate_id()
-        merged_goal["created_at"] = datetime.utcnow().isoformat()
-        merged_goal["user_id"] = current_user.id
+        # Ensure confidence is numeric
+        if not isinstance(goal.get("confidence"), (int, float)):
+            goal["confidence"] = 70  # Default
 
-        final_goals.append(merged_goal)
+        final_goals.append(goal)
+
+        # Cap at 30 goals
+        if len(final_goals) >= 30:
+            break
+
+    api_logger.info(
+        f"[GOAL DISCOVERY] Post-filter: {len(generated_goals)} generated → {len(final_goals)} final"
+    )
 
     # Calculate total usage
     total_usage["total_input_tokens"] = total_usage["call1_input_tokens"] + total_usage["call2_input_tokens"]
