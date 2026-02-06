@@ -1,11 +1,9 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { addToast, auth, chat, llmManualBusy } from '$lib/stores';
+	import { addToast, chat, llmManualBusy } from '$lib/stores';
 	import { Button, Spinner, ConfirmDialog } from '$lib/components/ui';
 	import { api } from '$lib/utils/api';
-
-	export let params: Record<string, string> = {};
 
 	interface DiscoveredGoal {
 		id: string;
@@ -1489,6 +1487,15 @@
 		color: var(--color-veil-soft);
 		font-size: 0.875rem;
 		flex-shrink: 0;
+	}
+
+	.file-badge {
+		font-size: 0.75rem;
+		padding: 0.125rem 0.5rem;
+		background: var(--color-field-depth);
+		color: var(--color-text-manifest);
+		border-radius: 0.25rem;
+		white-space: nowrap;
 	}
 
 	.modal-date {
