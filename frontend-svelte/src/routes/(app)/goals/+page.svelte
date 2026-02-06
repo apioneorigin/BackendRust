@@ -52,6 +52,7 @@
 	let discoveries: FileGoalDiscovery[] = [];
 	let savedGoals: SavedGoal[] = [];
 	let isDiscovering = false;
+	let discoveryAbortController: AbortController | null = null;
 	let isLoading = true;
 	let activeTab: 'discover' | 'saved' = 'discover';
 	let dragOver = false;
@@ -244,13 +245,14 @@
 		}
 
 		isDiscovering = true;
+		discoveryAbortController = new AbortController();
 		llmManualBusy.set(true);
 		try {
 			await api.post('/api/goals/discover-from-files', {
 				files: uploadedFiles,
 				existing_goals: [],
 				web_search: webSearchEnabled
-			}, { timeout: 300000 });
+			}, { timeout: 300000, signal: discoveryAbortController.signal });
 			addToast('success', 'Goals discovered and saved');
 			uploadedFiles = [];
 			// Reload the persisted discoveries
@@ -260,10 +262,21 @@
 				openGoalsModal(discoveries[0]);
 			}
 		} catch (error: any) {
-			addToast('error', error.message || 'Failed to discover goals');
+			if (error.name === 'AbortError') {
+				addToast('info', 'Goal discovery stopped');
+			} else {
+				addToast('error', error.message || 'Failed to discover goals');
+			}
 		} finally {
 			isDiscovering = false;
+			discoveryAbortController = null;
 			llmManualBusy.set(false);
+		}
+	}
+
+	function stopDiscovery() {
+		if (discoveryAbortController) {
+			discoveryAbortController.abort();
 		}
 	}
 
@@ -557,6 +570,14 @@
 						Discover Goals
 					{/if}
 				</button>
+			{#if isDiscovering}
+				<button class="stop-btn" on:click={stopDiscovery} title="Stop discovery">
+					<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<rect x="6" y="6" width="12" height="12" rx="1" />
+					</svg>
+					Stop
+				</button>
+			{/if}
 			</div>
 		{/if}
 	</div>
@@ -1047,6 +1068,25 @@
 	.discover-btn:disabled {
 		opacity: 0.5;
 		cursor: not-allowed;
+	}
+
+	.stop-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.375rem;
+		padding: 0.375rem 0.875rem;
+		background: var(--color-error-500, #dc2626);
+		border: none;
+		border-radius: 0.375rem;
+		font-size: 0.75rem;
+		font-weight: 600;
+		color: white;
+		cursor: pointer;
+		transition: all 0.15s ease;
+	}
+
+	.stop-btn:hover {
+		background: var(--color-error-600, #b91c1c);
 	}
 
 	/* Web search toggle - visible checkbox */
