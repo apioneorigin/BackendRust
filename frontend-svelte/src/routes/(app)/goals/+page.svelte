@@ -61,6 +61,8 @@
 	// Modal state
 	let showGoalsModal = false;
 	let modalDiscovery: FileGoalDiscovery | null = null;
+	let goalsSavedDuringModal = false;
+	let flashLibraryTab = false;
 
 	// Delete confirmation state
 	let showDeleteDiscoveryConfirm = false;
@@ -216,11 +218,24 @@
 	function openGoalsModal(discovery: FileGoalDiscovery) {
 		modalDiscovery = discovery;
 		showGoalsModal = true;
+		goalsSavedDuringModal = false;
 	}
 
 	function closeGoalsModal() {
 		showGoalsModal = false;
 		modalDiscovery = null;
+		if (goalsSavedDuringModal) {
+			flashLibraryTab = true;
+			setTimeout(() => { flashLibraryTab = false; }, 2000);
+		}
+	}
+
+	function getDiscoverySummary(discovery: FileGoalDiscovery): string {
+		if (!discovery.goals || discovery.goals.length === 0) return '';
+		const types = [...new Set(discovery.goals.map((g) => g.type.toLowerCase().replace('_', ' ')))];
+		const summary = types.slice(0, 3).join(', ') + ' signals';
+		const words = summary.split(/\s+/);
+		return words.length <= 10 ? summary : words.slice(0, 10).join(' ');
 	}
 
 	function deleteDiscovery(discoveryId: string) {
@@ -265,6 +280,7 @@
 		savedGoals = [...savedGoals, savedGoal];
 		try {
 			await api.post('/api/goal-inventory/save', { goals: savedGoals });
+			goalsSavedDuringModal = true;
 			addToast('success', 'Goal saved to library');
 		} catch (error) {
 			addToast('error', 'Failed to save goal');
@@ -414,7 +430,7 @@
 			</svg>
 			Discoveries
 		</button>
-		<button class="tab" class:active={activeTab === 'saved'} on:click={() => (activeTab = 'saved')}>
+		<button class="tab" class:active={activeTab === 'saved'} class:flash={flashLibraryTab} on:click={() => (activeTab = 'saved')}>
 			<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 				<path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
 			</svg>
@@ -466,6 +482,14 @@
 				{/if}
 			</div>
 			<div class="upload-bar-actions">
+				<label for="file-input" class="browse-btn">
+					<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+						<polyline points="17 8 12 3 7 8" />
+						<line x1="12" x2="12" y1="3" y2="15" />
+					</svg>
+					Browse
+				</label>
 				<label class="web-search-toggle" title="Enrich with real-world data: benchmarks, trends, comparables">
 					<input type="checkbox" bind:checked={webSearchEnabled} />
 					<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -474,14 +498,6 @@
 						<path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
 					</svg>
 					<span>Web Search</span>
-				</label>
-				<label for="file-input" class="browse-btn">
-					<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-						<polyline points="17 8 12 3 7 8" />
-						<line x1="12" x2="12" y1="3" y2="15" />
-					</svg>
-					Browse
 				</label>
 				<button
 					class="discover-btn"
@@ -533,6 +549,7 @@
 											{fileName}
 										</span>
 									{/each}
+									<span class="discovery-summary">{getDiscoverySummary(discovery)}</span>
 								</div>
 								<div class="discovery-meta">
 									<span class="meta-item">
@@ -541,8 +558,6 @@
 										</svg>
 										{discovery.goalCount} goals
 									</span>
-									<span class="meta-separator">·</span>
-									<span class="meta-item">{formatDate(discovery.createdAt)}</span>
 								</div>
 							</div>
 							<div class="discovery-actions">
@@ -842,6 +857,18 @@
 		color: white;
 	}
 
+	@keyframes flashPulse {
+		0%, 100% { box-shadow: none; }
+		50% { box-shadow: 0 0 0 3px var(--color-primary-200); }
+	}
+
+	.tab.flash {
+		animation: flashPulse 0.5s ease 4;
+		border-color: var(--color-primary-400);
+		color: var(--color-primary-600);
+		background: var(--color-primary-50);
+	}
+
 	/* Upload bar */
 	.upload-bar {
 		display: flex;
@@ -1068,6 +1095,13 @@
 		flex-shrink: 0;
 	}
 
+	.discovery-summary {
+		font-size: 0.6875rem;
+		color: var(--color-text-whisper);
+		white-space: nowrap;
+		font-style: italic;
+	}
+
 	.discovery-meta {
 		display: flex;
 		align-items: center;
@@ -1080,10 +1114,6 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 0.25rem;
-	}
-
-	.meta-separator {
-		color: var(--color-text-hint);
 	}
 
 	.discovery-actions {
