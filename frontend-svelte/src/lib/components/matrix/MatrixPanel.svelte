@@ -536,7 +536,6 @@
 		padding: 0.25rem 0.375rem;
 		background: transparent;
 		overflow: hidden;
-		border-right: 2px solid var(--color-border, rgba(148, 163, 184, 0.2));
 	}
 
 	/* Column header text: vertical, one word per line (max 3 lines) */
