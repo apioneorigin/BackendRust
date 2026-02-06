@@ -536,7 +536,7 @@
 									{g.type.replace('_', ' ')}
 								</span>
 								<span class="goal-confidence {getConfidenceColor(g.confidence)}">
-									{g.confidence}%
+									{g.confidence}%<span class="confidence-label">confidence</span>
 								</span>
 							</div>
 							<h3 class="goal-identity">{g.identity}</h3>
@@ -600,7 +600,7 @@
 									{g.type.replace('_', ' ')}
 								</span>
 								<span class="goal-confidence {getConfidenceColor(g.confidence)}">
-									{g.confidence}%
+									{g.confidence}%<span class="confidence-label">confidence</span>
 								</span>
 							</div>
 							<h3 class="goal-identity">{g.identity}</h3>
@@ -1043,6 +1043,16 @@
 	.goal-confidence {
 		font-size: 0.75rem;
 		font-weight: 600;
+		display: flex;
+		align-items: baseline;
+		gap: 0.25rem;
+	}
+
+	.confidence-label {
+		font-size: 0.625rem;
+		font-weight: 400;
+		opacity: 0.6;
+		text-transform: lowercase;
 	}
 
 	/* Confidence colors */
