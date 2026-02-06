@@ -572,7 +572,7 @@
 									<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
 									<polyline points="14 2 14 8 20 8" />
 								</svg>
-								{discovery.fileNames.join(', ')}
+								<span class="discovery-filename">{discovery.fileNames.join(', ')}</span>
 								<span class="discovery-goal-count">{discovery.goalCount} goals</span>
 								{#if discovery.fileSummary}
 									<span class="discovery-summary">{discovery.fileSummary}</span>
@@ -1111,14 +1111,11 @@
 		flex: 1;
 		min-width: 0;
 		display: flex;
-		align-items: center;
+		align-items: baseline;
 		gap: 0.375rem;
 		font-size: 13px;
 		font-weight: 400;
 		color: var(--color-text-manifest);
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
 	}
 
 	.discovery-row:hover .discovery-title {
@@ -1130,9 +1127,18 @@
 		flex-shrink: 0;
 	}
 
+	.discovery-filename {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		min-width: 0;
+		line-height: 1;
+	}
+
 	.discovery-goal-count {
 		color: var(--color-text-whisper);
-		font-size: 12px;
+		font-size: 13px;
+		line-height: 1;
 		flex-shrink: 0;
 	}
 
