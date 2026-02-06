@@ -9,6 +9,9 @@
 		id: string;
 		type: string;
 		identity: string;
+		goalStatement: string;
+		goal_statement?: string;
+		articulation: string;
 		firstMove: string;
 		first_move?: string;
 		confidence: number;
@@ -84,6 +87,18 @@
 		}
 		node.addEventListener('click', onClick);
 		return { destroy: () => node.removeEventListener('click', onClick) };
+	}
+
+	// Expanded articulation state
+	let expandedGoals = new Set<string>();
+
+	function toggleArticulation(goalId: string) {
+		if (expandedGoals.has(goalId)) {
+			expandedGoals.delete(goalId);
+		} else {
+			expandedGoals.add(goalId);
+		}
+		expandedGoals = expandedGoals; // trigger reactivity
 	}
 
 	// Discovery row dropdown state
@@ -325,6 +340,8 @@
 	function normalizeGoal(goal: DiscoveredGoal): DiscoveredGoal {
 		return {
 			...goal,
+			goalStatement: goal.goalStatement || goal.goal_statement || '',
+			articulation: goal.articulation || '',
 			firstMove: goal.firstMove || goal.first_move || '',
 			sourceFiles: goal.sourceFiles || goal.source_files || [],
 			createdAt: goal.createdAt || goal.created_at || ''
@@ -661,7 +678,8 @@
 				<div class="goals-grid">
 					{#each savedGoals as goal (goal.id)}
 						{@const g = normalizeGoal(goal)}
-						<div class="goal-card">
+						{@const isExpanded = expandedGoals.has(g.id)}
+						<div class="goal-card" class:expanded={isExpanded}>
 							<div class="goal-header">
 								<span class="goal-type {goalTypeColors[g.type] || 'type-default'}">
 									{g.type.replace('_', ' ')}
@@ -670,7 +688,21 @@
 									{g.confidence}%<span class="confidence-label">confidence</span>
 								</span>
 							</div>
+							{#if g.goalStatement}
+								<p class="goal-statement">{g.goalStatement}</p>
+							{/if}
 							<h3 class="goal-identity">{g.identity}</h3>
+							{#if g.articulation}
+								<button class="articulation-toggle" on:click={() => toggleArticulation(g.id)}>
+									<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class:rotated={isExpanded}>
+										<path d="m9 18 6-6-6-6"/>
+									</svg>
+									{isExpanded ? 'Collapse' : 'Read articulation'}
+								</button>
+								{#if isExpanded}
+									<div class="goal-articulation">{g.articulation}</div>
+								{/if}
+							{/if}
 							<p class="goal-first-move">{g.firstMove}</p>
 							<div class="goal-sources">
 								{#each g.sourceFiles || [] as source}
@@ -722,10 +754,11 @@
 				</button>
 			</div>
 			<div class="modal-body">
-				<div class="modal-goals-grid">
+				<div class="modal-goals-list">
 					{#each visibleGoals as goal (goal.id)}
 						{@const g = normalizeGoal(goal)}
-						<div class="goal-card">
+						{@const isExpanded = expandedGoals.has(g.id)}
+						<div class="goal-card" class:expanded={isExpanded}>
 							<div class="goal-header">
 								<span class="goal-type {goalTypeColors[g.type] || 'type-default'}">
 									{g.type.replace('_', ' ')}
@@ -734,7 +767,21 @@
 									{g.confidence}%<span class="confidence-label">confidence</span>
 								</span>
 							</div>
+							{#if g.goalStatement}
+								<p class="goal-statement">{g.goalStatement}</p>
+							{/if}
 							<h3 class="goal-identity">{g.identity}</h3>
+							{#if g.articulation}
+								<button class="articulation-toggle" on:click={() => toggleArticulation(g.id)}>
+									<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class:rotated={isExpanded}>
+										<path d="m9 18 6-6-6-6"/>
+									</svg>
+									{isExpanded ? 'Collapse' : 'Read articulation'}
+								</button>
+								{#if isExpanded}
+									<div class="goal-articulation">{g.articulation}</div>
+								{/if}
+							{/if}
 							<p class="goal-first-move">{g.firstMove}</p>
 							<div class="goal-actions">
 								<button
@@ -1273,23 +1320,21 @@
 		gap: 1rem;
 	}
 
-	/* Modal goals grid - exactly 6 goals visible (2 rows x 3 cols), no scroll */
-	.modal-goals-grid {
-		display: grid;
-		grid-template-columns: repeat(3, 1fr);
-		grid-template-rows: 1fr 1fr;
+	/* Modal goals list - scrollable single column for expandable articulation */
+	.modal-goals-list {
+		display: flex;
+		flex-direction: column;
 		gap: 0.75rem;
-		height: 100%;
-		overflow: hidden;
+		overflow-y: auto;
+		max-height: 100%;
 	}
 
-	.modal-goals-grid .goal-card {
+	.modal-goals-list .goal-card {
 		padding: 1rem;
 		gap: 0.5rem;
-		overflow: hidden;
 	}
 
-	.modal-goals-grid .goal-actions {
+	.modal-goals-list .goal-actions {
 		padding-top: 0.5rem;
 	}
 
@@ -1348,6 +1393,14 @@
 	.type-systems { background: #f0fdfa; color: #115e59; }
 	.type-default { background: #f9fafb; color: #6b7280; }
 
+	.goal-statement {
+		font-size: 0.8125rem;
+		font-weight: 500;
+		color: var(--color-text-whisper);
+		line-height: 1.4;
+		font-style: italic;
+	}
+
 	.goal-identity {
 		font-size: 0.9375rem;
 		font-weight: 600;
@@ -1355,11 +1408,47 @@
 		line-height: 1.4;
 	}
 
+	.articulation-toggle {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.25rem;
+		padding: 0;
+		background: none;
+		border: none;
+		font-size: 0.75rem;
+		font-weight: 500;
+		color: var(--color-text-whisper);
+		cursor: pointer;
+		transition: color 0.15s ease;
+	}
+
+	.articulation-toggle:hover {
+		color: var(--color-text-source);
+	}
+
+	.articulation-toggle svg {
+		transition: transform 0.2s ease;
+	}
+
+	.articulation-toggle svg.rotated {
+		transform: rotate(90deg);
+	}
+
+	.goal-articulation {
+		font-size: 0.8125rem;
+		color: var(--color-text-manifest);
+		line-height: 1.65;
+		white-space: pre-line;
+	}
+
 	.goal-first-move {
 		font-size: 0.8125rem;
 		color: var(--color-text-manifest);
 		line-height: 1.5;
 		flex: 1;
+		font-weight: 500;
+		padding-top: 0.375rem;
+		border-top: 1px solid var(--color-veil-thin);
 	}
 
 	.goal-sources {
@@ -1637,9 +1726,6 @@
 			grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
 		}
 
-		.modal-goals-grid {
-			grid-template-columns: repeat(2, 1fr);
-		}
 	}
 
 	@media (max-width: 768px) {
@@ -1669,10 +1755,6 @@
 		}
 
 		.goals-grid {
-			grid-template-columns: 1fr;
-		}
-
-		.modal-goals-grid {
 			grid-template-columns: 1fr;
 		}
 
