@@ -575,6 +575,8 @@
 
 	.conversation-row.active {
 		background: var(--color-accent-subtle);
+		border-left: 2px solid var(--color-primary-500);
+		margin-left: -2px;
 	}
 
 	.conversation-item {
@@ -608,7 +610,7 @@
 	}
 
 	.conversation-title {
-		font-size: 14px;
+		font-size: 13px;
 		font-weight: 400;
 		white-space: nowrap;
 		overflow: hidden;
