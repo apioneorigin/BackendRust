@@ -306,6 +306,13 @@
 		return `${Math.round(confidence * 100)}%`;
 	}
 
+	function getConfidenceColor(confidence: number): string {
+		if (confidence >= 0.75) return 'confidence-high';
+		if (confidence >= 0.50) return 'confidence-good';
+		if (confidence >= 0.25) return 'confidence-medium';
+		return 'confidence-low';
+	}
+
 	function formatDate(dateStr: string): string {
 		const d = new Date(dateStr);
 		return d.toLocaleDateString('en-US', {
@@ -529,7 +536,7 @@
 								<span class="goal-type {goalTypeColors[g.type] || 'type-default'}">
 									{g.type.replace('_', ' ')}
 								</span>
-								<span class="goal-confidence">
+								<span class="goal-confidence {getConfidenceColor(g.confidence)}">
 									{formatConfidence(g.confidence)}
 								</span>
 							</div>
@@ -593,7 +600,7 @@
 								<span class="goal-type {goalTypeColors[g.type] || 'type-default'}">
 									{g.type.replace('_', ' ')}
 								</span>
-								<span class="goal-confidence">
+								<span class="goal-confidence {getConfidenceColor(g.confidence)}">
 									{formatConfidence(g.confidence)}
 								</span>
 							</div>
@@ -1025,8 +1032,13 @@
 	.goal-confidence {
 		font-size: 0.75rem;
 		font-weight: 600;
-		color: var(--color-accent);
 	}
+
+	/* Confidence colors - 0/25/50/75 scale */
+	.confidence-high { color: #16a34a; }
+	.confidence-good { color: #2563eb; }
+	.confidence-medium { color: #ca8a04; }
+	.confidence-low { color: #dc2626; }
 
 	/* Goal type colors */
 	.type-optimize { background: #dcfce7; color: #15803d; }
