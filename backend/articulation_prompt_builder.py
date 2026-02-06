@@ -6,7 +6,7 @@ ZERO-FALLBACK MODE: Properly handles null/missing operator values.
 Shows "Not available" for blocked calculations instead of assuming defaults.
 """
 
-from typing import List, Optional, Dict
+from typing import Any, List, Optional, Dict
 from consciousness_state import (
     ArticulationContext, ConsciousnessState, Bottleneck, LeveragePoint,
     UserContext, WebResearch, ArticulationInstructions,
