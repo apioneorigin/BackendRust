@@ -71,7 +71,7 @@ if (-not (Test-Path "backend\venv")) {
     }
     Write-Host "    Installing dependencies..." -ForegroundColor White
     & .\venv\Scripts\Activate.ps1
-    pip install -r requirements.txt
+    pip install -r backend\requirements.txt
     if ($LASTEXITCODE -ne 0) {
         Write-Host "ERROR: Failed to install dependencies." -ForegroundColor Red
         Read-Host "Press Enter to exit"

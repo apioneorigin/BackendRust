@@ -94,7 +94,7 @@ if not exist "backend\venv" (
     )
     echo     Installing dependencies...
     call venv\Scripts\activate
-    pip install -r requirements.txt
+    pip install -r backend\requirements.txt
     if errorlevel 1 (
         echo ERROR: Failed to install dependencies.
         pause
