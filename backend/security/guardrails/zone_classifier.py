@@ -1,5 +1,8 @@
 """
-Zone Classifier using Aho-Corasick for O(n) multi-pattern matching.
+Zone Classifier with multi-pattern matching.
+
+Uses Aho-Corasick (pyahocorasick) when available for O(n) matching,
+falls back to pure-Python substring search otherwise.
 
 Zones (priority order):
 - A: Block immediately (harm potential)
@@ -13,7 +16,11 @@ import re
 from dataclasses import dataclass
 from typing import Optional, List, Tuple
 
-import ahocorasick
+try:
+    import ahocorasick
+    _HAS_AHOCORASICK = True
+except ImportError:
+    _HAS_AHOCORASICK = False
 
 from security.guardrails.patterns import (
     ZONE_A_LITERALS, ZONE_A_REGEX_PATTERNS,
@@ -33,13 +40,18 @@ class ZoneClassification:
     matched_pattern: Optional[str] = None  # For debugging/logging
 
 
-def _build_automaton(patterns: List[Tuple[str, str]]) -> ahocorasick.Automaton:
+def _build_automaton(patterns: List[Tuple[str, str]]):
     """Build Aho-Corasick automaton from pattern list."""
     automaton = ahocorasick.Automaton()
     for keyword, tag in patterns:
         automaton.add_word(keyword.lower(), (keyword, tag))
     automaton.make_automaton()
     return automaton
+
+
+def _build_literal_list(patterns: List[Tuple[str, str]]) -> List[Tuple[str, str]]:
+    """Build lowercased literal list for pure-Python fallback."""
+    return [(keyword.lower(), tag) for keyword, tag in patterns]
 
 
 def _compile_regex_list(patterns: List[Tuple[str, str]]) -> List[Tuple[re.Pattern, str]]:
@@ -51,10 +63,16 @@ def _compile_regex_list(patterns: List[Tuple[str, str]]) -> List[Tuple[re.Patter
 # Module-level: built once at import time
 # =============================================================================
 
-_zone_a_ac = _build_automaton(ZONE_A_LITERALS)
-_zone_b_ac = _build_automaton(ZONE_B_LITERALS)
-_zone_c_ac = _build_automaton(ZONE_C_LITERALS)
-_zone_d_ac = _build_automaton(ZONE_D_LITERALS)
+if _HAS_AHOCORASICK:
+    _zone_a_ac = _build_automaton(ZONE_A_LITERALS)
+    _zone_b_ac = _build_automaton(ZONE_B_LITERALS)
+    _zone_c_ac = _build_automaton(ZONE_C_LITERALS)
+    _zone_d_ac = _build_automaton(ZONE_D_LITERALS)
+else:
+    _zone_a_lit = _build_literal_list(ZONE_A_LITERALS)
+    _zone_b_lit = _build_literal_list(ZONE_B_LITERALS)
+    _zone_c_lit = _build_literal_list(ZONE_C_LITERALS)
+    _zone_d_lit = _build_literal_list(ZONE_D_LITERALS)
 
 _zone_a_regex = _compile_regex_list(ZONE_A_REGEX_PATTERNS)
 _zone_b_regex = _compile_regex_list(ZONE_B_REGEX_PATTERNS)
@@ -62,11 +80,20 @@ _zone_c_regex = _compile_regex_list(ZONE_C_REGEX_PATTERNS)
 _zone_d_regex = _compile_regex_list(ZONE_D_REGEX_PATTERNS)
 
 
-def _scan_automaton(automaton: ahocorasick.Automaton, text: str) -> List[Tuple[str, str]]:
-    """Scan text with automaton, return list of (keyword, tag) hits."""
+def _scan_automaton(automaton, text: str) -> List[Tuple[str, str]]:
+    """Scan text with Aho-Corasick automaton, return list of (keyword, tag) hits."""
     hits = []
     for end_idx, (keyword, tag) in automaton.iter(text):
         hits.append((keyword, tag))
+    return hits
+
+
+def _scan_literals(patterns: List[Tuple[str, str]], text: str) -> List[Tuple[str, str]]:
+    """Pure-Python fallback: scan text for literal substrings."""
+    hits = []
+    for keyword, tag in patterns:
+        if keyword in text:
+            hits.append((keyword, tag))
     return hits
 
 
@@ -93,11 +120,17 @@ def classify_zone(text: str) -> ZoneClassification:
 
     text_lower = text.lower()
 
-    # Phase 1: Aho-Corasick scan (single pass through text for ALL zones)
-    hits_a = _scan_automaton(_zone_a_ac, text_lower)
-    hits_b = _scan_automaton(_zone_b_ac, text_lower)
-    hits_c = _scan_automaton(_zone_c_ac, text_lower)
-    hits_d = _scan_automaton(_zone_d_ac, text_lower)
+    # Phase 1: Literal pattern scan (Aho-Corasick or fallback)
+    if _HAS_AHOCORASICK:
+        hits_a = _scan_automaton(_zone_a_ac, text_lower)
+        hits_b = _scan_automaton(_zone_b_ac, text_lower)
+        hits_c = _scan_automaton(_zone_c_ac, text_lower)
+        hits_d = _scan_automaton(_zone_d_ac, text_lower)
+    else:
+        hits_a = _scan_literals(_zone_a_lit, text_lower)
+        hits_b = _scan_literals(_zone_b_lit, text_lower)
+        hits_c = _scan_literals(_zone_c_lit, text_lower)
+        hits_d = _scan_literals(_zone_d_lit, text_lower)
 
     # Phase 2: Regex scan (only for patterns needing wildcards)
     hits_a.extend(_scan_regex(_zone_a_regex, text_lower))
