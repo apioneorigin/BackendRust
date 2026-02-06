@@ -896,7 +896,7 @@ Return valid JSON only. No markdown, no explanation."""
                 # OpenAI content can be a string (text only) or list (vision content blocks)
                 request_body = {
                     "model": model,
-                    "max_tokens": model_config["max_tokens"],
+                    "max_completion_tokens": model_config["max_tokens"],
                     "messages": [
                         {"role": "system", "content": instructions},
                         {"role": "user", "content": call1_user_content}
@@ -1056,7 +1056,7 @@ Return valid JSON with a "goals" array containing all skeletons with these 6 fie
 
                 request_body = {
                     "model": model,
-                    "max_tokens": model_config["max_tokens"],
+                    "max_completion_tokens": model_config["max_tokens"],
                     "messages": [
                         {"role": "system", "content": instructions},
                         {"role": "user", "content": call2_user_prompt}
