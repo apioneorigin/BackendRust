@@ -173,31 +173,22 @@ _SIGNAL_CATEGORIES = [
 ]
 
 
-def normalize_call1_output(raw: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Normalize Call 1 LLM output to the flat schema the backend expects.
+def _find_key_recursive(d: Dict[str, Any], target: str, max_depth: int = 3) -> Any:
+    """Search for a key in nested dicts up to max_depth levels."""
+    if target in d:
+        return d[target]
+    if max_depth <= 0:
+        return None
+    for val in d.values():
+        if isinstance(val, dict):
+            found = _find_key_recursive(val, target, max_depth - 1)
+            if found is not None:
+                return found
+    return None
 
-    The LLM prompt asks for a nested structure:
-        { signal_extraction: { metrics: [...], ... },
-          consciousness_extraction: { core_operators: { observations: [...] }, s_level: ... },
-          cross_mapping: [...] }
 
-    The backend expects a flat structure:
-        { signals: [...], observations: [...], s_level: ..., cross_mapping: [...], file_metadata: ... }
-
-    If the output is already flat (has top-level "signals"), return as-is.
-    """
-    # Already in flat format — nothing to do
-    if "signals" in raw:
-        return raw
-
-    sig_ext = raw.get("signal_extraction")
-    if not isinstance(sig_ext, dict):
-        return raw
-
-    # Flatten all signal category arrays into one list.
-    # Check known categories first, then sweep ALL remaining keys so that
-    # image-derived or model-invented categories are never silently dropped.
+def _extract_signals_from_dict(sig_ext: Dict[str, Any]) -> list:
+    """Extract signal arrays from a signal_extraction dict."""
     signals = []
     seen_keys: set = set()
     for cat in _SIGNAL_CATEGORIES:
@@ -218,30 +209,84 @@ def normalize_call1_output(raw: Dict[str, Any]) -> Dict[str, Any]:
                 if isinstance(sig, dict) and "category" not in sig:
                     sig["category"] = key
                 signals.append(sig)
+    return signals
 
-    # Extract observations from consciousness_extraction
-    cons_ext = raw.get("consciousness_extraction") or {}
+
+def normalize_call1_output(raw: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Normalize Call 1 LLM output to the flat schema the backend expects.
+
+    The LLM prompt asks for a nested structure:
+        { signal_extraction: { metrics: [...], ... },
+          consciousness_extraction: { core_operators: { observations: [...] }, s_level: ... },
+          cross_mapping: [...] }
+
+    The backend expects a flat structure:
+        { signals: [...], observations: [...], s_level: ..., cross_mapping: [...], file_metadata: ... }
+
+    Handles variant nesting (e.g. model wraps output in an extra layer).
+    """
+    # Already in flat format
+    if "signals" in raw:
+        sigs = raw["signals"]
+        if isinstance(sigs, list) and sigs:
+            api_logger.info(f"[GOAL DISCOVERY] normalize: already flat, {len(sigs)} signals")
+            return raw
+        api_logger.warning(f"[GOAL DISCOVERY] normalize: has 'signals' key but value is {type(sigs).__name__}(len={len(sigs) if isinstance(sigs, list) else '?'})")
+
+    # Standard nested path
+    sig_ext = raw.get("signal_extraction")
+    if isinstance(sig_ext, dict):
+        api_logger.info(f"[GOAL DISCOVERY] normalize: found signal_extraction at top level, keys={list(sig_ext.keys())[:10]}")
+        signals = _extract_signals_from_dict(sig_ext)
+    else:
+        # Recursive search: model may wrap output in an extra layer
+        sig_ext = _find_key_recursive(raw, "signal_extraction")
+        if isinstance(sig_ext, dict):
+            api_logger.info(f"[GOAL DISCOVERY] normalize: found signal_extraction via recursive search, keys={list(sig_ext.keys())[:10]}")
+            signals = _extract_signals_from_dict(sig_ext)
+        else:
+            api_logger.warning(
+                f"[GOAL DISCOVERY] normalize: no 'signals' or 'signal_extraction' found. "
+                f"Top-level keys: {list(raw.keys())}"
+            )
+            # Last resort: scan all top-level lists of dicts as potential signals
+            signals = []
+            for key, val in raw.items():
+                if isinstance(val, list) and val and isinstance(val[0], dict):
+                    api_logger.info(f"[GOAL DISCOVERY] normalize: harvesting {len(val)} items from top-level key '{key}'")
+                    for sig in val:
+                        if isinstance(sig, dict) and "category" not in sig:
+                            sig["category"] = key
+                        signals.append(sig)
+
+    # Extract observations — try standard path then recursive
+    cons_ext = raw.get("consciousness_extraction") or _find_key_recursive(raw, "consciousness_extraction") or {}
+    if not isinstance(cons_ext, dict):
+        cons_ext = {}
     core_ops = cons_ext.get("core_operators") or {}
     observations = core_ops.get("observations") or []
+    # Also check for observations directly under consciousness_extraction
+    if not observations:
+        observations = cons_ext.get("observations") or []
 
     # Extract s_level
     s_level_obj = cons_ext.get("s_level")
     s_level = s_level_obj
-    # If it's a dict with a "current" key, keep the dict (classifier handles both)
     if isinstance(s_level_obj, dict) and "current" in s_level_obj:
         s_level = s_level_obj
 
     result = {
         "signals": signals,
         "observations": observations,
-        "cross_mapping": raw.get("cross_mapping") or [],
-        "file_metadata": sig_ext.get("file_summary") or sig_ext.get("domain_context") or {},
+        "cross_mapping": raw.get("cross_mapping") or _find_key_recursive(raw, "cross_mapping") or [],
+        "file_metadata": (sig_ext or {}).get("file_summary") or (sig_ext or {}).get("domain_context") or {},
     }
     if s_level is not None:
         result["s_level"] = s_level
 
     api_logger.info(
-        f"[GOAL DISCOVERY] Normalized nested Call 1 output: "
+        f"[GOAL DISCOVERY] Normalized Call 1 output: "
         f"{len(signals)} signals, {len(observations)} observations"
     )
     return result
@@ -1027,14 +1072,26 @@ Return valid JSON only. No markdown, no explanation."""
                 response.raise_for_status()
                 data = response.json()
 
-                # Diagnostic: stop reason and content block types
+                # Diagnostic: full content block inventory
                 stop_reason = data.get("stop_reason", "unknown")
                 content_blocks = data.get("content") or []
-                block_types = [b.get("type") for b in content_blocks]
                 api_logger.info(
                     f"[GOAL DISCOVERY] Call 1 Anthropic response: stop_reason={stop_reason}, "
-                    f"blocks={block_types}, output_tokens={data.get('usage', {}).get('output_tokens', '?')}"
+                    f"{len(content_blocks)} blocks, output_tokens={data.get('usage', {}).get('output_tokens', '?')}"
                 )
+                for idx, block in enumerate(content_blocks):
+                    btype = block.get("type", "?")
+                    if btype == "text":
+                        txt = block.get("text", "")
+                        api_logger.info(
+                            f"[GOAL DISCOVERY]   block[{idx}] type=text len={len(txt)} "
+                            f"preview={txt[:200]!r}"
+                        )
+                    else:
+                        api_logger.info(
+                            f"[GOAL DISCOVERY]   block[{idx}] type={btype} "
+                            f"name={block.get('name', '-')}"
+                        )
 
                 # Extract usage
                 usage = data.get("usage") or {}
@@ -1057,25 +1114,37 @@ Return valid JSON only. No markdown, no explanation."""
                 if search_count > 0:
                     api_logger.info(f"[GOAL DISCOVERY] Call 1 executed {search_count} web searches")
 
-                # Extract response text — use last text block only when
-                # web search / images are active (use_prefill=False), because
-                # intermediate text blocks contain the model's search-planning
-                # prose whose stray '{' confuses the JSON parser.  With prefill
-                # the model outputs exactly one text block that is pure JSON.
+                # Collect all text blocks for extraction
+                text_blocks = [
+                    block.get("text", "")
+                    for block in content_blocks
+                    if block.get("type") == "text"
+                ]
+                api_logger.info(
+                    f"[GOAL DISCOVERY] Call 1 text blocks: count={len(text_blocks)}, "
+                    f"lengths={[len(t) for t in text_blocks]}"
+                )
+
                 if use_prefill:
-                    response_text = "{"
-                    for block in content_blocks:
-                        if block.get("type") == "text":
-                            response_text += block.get("text", "")
+                    # Single JSON block — prepend the forced "{"
+                    response_text = "{" + "".join(text_blocks)
+                elif len(text_blocks) == 1:
+                    # Single text block — use as-is
+                    response_text = text_blocks[0]
                 else:
-                    # Grab the last text block — that's the structured output
-                    last_text = ""
-                    for block in content_blocks:
-                        if block.get("type") == "text":
-                            last_text = block.get("text", "")
-                    response_text = last_text
+                    # Multiple text blocks (web search / images).
+                    # Try the LAST block first (structured output), fall back
+                    # to full concatenation if last block has no JSON.
+                    last_block = text_blocks[-1] if text_blocks else ""
+                    if "{" in last_block:
+                        response_text = last_block
+                        api_logger.info("[GOAL DISCOVERY] Using last text block for JSON extraction")
+                    else:
+                        response_text = "".join(text_blocks)
+                        api_logger.info("[GOAL DISCOVERY] Last block has no JSON, using full concatenation")
 
                 api_logger.info(f"[GOAL DISCOVERY] Call 1 raw response (first 500): {response_text[:500]}")
+                api_logger.info(f"[GOAL DISCOVERY] Call 1 raw response (last 300): ...{response_text[-300:]}")
                 call1_output = parse_llm_json_response(response_text, "CALL1")
 
             else:
@@ -1148,6 +1217,18 @@ Return valid JSON only. No markdown, no explanation."""
             status_code=500,
             detail="Goal discovery failed: Call 1 returned no valid JSON"
         )
+
+    # Log the raw parsed structure BEFORE normalization
+    raw_keys = list(call1_output.keys())
+    api_logger.info(f"[GOAL DISCOVERY] Call 1 parsed JSON keys: {raw_keys}")
+    for key in raw_keys[:10]:
+        val = call1_output[key]
+        if isinstance(val, list):
+            api_logger.info(f"[GOAL DISCOVERY]   '{key}': list[{len(val)}]")
+        elif isinstance(val, dict):
+            api_logger.info(f"[GOAL DISCOVERY]   '{key}': dict keys={list(val.keys())[:10]}")
+        else:
+            api_logger.info(f"[GOAL DISCOVERY]   '{key}': {type(val).__name__} = {str(val)[:100]}")
 
     call1_output = normalize_call1_output(call1_output)
     signal_count = len(call1_output.get("signals") or [])
