@@ -64,6 +64,12 @@
 	let modalDiscovery: FileGoalDiscovery | null = null;
 	let goalsSavedDuringModal = false;
 	let flashLibraryTab = false;
+	let modalPage = 0;
+	const GOALS_PER_PAGE = 6;
+
+	$: modalGoals = modalDiscovery?.goals ?? [];
+	$: totalModalPages = Math.ceil(modalGoals.length / GOALS_PER_PAGE);
+	$: visibleGoals = modalGoals.slice(modalPage * GOALS_PER_PAGE, (modalPage + 1) * GOALS_PER_PAGE);
 
 	// Discovery row dropdown state
 	let activeDiscoveryMenu: string | null = null;
@@ -242,6 +248,7 @@
 
 	function openGoalsModal(discovery: FileGoalDiscovery) {
 		modalDiscovery = discovery;
+		modalPage = 0;
 		showGoalsModal = true;
 		goalsSavedDuringModal = false;
 	}
@@ -680,7 +687,7 @@
 			</div>
 			<div class="modal-body">
 				<div class="modal-goals-grid">
-					{#each modalDiscovery.goals as goal (goal.id)}
+					{#each visibleGoals as goal (goal.id)}
 						{@const g = normalizeGoal(goal)}
 						<div class="goal-card">
 							<div class="goal-header">
@@ -730,6 +737,19 @@
 					{/each}
 				</div>
 			</div>
+			{#if totalModalPages > 1}
+				<div class="modal-footer">
+					<button class="page-btn" disabled={modalPage === 0} on:click={() => modalPage--}>
+						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+						Prev
+					</button>
+					<span class="page-info">{modalPage + 1} / {totalModalPages}</span>
+					<button class="page-btn" disabled={modalPage >= totalModalPages - 1} on:click={() => modalPage++}>
+						Next
+						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+					</button>
+				</div>
+			{/if}
 		</div>
 	</div>
 {/if}
@@ -1499,6 +1519,46 @@
 		overflow: hidden;
 		flex: 1;
 		min-height: 0;
+	}
+
+	.modal-footer {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 1rem;
+		padding: 0.5rem 1rem;
+		border-top: 1px solid var(--color-veil-thin);
+		flex-shrink: 0;
+	}
+
+	.page-btn {
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
+		padding: 0.375rem 0.75rem;
+		background: transparent;
+		border: 1px solid var(--color-veil-thin);
+		border-radius: 0.375rem;
+		font-size: 0.75rem;
+		font-weight: 500;
+		color: var(--color-text-manifest);
+		cursor: pointer;
+		transition: all 0.1s ease;
+	}
+
+	.page-btn:hover:not(:disabled) {
+		background: var(--color-field-depth);
+		border-color: var(--color-veil-soft);
+	}
+
+	.page-btn:disabled {
+		opacity: 0.3;
+		cursor: default;
+	}
+
+	.page-info {
+		font-size: 0.75rem;
+		color: var(--color-text-whisper);
 	}
 
 	/* Responsive */
