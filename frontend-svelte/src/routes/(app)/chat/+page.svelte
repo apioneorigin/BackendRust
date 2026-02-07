@@ -732,13 +732,20 @@
 
 					<button
 						class="send-btn"
-						on:click={handleSendMessage}
-						disabled={$isStreaming || (!messageInput.trim() && attachedFiles.length === 0)}
+						class:llm-active={$isStreaming}
+						on:click={$isStreaming ? () => chat.stopStreaming() : handleSendMessage}
+						disabled={!$isStreaming && !messageInput.trim() && attachedFiles.length === 0}
 					>
-						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-							<path d="M22 2L11 13" />
-							<path d="M22 2L15 22L11 13L2 9L22 2Z" />
-						</svg>
+						{#if $isStreaming}
+							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+								<rect x="6" y="6" width="12" height="12" rx="1" />
+							</svg>
+						{:else}
+							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+								<path d="M22 2L11 13" />
+								<path d="M22 2L15 22L11 13L2 9L22 2Z" />
+							</svg>
+						{/if}
 					</button>
 				</div>
 			</div>

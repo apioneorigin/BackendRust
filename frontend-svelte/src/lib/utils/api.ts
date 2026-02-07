@@ -197,7 +197,7 @@ export const api = {
 	 * SSE stream - uses SvelteKit server endpoints for native streaming
 	 * All requests go through same-origin SvelteKit routes (no CORS, no buffering issues)
 	 */
-	async sseStream(endpoint: string, data?: any): Promise<Response> {
+	async sseStream(endpoint: string, data?: any, signal?: AbortSignal): Promise<Response> {
 		const token = getToken();
 		const headers: Record<string, string> = {
 			'Content-Type': 'application/json',
@@ -211,6 +211,7 @@ export const api = {
 			method: 'POST',
 			headers,
 			body: data ? JSON.stringify(data) : undefined,
+			signal,
 		});
 	},
 };

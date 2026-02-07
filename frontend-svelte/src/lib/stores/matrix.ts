@@ -196,6 +196,12 @@ const initialState: MatrixState = {
 function createMatrixStore() {
 	const { subscribe, set, update } = writable<MatrixState>(initialState);
 
+	// AbortControllers for cancellable LLM operations
+	let populateController: AbortController | null = null;
+	let previewController: AbortController | null = null;
+	let addDocsController: AbortController | null = null;
+	let insightController: AbortController | null = null;
+
 	// Helper to build displayed 5x5 from a document's selected rows/columns
 	function buildDisplayedMatrix(doc: Document): {
 		matrixData: CellData[][];
@@ -498,21 +504,28 @@ function createMatrixStore() {
 			const state = get({ subscribe });
 			if (!state.conversationId) return [];
 
+			previewController = new AbortController();
 			update(s => ({ ...s, isProcessing: true }));
 			try {
 				const response = await api.post<{ previews: DocumentPreview[] }>(
 					`/api/matrix/${state.conversationId}/documents/preview`,
 					{ model },
-					{ timeout: 300000, retries: 1 }
+					{ timeout: 300000, retries: 1, signal: previewController.signal }
 				);
 				return response.previews ?? [];
 			} catch (error: any) {
+				if (error.name === 'AbortError') return [];
 				console.error('Failed to generate document previews:', error);
 				addToast('error', 'Failed to generate document previews');
 				return [];
 			} finally {
+				previewController = null;
 				update(s => ({ ...s, isProcessing: false }));
 			}
+		},
+
+		cancelPreview() {
+			previewController?.abort();
 		},
 
 		// Add selected previews as new documents, then reload full document list
@@ -520,12 +533,13 @@ function createMatrixStore() {
 			const state = get({ subscribe });
 			if (!state.conversationId) return;
 
+			addDocsController = new AbortController();
 			update(s => ({ ...s, isProcessing: true }));
 			try {
 				await api.post(
 					`/api/matrix/${state.conversationId}/documents/add`,
 					{ selected_preview_ids: selectedPreviewIds, model },
-					{ timeout: 300000, retries: 1 }
+					{ timeout: 300000, retries: 1, signal: addDocsController.signal }
 				);
 
 				// Reload full document list from backend
@@ -554,11 +568,17 @@ function createMatrixStore() {
 
 				addToast('info', 'Documents added');
 			} catch (error: any) {
+				if (error.name === 'AbortError') return;
 				console.error('Failed to add documents:', error);
 				addToast('error', 'Failed to add documents');
 			} finally {
+				addDocsController = null;
 				update(s => ({ ...s, isProcessing: false }));
 			}
+		},
+
+		cancelAddDocuments() {
+			addDocsController?.abort();
 		},
 
 		// Populate a document with full cell data via "Design Your Reality"
@@ -569,13 +589,14 @@ function createMatrixStore() {
 				return;
 			}
 
+			populateController = new AbortController();
 			update(s => ({ ...s, isProcessing: true }));
 			try {
 				// Backend returns the updated document directly — no follow-up GET needed
 				const doc = await api.post<Document>(
 					`/api/matrix/${state.conversationId}/document/${docId}/design-reality`,
 					{ model },
-					{ timeout: 300000, retries: 1 }
+					{ timeout: 300000, retries: 1, signal: populateController.signal }
 				);
 
 				if (doc?.matrix_data) {
@@ -584,11 +605,17 @@ function createMatrixStore() {
 
 				return doc;
 			} catch (error: any) {
+				if (error.name === 'AbortError') return;
 				console.error('Failed to populate document:', error);
 				throw error;
 			} finally {
+				populateController = null;
 				update(s => ({ ...s, isProcessing: false }));
 			}
+		},
+
+		cancelPopulate() {
+			populateController?.abort();
 		},
 
 		// Generate all missing insights for the active document
@@ -597,6 +624,7 @@ function createMatrixStore() {
 			if (!state.conversationId) throw new Error('No conversation selected');
 			if (!state.activeDocumentId) throw new Error('No document selected');
 
+			insightController = new AbortController();
 			update(s => ({ ...s, isProcessing: true }));
 			try {
 				// Backend returns the updated document directly — no follow-up GET needed
@@ -604,7 +632,7 @@ function createMatrixStore() {
 				const doc = await api.post<Document>(
 					`/api/matrix/${state.conversationId}/document/${state.activeDocumentId}/generate-insights`,
 					{ model, insight_index: insightIndex },
-					{ timeout: 300000, retries: 1 }
+					{ timeout: 300000, retries: 1, signal: insightController.signal }
 				);
 
 				if (doc?.matrix_data) {
@@ -612,9 +640,17 @@ function createMatrixStore() {
 					return doc;
 				}
 				return null;
+			} catch (error: any) {
+				if (error.name === 'AbortError') return null;
+				throw error;
 			} finally {
+				insightController = null;
 				update(s => ({ ...s, isProcessing: false }));
 			}
+		},
+
+		cancelInsight() {
+			insightController?.abort();
 		},
 
 		// Fetch plays for active document (plays are generated during document population)
