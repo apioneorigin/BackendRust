@@ -72,7 +72,45 @@
 	let showGoalPopup = false;
 	let selectedGoal: DiscoveredGoal | null = null;
 
+	// Library filters
+	let filterType = '';
+	let filterFile = '';
+
 	$: modalGoals = modalDiscovery?.goals ?? [];
+
+	// Derive unique goal types and source filenames from saved goals
+	$: libraryGoalTypes = [...new Set(savedGoals.map((g) => g.type).filter(Boolean))].sort();
+	$: librarySourceFiles = [...new Set(savedGoals.flatMap((g) => normalizeGoal(g).sourceFiles || []))].sort();
+
+	$: filteredSavedGoals = savedGoals.filter((goal) => {
+		const g = normalizeGoal(goal);
+		if (filterType && g.type !== filterType) return false;
+		if (filterFile && !(g.sourceFiles || []).includes(filterFile)) return false;
+		return true;
+	});
+
+	// Reset carousel position when filters change
+	$: if (filterType !== undefined || filterFile !== undefined) {
+		currentLibraryCard = 0;
+		if (libraryCarouselEl) libraryCarouselEl.scrollLeft = 0;
+	}
+
+	// Carousel state for library
+	let libraryCarouselEl: HTMLDivElement;
+	let currentLibraryCard = 0;
+
+	function onLibraryScroll() {
+		if (!libraryCarouselEl) return;
+		const cardWidth = libraryCarouselEl.clientWidth;
+		if (cardWidth === 0) return;
+		currentLibraryCard = Math.round(libraryCarouselEl.scrollLeft / cardWidth);
+	}
+
+	function scrollToLibraryCard(index: number) {
+		if (!libraryCarouselEl) return;
+		const clamped = Math.max(0, Math.min(index, filteredSavedGoals.length - 1));
+		libraryCarouselEl.scrollTo({ left: clamped * libraryCarouselEl.clientWidth, behavior: 'smooth' });
+	}
 
 	$: if (dialogEl) {
 		if (showGoalsModal && !dialogEl.open) {
@@ -673,50 +711,85 @@
 					</Button>
 				</div>
 			{:else}
-				<div class="goals-grid">
-					{#each savedGoals as goal (goal.id)}
-						{@const g = normalizeGoal(goal)}
-						<div class="goal-card">
-							<div class="goal-header">
-								<span class="goal-type {goalTypeColors[g.type] || 'type-default'}">
-									{g.type.replace('_', ' ')}
-								</span>
-								<span class="goal-confidence {getConfidenceColor(g.confidence)}">
-									{g.confidence}%<span class="confidence-label">confidence</span>
-								</span>
-							</div>
-							{#if g.goalStatement}
-								<p class="goal-statement">{g.goalStatement}</p>
-							{/if}
-							<h3 class="goal-identity">{g.identity}</h3>
-							{#if g.articulation}
-								<div class="goal-articulation">{g.articulation}</div>
-							{/if}
-							<p class="goal-first-move">{g.firstMove}</p>
-							<div class="goal-sources">
-								{#each g.sourceFiles || [] as source}
-									<span class="source-badge">{source}</span>
-								{/each}
-							</div>
-							<div class="goal-actions">
-								<button class="action-btn chat-btn" on:click={() => startChatWithGoal(g)}>
-									<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-										<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-									</svg>
-									Start Chat
-								</button>
-								<button class="action-btn remove-btn" on:click={() => removeFromInventory(g.id)}>
-									<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-										<path d="M3 6h18" />
-										<path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-										<path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-									</svg>
-									Remove
-								</button>
-							</div>
-						</div>
-					{/each}
+				<div class="library-filters">
+					<select class="library-filter-select" bind:value={filterType}>
+						<option value="">All Types</option>
+						{#each libraryGoalTypes as t}
+							<option value={t}>{t.replace('_', ' ')}</option>
+						{/each}
+					</select>
+					<select class="library-filter-select" bind:value={filterFile}>
+						<option value="">All Files</option>
+						{#each librarySourceFiles as f}
+							<option value={f}>{f}</option>
+						{/each}
+					</select>
+					<span class="library-filter-count">{filteredSavedGoals.length} of {savedGoals.length}</span>
 				</div>
+				{#if filteredSavedGoals.length === 0}
+					<div class="empty-state">
+						<h3>No matching goals</h3>
+						<p>Try adjusting your filters</p>
+					</div>
+				{:else}
+					<div class="library-carousel" bind:this={libraryCarouselEl} on:scroll={onLibraryScroll}>
+						{#each filteredSavedGoals as goal (goal.id)}
+							{@const g = normalizeGoal(goal)}
+							<div class="library-card">
+								<div class="library-card-header">
+									<div class="library-card-header-left">
+										<span class="goal-type {goalTypeColors[g.type] || 'type-default'}">
+											{g.type.replace('_', ' ')}
+										</span>
+										{#each g.sourceFiles || [] as source}
+											<span class="source-badge">{source}</span>
+										{/each}
+									</div>
+									<span class="goal-confidence {getConfidenceColor(g.confidence)}">
+										{g.confidence}%
+									</span>
+								</div>
+								<h3 class="goal-identity">{g.identity}</h3>
+								{#if g.goalStatement}
+									<p class="goal-statement">{g.goalStatement}</p>
+								{/if}
+								{#if g.articulation}
+									<div class="goal-articulation">{g.articulation}</div>
+								{/if}
+								<p class="goal-first-move">{g.firstMove}</p>
+								<div class="goal-actions">
+									<button class="action-btn chat-btn" on:click={() => startChatWithGoal(g)}>
+										<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+											<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+										</svg>
+										Chat
+									</button>
+									<button class="action-btn remove-btn" on:click={() => removeFromInventory(g.id)}>
+										<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+											<path d="M3 6h18" />
+											<path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+											<path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+										</svg>
+										Remove
+									</button>
+								</div>
+							</div>
+						{/each}
+					</div>
+					<div class="library-carousel-nav">
+						<button class="carousel-arrow" disabled={currentLibraryCard === 0} on:click={() => scrollToLibraryCard(currentLibraryCard - 1)}>
+							<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+						</button>
+						<div class="carousel-dots">
+							{#each filteredSavedGoals as _, i}
+								<button class="carousel-dot" class:active={i === currentLibraryCard} on:click={() => scrollToLibraryCard(i)} aria-label="Go to card {i + 1}" />
+							{/each}
+						</div>
+						<button class="carousel-arrow" disabled={currentLibraryCard >= filteredSavedGoals.length - 1} on:click={() => scrollToLibraryCard(currentLibraryCard + 1)}>
+							<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+						</button>
+					</div>
+				{/if}
 			{/if}
 		</section>
 	{/if}
@@ -1257,11 +1330,141 @@
 		flex-shrink: 0;
 	}
 
-	/* Goals grid (used in library) */
-	.goals-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-		gap: 1rem;
+	/* Library filters */
+	.library-filters {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		margin-bottom: 0.75rem;
+	}
+
+	.library-filter-select {
+		padding: 0.375rem 0.625rem;
+		background: var(--color-field-depth);
+		border: 1px solid var(--color-veil-thin);
+		border-radius: 0.375rem;
+		font-size: 0.75rem;
+		color: var(--color-text-manifest);
+		cursor: pointer;
+		outline: none;
+		transition: border-color 0.15s ease;
+	}
+
+	.library-filter-select:focus {
+		border-color: var(--color-primary-400);
+	}
+
+	.library-filter-count {
+		font-size: 0.75rem;
+		color: var(--color-text-whisper);
+		margin-left: auto;
+	}
+
+	/* Library carousel */
+	.library-carousel {
+		display: flex;
+		overflow-x: auto;
+		scroll-snap-type: x mandatory;
+		scroll-behavior: smooth;
+		-webkit-overflow-scrolling: touch;
+		gap: 0;
+		scrollbar-width: none;
+	}
+
+	.library-carousel::-webkit-scrollbar {
+		display: none;
+	}
+
+	.library-card {
+		flex: 0 0 100%;
+		scroll-snap-align: center;
+		overflow-y: auto;
+		max-height: 70vh;
+		padding: 1.25rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.625rem;
+		background: var(--color-field-surface);
+		box-shadow: var(--shadow-elevated);
+		border-radius: 0.625rem;
+		border: 1px solid var(--color-veil-thin);
+		box-sizing: border-box;
+	}
+
+	.library-card-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+	}
+
+	.library-card-header-left {
+		display: flex;
+		align-items: center;
+		gap: 0.375rem;
+		flex-wrap: wrap;
+		min-width: 0;
+	}
+
+	/* Carousel navigation */
+	.library-carousel-nav {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.75rem;
+		padding: 0.75rem 0 0.25rem;
+	}
+
+	.carousel-arrow {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 28px;
+		height: 28px;
+		background: var(--color-field-depth);
+		border: 1px solid var(--color-veil-thin);
+		border-radius: 0.375rem;
+		color: var(--color-text-manifest);
+		cursor: pointer;
+		transition: all 0.15s ease;
+		flex-shrink: 0;
+	}
+
+	.carousel-arrow:hover:not(:disabled) {
+		background: var(--color-primary-50);
+		border-color: var(--color-primary-400);
+		color: var(--color-primary-600);
+	}
+
+	.carousel-arrow:disabled {
+		opacity: 0.3;
+		cursor: default;
+	}
+
+	.carousel-dots {
+		display: flex;
+		align-items: center;
+		gap: 0.375rem;
+	}
+
+	.carousel-dot {
+		width: 7px;
+		height: 7px;
+		border-radius: 50%;
+		background: var(--color-veil-soft);
+		border: none;
+		padding: 0;
+		cursor: pointer;
+		transition: all 0.15s ease;
+	}
+
+	.carousel-dot.active {
+		background: var(--color-primary-500);
+		transform: scale(1.3);
+	}
+
+	.carousel-dot:hover:not(.active) {
+		background: var(--color-text-whisper);
 	}
 
 	/* Modal goals list - scrollable title rows */
@@ -1338,23 +1541,6 @@
 		color: var(--color-primary-600);
 	}
 
-	.goal-card {
-		padding: 1.25rem;
-		display: flex;
-		flex-direction: column;
-		gap: 0.625rem;
-		background: var(--color-field-surface);
-		box-shadow: var(--shadow-elevated);
-		border-radius: 0.625rem;
-		border: 1px solid var(--color-veil-thin);
-	}
-
-	.goal-header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-	}
-
 	.goal-type {
 		font-size: 0.625rem;
 		font-weight: 500;
@@ -1366,17 +1552,8 @@
 
 	.goal-confidence {
 		font-size: 0.75rem;
-		font-weight: 600;
-		display: flex;
-		align-items: baseline;
-		gap: 0.25rem;
-	}
-
-	.confidence-label {
-		font-size: 0.625rem;
-		font-weight: 400;
-		opacity: 0.6;
-		text-transform: lowercase;
+		font-weight: 700;
+		flex-shrink: 0;
 	}
 
 	/* Confidence colors */
@@ -1423,12 +1600,6 @@
 		font-weight: 500;
 		padding-top: 0.375rem;
 		border-top: 1px solid var(--color-veil-thin);
-	}
-
-	.goal-sources {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.25rem;
 	}
 
 	.source-badge {
@@ -1640,12 +1811,6 @@
 	}
 
 	/* Responsive */
-	@media (max-width: 1200px) {
-		.goals-grid {
-			grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-		}
-
-	}
 
 	@media (max-width: 768px) {
 		.goals-page {
@@ -1671,10 +1836,6 @@
 		.toolbar-right {
 			width: 100%;
 			justify-content: flex-end;
-		}
-
-		.goals-grid {
-			grid-template-columns: 1fr;
 		}
 
 		.modal-content {
