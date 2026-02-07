@@ -311,7 +311,12 @@
 				{:else if showPreviewPanel}
 					<div class="preview-panel">
 						{#if isLoadingPreviews}
-							<div class="preview-loading">Generating previews...</div>
+							<div class="preview-loading">
+								<span>Generating previews...</span>
+								<button class="inline-stop-btn llm-active" on:click={() => matrix.cancelPreview()} title="Stop">
+									<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="6" y="6" width="12" height="12" rx="1" /></svg>
+								</button>
+							</div>
 						{:else if previews.length > 0}
 							<div class="preview-list">
 								{#each previews as preview (preview.tempId)}
@@ -395,13 +400,14 @@
 												<button
 													class="insight-expand-btn"
 													class:loading={isThisLoading}
+													class:llm-active={isThisLoading}
 													class:generated={isGenerated}
-													disabled={generatingInsightKey !== null}
-													on:click|stopPropagation={() => handleOpenInsight(opt, 'row', idx)}
-													title={isGenerated ? 'View insight' : 'Generate insight'}
+													disabled={generatingInsightKey !== null && !isThisLoading}
+													on:click|stopPropagation={() => isThisLoading ? matrix.cancelInsight() : handleOpenInsight(opt, 'row', idx)}
+													title={isThisLoading ? 'Stop' : isGenerated ? 'View insight' : 'Generate insight'}
 												>
 													{#if isThisLoading}
-														<svg class="spinner" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 2v4m0 12v4m-7.07-15.07 2.83 2.83m8.48 8.48 2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48 2.83-2.83" /></svg>
+														<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="6" y="6" width="12" height="12" rx="1" /></svg>
 													{:else if isGenerated}
 														<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg>
 													{:else}
@@ -448,13 +454,14 @@
 												<button
 													class="insight-expand-btn"
 													class:loading={isThisLoading}
+													class:llm-active={isThisLoading}
 													class:generated={isGenerated}
-													disabled={generatingInsightKey !== null}
-													on:click|stopPropagation={() => handleOpenInsight(opt, 'column', idx)}
-													title={isGenerated ? 'View insight' : 'Generate insight'}
+													disabled={generatingInsightKey !== null && !isThisLoading}
+													on:click|stopPropagation={() => isThisLoading ? matrix.cancelInsight() : handleOpenInsight(opt, 'column', idx)}
+													title={isThisLoading ? 'Stop' : isGenerated ? 'View insight' : 'Generate insight'}
 												>
 													{#if isThisLoading}
-														<svg class="spinner" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 2v4m0 12v4m-7.07-15.07 2.83 2.83m8.48 8.48 2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48 2.83-2.83" /></svg>
+														<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="6" y="6" width="12" height="12" rx="1" /></svg>
 													{:else if isGenerated}
 														<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg>
 													{:else}
@@ -674,10 +681,26 @@
 	}
 
 	.preview-loading {
-		text-align: center;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
 		padding: 1rem;
 		font-size: 0.8125rem;
 		color: var(--color-text-whisper);
+	}
+
+	.inline-stop-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 24px;
+		height: 24px;
+		padding: 0;
+		border: 1px solid transparent;
+		border-radius: 0.375rem;
+		cursor: pointer;
+		transition: all 0.15s ease;
 	}
 
 	.preview-list {

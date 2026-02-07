@@ -129,6 +129,8 @@ function createChatStore() {
 	// AbortControllers for cancellable operations (SvelteKit-native pattern)
 	let selectConversationController: AbortController | null = null;
 	let loadConversationsController: AbortController | null = null;
+	let streamController: AbortController | null = null;
+	let streamReader: ReadableStreamDefaultReader<Uint8Array> | null = null;
 
 	return {
 		subscribe,
@@ -358,6 +360,8 @@ function createChatStore() {
 				streamingContent: '',
 			}));
 
+			streamController = new AbortController();
+
 			try {
 				// Use direct backend connection for SSE (bypasses Vite proxy buffering)
 				const response = await api.sseStream(
@@ -368,7 +372,8 @@ function createChatStore() {
 						web_search_data: webSearch,
 						web_search_insights: webSearch,
 						attachments: attachments.length > 0 ? attachments : undefined,
-					}
+					},
+					streamController.signal
 				);
 
 				if (!response.ok) {
@@ -376,6 +381,7 @@ function createChatStore() {
 				}
 
 				const reader = response.body?.getReader();
+				streamReader = reader ?? null;
 				const decoder = new TextDecoder();
 
 				if (!reader) {
@@ -509,12 +515,39 @@ function createChatStore() {
 				// Title is now generated in Call 1 and sent via SSE 'title' event
 
 			} catch (error: any) {
-				update(state => ({
-					...state,
-					error: error.message,
-					isStreaming: false,
-					streamingContent: '',
-				}));
+				if (error.name === 'AbortError') {
+					// User cancelled — keep partial content as a message if any
+					update(state => {
+						const partial = state.streamingContent;
+						return {
+							...state,
+							messages: partial
+								? [...state.messages, { id: `msg-${Date.now()}`, role: 'assistant' as const, content: partial, createdAt: new Date() }]
+								: state.messages,
+							isStreaming: false,
+							streamingContent: '',
+						};
+					});
+				} else {
+					update(state => ({
+						...state,
+						error: error.message,
+						isStreaming: false,
+						streamingContent: '',
+					}));
+				}
+			} finally {
+				streamController = null;
+				streamReader = null;
+			}
+		},
+
+		stopStreaming() {
+			if (streamReader) {
+				streamReader.cancel().catch(() => {});
+			}
+			if (streamController) {
+				streamController.abort();
 			}
 		},
 

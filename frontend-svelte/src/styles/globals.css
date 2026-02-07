@@ -607,3 +607,15 @@ button:disabled,
 .radius-lg { border-radius: 8px; }
 .radius-xl { border-radius: 12px; }
 .radius-full { border-radius: 9999px; }
+
+/* ─── LLM active / stoppable button state ──────────────────────────────────── */
+.llm-active {
+	background: var(--color-primary-100, #e2e8f0) !important;
+	border-color: var(--color-primary-200, #cbd5e1) !important;
+	color: var(--color-primary-600, #475569) !important;
+	cursor: pointer !important;
+	opacity: 1 !important;
+}
+.llm-active:hover {
+	background: var(--color-primary-200, #cbd5e1) !important;
+}

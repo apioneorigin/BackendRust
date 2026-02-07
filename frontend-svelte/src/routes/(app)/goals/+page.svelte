@@ -573,12 +573,15 @@
 				</label>
 				<button
 					class="discover-btn"
-					on:click={discoverGoals}
-					disabled={isDiscovering || uploadedFiles.length === 0}
+					class:llm-active={isDiscovering}
+					on:click={isDiscovering ? stopDiscovery : discoverGoals}
+					disabled={!isDiscovering && uploadedFiles.length === 0}
 				>
 					{#if isDiscovering}
-						<Spinner size="sm" />
-						{webSearchEnabled ? 'Researching...' : 'Analyzing...'}
+						<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<rect x="6" y="6" width="12" height="12" rx="1" />
+						</svg>
+						Stop
 					{:else}
 						<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 							<circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" />
@@ -586,14 +589,9 @@
 						Discover Goals
 					{/if}
 				</button>
-			{#if isDiscovering}
-				<button class="stop-btn" on:click={stopDiscovery} title="Stop discovery">
-					<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						<rect x="6" y="6" width="12" height="12" rx="1" />
-					</svg>
-					Stop
-				</button>
-			{/if}
+				{#if isDiscovering}
+					<span class="llm-status-text">{webSearchEnabled ? 'Researching...' : 'Analyzing...'}</span>
+				{/if}
 			</div>
 		{/if}
 	</div>
@@ -1113,23 +1111,17 @@
 		cursor: not-allowed;
 	}
 
-	.stop-btn {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.375rem;
-		padding: 0.375rem 0.875rem;
-		background: var(--color-error-500, #dc2626);
-		border: none;
-		border-radius: 0.375rem;
+	.llm-status-text {
 		font-size: 0.75rem;
-		font-weight: 600;
-		color: white;
+		color: var(--color-text-whisper);
+		animation: pulse 2s ease-in-out infinite;
 		cursor: pointer;
 		transition: all 0.15s ease;
 	}
 
-	.stop-btn:hover {
-		background: var(--color-error-600, #b91c1c);
+	@keyframes pulse {
+		0%, 100% { opacity: 1; }
+		50% { opacity: 0.5; }
 	}
 
 	/* Web search toggle - visible checkbox */

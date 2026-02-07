@@ -335,12 +335,17 @@
 			<div class="stub-overlay">
 				<button
 					class="stub-generate-btn"
-					on:click={() => { if ($activeDocumentId) handlePopulateDocument($activeDocumentId); }}
-					disabled={isPopulating}
+					class:llm-active={isPopulating}
+					on:click={() => {
+						if (isPopulating) { matrix.cancelPopulate(); }
+						else if ($activeDocumentId) { handlePopulateDocument($activeDocumentId); }
+					}}
 				>
 					{#if isPopulating}
-						<Spinner size="sm" />
-						<span>Generating...</span>
+						<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<rect x="6" y="6" width="12" height="12" rx="1" />
+						</svg>
+						<span>Stop</span>
 					{:else}
 						<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 							<rect x="3" y="3" width="7" height="7"/>
