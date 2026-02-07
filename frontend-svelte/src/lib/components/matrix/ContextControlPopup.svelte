@@ -191,26 +191,32 @@
 
 		const insightIndex = idx + (type === 'column' ? 10 : 0);
 
-		// Already viewed and content exists — show directly (no backend call)
+		// Content already exists and viewed — show directly (no backend call)
 		if (viewedInsightIndices.includes(insightIndex) && opt.articulated_insight?.the_truth) {
 			selectedInsight = opt.articulated_insight;
 			showInsightPopup = true;
 			return;
 		}
 
-		// Not yet viewed — call backend to generate (if needed) + mark as viewed
-		if (!opt.insight_title) return;
+		// Content exists but not yet marked as viewed — show directly, mark via backend
+		if (opt.articulated_insight?.the_truth) {
+			selectedInsight = opt.articulated_insight;
+			showInsightPopup = true;
+			// Fire-and-forget: mark as viewed on backend (no loading state needed)
+			matrix.generateInsights(insightIndex, model).catch(() => {});
+			return;
+		}
 
+		// No content yet — call backend to generate + mark as viewed
 		const key = `${type}-${idx}`;
-
 		generatingInsightKey = key;
 		try {
 			const updatedDoc = await matrix.generateInsights(insightIndex, model);
 			if (updatedDoc) {
 				const options = type === 'row'
-					? updatedDoc.matrix_data.row_options
-					: updatedDoc.matrix_data.column_options;
-				const updatedOpt = options[idx];
+					? updatedDoc.matrix_data?.row_options
+					: updatedDoc.matrix_data?.column_options;
+				const updatedOpt = options?.[idx];
 				if (updatedOpt?.articulated_insight) {
 					selectedInsight = updatedOpt.articulated_insight;
 					showInsightPopup = true;
