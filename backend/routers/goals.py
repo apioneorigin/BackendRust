@@ -762,31 +762,17 @@ Return JSON: {{"goals": [...]}} where each goal has all skeleton fields + your 3
     return content_blocks
 
 
-def get_goal_discovery_model_config(model: str) -> Dict[str, Any]:
-    """Get model configuration for goal discovery."""
-    configs = {
-        "claude-opus-4-5-20251101": {
-            "provider": "anthropic",
-            "api_key": os.getenv("ANTHROPIC_API_KEY"),
-            "endpoint": "https://api.anthropic.com/v1/messages",
-            "max_tokens": 8192,
-        },
-        "gpt-4.1-mini": {
-            "provider": "openai",
-            "api_key": os.getenv("OPENAI_API_KEY"),
-            "endpoint": "https://api.openai.com/v1/chat/completions",
-            "max_tokens": 8192,
-        },
-        "gpt-5.2": {
-            "provider": "openai",
-            "api_key": os.getenv("OPENAI_API_KEY"),
-            "endpoint": "https://api.openai.com/v1/chat/completions",
-            "max_tokens": 16384,
-        },
+GOAL_DISCOVERY_MODEL = "gpt-4.1"
+
+def get_goal_discovery_model_config() -> Dict[str, Any]:
+    """Get model configuration for goal discovery (hardcoded to gpt-4.1)."""
+    return {
+        "model": GOAL_DISCOVERY_MODEL,
+        "provider": "openai",
+        "api_key": os.getenv("OPENAI_API_KEY"),
+        "endpoint": "https://api.openai.com/v1/chat/completions",
+        "max_tokens": 16384,
     }
-    if model not in configs:
-        raise ValueError(f"Unknown model: {model}")
-    return {"model": model, **configs[model]}
 
 
 # =============================================================================
@@ -811,11 +797,8 @@ async def discover_goals_from_files(
     start_time = time.time()
     api_logger.info(f"[GOAL DISCOVERY] Starting for user {current_user.id}, {len(request.files)} files")
 
-    # Get model config
-    try:
-        model_config = get_goal_discovery_model_config(request.model)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    # Get model config (hardcoded to gpt-4.1)
+    model_config = get_goal_discovery_model_config()
 
     provider = model_config["provider"]
     api_key = model_config["api_key"]
