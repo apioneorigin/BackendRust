@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { addToast, chat, llmManualBusy } from '$lib/stores';
 	import { Button, Spinner, ConfirmDialog } from '$lib/components/ui';
+	import GoalArticulationPopup from '$lib/components/goals/GoalArticulationPopup.svelte';
 	import { api } from '$lib/utils/api';
 
 	interface DiscoveredGoal {
@@ -65,13 +66,13 @@
 	let modalDiscovery: FileGoalDiscovery | null = null;
 	let goalsSavedDuringModal = false;
 	let flashLibraryTab = false;
-	let modalPage = 0;
-	const GOALS_PER_PAGE = 6;
 	let dialogEl: HTMLDialogElement;
 
+	// Goal detail popup state
+	let showGoalPopup = false;
+	let selectedGoal: DiscoveredGoal | null = null;
+
 	$: modalGoals = modalDiscovery?.goals ?? [];
-	$: totalModalPages = Math.ceil(modalGoals.length / GOALS_PER_PAGE);
-	$: visibleGoals = modalGoals.slice(modalPage * GOALS_PER_PAGE, (modalPage + 1) * GOALS_PER_PAGE);
 
 	$: if (dialogEl) {
 		if (showGoalsModal && !dialogEl.open) {
@@ -87,18 +88,6 @@
 		}
 		node.addEventListener('click', onClick);
 		return { destroy: () => node.removeEventListener('click', onClick) };
-	}
-
-	// Expanded articulation state
-	let expandedGoals = new Set<string>();
-
-	function toggleArticulation(goalId: string) {
-		if (expandedGoals.has(goalId)) {
-			expandedGoals.delete(goalId);
-		} else {
-			expandedGoals.add(goalId);
-		}
-		expandedGoals = expandedGoals; // trigger reactivity
 	}
 
 	// Discovery row dropdown state
@@ -301,9 +290,18 @@
 
 	function openGoalsModal(discovery: FileGoalDiscovery) {
 		modalDiscovery = discovery;
-		modalPage = 0;
 		showGoalsModal = true;
 		goalsSavedDuringModal = false;
+	}
+
+	function openGoalDetail(goal: DiscoveredGoal) {
+		selectedGoal = normalizeGoal(goal);
+		showGoalPopup = true;
+	}
+
+	function closeGoalDetail() {
+		showGoalPopup = false;
+		selectedGoal = null;
 	}
 
 	function closeGoalsModal() {
@@ -678,8 +676,7 @@
 				<div class="goals-grid">
 					{#each savedGoals as goal (goal.id)}
 						{@const g = normalizeGoal(goal)}
-						{@const isExpanded = expandedGoals.has(g.id)}
-						<div class="goal-card" class:expanded={isExpanded}>
+						<div class="goal-card">
 							<div class="goal-header">
 								<span class="goal-type {goalTypeColors[g.type] || 'type-default'}">
 									{g.type.replace('_', ' ')}
@@ -693,15 +690,7 @@
 							{/if}
 							<h3 class="goal-identity">{g.identity}</h3>
 							{#if g.articulation}
-								<button class="articulation-toggle" on:click={() => toggleArticulation(g.id)}>
-									<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class:rotated={isExpanded}>
-										<path d="m9 18 6-6-6-6"/>
-									</svg>
-									{isExpanded ? 'Collapse' : 'Read articulation'}
-								</button>
-								{#if isExpanded}
-									<div class="goal-articulation">{g.articulation}</div>
-								{/if}
+								<div class="goal-articulation">{g.articulation}</div>
 							{/if}
 							<p class="goal-first-move">{g.firstMove}</p>
 							<div class="goal-sources">
@@ -755,87 +744,42 @@
 			</div>
 			<div class="modal-body">
 				<div class="modal-goals-list">
-					{#each visibleGoals as goal (goal.id)}
+					{#each modalGoals as goal (goal.id)}
 						{@const g = normalizeGoal(goal)}
-						{@const isExpanded = expandedGoals.has(g.id)}
-						<div class="goal-card" class:expanded={isExpanded}>
-							<div class="goal-header">
+						<div class="goal-row-wrapper">
+							<div class="goal-row">
 								<span class="goal-type {goalTypeColors[g.type] || 'type-default'}">
 									{g.type.replace('_', ' ')}
 								</span>
-								<span class="goal-confidence {getConfidenceColor(g.confidence)}">
-									{g.confidence}%<span class="confidence-label">confidence</span>
+								<span class="goal-identity-line">
+									{g.identity}
+									<span class="goal-confidence-inline {getConfidenceColor(g.confidence)}">
+										{g.confidence}%
+									</span>
 								</span>
 							</div>
-							{#if g.goalStatement}
-								<p class="goal-statement">{g.goalStatement}</p>
-							{/if}
-							<h3 class="goal-identity">{g.identity}</h3>
-							{#if g.articulation}
-								<button class="articulation-toggle" on:click={() => toggleArticulation(g.id)}>
-									<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class:rotated={isExpanded}>
-										<path d="m9 18 6-6-6-6"/>
-									</svg>
-									{isExpanded ? 'Collapse' : 'Read articulation'}
-								</button>
-								{#if isExpanded}
-									<div class="goal-articulation">{g.articulation}</div>
-								{/if}
-							{/if}
-							<p class="goal-first-move">{g.firstMove}</p>
-							<div class="goal-actions">
-								<button
-									class="action-btn save-btn"
-									on:click={() => saveGoalToInventory(g)}
-									disabled={isGoalSaved(g.id)}
-								>
-									{#if isGoalSaved(g.id)}
-										<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-											<path d="M20 6 9 17l-5-5" />
-										</svg>
-										Saved
-									{:else}
-										<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-											<path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
-										</svg>
-										Save
-									{/if}
-								</button>
-								<button class="action-btn chat-btn" on:click={() => startChatWithGoal(g)}>
-									<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-										<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-									</svg>
-									Chat
-								</button>
-								<button class="action-btn remove-btn" on:click={() => deleteGoalFromDiscovery(g.id)} title="Delete goal">
-									<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-										<path d="M3 6h18" />
-										<path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-										<path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-									</svg>
-									Delete
-								</button>
-							</div>
+							<button class="articulation-expand-btn" on:click={() => openGoalDetail(g)} title="View full articulation">
+								<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<path d="m9 18 6-6-6-6"/>
+								</svg>
+							</button>
 						</div>
 					{/each}
 				</div>
 			</div>
-			{#if totalModalPages > 1}
-				<div class="modal-footer">
-					<button class="page-btn" disabled={modalPage === 0} on:click={() => modalPage--}>
-						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-						Prev
-					</button>
-					<span class="page-info">{modalPage + 1} / {totalModalPages}</span>
-					<button class="page-btn" disabled={modalPage >= totalModalPages - 1} on:click={() => modalPage++}>
-						Next
-						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-					</button>
-				</div>
-			{/if}
 		</div>
 	{/if}
 </dialog>
+
+<GoalArticulationPopup
+	bind:open={showGoalPopup}
+	goal={selectedGoal}
+	isSaved={selectedGoal ? isGoalSaved(selectedGoal.id) : false}
+	on:close={closeGoalDetail}
+	on:save={(e) => saveGoalToInventory(e.detail)}
+	on:chat={(e) => startChatWithGoal(e.detail)}
+	on:delete={(e) => { closeGoalDetail(); deleteGoalFromDiscovery(e.detail.id); }}
+/>
 
 <ConfirmDialog
 	bind:open={showDeleteDiscoveryConfirm}
@@ -1320,22 +1264,78 @@
 		gap: 1rem;
 	}
 
-	/* Modal goals list - scrollable single column for expandable articulation */
+	/* Modal goals list - scrollable title rows */
 	.modal-goals-list {
 		display: flex;
 		flex-direction: column;
-		gap: 0.75rem;
+		gap: 0.375rem;
 		overflow-y: auto;
 		max-height: 100%;
 	}
 
-	.modal-goals-list .goal-card {
-		padding: 1rem;
+	.goal-row-wrapper {
+		display: flex;
+		align-items: stretch;
 		gap: 0.5rem;
 	}
 
-	.modal-goals-list .goal-actions {
-		padding-top: 0.5rem;
+	.goal-row {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.5rem;
+		padding: 0.625rem 0.75rem;
+		background: var(--color-field-depth);
+		border: 1px solid transparent;
+		border-radius: 0.5rem;
+		flex: 1;
+		min-width: 0;
+		flex-wrap: wrap;
+		transition: all 0.15s ease;
+	}
+
+	.goal-row:hover {
+		border-color: var(--color-veil-soft);
+	}
+
+	.goal-identity-line {
+		flex: 1;
+		min-width: 0;
+		font-size: 0.8125rem;
+		font-weight: 500;
+		color: var(--color-text-source);
+		line-height: 1.4;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		gap: 0.5rem;
+	}
+
+	.goal-confidence-inline {
+		font-size: 0.75rem;
+		font-weight: 700;
+		margin-left: auto;
+		flex-shrink: 0;
+		white-space: nowrap;
+	}
+
+	.articulation-expand-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 36px;
+		background: var(--color-field-depth);
+		border: 1px solid var(--color-veil-thin);
+		border-radius: 0.5rem;
+		color: var(--color-text-whisper);
+		cursor: pointer;
+		transition: all 0.15s ease;
+		flex-shrink: 0;
+	}
+
+	.articulation-expand-btn:hover {
+		background: var(--color-primary-50);
+		border-color: var(--color-primary-400);
+		color: var(--color-primary-600);
 	}
 
 	.goal-card {
@@ -1408,32 +1408,6 @@
 		line-height: 1.4;
 	}
 
-	.articulation-toggle {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.25rem;
-		padding: 0;
-		background: none;
-		border: none;
-		font-size: 0.75rem;
-		font-weight: 500;
-		color: var(--color-text-whisper);
-		cursor: pointer;
-		transition: color 0.15s ease;
-	}
-
-	.articulation-toggle:hover {
-		color: var(--color-text-source);
-	}
-
-	.articulation-toggle svg {
-		transition: transform 0.2s ease;
-	}
-
-	.articulation-toggle svg.rotated {
-		transform: rotate(90deg);
-	}
-
 	.goal-articulation {
 		font-size: 0.8125rem;
 		color: var(--color-text-manifest);
@@ -1485,21 +1459,6 @@
 		font-weight: 500;
 		cursor: pointer;
 		transition: all 0.15s ease;
-	}
-
-	.save-btn {
-		background: var(--color-success-50);
-		border: 1px solid var(--color-success-200);
-		color: var(--color-success-700);
-	}
-
-	.save-btn:hover:not(:disabled) {
-		background: var(--color-success-100);
-	}
-
-	.save-btn:disabled {
-		opacity: 0.7;
-		cursor: default;
 	}
 
 	.chat-btn {
@@ -1602,8 +1561,8 @@
 		background: var(--color-field-surface);
 		border-radius: 0.75rem;
 		width: 100%;
-		max-width: 1200px;
-		height: 96vh;
+		max-width: 720px;
+		max-height: 85vh;
 		display: flex;
 		flex-direction: column;
 		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
@@ -1678,46 +1637,6 @@
 		overflow: hidden;
 		flex: 1;
 		min-height: 0;
-	}
-
-	.modal-footer {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 1rem;
-		padding: 0.5rem 1rem;
-		border-top: 1px solid var(--color-veil-thin);
-		flex-shrink: 0;
-	}
-
-	.page-btn {
-		display: flex;
-		align-items: center;
-		gap: 0.25rem;
-		padding: 0.375rem 0.75rem;
-		background: transparent;
-		border: 1px solid var(--color-veil-thin);
-		border-radius: 0.375rem;
-		font-size: 0.75rem;
-		font-weight: 500;
-		color: var(--color-text-manifest);
-		cursor: pointer;
-		transition: all 0.1s ease;
-	}
-
-	.page-btn:hover:not(:disabled) {
-		background: var(--color-field-depth);
-		border-color: var(--color-veil-soft);
-	}
-
-	.page-btn:disabled {
-		opacity: 0.3;
-		cursor: default;
-	}
-
-	.page-info {
-		font-size: 0.75rem;
-		color: var(--color-text-whisper);
 	}
 
 	/* Responsive */
