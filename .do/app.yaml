@@ -1,0 +1,110 @@
+# DigitalOcean App Platform Specification
+# This file is a secure template - actual secret values should be set in DO Console UI
+
+alerts:
+  - rule: DEPLOYMENT_FAILED
+  - rule: DOMAIN_FAILED
+  - rule: DEPLOYMENT_LIVE
+
+databases:
+  # PostgreSQL Database
+  - cluster_name: db-postgresql-nyc1-83404
+    db_name: defaultdb
+    db_user: doadmin
+    engine: PG
+    name: db
+    production: true
+
+  # Redis/Valkey Cache
+  - cluster_name: db-valkey-nyc1-88974
+    engine: VALKEY
+    name: redis
+    production: true
+    version: "8"
+
+features:
+  - buildpack-stack=ubuntu-22
+
+ingress:
+  rules:
+    - component:
+        name: backendrust
+      match:
+        authority:
+          exact: ""
+        path:
+          prefix: /
+
+name: backendrust
+region: nyc
+
+services:
+  - name: backendrust
+    dockerfile_path: Dockerfile
+    http_port: 8000
+    instance_count: 2
+    instance_size_slug: apps-s-1vcpu-1gb
+
+    github:
+      repo: apioneorigin/BackendRust
+      branch: main
+      deploy_on_push: true
+
+    source_dir: /
+
+    envs:
+      # =================================================================
+      # SECRETS - Set actual values in DigitalOcean Console UI
+      # DO NOT commit real API keys or passwords to this file
+      # =================================================================
+
+      - key: OPENAI_API_KEY
+        scope: RUN_TIME
+        type: SECRET
+        # Set in DO Console: Apps → Settings → Environment Variables
+
+      - key: ANTHROPIC_API_KEY
+        scope: RUN_TIME
+        type: SECRET
+        # Set in DO Console: Apps → Settings → Environment Variables
+
+      - key: JWT_SECRET
+        scope: RUN_TIME
+        type: SECRET
+        # Generate with: openssl rand -hex 32
+        # Set in DO Console: Apps → Settings → Environment Variables
+
+      # =================================================================
+      # DATABASE CONNECTIONS
+      # Use PUBLIC hostnames (not private-) until VPC is fully ready
+      # =================================================================
+
+      - key: DATABASE_URL
+        scope: RUN_TIME
+        type: SECRET
+        # Format: postgresql://doadmin:PASSWORD@db-postgresql-nyc1-83404-do-user-33112092-0.m.db.ondigitalocean.com:25060/defaultdb?sslmode=require
+        # Get password from: DO Console → Databases → Your cluster → Connection Details
+        # Set in DO Console: Apps → Settings → Environment Variables
+
+      - key: REDIS_URL
+        scope: RUN_TIME
+        type: SECRET
+        # Format: rediss://default:PASSWORD@db-valkey-nyc1-88974-do-user-33112092-0.m.db.ondigitalocean.com:25061
+        # Get password from: DO Console → Databases → Your Redis cluster → Connection Details
+        # Set in DO Console: Apps → Settings → Environment Variables
+
+      # =================================================================
+      # PUBLIC CONFIGURATION (safe to commit)
+      # =================================================================
+
+      - key: ENVIRONMENT
+        scope: RUN_TIME
+        value: production
+
+      - key: HOST
+        scope: RUN_TIME
+        value: 0.0.0.0
+
+      - key: PORT
+        scope: RUN_TIME
+        value: "8000"

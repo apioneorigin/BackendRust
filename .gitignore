@@ -46,5 +46,9 @@ backend/.env
 .vercel
 .env*.local
 
+# DigitalOcean app spec with credentials
+.do/app-with-credentials.yaml
+.do/*-credentials.yaml
+
 # SvelteKit build output
 frontend-svelte/.svelte-kit/
