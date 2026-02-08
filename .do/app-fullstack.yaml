@@ -1,11 +1,27 @@
 # DigitalOcean App Platform Specification - Full Stack
-# Frontend (SvelteKit) + Backend (FastAPI)
-# Database connections are set as manual secrets (DATABASE_URL, REDIS_URL)
+# Frontend (SvelteKit) + Backend (FastAPI) + Databases
+# Database connections use component references (auto-injected)
 
 alerts:
   - rule: DEPLOYMENT_FAILED
   - rule: DOMAIN_FAILED
   - rule: DEPLOYMENT_LIVE
+
+databases:
+  # PostgreSQL Database
+  - cluster_name: db-postgresql-nyc1-83404
+    db_name: defaultdb
+    db_user: doadmin
+    engine: PG
+    name: production-database
+    production: true
+
+  # Redis/Valkey Cache
+  - cluster_name: db-valkey-nyc1-88974
+    engine: VALKEY
+    name: REDIS
+    production: true
+    version: "8"
 
 features:
   - buildpack-stack=ubuntu-22
@@ -34,7 +50,7 @@ services:
   # SVELTEKIT FRONTEND
   # =================================================================
   - name: frontend
-    dockerfile_path: Dockerfile
+    dockerfile_path: frontend-svelte/Dockerfile
     http_port: 3000
     instance_count: 1
     instance_size_slug: apps-s-1vcpu-0.5gb
@@ -104,11 +120,11 @@ services:
 
       - key: DATABASE_URL
         scope: RUN_TIME
-        type: SECRET
+        value: ${production-database.DATABASE_URL}
 
       - key: REDIS_URL
         scope: RUN_TIME
-        type: SECRET
+        value: ${REDIS.DATABASE_URL}
 
       # =================================================================
       # CORS Configuration
