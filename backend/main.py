@@ -183,6 +183,12 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Reality Transformer", version="4.1.0", lifespan=lifespan)
 
 # =====================================================================
+# FRAMEWORK CONCEALMENT (Hide implementation details from attackers)
+# =====================================================================
+from security import apply_concealment
+apply_concealment(app, custom_server_name="API Server")
+
+# =====================================================================
 # SECURITY MIDDLEWARE STACK (Single-pass processing)
 # =====================================================================
 
