@@ -347,13 +347,13 @@
 				{@const hidden = !stubMode && shouldHideCell(cell)}
 				<!-- svelte-ignore a11y-click-events-have-key-events -->
 				<div
-					class="matrix-cell {stubMode ? '' : getCellColor(cell)}"
+					class="matrix-cell {hidden ? '' : stubMode ? '' : getCellColor(cell)}"
 					class:leverage-point={!stubMode && !hidden && cell.isLeveragePoint}
-					class:selected={!stubMode && selectedCell?.row === rowIdx && selectedCell?.col === colIdx}
+					class:selected={!stubMode && !hidden && selectedCell?.row === rowIdx && selectedCell?.col === colIdx}
 					class:stub-cell={stubMode}
 					class:hidden-cell={hidden}
-					class:row-alt={rowIdx % 2 === 1}
-					class:col-alt={colIdx % 2 === 1}
+					class:row-alt={!hidden && rowIdx % 2 === 1}
+					class:col-alt={!hidden && colIdx % 2 === 1}
 					on:click={() => handleMatrixCellInteraction(rowIdx, colIdx)}
 					role="button"
 					tabindex={stubMode || hidden ? -1 : 0}
@@ -674,6 +674,10 @@
 		box-shadow: inset 0 0 0 1px var(--color-text-source);
 	}
 
+	.matrix-cell.cell-power-spot {
+		background: rgba(99, 102, 241, 0.08);
+	}
+
 	.matrix-cell.cell-risk-medium {
 		background: rgba(217, 119, 6, 0.08);
 	}
@@ -881,17 +885,10 @@
 		overflow: hidden;
 	}
 
-	/* Hidden cells in Power Spots / Risk filtered views: completely blank */
+	/* Hidden cells in Power Spots / Risk filtered views: completely invisible */
 	.matrix-cell.hidden-cell {
-		background: transparent !important;
-		border: none !important;
-		box-shadow: none !important;
-		cursor: default;
+		visibility: hidden;
 		pointer-events: none;
-	}
-
-	.matrix-cell.hidden-cell:hover {
-		background: transparent !important;
 	}
 
 	/* Stub mode: cells invisible so headers stand out */
