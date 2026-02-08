@@ -844,7 +844,7 @@
 								{g.type.replace('_', ' ')}
 							</span>
 							<span class="goal-identity-line">
-								{g.identity}
+								<span class="goal-identity-text">{g.identity}</span>
 								<span class="goal-confidence-inline {getConfidenceColor(g.confidence)}">
 									{g.confidence}% confidence
 								</span>
