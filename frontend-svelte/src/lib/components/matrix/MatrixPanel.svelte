@@ -316,8 +316,21 @@
 
 	<!-- Matrix Grid -->
 	<div class="matrix-grid">
-		<!-- Top-left corner (empty) -->
-		<div class="grid-corner"></div>
+		<!-- Top-left corner: undo/redo buttons live here so they never affect grid height -->
+		<div class="grid-corner">
+			{#if (canUndo || canRedo) && !showCellPopup}
+				<button class="undo-redo-btn" on:click={undo} disabled={!canUndo} title="Undo">
+					<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M3 7v6h6" /><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
+					</svg>
+				</button>
+				<button class="undo-redo-btn" on:click={redo} disabled={!canRedo} title="Redo">
+					<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M21 7v6h-6" /><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13" />
+					</svg>
+				</button>
+			{/if}
+		</div>
 
 		<!-- Column headers -->
 		{#each columnHeaders as header, colIdx}
@@ -402,21 +415,6 @@
 		{/if}
 	</div>
 
-	<!-- Floating undo/redo toolbar for cell bar edits -->
-	{#if (canUndo || canRedo) && !showCellPopup}
-		<div class="matrix-edit-toolbar">
-			<button class="undo-redo-btn" on:click={undo} disabled={!canUndo} title="Undo">
-				<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-					<path d="M3 7v6h6" /><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
-				</svg>
-			</button>
-			<button class="undo-redo-btn" on:click={redo} disabled={!canRedo} title="Redo">
-				<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-					<path d="M21 7v6h-6" /><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13" />
-				</svg>
-			</button>
-		</div>
-	{/if}
 </div>
 
 <!-- Cell detail popup -->
@@ -946,13 +944,13 @@
 		cursor: default;
 	}
 
-	/* Floating edit toolbar on matrix panel */
-	.matrix-edit-toolbar {
+	/* Grid corner (R0C0): holds undo/redo buttons without affecting layout */
+	.grid-corner {
 		display: flex;
+		align-items: flex-end;
 		justify-content: center;
-		gap: 0.25rem;
-		padding: 0.25rem 0;
-		flex-shrink: 0;
+		gap: 0.125rem;
+		overflow: hidden;
 	}
 
 	/* Stub mode: cells invisible so headers stand out */
