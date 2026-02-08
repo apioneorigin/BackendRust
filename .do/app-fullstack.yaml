@@ -100,9 +100,6 @@ services:
 
     source_dir: /
 
-    routes:
-      - path: /api
-
     envs:
       # =================================================================
       # SECRETS - Set actual values in DigitalOcean Console UI

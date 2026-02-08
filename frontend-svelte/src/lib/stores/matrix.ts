@@ -246,23 +246,25 @@ function createMatrixStore() {
 					};
 				}
 
-				let riskLevel: 'low' | 'medium' | 'high' = 'low';
-				if (cell.impact_score >= 80) riskLevel = 'high';
-				else if (cell.impact_score >= 50) riskLevel = 'medium';
-
-				const isLeveragePoint = cell.impact_score >= 75 &&
-					cell.dimensions?.some(d => d.value >= 75);
-
 				const dimensions: CellDimension[] = cell.dimensions?.map(d => ({
 					name: d.name,
 					value: d.value,
 					explanation: d.explanation
 				})) || placeholderDimensions;
+				const finalDims = dimensions.length === 5 ? dimensions : placeholderDimensions;
+				const dimAvg = finalDims.reduce((sum, d) => sum + d.value, 0) / finalDims.length;
+
+				let riskLevel: 'low' | 'medium' | 'high' = 'low';
+				if (dimAvg >= 80) riskLevel = 'high';
+				else if (dimAvg >= 50) riskLevel = 'medium';
+
+				const isLeveragePoint = dimAvg >= 75 &&
+					finalDims.some(d => d.value >= 75);
 
 				return {
-					value: cell.impact_score,
-					dimensions: dimensions.length === 5 ? dimensions : placeholderDimensions,
-					confidence: cell.impact_score / 100,
+					value: Math.round(dimAvg),
+					dimensions: finalDims,
+					confidence: dimAvg / 100,
 					description: cell.relationship || '',
 					isLeveragePoint,
 					riskLevel
@@ -757,7 +759,7 @@ function createMatrixStore() {
 			}
 		},
 
-		// Update cell dimension value (local state only)
+		// Update cell dimension value and recompute derived fields (local state only)
 		updateCellDimension(rowIdx: number, colIdx: number, dimIdx: number, value: number) {
 			update(state => {
 				const newMatrixData = state.displayedMatrixData.map((row, r) =>
@@ -766,7 +768,12 @@ function createMatrixStore() {
 							const newDimensions = cell.dimensions.map((dim, d) =>
 								d === dimIdx ? { ...dim, value } : dim
 							);
-							return { ...cell, dimensions: newDimensions };
+							const dimAvg = newDimensions.reduce((sum, d) => sum + d.value, 0) / newDimensions.length;
+							let riskLevel: 'low' | 'medium' | 'high' = 'low';
+							if (dimAvg >= 80) riskLevel = 'high';
+							else if (dimAvg >= 50) riskLevel = 'medium';
+							const isLeveragePoint = dimAvg >= 75 && newDimensions.some(d => d.value >= 75);
+							return { ...cell, dimensions: newDimensions, value: Math.round(dimAvg), isLeveragePoint, riskLevel };
 						}
 						return cell;
 					})
