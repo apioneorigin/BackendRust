@@ -4,7 +4,7 @@
 	 *
 	 * ARCHITECTURE:
 	 * - Shows document tabs at top (each with its own matrix)
-	 * - Both cell bars and dimension bars use 3 segments: Low (0), Medium (50), High (100)
+	 * - Both cell bars and dimension bars use 3 segments: Low (33), Medium (67), High (100)
 	 * - Cell value = average of 5 dimensions, displayed as nearest segment
 	 * - Clicking a cell bar segment sets ALL dimensions to that step
 	 */
@@ -30,7 +30,7 @@
 	}>();
 
 	// Both cell bars and dimension bars use the same 3 steps: Low, Medium, High
-	const DIM_STEPS = [0, 50, 100];
+	const DIM_STEPS = [33, 67, 100];
 	const CELL_SEGMENTS = 3;
 
 	let selectedCell: { row: number; col: number } | null = null;
@@ -151,7 +151,7 @@
 
 	// Calculate cell value from dimensions (average)
 	function calcCellValueFromDimensions(dimensions: CellDimension[]): number {
-		if (!dimensions || dimensions.length === 0) return 50;
+		if (!dimensions || dimensions.length === 0) return 67;
 		const sum = dimensions.reduce((acc, d) => acc + d.value, 0);
 		return Math.round(sum / dimensions.length);
 	}
@@ -165,16 +165,16 @@
 		return 3;
 	}
 
-	// Snap to nearest dimension step (0, 50, 100)
-	// 0-33 → 0, 34-67 → 50, 68-100 → 100
+	// Snap to nearest dimension step (33, 67, 100)
+	// 0-33 → 33, 34-67 → 67, 68-100 → 100
 	function snapToStep(value: number): number {
-		if (value <= 33) return 0;
-		if (value <= 67) return 50;
+		if (value <= 33) return 33;
+		if (value <= 67) return 67;
 		return 100;
 	}
 
 	// When user clicks a cell bar segment, set ALL dimensions to the corresponding step.
-	// Segment 0 = Low (0), Segment 1 = Medium (50), Segment 2 = High (100).
+	// Segment 0 = Low (33), Segment 1 = Medium (67), Segment 2 = High (100).
 	function handleCellBarClick(row: number, col: number, segmentIndex: number) {
 		const cell = matrixData[row]?.[col];
 		if (!cell?.dimensions) return;

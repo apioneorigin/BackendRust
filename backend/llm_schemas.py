@@ -255,7 +255,7 @@ CELL_SCHEMA: Dict[str, Any] = {
                 "type": "object",
                 "properties": {
                     "name": {"type": "string"},
-                    "value": {"type": "integer", "enum": [0, 50, 100]}
+                    "value": {"type": "integer", "enum": [33, 67, 100]}
                 },
                 "required": ["name", "value"]
             },
@@ -451,10 +451,10 @@ def validate_document_cells(document: Dict[str, Any]) -> Tuple[bool, List[str]]:
         dims = cell.get("dimensions", [])
         for dim in dims:
             value = dim.get("value")
-            if value not in [0, 50, 100]:
+            if value not in [33, 67, 100]:
                 invalid_dim_values.append(f"{key}: {dim.get('name')}={value}")
 
     if invalid_dim_values:
-        errors.append(f"Invalid dimension values (must be 0/50/100): {invalid_dim_values[:5]}")
+        errors.append(f"Invalid dimension values (must be 33/67/100): {invalid_dim_values[:5]}")
 
     return len(errors) == 0, errors
