@@ -1491,9 +1491,7 @@
 		background: var(--color-field-depth);
 		border: 1px solid transparent;
 		border-radius: 0.5rem;
-		width: 100%;
-		min-width: 0;
-		overflow: hidden;
+		white-space: nowrap;
 		transition: all 0.15s ease;
 		cursor: pointer;
 		text-align: left;
@@ -1507,8 +1505,6 @@
 	}
 
 	.goal-identity-line {
-		flex: 1;
-		min-width: 0;
 		font-size: 0.8125rem;
 		font-weight: 500;
 		color: var(--color-text-source);
@@ -1516,14 +1512,6 @@
 		display: flex;
 		align-items: baseline;
 		gap: 0.5rem;
-		overflow: hidden;
-	}
-
-	.goal-identity-text {
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-		min-width: 0;
 	}
 
 	.goal-confidence-inline {
@@ -1722,8 +1710,8 @@
 	.modal-content {
 		background: var(--color-field-surface);
 		border-radius: 0.75rem;
-		width: 100%;
-		max-width: 720px;
+		width: fit-content;
+		max-width: 90vw;
 		max-height: 85vh;
 		display: flex;
 		flex-direction: column;
@@ -1797,7 +1785,6 @@
 	.modal-body {
 		padding: 0.75rem 1rem;
 		overflow-y: auto;
-		overflow-x: hidden;
 		flex: 1;
 		min-height: 0;
 	}
