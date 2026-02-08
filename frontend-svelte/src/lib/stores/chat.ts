@@ -296,16 +296,15 @@ function createChatStore() {
 					isLoading: false,
 				}));
 
-				// Set conversation ID first — must run before any matrix operations
+				// Reset matrix and set conversation ID — must run before any matrix operations
+				// initializeMatrix clears stale docs from the previous conversation
+				matrix.initializeMatrix();
 				matrix.setConversationId(conversationId);
 
 				// Apply documents to matrix store if present (new architecture)
 				const documents = Array.isArray(documentsResponse) ? documentsResponse : [];
 				if (documents.length > 0) {
 					matrix.populateFromStructuredData({ documents });
-				} else {
-					// Reset matrix to default state if no data
-					matrix.initializeMatrix();
 				}
 			} catch (error: any) {
 				// Ignore abort errors (expected when user clicks rapidly)

@@ -352,8 +352,11 @@ function createMatrixStore() {
 					}
 				}
 
-				// Find first document with valid matrix_data for display
-				const activeDoc = mergedDocs.find(d => d.matrix_data) || mergedDocs[0];
+				// Preserve current active document if it still exists; otherwise pick first with matrix_data
+				const currentActive = state.activeDocumentId
+					? mergedDocs.find(d => d.id === state.activeDocumentId)
+					: null;
+				const activeDoc = currentActive || mergedDocs.find(d => d.matrix_data) || mergedDocs[0];
 				const activeDocumentId = activeDoc.id;
 				const displayed = buildDisplayedMatrix(activeDoc);
 
