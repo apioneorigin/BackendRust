@@ -12,13 +12,13 @@ databases:
     db_name: defaultdb
     db_user: doadmin
     engine: PG
-    name: db
+    name: production-database
     production: true
 
   # Redis/Valkey Cache
   - cluster_name: db-valkey-nyc1-88974
     engine: VALKEY
-    name: redis
+    name: REDIS
     production: true
     version: "8"
 
@@ -119,11 +119,11 @@ services:
 
       - key: DATABASE_URL
         scope: RUN_TIME
-        type: SECRET
+        value: ${production-database.DATABASE_URL}
 
       - key: REDIS_URL
         scope: RUN_TIME
-        type: SECRET
+        value: ${REDIS.DATABASE_URL}
 
       # =================================================================
       # CORS Configuration
