@@ -6,22 +6,6 @@ alerts:
   - rule: DOMAIN_FAILED
   - rule: DEPLOYMENT_LIVE
 
-databases:
-  # PostgreSQL Database
-  - cluster_name: db-postgresql-nyc1-83404
-    db_name: defaultdb
-    db_user: doadmin
-    engine: PG
-    name: db
-    production: true
-
-  # Redis/Valkey Cache
-  - cluster_name: db-valkey-nyc1-88974
-    engine: VALKEY
-    name: redis
-    production: true
-    version: "8"
-
 features:
   - buildpack-stack=ubuntu-22
 
