@@ -109,28 +109,42 @@
 			// All dimensions are 0, set all to target
 			const targetStep = snapToStep(targetAvg);
 			cell.dimensions.forEach((_, idx) => {
-				dispatch('dimensionChange', { row, col, dimIndex: idx, value: targetStep });
+				applyDimensionEdit(row, col, idx, targetStep);
 			});
 		} else {
 			// Scale proportionally
 			const scaleFactor = targetAvg / currentAvg;
 			cell.dimensions.forEach((dim, idx) => {
 				const newValue = snapToStep(Math.min(100, Math.max(0, dim.value * scaleFactor)));
-				dispatch('dimensionChange', { row, col, dimIndex: idx, value: newValue });
+				applyDimensionEdit(row, col, idx, newValue);
 			});
 		}
 	}
 
-	// Handle dimension bar click - cycle through steps or set directly
+	// Handle dimension bar click - set directly
 	function handleDimensionBarClick(dimIndex: number, stepIndex: number) {
 		if (!selectedCell) return;
 		const stepValue = DIM_STEPS[stepIndex];
-		dispatch('dimensionChange', {
-			row: selectedCell.row,
-			col: selectedCell.col,
-			dimIndex,
-			value: stepValue
-		});
+		applyDimensionEdit(selectedCell.row, selectedCell.col, dimIndex, stepValue);
+	}
+
+	// Apply a dimension edit: track in localDimensionEdits, store original, update visual state
+	function applyDimensionEdit(row: number, col: number, dimIndex: number, value: number) {
+		const key = `${row}-${col}-${dimIndex}`;
+		// Store original value on first edit only
+		if (!originalDimensionValues.has(key)) {
+			const cell = matrixData[row]?.[col];
+			if (cell?.dimensions?.[dimIndex]) {
+				originalDimensionValues.set(key, cell.dimensions[dimIndex].value);
+				originalDimensionValues = originalDimensionValues;
+			}
+		}
+		// Track the edit
+		localDimensionEdits.set(key, value);
+		localDimensionEdits = localDimensionEdits;
+		// Update visual state immediately
+		matrix.updateCellDimension(row, col, dimIndex, value);
+		dispatch('dimensionChange', { row, col, dimIndex, value });
 	}
 
 	// Get dimension bar fill count (0, 1, 2, 3 segments to fill)
@@ -414,6 +428,11 @@
 
 			<div class="popup-footer">
 				<Button variant="ghost" on:click={closeCellPopup}>Close</Button>
+				{#if hasUnsavedChanges}
+					<Button variant="primary" on:click={handleSave} disabled={isSaving}>
+						{isSaving ? 'Saving...' : 'Save'}
+					</Button>
+				{/if}
 			</div>
 		</div>
 	</div>
