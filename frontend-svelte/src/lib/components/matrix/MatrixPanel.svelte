@@ -778,17 +778,22 @@
 		justify-content: space-between;
 		padding: 0.625rem 0.75rem;
 		background: var(--color-field-depth);
-		border: none;
-		border-radius: 0.375rem;
+		border: 1px solid var(--color-veil-thin);
+		border-radius: 0.5rem;
 		cursor: pointer;
-		transition: all 0.1s ease;
+		transition: all 0.15s ease;
 		width: 100%;
 		text-align: left;
 		font-family: inherit;
 	}
 
 	.dimension-cell:hover {
-		background: var(--color-accent-subtle);
+		border-color: var(--color-primary-400);
+		background: var(--color-primary-50);
+	}
+
+	.dimension-cell:active {
+		transform: scale(0.99);
 	}
 
 	.dim-name {
