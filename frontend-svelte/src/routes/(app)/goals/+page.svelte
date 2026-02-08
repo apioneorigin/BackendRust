@@ -460,6 +460,8 @@
 	async function confirmDeleteGoalFromDiscovery() {
 		if (!deleteGoalFromDiscoveryInfo) return;
 		const { discoveryId, goalId } = deleteGoalFromDiscoveryInfo;
+		// Goal is being deleted — clear selectedGoal
+		selectedGoal = null;
 		try {
 			await api.delete(`/api/goal-discoveries/${discoveryId}/goals/${goalId}`);
 			// Update local state
@@ -491,8 +493,12 @@
 
 	function cancelDeleteGoalFromDiscovery() {
 		deleteGoalFromDiscoveryInfo = null;
-		// Reopen goals modal since delete was cancelled
-		if (modalDiscovery) showGoalsModal = true;
+		// Reopen the same goal's articulation popup (selectedGoal was preserved)
+		if (selectedGoal) {
+			showGoalPopup = true;
+		} else if (modalDiscovery) {
+			showGoalsModal = true;
+		}
 	}
 
 	async function startChatWithGoal(goal: DiscoveredGoal | SavedGoal) {
@@ -875,10 +881,10 @@
 	on:save={(e) => saveGoalToInventory(e.detail)}
 	on:chat={(e) => startChatWithGoal(e.detail)}
 	on:delete={(e) => {
-		// Close popup WITHOUT reopening goals modal — the ConfirmDialog
-		// would go behind the native dialog's top-layer otherwise
+		// Close popup but keep selectedGoal so cancel can reopen it.
+		// Don't reopen goals modal — ConfirmDialog would go behind
+		// the native dialog's top-layer.
 		showGoalPopup = false;
-		selectedGoal = null;
 		deleteGoalFromDiscovery(e.detail.id);
 	}}
 />
