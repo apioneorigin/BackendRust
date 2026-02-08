@@ -14,7 +14,7 @@ COPY backend/ .
 
 # Copy root-level files that main.py references via parent.parent
 # Place them one directory up (/app/..) so paths resolve correctly
-COPY LLM_Call_1.txt LLM_Call_2.txt Goal_Discovery_Call_1.txt Goal_Discovery_Call_2.txt Claude_HTML.html /
+COPY LLM_Call_1.txt LLM_Call_2.txt Goal_Discovery_Call_1.txt Goal_Discovery_Call_2.txt /
 
 # Single uvicorn process — required for asyncio background tasks (session
 # cleanup) and SSE long-lived connections. Do NOT switch to gunicorn with

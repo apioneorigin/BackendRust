@@ -15,10 +15,9 @@ deploy/
 *.ps1
 *.bat
 
-# Allow required root-level .txt and .html files
-# (LLM_Call_*.txt, Goal_Discovery_Call_*.txt, Claude_HTML.html)
+# Allow required root-level .txt files
+# (LLM_Call_*.txt, Goal_Discovery_Call_*.txt)
 !LLM_Call_1.txt
 !LLM_Call_2.txt
 !Goal_Discovery_Call_1.txt
 !Goal_Discovery_Call_2.txt
-!Claude_HTML.html

@@ -64,7 +64,7 @@ from typing import Optional, AsyncGenerator, Dict, Any, Tuple, List
 
 from fastapi import FastAPI, Query, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, FileResponse
+
 from sse_starlette.sse import EventSourceResponse
 from dotenv import load_dotenv
 
@@ -685,13 +685,10 @@ def extract_structured_data(content: str, provider: str = "LLM") -> Optional[dic
         return None
 
 
-@app.get("/", response_class=HTMLResponse)
-async def serve_frontend():
-    """Serve the main HTML frontend"""
-    html_path = Path(__file__).parent.parent / "Claude_HTML.html"
-    if not html_path.exists():
-        raise HTTPException(status_code=404, detail="Frontend HTML not found")
-    return FileResponse(html_path, media_type="text/html")
+@app.get("/")
+async def root():
+    """API root — frontend is served separately via SvelteKit."""
+    return {"status": "ok", "app": "Reality Transformer API", "version": "4.1.0"}
 
 
 @app.get("/api/run")
