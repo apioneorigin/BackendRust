@@ -7,7 +7,8 @@ Database configuration with SQLite for development and PostgreSQL for production
 import os
 import ssl
 from pathlib import Path
-from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
+from urllib.parse import urlparse
+from sqlalchemy import make_url
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
 from dotenv import load_dotenv
@@ -43,35 +44,32 @@ else:
     def prepare_async_url(url: str) -> tuple[str, dict]:
         """
         Prepare database URL for asyncpg.
+        Uses SQLAlchemy's make_url to safely handle password encoding.
         Handles DigitalOcean/Heroku URL formats, strips unsupported params.
         """
         # Normalize scheme: postgres:// → postgresql://
         if url.startswith('postgres://'):
             url = 'postgresql://' + url[len('postgres://'):]
 
-        parsed = urlparse(url)
+        sa_url = make_url(url)
 
-        # Validate that we got a proper URL
-        if not parsed.hostname:
+        # Validate
+        if not sa_url.host:
             raise ValueError(
                 f"Could not parse DATABASE_URL: missing hostname. "
-                f"Scheme='{parsed.scheme}', got URL starting with '{url[:20]}...'. "
                 f"Expected format: postgresql://user:pass@host:port/dbname"
             )
 
-        # Parse query parameters
-        query_params = parse_qs(parsed.query)
+        # Strip unsupported query params, check SSL
+        query = dict(sa_url.query)
+        ssl_required = query.pop('sslmode', None) in ('require', 'verify-ca', 'verify-full')
+        query.pop('channel_binding', None)  # asyncpg doesn't support this
 
-        # Check if SSL is required
-        ssl_required = query_params.pop('sslmode', [None])[0] in ('require', 'verify-ca', 'verify-full')
-        query_params.pop('channel_binding', None)  # asyncpg doesn't support this
-
-        # Rebuild query string without unsupported params
-        new_query = urlencode({k: v[0] for k, v in query_params.items()}, doseq=False)
-
-        # Rebuild URL with postgresql+asyncpg scheme
-        new_parsed = parsed._replace(scheme='postgresql+asyncpg', query=new_query)
-        clean_url = urlunparse(new_parsed)
+        # Rebuild URL with asyncpg driver and cleaned query params
+        sa_url = sa_url.set(
+            drivername='postgresql+asyncpg',
+            query=query,
+        )
 
         # Prepare connect_args for SSL
         conn_args = {}
@@ -81,7 +79,7 @@ else:
             ssl_context.verify_mode = ssl.CERT_NONE
             conn_args['ssl'] = ssl_context
 
-        return clean_url, conn_args
+        return str(sa_url), conn_args
 
     # Log what we received (mask password)
     _parsed_for_log = urlparse(DATABASE_URL)
