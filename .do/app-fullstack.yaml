@@ -12,21 +12,17 @@ features:
 
 ingress:
   rules:
-    # Frontend - serve everything except /api routes
+    # Frontend - serve root path
     - component:
         name: frontend
       match:
-        authority:
-          exact: ""
         path:
           prefix: /
 
-    # Backend API - serve /api routes
+    # Backend API - serve /api path
     - component:
         name: backend
       match:
-        authority:
-          exact: ""
         path:
           prefix: /api
 
@@ -51,12 +47,12 @@ services:
     source_dir: /frontend-svelte
 
     envs:
-      # Backend API URL for server-side calls (from SvelteKit server)
+      # Backend API URL for server-side calls
       - key: BACKEND_URL
         scope: RUN_AND_BUILD_TIME
         value: ${backend.PUBLIC_URL}
 
-      # Public API URL for client-side calls (from browser)
+      # Public API URL for client-side calls
       - key: PUBLIC_API_URL
         scope: RUN_AND_BUILD_TIME
         value: ${_self.PUBLIC_URL}/api
@@ -103,7 +99,7 @@ services:
         type: SECRET
 
       # =================================================================
-      # DATABASE CONNECTIONS (PUBLIC hostnames)
+      # DATABASE CONNECTIONS
       # =================================================================
 
       - key: DATABASE_URL
