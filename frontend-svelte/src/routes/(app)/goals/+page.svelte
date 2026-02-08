@@ -1605,6 +1605,7 @@
 
 	.goal-actions {
 		display: flex;
+		justify-content: center;
 		gap: 0.375rem;
 		margin-top: auto;
 		padding-top: 0.625rem;

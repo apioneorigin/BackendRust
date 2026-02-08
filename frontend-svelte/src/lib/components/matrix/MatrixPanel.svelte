@@ -320,8 +320,8 @@
 		<div class="grid-corner"></div>
 
 		<!-- Column headers -->
-		{#each columnHeaders as header}
-			<div class="col-header">
+		{#each columnHeaders as header, colIdx}
+			<div class="col-header" class:col-alt={colIdx % 2 === 1}>
 				<span class="header-text">{header}</span>
 			</div>
 		{/each}
@@ -329,7 +329,7 @@
 		<!-- Matrix body -->
 		{#each matrixData as row, rowIdx}
 			<!-- Row header -->
-			<div class="row-header">
+			<div class="row-header" class:row-alt={rowIdx % 2 === 1}>
 				<span class="header-text">{rowHeaders[rowIdx]}</span>
 			</div>
 
@@ -342,6 +342,8 @@
 					class:leverage-point={!stubMode && cell.isLeveragePoint}
 					class:selected={!stubMode && selectedCell?.row === rowIdx && selectedCell?.col === colIdx}
 					class:stub-cell={stubMode}
+					class:row-alt={rowIdx % 2 === 1}
+					class:col-alt={colIdx % 2 === 1}
 				>
 					{#if !stubMode && cell.isLeveragePoint}
 						<span class="power-indicator" title="Power Spot">⚡</span>
@@ -608,6 +610,29 @@
 		padding: 0.25rem 0.375rem;
 		background: transparent;
 		overflow: hidden;
+	}
+
+	/* Alternating color bands for clear row/column distinction */
+	.row-header.row-alt {
+		background: rgba(0, 0, 0, 0.04);
+		border-radius: 0.25rem;
+	}
+
+	.col-header.col-alt {
+		background: rgba(0, 0, 0, 0.04);
+		border-radius: 0.25rem;
+	}
+
+	.matrix-cell.row-alt {
+		background: rgba(0, 0, 0, 0.035);
+	}
+
+	.matrix-cell.col-alt {
+		background: rgba(0, 0, 0, 0.025);
+	}
+
+	.matrix-cell.row-alt.col-alt {
+		background: rgba(0, 0, 0, 0.055);
 	}
 
 	/* Column header text: vertical, one word per line (max 3 lines) */
