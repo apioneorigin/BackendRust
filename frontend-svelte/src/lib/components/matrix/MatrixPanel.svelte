@@ -436,10 +436,12 @@
 			<div class="popup-body">
 				<div class="dimensions-list">
 					{#each matrixData[selectedCell.row][selectedCell.col].dimensions as dim, dimIdx}
-						<button class="dimension-cell" on:click={() => handleDimensionCycle(dimIdx)}>
+						<div class="dimension-row">
 							<span class="dim-name">{dim.name}</span>
-							<span class="dim-level-text">{getLevelLabel(dim.value)}</span>
-						</button>
+							<button class="dim-value-cell" on:click={() => handleDimensionCycle(dimIdx)}>
+								{getLevelLabel(dim.value)}
+							</button>
+						</div>
 						{#if dim.explanation}
 							<span class="dim-explanation">{dim.explanation}</span>
 						{/if}
@@ -774,52 +776,56 @@
 		gap: 0.5rem;
 	}
 
-	.dimension-cell {
+	.dimension-row {
 		display: flex;
 		align-items: center;
-		justify-content: space-between;
-		padding: 0.625rem 0.75rem;
-		background: var(--color-field-depth);
-		border: 1px solid var(--color-veil-thin);
-		border-radius: 0.5rem;
-		cursor: pointer;
-		transition: all 0.15s ease;
-		width: 100%;
-		text-align: left;
-		font-family: inherit;
-	}
-
-	.dimension-cell:hover {
-		border-color: var(--color-primary-400);
-		background: var(--color-primary-50);
-	}
-
-	.dimension-cell:active {
-		transform: scale(0.99);
+		gap: 0.75rem;
 	}
 
 	.dim-name {
 		font-size: 0.8125rem;
 		font-weight: 500;
-		color: var(--color-primary-500);
+		color: var(--color-text-manifest);
 		flex: 1;
 		min-width: 0;
 	}
 
-	.dim-level-text {
-		font-size: 0.8125rem;
-		font-weight: 500;
+	.dim-value-cell {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 3.5rem;
+		padding: 0.5rem 0.75rem;
+		background: var(--color-field-depth);
+		border: 1px solid var(--color-veil-thin);
+		border-radius: 0.375rem;
+		font-family: inherit;
+		font-size: 0.6875rem;
+		font-weight: 600;
 		color: var(--color-primary-500);
 		text-transform: uppercase;
-		letter-spacing: 0.03em;
-		flex-shrink: 0;
+		letter-spacing: 0.04em;
+		cursor: pointer;
+		transition: all 0.15s ease;
+		user-select: none;
+	}
+
+	.dim-value-cell:hover {
+		background: var(--color-accent-subtle);
+		border-color: var(--color-primary-400);
+		box-shadow: inset 0 0 0 1px var(--color-primary-300);
+	}
+
+	.dim-value-cell:active {
+		transform: scale(0.95);
 	}
 
 	.dim-explanation {
 		font-size: 0.6875rem;
 		color: var(--color-text-whisper);
 		line-height: 1.3;
-		padding-left: 0.75rem;
+		padding-left: 0;
+		margin-top: -0.25rem;
 	}
 
 	.power-spot-badge {
