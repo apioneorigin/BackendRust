@@ -64,12 +64,14 @@
 	}
 
 	async function handleSelectConversation(conversationId: string) {
-		// Store handles cancellation of in-flight requests (no guard needed)
-		if ($currentConversation?.id === conversationId) return;
+		const isOnChatPage = $page.url.pathname.startsWith('/chat');
+
+		// Only skip if already viewing this conversation on the chat page
+		if (isOnChatPage && $currentConversation?.id === conversationId) return;
 
 		isSelectingConversation = true;
 		// Navigate first for instant feedback, then load data
-		if (!$page.url.pathname.startsWith('/chat')) {
+		if (!isOnChatPage) {
 			goto('/chat');
 		}
 		try {

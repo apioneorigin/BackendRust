@@ -183,6 +183,9 @@
 		const cell = matrixData[row]?.[col];
 		if (!cell?.dimensions) return;
 
+		// Respect filtered views - don't allow editing hidden cells
+		if (shouldHideCell(cell)) return;
+
 		const currentAvg = calcCellValueFromDimensions(cell.dimensions);
 		const changes: DimensionChange[] = [];
 
