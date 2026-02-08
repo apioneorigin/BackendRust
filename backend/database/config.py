@@ -241,16 +241,55 @@ async def _migrate_articulated_insights():
 
 
 async def init_db():
-    """Initialize database tables and run migrations for SQLite."""
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    """Initialize database tables and run migrations."""
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
 
-        # For SQLite, run migrations to add missing columns
-        if USE_SQLITE:
-            await _run_sqlite_migrations(conn)
+            # For SQLite, run migrations to add missing columns
+            if USE_SQLITE:
+                await _run_sqlite_migrations(conn)
 
-    # Run data migrations
-    await _migrate_articulated_insights()
+        # Run data migrations
+        await _migrate_articulated_insights()
+
+    except Exception as e:
+        error_type = type(e).__name__
+
+        # Provide helpful error messages for common database issues
+        if "InvalidPasswordError" in error_type or "authentication failed" in str(e).lower():
+            print(f"\n{'='*80}")
+            print(f"[Database] AUTHENTICATION ERROR: Password authentication failed")
+            print(f"{'='*80}")
+            print(f"[Database] Your DATABASE_URL has incorrect or expired credentials.")
+            print(f"[Database]")
+            print(f"[Database] To fix this:")
+            print(f"[Database] 1. Go to DigitalOcean Console → Databases")
+            print(f"[Database] 2. Select your PostgreSQL cluster")
+            print(f"[Database] 3. Copy the connection string from 'Connection Details'")
+            print(f"[Database] 4. Update DATABASE_URL in App Platform environment variables")
+            print(f"[Database]")
+            print(f"[Database] See DATABASE_FIX.md for detailed instructions.")
+            print(f"{'='*80}\n")
+        elif "could not connect" in str(e).lower() or "connection refused" in str(e).lower():
+            print(f"\n{'='*80}")
+            print(f"[Database] CONNECTION ERROR: Cannot reach database server")
+            print(f"{'='*80}")
+            print(f"[Database] The database server is unreachable.")
+            print(f"[Database] Check if:")
+            print(f"[Database] - The database is running in DigitalOcean")
+            print(f"[Database] - Network connectivity is working")
+            print(f"[Database] - Firewall rules allow connections")
+            print(f"{'='*80}\n")
+        else:
+            print(f"\n{'='*80}")
+            print(f"[Database] ERROR: {error_type}")
+            print(f"{'='*80}")
+            print(f"[Database] {e}")
+            print(f"{'='*80}\n")
+
+        # Re-raise to stop the application
+        raise
 
 
 async def close_db():
