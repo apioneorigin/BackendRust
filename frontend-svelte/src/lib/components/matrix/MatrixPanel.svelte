@@ -4,9 +4,10 @@
 	 *
 	 * ARCHITECTURE:
 	 * - Shows document tabs at top (each with its own matrix)
-	 * - Both cell bars and dimension bars use 3 segments: Low (33), Medium (67), High (100)
-	 * - Cell value = average of 5 dimensions, displayed as nearest segment
-	 * - Clicking a cell bar segment sets ALL dimensions to that step
+	 * - Each cell is a single clickable block showing Low/Med/High
+	 * - Single-click cycles value: Low → Med → High → Low
+	 * - Double-click opens dimensions popup
+	 * - Dimension cells also cycle on single-click
 	 */
 
 	import { createEventDispatcher, onDestroy } from 'svelte';
@@ -29,25 +30,27 @@
 		showRiskExplanation: { row: number; col: number; cell: CellData };
 	}>();
 
-	// Both cell bars and dimension bars use the same 3 steps: Low, Medium, High
+	// 3-step values: Low, Medium, High
 	const DIM_STEPS = [33, 67, 100];
-	const CELL_SEGMENTS = 3;
 
 	let selectedCell: { row: number; col: number } | null = null;
 	let showCellPopup = false;
-	let isPopulatingDoc: string | null = null;  // Track which doc is being populated
+	let isPopulatingDoc: string | null = null;
+
+	// Single-click vs double-click timer for matrix cells
+	let cellClickTimer: ReturnType<typeof setTimeout> | null = null;
+	let cellClickTarget: { row: number; col: number } | null = null;
 
 	// Undo/redo history
 	type DimensionChange = { row: number; col: number; dimIndex: number; oldValue: number; newValue: number };
 	type EditEntry = { changes: DimensionChange[] };
 
 	let editHistory: EditEntry[] = [];
-	let editIndex = -1; // points to last applied edit (-1 = none)
+	let editIndex = -1;
 
 	$: canUndo = editIndex >= 0;
 	$: canRedo = editIndex < editHistory.length - 1;
 
-	// Clear edit history when active document changes
 	let prevDocId: string | null = null;
 	$: if ($activeDocumentId && $activeDocumentId !== prevDocId) {
 		prevDocId = $activeDocumentId;
@@ -56,7 +59,6 @@
 		if (autoSaveTimer) clearTimeout(autoSaveTimer);
 	}
 
-	// Auto-save: debounced persistence to backend
 	let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
 
 	function scheduleAutoSave() {
@@ -66,7 +68,6 @@
 
 	async function autoSave() {
 		autoSaveTimer = null;
-		// Collect all touched dimensions from full history
 		const touchedDims = new Set<string>();
 		for (const entry of editHistory) {
 			for (const ch of entry.changes) {
@@ -75,7 +76,6 @@
 		}
 		if (touchedDims.size === 0) return;
 
-		// Read current values from matrixData prop (reflects undo/redo state)
 		const changes: Array<{ row: number; col: number; dimIdx: number; value: number }> = [];
 		for (const key of touchedDims) {
 			const [row, col, dimIdx] = key.split('-').map(Number);
@@ -87,13 +87,10 @@
 		await matrix.saveCellChanges(changes);
 	}
 
-	// Push a batch of changes as a single undo-able operation
 	function pushEdit(changes: DimensionChange[]) {
 		if (changes.length === 0) return;
-		// Truncate any redo entries
 		editHistory = [...editHistory.slice(0, editIndex + 1), { changes }];
 		editIndex = editHistory.length - 1;
-		// Apply all changes to store
 		for (const ch of changes) {
 			matrix.updateCellDimension(ch.row, ch.col, ch.dimIndex, ch.newValue);
 		}
@@ -103,7 +100,6 @@
 	function undo() {
 		if (!canUndo) return;
 		const entry = editHistory[editIndex];
-		// Revert in reverse order
 		for (let i = entry.changes.length - 1; i >= 0; i--) {
 			const ch = entry.changes[i];
 			matrix.updateCellDimension(ch.row, ch.col, ch.dimIndex, ch.oldValue);
@@ -124,103 +120,120 @@
 
 	onDestroy(() => {
 		if (autoSaveTimer) clearTimeout(autoSaveTimer);
+		if (cellClickTimer) clearTimeout(cellClickTimer);
 	});
 
-	// Check if a document has full data (100 cells)
 	function hasFullData(doc: Document): boolean {
 		const cells = doc.matrix_data?.cells || {};
 		return Object.keys(cells).length >= 100;
 	}
 
-	// Check if cell is a power spot (leverage point)
 	function isPowerSpot(cell: CellData): boolean {
 		return cell.isLeveragePoint;
 	}
 
-	// Check if cell has risk (medium or high)
 	function isRiskCell(cell: CellData): boolean {
 		return cell.riskLevel === 'medium' || cell.riskLevel === 'high';
 	}
 
-	// Check if cell should be hidden in filtered views
 	function shouldHideCell(cell: CellData): boolean {
 		if (showPowerSpotsView && !isPowerSpot(cell)) return true;
 		if (showRiskView && !isRiskCell(cell)) return true;
 		return false;
 	}
 
-	// Calculate cell value from dimensions (average)
 	function calcCellValueFromDimensions(dimensions: CellDimension[]): number {
 		if (!dimensions || dimensions.length === 0) return 67;
 		const sum = dimensions.reduce((acc, d) => acc + d.value, 0);
 		return Math.round(sum / dimensions.length);
 	}
 
-	// Get number of filled segments (0-3) from cell value (0-100)
-	// Maps: 0-33 → Low (1), 34-67 → Medium (2), 68-100 → High (3), else 0
-	function getFilledSegments(value: number): number {
-		if (value <= 0) return 0;
-		if (value <= 33) return 1;
-		if (value <= 67) return 2;
-		return 3;
-	}
-
-	// Snap to nearest dimension step (33, 67, 100)
-	// 0-33 → 33, 34-67 → 67, 68-100 → 100
+	// Snap to nearest step
 	function snapToStep(value: number): number {
 		if (value <= 33) return 33;
 		if (value <= 67) return 67;
 		return 100;
 	}
 
-	// When user clicks a cell bar segment, set ALL dimensions to the corresponding step.
-	// Segment 0 = Low (33), Segment 1 = Medium (67), Segment 2 = High (100).
-	function handleCellBarClick(row: number, col: number, segmentIndex: number) {
+	// Cycle to next step: Low → Med → High → Low
+	function getNextStep(currentValue: number): number {
+		const snap = snapToStep(currentValue);
+		if (snap <= 33) return 67;
+		if (snap <= 67) return 100;
+		return 33;
+	}
+
+	// Get level label for display
+	function getLevelLabel(value: number): string {
+		if (value <= 0) return '';
+		if (value <= 33) return 'Low';
+		if (value <= 67) return 'Med';
+		return 'High';
+	}
+
+	// Matrix cell: single-click cycles, double-click opens popup
+	function handleMatrixCellInteraction(row: number, col: number) {
+		if (stubMode) return;
+		const cell = matrixData[row]?.[col];
+		if (!cell) return;
+
+		// In filtered views, single click shows explanation
+		if (showPowerSpotsView || showRiskView) {
+			handleCellClick(row, col);
+			return;
+		}
+
+		if (cellClickTimer && cellClickTarget?.row === row && cellClickTarget?.col === col) {
+			// Double-click: open dimensions popup
+			clearTimeout(cellClickTimer);
+			cellClickTimer = null;
+			cellClickTarget = null;
+			handleCellClick(row, col);
+		} else {
+			if (cellClickTimer) clearTimeout(cellClickTimer);
+			cellClickTarget = { row, col };
+			cellClickTimer = setTimeout(() => {
+				cellClickTimer = null;
+				cellClickTarget = null;
+				handleCellCycle(row, col);
+			}, 300);
+		}
+	}
+
+	// Single-click: cycle all dimensions to next step
+	function handleCellCycle(row: number, col: number) {
 		const cell = matrixData[row]?.[col];
 		if (!cell?.dimensions) return;
-
-		// Respect filtered views - don't allow editing hidden cells
 		if (shouldHideCell(cell)) return;
 
-		const targetValue = DIM_STEPS[segmentIndex];
-		if (targetValue === undefined) return;
+		const avg = calcCellValueFromDimensions(cell.dimensions);
+		const nextValue = getNextStep(avg);
 
 		const changes: DimensionChange[] = [];
 		for (let i = 0; i < cell.dimensions.length; i++) {
-			if (cell.dimensions[i].value !== targetValue) {
-				changes.push({ row, col, dimIndex: i, oldValue: cell.dimensions[i].value, newValue: targetValue });
+			if (cell.dimensions[i].value !== nextValue) {
+				changes.push({ row, col, dimIndex: i, oldValue: cell.dimensions[i].value, newValue: nextValue });
 			}
 		}
-
 		pushEdit(changes);
 	}
 
-	// Handle dimension bar click - single dimension change
-	function handleDimensionBarClick(dimIndex: number, stepIndex: number) {
+	// Dimension cell: single-click cycles that dimension
+	function handleDimensionCycle(dimIndex: number) {
 		if (!selectedCell) return;
 		const { row, col } = selectedCell;
-		const stepValue = DIM_STEPS[stepIndex];
 		const cell = matrixData[row]?.[col];
 		if (!cell?.dimensions?.[dimIndex]) return;
-		const oldValue = cell.dimensions[dimIndex].value;
-		if (oldValue === stepValue) return;
-		pushEdit([{ row, col, dimIndex, oldValue, newValue: stepValue }]);
-	}
 
-	// Get dimension bar fill count (0-3) matching cell bar thresholds
-	// 0-33 → Low (1), 34-67 → Medium (2), 68-100 → High (3)
-	function getDimFillCount(value: number): number {
-		if (value <= 0) return 0;
-		if (value <= 33) return 1;
-		if (value <= 67) return 2;
-		return 3;
+		const currentValue = cell.dimensions[dimIndex].value;
+		const nextValue = getNextStep(currentValue);
+		pushEdit([{ row, col, dimIndex, oldValue: currentValue, newValue: nextValue }]);
 	}
 
 	function handleCellClick(row: number, col: number) {
 		const cell = matrixData[row]?.[col];
 		if (!cell) return;
 
-		// In filtered views, clicking relevant cells shows explanation popup
 		if (showPowerSpotsView && isPowerSpot(cell)) {
 			dispatch('showPowerSpotExplanation', { row, col, cell });
 			return;
@@ -229,20 +242,14 @@
 			dispatch('showRiskExplanation', { row, col, cell });
 			return;
 		}
+		if (shouldHideCell(cell)) return;
 
-		// In filtered views, don't allow any interaction with hidden cells
-		if (shouldHideCell(cell)) {
-			return;
-		}
-
-		// Normal mode: open cell detail popup
 		selectedCell = { row, col };
 		showCellPopup = true;
 		dispatch('cellClick', { row, col });
 	}
 
 	function getCellColor(cell: CellData) {
-		// In risk view, show risk colors for relevant cells
 		if (showRiskView && isRiskCell(cell)) {
 			const colors = {
 				low: '',
@@ -251,7 +258,6 @@
 			};
 			return colors[cell.riskLevel || 'low'];
 		}
-		// In power spots view, highlight power spots
 		if (showPowerSpotsView && isPowerSpot(cell)) {
 			return 'cell-power-spot';
 		}
@@ -272,7 +278,6 @@
 		isPopulatingDoc = docId;
 		try {
 			await matrix.populateDocument(docId);
-			// After population, set it as active
 			matrix.setActiveDocument(docId);
 		} catch (error) {
 			console.error('Failed to populate document:', error);
@@ -339,7 +344,7 @@
 			<!-- Data cells -->
 			{#each row as cell, colIdx}
 				{@const cellAvg = stubMode ? 0 : calcCellValueFromDimensions(cell.dimensions)}
-				{@const filledCount = stubMode ? 0 : getFilledSegments(cellAvg)}
+				<!-- svelte-ignore a11y-click-events-have-key-events -->
 				<div
 					class="matrix-cell {stubMode ? '' : getCellColor(cell)}"
 					class:leverage-point={!stubMode && cell.isLeveragePoint}
@@ -347,29 +352,16 @@
 					class:stub-cell={stubMode}
 					class:row-alt={rowIdx % 2 === 1}
 					class:col-alt={colIdx % 2 === 1}
+					on:click={() => handleMatrixCellInteraction(rowIdx, colIdx)}
+					role="button"
+					tabindex={stubMode ? -1 : 0}
 				>
 					{#if !stubMode && cell.isLeveragePoint}
 						<span class="power-indicator" title="Power Spot">⚡</span>
 					{/if}
-					<!-- Top 50%: click to open dimensions popup -->
-					<button
-						class="cell-top-area"
-						on:click={() => !stubMode && handleCellClick(rowIdx, colIdx)}
-						aria-label="Open dimensions"
-						disabled={stubMode}
-					></button>
-					<!-- Bottom 50%: 5-segment bar, clickable -->
-					<div class="cell-bar">
-						{#each Array(CELL_SEGMENTS) as _, segIdx}
-							<button
-								class="cell-bar-segment"
-								class:filled={segIdx < filledCount}
-								on:click={() => !stubMode && handleCellBarClick(rowIdx, colIdx, segIdx)}
-								aria-label="Set level {segIdx + 1}"
-								disabled={stubMode}
-							></button>
-						{/each}
-					</div>
+					{#if !stubMode}
+						<span class="cell-level-text">{getLevelLabel(cellAvg)}</span>
+					{/if}
 				</div>
 			{/each}
 		{/each}
@@ -440,27 +432,15 @@
 			</div>
 
 			<div class="popup-body">
-				<!-- Dimensions as visual bars (no labels, no cell value) -->
 				<div class="dimensions-list">
 					{#each matrixData[selectedCell.row][selectedCell.col].dimensions as dim, dimIdx}
-						{@const fillCount = getDimFillCount(dim.value)}
-						<div class="dimension-item">
-							<div class="dimension-row">
-								<span class="dim-name">{dim.name}</span>
-								<div class="dim-bar">
-									{#each DIM_STEPS as _, stepIdx}
-										<button
-											class="dim-bar-segment"
-											class:filled={stepIdx < fillCount}
-											on:click={() => handleDimensionBarClick(dimIdx, stepIdx)}
-										></button>
-									{/each}
-								</div>
-							</div>
-							{#if dim.explanation}
-								<span class="dim-explanation">{dim.explanation}</span>
-							{/if}
-						</div>
+						<button class="dimension-cell" on:click={() => handleDimensionCycle(dimIdx)}>
+							<span class="dim-name">{dim.name}</span>
+							<span class="dim-level-text">{getLevelLabel(dim.value)}</span>
+						</button>
+						{#if dim.explanation}
+							<span class="dim-explanation">{dim.explanation}</span>
+						{/if}
 					{/each}
 				</div>
 
@@ -665,9 +645,8 @@
 	.matrix-cell {
 		position: relative;
 		display: flex;
-		flex-direction: column;
-		align-items: stretch;
-		justify-content: stretch;
+		align-items: center;
+		justify-content: center;
 		padding: 0;
 		border-radius: 0.25rem;
 		border: none;
@@ -675,6 +654,7 @@
 		transition: all 0.1s ease;
 		min-height: 0;
 		overflow: hidden;
+		cursor: pointer;
 	}
 
 	.matrix-cell:hover {
@@ -690,10 +670,6 @@
 		box-shadow: inset 0 0 0 1px var(--color-text-source);
 	}
 
-	.matrix-cell.cell-risk-low {
-		background: rgba(22, 163, 74, 0.08);
-	}
-
 	.matrix-cell.cell-risk-medium {
 		background: rgba(217, 119, 6, 0.08);
 	}
@@ -702,52 +678,13 @@
 		background: rgba(220, 38, 38, 0.08);
 	}
 
-	/* Top area - click to open dimensions popup */
-	.cell-top-area {
-		flex: 2;
-		background: transparent;
-		border: none;
-		cursor: pointer;
-		min-height: 0;
-	}
-
-	.cell-top-area:hover {
-		background: rgba(0, 0, 0, 0.05);
-	}
-
-	/* Bottom thin bar strip */
-	.cell-bar {
-		display: flex;
-		gap: 2px;
-		padding: 2px 3px;
-		flex-shrink: 0;
-	}
-
-	.compact .cell-bar {
-		padding: 0.125rem;
-		gap: 1px;
-	}
-
-	.cell-bar-segment {
-		width: 28px;
-		height: 8px;
-		background: var(--color-veil-thin);
-		border: none;
-		border-radius: 2px;
-		cursor: pointer;
-		transition: all 0.1s ease;
-	}
-
-	.cell-bar-segment:hover {
-		background: var(--color-primary-300);
-	}
-
-	.cell-bar-segment.filled {
-		background: var(--color-primary-500);
-	}
-
-	.cell-bar-segment.filled:hover {
-		background: var(--color-primary-600);
+	.cell-level-text {
+		font-size: 0.6875rem;
+		font-weight: 500;
+		color: var(--color-primary-500);
+		text-transform: uppercase;
+		letter-spacing: 0.03em;
+		user-select: none;
 	}
 
 	.power-indicator {
@@ -832,62 +769,50 @@
 	.dimensions-list {
 		display: flex;
 		flex-direction: column;
-		gap: 0.875rem;
+		gap: 0.5rem;
 	}
 
-	.dimension-item {
-		display: flex;
-		flex-direction: column;
-		gap: 0.25rem;
-	}
-
-	.dimension-row {
+	.dimension-cell {
 		display: flex;
 		align-items: center;
-		gap: 1rem;
+		justify-content: space-between;
+		padding: 0.625rem 0.75rem;
+		background: var(--color-field-depth);
+		border: none;
+		border-radius: 0.375rem;
+		cursor: pointer;
+		transition: all 0.1s ease;
+		width: 100%;
+		text-align: left;
+		font-family: inherit;
+	}
+
+	.dimension-cell:hover {
+		background: var(--color-accent-subtle);
 	}
 
 	.dim-name {
 		font-size: 0.8125rem;
-		font-weight: 600;
-		color: var(--color-text-source);
+		font-weight: 500;
+		color: var(--color-primary-500);
 		flex: 1;
 		min-width: 0;
+	}
+
+	.dim-level-text {
+		font-size: 0.8125rem;
+		font-weight: 500;
+		color: var(--color-primary-500);
+		text-transform: uppercase;
+		letter-spacing: 0.03em;
+		flex-shrink: 0;
 	}
 
 	.dim-explanation {
 		font-size: 0.6875rem;
 		color: var(--color-text-whisper);
 		line-height: 1.3;
-		padding-left: 0;
-	}
-
-	.dim-bar {
-		display: flex;
-		gap: 2px;
-		flex-shrink: 0;
-	}
-
-	.dim-bar-segment {
-		width: 28px;
-		height: 8px;
-		background: var(--color-veil-thin);
-		border: none;
-		border-radius: 2px;
-		cursor: pointer;
-		transition: all 0.1s ease;
-	}
-
-	.dim-bar-segment:hover {
-		background: var(--color-primary-300);
-	}
-
-	.dim-bar-segment.filled {
-		background: var(--color-primary-500);
-	}
-
-	.dim-bar-segment.filled:hover {
-		background: var(--color-primary-600);
+		padding-left: 0.75rem;
 	}
 
 	.power-spot-badge {
