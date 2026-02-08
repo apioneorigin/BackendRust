@@ -1,5 +1,6 @@
 # DigitalOcean App Platform Specification - Full Stack
 # Frontend (SvelteKit) + Backend (FastAPI) + Databases
+# Database connections use component references (auto-injected)
 
 alerts:
   - rule: DEPLOYMENT_FAILED

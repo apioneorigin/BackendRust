@@ -128,12 +128,18 @@
 		return Object.keys(cells).length >= 100;
 	}
 
+	// Power Spot = cell is in the backend's leverage_points array (set via buildDisplayedMatrix)
 	function isPowerSpot(cell: CellData): boolean {
 		return cell.isLeveragePoint;
 	}
 
+	// Risk cell = cell is in the backend's risk_analysis array (set via buildDisplayedMatrix)
 	function isRiskCell(cell: CellData): boolean {
-		return cell.riskLevel === 'medium' || cell.riskLevel === 'high';
+		return cell.isRiskPoint;
+	}
+
+	function getCellRiskLevel(cell: CellData): 'low' | 'medium' | 'high' {
+		return cell.riskLevel ?? 'low';
 	}
 
 	function shouldHideCell(cell: CellData): boolean {
@@ -251,12 +257,10 @@
 
 	function getCellColor(cell: CellData) {
 		if (showRiskView && isRiskCell(cell)) {
-			const colors = {
-				low: '',
-				medium: 'cell-risk-medium',
-				high: 'cell-risk-high'
-			};
-			return colors[cell.riskLevel || 'low'];
+			const level = getCellRiskLevel(cell);
+			if (level === 'high') return 'cell-risk-high';
+			if (level === 'medium') return 'cell-risk-medium';
+			return '';
 		}
 		if (showPowerSpotsView && isPowerSpot(cell)) {
 			return 'cell-power-spot';
