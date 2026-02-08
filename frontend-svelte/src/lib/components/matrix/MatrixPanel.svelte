@@ -344,22 +344,24 @@
 			<!-- Data cells -->
 			{#each row as cell, colIdx}
 				{@const cellAvg = stubMode ? 0 : calcCellValueFromDimensions(cell.dimensions)}
+				{@const hidden = !stubMode && shouldHideCell(cell)}
 				<!-- svelte-ignore a11y-click-events-have-key-events -->
 				<div
 					class="matrix-cell {stubMode ? '' : getCellColor(cell)}"
-					class:leverage-point={!stubMode && cell.isLeveragePoint}
+					class:leverage-point={!stubMode && !hidden && cell.isLeveragePoint}
 					class:selected={!stubMode && selectedCell?.row === rowIdx && selectedCell?.col === colIdx}
 					class:stub-cell={stubMode}
+					class:hidden-cell={hidden}
 					class:row-alt={rowIdx % 2 === 1}
 					class:col-alt={colIdx % 2 === 1}
 					on:click={() => handleMatrixCellInteraction(rowIdx, colIdx)}
 					role="button"
-					tabindex={stubMode ? -1 : 0}
+					tabindex={stubMode || hidden ? -1 : 0}
 				>
-					{#if !stubMode && cell.isLeveragePoint}
+					{#if !stubMode && !hidden && cell.isLeveragePoint}
 						<span class="power-indicator" title="Power Spot">⚡</span>
 					{/if}
-					{#if !stubMode}
+					{#if !stubMode && !hidden}
 						<span class="cell-level-text">{getLevelLabel(cellAvg)}</span>
 					{/if}
 				</div>
@@ -871,6 +873,19 @@
 		justify-content: center;
 		gap: 0.125rem;
 		overflow: hidden;
+	}
+
+	/* Hidden cells in Power Spots / Risk filtered views: completely blank */
+	.matrix-cell.hidden-cell {
+		background: transparent !important;
+		border: none !important;
+		box-shadow: none !important;
+		cursor: default;
+		pointer-events: none;
+	}
+
+	.matrix-cell.hidden-cell:hover {
+		background: transparent !important;
 	}
 
 	/* Stub mode: cells invisible so headers stand out */
