@@ -157,17 +157,19 @@
 	}
 
 	// Get number of filled segments (0-3) from cell value (0-100)
+	// Maps: 0-33 → Low (1), 34-67 → Medium (2), 68-100 → High (3), else 0
 	function getFilledSegments(value: number): number {
-		if (value <= 16) return 0;
-		if (value <= 50) return 1;
-		if (value <= 83) return 2;
+		if (value <= 0) return 0;
+		if (value <= 33) return 1;
+		if (value <= 67) return 2;
 		return 3;
 	}
 
 	// Snap to nearest dimension step (0, 50, 100)
+	// 0-33 → 0, 34-67 → 50, 68-100 → 100
 	function snapToStep(value: number): number {
-		if (value < 25) return 0;
-		if (value < 75) return 50;
+		if (value <= 33) return 0;
+		if (value <= 67) return 50;
 		return 100;
 	}
 
@@ -206,10 +208,11 @@
 	}
 
 	// Get dimension bar fill count (0-3) matching cell bar thresholds
+	// 0-33 → Low (1), 34-67 → Medium (2), 68-100 → High (3)
 	function getDimFillCount(value: number): number {
-		if (value <= 16) return 0;
-		if (value <= 50) return 1;
-		if (value <= 83) return 2;
+		if (value <= 0) return 0;
+		if (value <= 33) return 1;
+		if (value <= 67) return 2;
 		return 3;
 	}
 

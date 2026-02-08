@@ -545,14 +545,14 @@ def normalize_dimension_values(data: dict) -> dict:
     LLMs sometimes return continuous percentages; this snaps them to nearest step.
 
     Mapping:
-    - 0-25 → 0 (Low)
-    - 26-75 → 50 (Medium)
-    - 76-100 → 100 (High)
+    - 0-33 → 0 (Low)
+    - 34-67 → 50 (Medium)
+    - 68-100 → 100 (High)
     """
     def snap_to_step(value: int) -> int:
-        if value <= 25:
+        if value <= 33:
             return 0
-        elif value <= 75:
+        elif value <= 67:
             return 50
         else:
             return 100
