@@ -408,6 +408,10 @@
 
 	async function saveGoalToInventory(goal: DiscoveredGoal) {
 		const g = normalizeGoal(goal);
+		// Ensure source files include the discovery's uploaded file names
+		if ((!g.sourceFiles || g.sourceFiles.length === 0) && modalDiscovery) {
+			g.sourceFiles = modalDiscovery.fileNames;
+		}
 		const savedGoal: SavedGoal = {
 			...g,
 			savedAt: new Date().toISOString(),
@@ -465,17 +469,21 @@
 				disc.goalCount = disc.goals.length;
 				if (disc.goals.length === 0) {
 					discoveries = discoveries.filter((d) => d.id !== discoveryId);
-					closeGoalsModal();
+					modalDiscovery = null;
 				} else {
 					discoveries = [...discoveries];
 					if (modalDiscovery && modalDiscovery.id === discoveryId) {
 						modalDiscovery = { ...disc };
 					}
+					// Reopen goals modal now that ConfirmDialog is gone
+					showGoalsModal = true;
 				}
 			}
 			addToast('success', 'Goal removed');
 		} catch (error) {
 			addToast('error', 'Failed to remove goal');
+			// Reopen goals modal on error too
+			if (modalDiscovery) showGoalsModal = true;
 		} finally {
 			deleteGoalFromDiscoveryInfo = null;
 		}
@@ -483,6 +491,8 @@
 
 	function cancelDeleteGoalFromDiscovery() {
 		deleteGoalFromDiscoveryInfo = null;
+		// Reopen goals modal since delete was cancelled
+		if (modalDiscovery) showGoalsModal = true;
 	}
 
 	async function startChatWithGoal(goal: DiscoveredGoal | SavedGoal) {
@@ -864,7 +874,13 @@
 	on:close={closeGoalDetail}
 	on:save={(e) => saveGoalToInventory(e.detail)}
 	on:chat={(e) => startChatWithGoal(e.detail)}
-	on:delete={(e) => { closeGoalDetail(); deleteGoalFromDiscovery(e.detail.id); }}
+	on:delete={(e) => {
+		// Close popup WITHOUT reopening goals modal — the ConfirmDialog
+		// would go behind the native dialog's top-layer otherwise
+		showGoalPopup = false;
+		selectedGoal = null;
+		deleteGoalFromDiscovery(e.detail.id);
+	}}
 />
 
 <ConfirmDialog
