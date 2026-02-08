@@ -8,7 +8,7 @@ alerts:
 
 databases:
   # PostgreSQL Database
-  - cluster_name: db-postgresql-nyc1-13554
+  - cluster_name: db-postgresql-nyc1-83404
     db_name: defaultdb
     db_user: doadmin
     engine: PG
@@ -16,7 +16,7 @@ databases:
     production: true
 
   # Redis/Valkey Cache
-  - cluster_name: db-valkey-nyc1-33225
+  - cluster_name: db-valkey-nyc1-88974
     engine: VALKEY
     name: redis
     production: true
@@ -82,14 +82,14 @@ services:
       - key: DATABASE_URL
         scope: RUN_TIME
         type: SECRET
-        # Format: postgresql://doadmin:PASSWORD@db-postgresql-nyc1-13554-do-user-33112092-0.m.db.ondigitalocean.com:25060/defaultdb?sslmode=require
+        # Format: postgresql://doadmin:PASSWORD@db-postgresql-nyc1-83404-do-user-33112092-0.m.db.ondigitalocean.com:25060/defaultdb?sslmode=require
         # Get password from: DO Console → Databases → Your cluster → Connection Details
         # Set in DO Console: Apps → Settings → Environment Variables
 
       - key: REDIS_URL
         scope: RUN_TIME
         type: SECRET
-        # Format: rediss://default:PASSWORD@db-valkey-nyc1-33225-do-user-33112092-0.m.db.ondigitalocean.com:25061
+        # Format: rediss://default:PASSWORD@db-valkey-nyc1-88974-do-user-33112092-0.m.db.ondigitalocean.com:25061
         # Get password from: DO Console → Databases → Your Redis cluster → Connection Details
         # Set in DO Console: Apps → Settings → Environment Variables
 
