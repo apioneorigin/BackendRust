@@ -89,7 +89,7 @@ async def _load_context_messages(conversation_id: str, db: AsyncSession, limit: 
 # Response models
 class DimensionOption(BaseModel):
     name: str
-    value: int  # One of [0, 50, 100] = Low, Medium, High
+    value: int  # One of [33, 67, 100] = Low, Medium, High
 
 
 class ArticulatedInsight(BaseModel):
@@ -973,7 +973,7 @@ async def save_cell_changes(
             continue
         if change.dim_idx < 0 or change.dim_idx >= 5:
             continue
-        if change.value not in [0, 50, 100]:
+        if change.value not in [33, 67, 100]:
             continue
 
         actual_row = selected_rows[change.row_idx]

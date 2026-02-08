@@ -294,7 +294,7 @@ async def send_message(
                     dims = cell.get("dimensions", [])
                     # Summarize dimensions (name: value as Low/Medium/High)
                     dim_summary = ", ".join([
-                        f"{d.get('name', 'Dim')}: {['Low', 'Medium', 'High'][d.get('value', 50) // 50] if d.get('value', 50) in [0, 50, 100] else d.get('value', 50)}"
+                        f"{d.get('name', 'Dim')}: {({33: 'Low', 67: 'Medium', 100: 'High'}).get(d.get('value', 67), d.get('value', 67))}"
                         for d in dims[:5]
                     ]) if dims else "no dimensions"
                     cell_summary.append({

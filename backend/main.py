@@ -541,19 +541,19 @@ api_logger.info("Reverse Causality Mapping initialized: 10 components loaded")
 
 def normalize_dimension_values(data: dict) -> dict:
     """
-    Normalize dimension values to valid 3-step values (0, 50, 100).
+    Normalize dimension values to valid 3-step values (33, 67, 100).
     LLMs sometimes return continuous percentages; this snaps them to nearest step.
 
     Mapping:
-    - 0-25 → 0 (Low)
-    - 26-75 → 50 (Medium)
-    - 76-100 → 100 (High)
+    - 0-33 → 33 (Low)
+    - 34-67 → 67 (Medium)
+    - 68-100 → 100 (High)
     """
     def snap_to_step(value: int) -> int:
-        if value <= 25:
-            return 0
-        elif value <= 75:
-            return 50
+        if value <= 33:
+            return 33
+        elif value <= 67:
+            return 67
         else:
             return 100
 
@@ -569,12 +569,12 @@ def normalize_dimension_values(data: dict) -> dict:
             for dim in dimensions:
                 if "value" in dim:
                     original = dim["value"]
-                    if isinstance(original, (int, float)) and original not in [0, 50, 100]:
+                    if isinstance(original, (int, float)) and original not in [33, 67, 100]:
                         dim["value"] = snap_to_step(int(original))
                         normalized_count += 1
 
     if normalized_count > 0:
-        api_logger.info(f"[STRUCTURED DATA] Normalized {normalized_count} dimension values to 0/50/100")
+        api_logger.info(f"[STRUCTURED DATA] Normalized {normalized_count} dimension values to 33/67/100")
 
     return data
 
@@ -2607,7 +2607,7 @@ Each cell needs:
 - relationship: Short description of how row drives column
 - dimensions: Array of 5 dimensions, each with:
   - name: Contextual name for this specific row×column intersection
-  - value: 0 (Low), 50 (Medium), or 100 (High) ONLY
+  - value: 33 (Low), 67 (Medium), or 100 (High) ONLY
   - explanation: Max 10-word phrase explaining this dimension's state at this intersection
 
 5-DIMENSION FRAMEWORK (generate contextual names, NOT these literal words):
@@ -2625,10 +2625,10 @@ Return ONLY valid JSON:
       "impact_score": 75,
       "relationship": "How {row_labels[0] if row_labels else 'row'} affects {col_labels[0] if col_labels else 'column'}",
       "dimensions": [
-        {{"name": "Contextual Clarity Name", "value": 50, "explanation": "Current understanding developing"}},
+        {{"name": "Contextual Clarity Name", "value": 67, "explanation": "Current understanding developing"}},
         {{"name": "Contextual Capacity Name", "value": 100, "explanation": "Full capability here"}},
-        {{"name": "Contextual Readiness Name", "value": 0, "explanation": "Not yet prepared"}},
-        {{"name": "Contextual Resources Name", "value": 50, "explanation": "Some gaps remain"}},
+        {{"name": "Contextual Readiness Name", "value": 33, "explanation": "Not yet prepared"}},
+        {{"name": "Contextual Resources Name", "value": 67, "explanation": "Some gaps remain"}},
         {{"name": "Contextual Integration Name", "value": 100, "explanation": "Fully aligned"}}
       ]
     }},

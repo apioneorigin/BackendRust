@@ -4,8 +4,8 @@
 	 *
 	 * ARCHITECTURE:
 	 * - Shows document tabs at top (each with its own matrix)
-	 * - Both cell bars and dimension bars use 3 segments matching DIM_STEPS [0, 50, 100]
-	 * - Cell value = average of 5 dimensions (bidirectional sync)
+	 * - Both cell bars and dimension bars use 3 segments: Low (33), Medium (67), High (100)
+	 * - Cell value = average of 5 dimensions, displayed as nearest segment
 	 * - Clicking a cell bar segment sets ALL dimensions to that step
 	 */
 
@@ -29,8 +29,9 @@
 		showRiskExplanation: { row: number; col: number; cell: CellData };
 	}>();
 
-	// Both cell bars and dimension bars use the same 3 steps
-	const DIM_STEPS = [0, 50, 100];
+	// Both cell bars and dimension bars use the same 3 steps: Low, Medium, High
+	const DIM_STEPS = [33, 67, 100];
+	const CELL_SEGMENTS = 3;
 
 	let selectedCell: { row: number; col: number } | null = null;
 	let showCellPopup = false;
@@ -150,31 +151,30 @@
 
 	// Calculate cell value from dimensions (average)
 	function calcCellValueFromDimensions(dimensions: CellDimension[]): number {
-		if (!dimensions || dimensions.length === 0) return 50;
+		if (!dimensions || dimensions.length === 0) return 67;
 		const sum = dimensions.reduce((acc, d) => acc + d.value, 0);
 		return Math.round(sum / dimensions.length);
 	}
 
-	// Get number of filled segments (0-5) from cell value (0-100)
+	// Get number of filled segments (0-3) from cell value (0-100)
+	// Maps: 0-33 → Low (1), 34-67 → Medium (2), 68-100 → High (3), else 0
 	function getFilledSegments(value: number): number {
-		if (value <= 10) return 0;
-		if (value <= 30) return 1;
-		if (value <= 50) return 2;
-		if (value <= 70) return 3;
-		if (value <= 90) return 4;
-		return 5;
+		if (value <= 0) return 0;
+		if (value <= 33) return 1;
+		if (value <= 67) return 2;
+		return 3;
 	}
 
-	// Snap to nearest dimension step (0, 50, 100)
+	// Snap to nearest dimension step (33, 67, 100)
+	// 0-33 → 33, 34-67 → 67, 68-100 → 100
 	function snapToStep(value: number): number {
-		if (value < 25) return 0;
-		if (value < 75) return 50;
+		if (value <= 33) return 33;
+		if (value <= 67) return 67;
 		return 100;
 	}
 
-	// When user clicks a cell bar segment, adjust dimensions to reach target filled count.
-	// Steps individual dimensions up/down (0→50→100 or 100→50→0) one at a time,
-	// picking the lowest-value dim when going up and the highest when going down.
+	// When user clicks a cell bar segment, set ALL dimensions to the corresponding step.
+	// Segment 0 = Low (33), Segment 1 = Medium (67), Segment 2 = High (100).
 	function handleCellBarClick(row: number, col: number, segmentIndex: number) {
 		const cell = matrixData[row]?.[col];
 		if (!cell?.dimensions) return;
@@ -182,45 +182,13 @@
 		// Respect filtered views - don't allow editing hidden cells
 		if (shouldHideCell(cell)) return;
 
-		// Target average based on segment clicked (0-4 maps to 10, 30, 50, 70, 90)
-		const targetAvg = (segmentIndex + 1) * 20 - 10;
-		const targetFilled = getFilledSegments(targetAvg);
-		const currentAvg = calcCellValueFromDimensions(cell.dimensions);
-		const currentFilled = getFilledSegments(currentAvg);
-
-		if (currentFilled === targetFilled) return;
-
-		const goingUp = targetFilled > currentFilled;
-		const dims = cell.dimensions.map(d => d.value);
-
-		// Step dimensions one at a time until the displayed filled count matches target
-		for (let iter = 0; iter < 10; iter++) {
-			const avg = Math.round(dims.reduce((a, b) => a + b, 0) / dims.length);
-			if (getFilledSegments(avg) === targetFilled) break;
-
-			if (goingUp) {
-				// Step up the lowest-value dimension that can still increase
-				let minIdx = -1, minVal = 101;
-				for (let i = 0; i < dims.length; i++) {
-					if (dims[i] < 100 && dims[i] < minVal) { minVal = dims[i]; minIdx = i; }
-				}
-				if (minIdx === -1) break;
-				dims[minIdx] = dims[minIdx] < 50 ? 50 : 100;
-			} else {
-				// Step down the highest-value dimension that can still decrease
-				let maxIdx = -1, maxVal = -1;
-				for (let i = 0; i < dims.length; i++) {
-					if (dims[i] > 0 && dims[i] > maxVal) { maxVal = dims[i]; maxIdx = i; }
-				}
-				if (maxIdx === -1) break;
-				dims[maxIdx] = dims[maxIdx] > 50 ? 50 : 0;
-			}
-		}
+		const targetValue = DIM_STEPS[segmentIndex];
+		if (targetValue === undefined) return;
 
 		const changes: DimensionChange[] = [];
-		for (let i = 0; i < dims.length; i++) {
-			if (dims[i] !== cell.dimensions[i].value) {
-				changes.push({ row, col, dimIndex: i, oldValue: cell.dimensions[i].value, newValue: dims[i] });
+		for (let i = 0; i < cell.dimensions.length; i++) {
+			if (cell.dimensions[i].value !== targetValue) {
+				changes.push({ row, col, dimIndex: i, oldValue: cell.dimensions[i].value, newValue: targetValue });
 			}
 		}
 
@@ -239,12 +207,13 @@
 		pushEdit([{ row, col, dimIndex, oldValue, newValue: stepValue }]);
 	}
 
-	// Get dimension bar fill count (0, 1, 2, 3 segments to fill)
+	// Get dimension bar fill count (0-3) matching cell bar thresholds
+	// 0-33 → Low (1), 34-67 → Medium (2), 68-100 → High (3)
 	function getDimFillCount(value: number): number {
 		if (value <= 0) return 0;
-		if (value <= 25) return 1;
-		if (value <= 75) return 2;
-		return 3; // 100
+		if (value <= 33) return 1;
+		if (value <= 67) return 2;
+		return 3;
 	}
 
 	function handleCellClick(row: number, col: number) {
