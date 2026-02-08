@@ -84,12 +84,14 @@
 	$: libraryGoalTypes = [...new Set(savedGoals.map((g) => g.type).filter(Boolean))].sort();
 	$: librarySourceFiles = [...new Set(savedGoals.flatMap((g) => normalizeGoal(g).sourceFiles || []))].sort();
 
-	$: filteredSavedGoals = savedGoals.filter((goal) => {
-		const g = normalizeGoal(goal);
-		if (filterType && g.type !== filterType) return false;
-		if (filterFile && !(g.sourceFiles || []).includes(filterFile)) return false;
-		return true;
-	});
+	$: filteredSavedGoals = savedGoals
+		.filter((goal) => {
+			const g = normalizeGoal(goal);
+			if (filterType && g.type !== filterType) return false;
+			if (filterFile && !(g.sourceFiles || []).includes(filterFile)) return false;
+			return true;
+		})
+		.sort((a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime());
 
 	// Reset carousel position when filters change
 	$: if (filterType !== undefined || filterFile !== undefined) {
