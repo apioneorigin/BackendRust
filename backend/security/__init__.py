@@ -98,11 +98,21 @@ from security.guardrails import (
 try:
     from security.headers import SecurityHeadersMiddleware
     from security.middleware import UnifiedSecurityMiddleware, with_security
+    from security.concealment import (
+        FrameworkConcealmentMiddleware,
+        apply_concealment,
+        disable_docs_in_production,
+        sanitize_error_responses,
+    )
     _HAS_MIDDLEWARE = True
 except ImportError:
     SecurityHeadersMiddleware = None
     UnifiedSecurityMiddleware = None
     with_security = None
+    FrameworkConcealmentMiddleware = None
+    apply_concealment = None
+    disable_docs_in_production = None
+    sanitize_error_responses = None
     _HAS_MIDDLEWARE = False
 
 __all__ = [
@@ -166,4 +176,9 @@ __all__ = [
     "SecurityHeadersMiddleware",
     "UnifiedSecurityMiddleware",
     "with_security",
+    # Framework Concealment
+    "FrameworkConcealmentMiddleware",
+    "apply_concealment",
+    "disable_docs_in_production",
+    "sanitize_error_responses",
 ]
