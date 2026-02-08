@@ -1,26 +1,10 @@
-# DigitalOcean App Platform Specification
-# This file is a secure template - actual secret values should be set in DO Console UI
+# DigitalOcean App Platform Specification (Backend only)
+# Database connections are set as manual secrets (DATABASE_URL, REDIS_URL)
 
 alerts:
   - rule: DEPLOYMENT_FAILED
   - rule: DOMAIN_FAILED
   - rule: DEPLOYMENT_LIVE
-
-databases:
-  # PostgreSQL Database
-  - cluster_name: db-postgresql-nyc1-83404
-    db_name: defaultdb
-    db_user: doadmin
-    engine: PG
-    name: db
-    production: true
-
-  # Redis/Valkey Cache
-  - cluster_name: db-valkey-nyc1-88974
-    engine: VALKEY
-    name: redis
-    production: true
-    version: "8"
 
 features:
   - buildpack-stack=ubuntu-22
