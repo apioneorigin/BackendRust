@@ -6,26 +6,38 @@ alerts:
   - rule: DOMAIN_FAILED
   - rule: DEPLOYMENT_LIVE
 
+databases:
+  # PostgreSQL Database
+  - cluster_name: db-postgresql-nyc1-83404
+    db_name: defaultdb
+    db_user: doadmin
+    engine: PG
+    name: db
+    production: true
+
+  # Redis/Valkey Cache
+  - cluster_name: db-valkey-nyc1-88974
+    engine: VALKEY
+    name: redis
+    production: true
+    version: "8"
+
 features:
   - buildpack-stack=ubuntu-22
 
 ingress:
   rules:
-    # Frontend - serve everything except /api routes
+    # Frontend - serve root path
     - component:
         name: frontend
       match:
-        authority:
-          exact: ""
         path:
           prefix: /
 
-    # Backend API - serve /api routes
+    # Backend API - serve /api path
     - component:
         name: backend
       match:
-        authority:
-          exact: ""
         path:
           prefix: /api
 
@@ -50,12 +62,12 @@ services:
     source_dir: /frontend-svelte
 
     envs:
-      # Backend API URL for server-side calls (from SvelteKit server)
+      # Backend API URL for server-side calls
       - key: BACKEND_URL
         scope: RUN_AND_BUILD_TIME
         value: ${backend.PUBLIC_URL}
 
-      # Public API URL for client-side calls (from browser)
+      # Public API URL for client-side calls
       - key: PUBLIC_API_URL
         scope: RUN_AND_BUILD_TIME
         value: ${_self.PUBLIC_URL}/api
@@ -102,7 +114,7 @@ services:
         type: SECRET
 
       # =================================================================
-      # DATABASE CONNECTIONS (PUBLIC hostnames)
+      # DATABASE CONNECTIONS
       # =================================================================
 
       - key: DATABASE_URL
