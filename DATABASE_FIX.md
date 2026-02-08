@@ -55,6 +55,108 @@ If you can't find the original password:
 6. Update your connection string with the new password
 7. Update the `DATABASE_URL` in App Platform as described in Step 2
 
+## Advanced Troubleshooting
+
+### If you've tried everything and it still fails:
+
+#### 1. Test Connection Locally First
+
+Run the diagnostic script to verify your DATABASE_URL works:
+
+```bash
+cd backend
+python test_db_connection.py
+```
+
+This will:
+- Parse your DATABASE_URL and show all components
+- Detect special characters in the password that may need encoding
+- Test the actual connection to DigitalOcean
+- Show helpful error messages
+
+#### 2. Check for Special Characters in Password
+
+If your password contains special characters like `!@#$%^&*`, they **must be URL-encoded** in the connection string:
+
+| Character | URL Encoded |
+|-----------|-------------|
+| `!` | `%21` |
+| `@` | `%40` |
+| `#` | `%23` |
+| `$` | `%24` |
+| `%` | `%25` |
+| `^` | `%5E` |
+| `&` | `%26` |
+| `*` | `%2A` |
+| `/` | `%2F` |
+
+**Example:**
+```
+# Original password: MyP@ss!word#123
+# URL-encoded: MyP%40ss%21word%23123
+
+# Correct connection string:
+postgresql://doadmin:MyP%40ss%21word%23123@host:25060/defaultdb?sslmode=require
+```
+
+The diagnostic script will automatically detect and encode these for you.
+
+#### 3. Verify Trusted Sources in DigitalOcean
+
+Your database might have IP restrictions:
+
+1. Go to DigitalOcean Console → Databases → Your Cluster
+2. Click **Settings** tab
+3. Look for **Trusted Sources**
+4. Make sure your App Platform is in the trusted sources
+5. If not, add it or temporarily allow all sources for testing
+
+#### 4. Check Database Status
+
+Ensure your database is actually running:
+
+1. DigitalOcean Console → Databases → Your Cluster
+2. Check the **Status** at the top - should be "Online"
+3. If it's not online, there may be maintenance or an issue
+
+#### 5. Force App Platform to Refresh Environment Variables
+
+Sometimes App Platform caches old environment variables:
+
+1. After updating DATABASE_URL, try **manually redeploying**:
+   - Go to your App in DigitalOcean Console
+   - Click **Actions** → **Force Rebuild and Deploy**
+2. Or add a dummy environment variable, save, remove it, and save again
+
+#### 6. Verify You're Using the Right Database
+
+If you have multiple databases:
+
+1. Check the logs to see which database it's trying to connect to:
+   ```
+   [Database] Received DATABASE_URL: postgresql://doadmin:***@db-postgresql-nyc1-XXXXX...
+   ```
+2. Compare the `XXXXX` number with your database cluster ID in DigitalOcean
+3. Make sure you copied the connection string from the **correct** database
+
+#### 7. Check App Platform Build vs Runtime Environment Variables
+
+DigitalOcean has two types of environment variables:
+- **Build-time** variables (used during build)
+- **Run-time** variables (used when app is running)
+
+Make sure DATABASE_URL is set as a **run-time** environment variable.
+
+#### 8. Try Connection Pooling Settings
+
+If the basic connection works but App Platform fails, try adjusting the connection pool:
+
+In DigitalOcean → Databases → Your Cluster → **Connection Pools** tab:
+1. Create a new connection pool
+2. Mode: Session
+3. Size: 10-25
+4. Use the connection pool URL instead of direct database URL
+
 ## Security Note
 
 Never commit the actual `DATABASE_URL` with credentials to Git. The `.env.digitalocean` file should remain with empty values, and actual credentials should only be set in the DigitalOcean App Platform environment variables.
