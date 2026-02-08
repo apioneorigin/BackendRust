@@ -19,7 +19,7 @@ databases:
   # Redis/Valkey Cache
   - cluster_name: db-valkey-nyc1-88974
     engine: VALKEY
-    name: REDIS
+    name: redis
     production: true
     version: "8"
 
@@ -124,7 +124,7 @@ services:
 
       - key: REDIS_URL
         scope: RUN_TIME
-        value: ${REDIS.DATABASE_URL}
+        value: ${redis.DATABASE_URL}
 
       # =================================================================
       # CORS Configuration
