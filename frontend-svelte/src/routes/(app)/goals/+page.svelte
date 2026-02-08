@@ -71,7 +71,6 @@
 	// Goal detail popup state
 	let showGoalPopup = false;
 	let selectedGoal: DiscoveredGoal | null = null;
-	let openingDetail = false;
 	let modalScrollTop = 0;
 	let modalBodyEl: HTMLDivElement;
 
@@ -343,11 +342,9 @@
 		if (modalBodyEl) {
 			modalScrollTop = modalBodyEl.scrollTop;
 		}
-		openingDetail = true;
 		if (dialogEl?.open) {
 			dialogEl.close();
 		}
-		openingDetail = false;
 	}
 
 	async function closeGoalDetail() {
@@ -365,7 +362,9 @@
 
 	function closeGoalsModal() {
 		showGoalsModal = false;
-		if (!openingDetail) {
+		// If the articulation popup is open, preserve modalDiscovery so
+		// closeGoalDetail can reopen the goals list when the popup closes.
+		if (!showGoalPopup) {
 			modalDiscovery = null;
 			if (goalsSavedDuringModal) {
 				flashLibraryTab = true;
@@ -847,7 +846,7 @@
 							<span class="goal-identity-line">
 								{g.identity}
 								<span class="goal-confidence-inline {getConfidenceColor(g.confidence)}">
-									{g.confidence}%
+									{g.confidence}% confidence
 								</span>
 							</span>
 						</button>
@@ -1613,12 +1612,10 @@
 	}
 
 	.action-btn {
-		flex: 1;
-		display: flex;
+		display: inline-flex;
 		align-items: center;
-		justify-content: center;
 		gap: 0.25rem;
-		padding: 0.4375rem 0.625rem;
+		padding: 0.3125rem 0.625rem;
 		border-radius: 0.375rem;
 		font-size: 0.75rem;
 		font-weight: 500;
