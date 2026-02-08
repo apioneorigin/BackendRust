@@ -43,9 +43,21 @@ else:
     def prepare_async_url(url: str) -> tuple[str, dict]:
         """
         Prepare database URL for asyncpg.
-        Strips sslmode/channel_binding from URL and returns connect_args for SSL.
+        Handles DigitalOcean/Heroku URL formats, strips unsupported params.
         """
+        # Normalize scheme: postgres:// → postgresql://
+        if url.startswith('postgres://'):
+            url = 'postgresql://' + url[len('postgres://'):]
+
         parsed = urlparse(url)
+
+        # Validate that we got a proper URL
+        if not parsed.hostname:
+            raise ValueError(
+                f"Could not parse DATABASE_URL: missing hostname. "
+                f"Scheme='{parsed.scheme}', got URL starting with '{url[:20]}...'. "
+                f"Expected format: postgresql://user:pass@host:port/dbname"
+            )
 
         # Parse query parameters
         query_params = parse_qs(parsed.query)
@@ -58,8 +70,7 @@ else:
         new_query = urlencode({k: v[0] for k, v in query_params.items()}, doseq=False)
 
         # Rebuild URL with postgresql+asyncpg scheme
-        scheme = 'postgresql+asyncpg'
-        new_parsed = parsed._replace(scheme=scheme, query=new_query)
+        new_parsed = parsed._replace(scheme='postgresql+asyncpg', query=new_query)
         clean_url = urlunparse(new_parsed)
 
         # Prepare connect_args for SSL
@@ -72,20 +83,37 @@ else:
 
         return clean_url, conn_args
 
+    # Log what we received (mask password)
+    _parsed_for_log = urlparse(DATABASE_URL)
+    _masked = DATABASE_URL.replace(f":{_parsed_for_log.password}@", ":***@") if _parsed_for_log.password else DATABASE_URL
+    print(f"[Database] Received DATABASE_URL: {_masked}")
+
     # Convert to async URL and get SSL config
-    ASYNC_DATABASE_URL, connect_args = prepare_async_url(DATABASE_URL)
+    try:
+        ASYNC_DATABASE_URL, connect_args = prepare_async_url(DATABASE_URL)
+    except Exception as e:
+        print(f"[Database] ERROR parsing DATABASE_URL: {e}")
+        print(f"[Database] Falling back to SQLite")
+        USE_SQLITE = True
+        DATA_DIR = Path(__file__).parent.parent / "data"
+        DATA_DIR.mkdir(exist_ok=True)
+        SQLITE_PATH = DATA_DIR / "dev.db"
+        ASYNC_DATABASE_URL = f"sqlite+aiosqlite:///{SQLITE_PATH}"
+        connect_args = {"check_same_thread": False}
+        engine = create_async_engine(ASYNC_DATABASE_URL, echo=False, connect_args=connect_args)
 
-    # Create async engine for PostgreSQL
-    engine = create_async_engine(
-        ASYNC_DATABASE_URL,
-        echo=False,
-        pool_size=10,
-        max_overflow=20,
-        pool_pre_ping=True,
-        connect_args=connect_args,
-    )
+    if not USE_SQLITE:
+        # Create async engine for PostgreSQL
+        engine = create_async_engine(
+            ASYNC_DATABASE_URL,
+            echo=False,
+            pool_size=10,
+            max_overflow=20,
+            pool_pre_ping=True,
+            connect_args=connect_args,
+        )
 
-    print(f"[Database] Using PostgreSQL: {urlparse(DATABASE_URL).hostname}")
+        print(f"[Database] Using PostgreSQL: {urlparse(DATABASE_URL).hostname}")
 
 # Create async session factory
 AsyncSessionLocal = async_sessionmaker(
