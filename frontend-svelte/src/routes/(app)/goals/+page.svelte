@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { addToast, chat, llmManualBusy } from '$lib/stores';
 	import { Button, Spinner, ConfirmDialog } from '$lib/components/ui';
@@ -71,6 +71,9 @@
 	// Goal detail popup state
 	let showGoalPopup = false;
 	let selectedGoal: DiscoveredGoal | null = null;
+	let openingDetail = false;
+	let modalScrollTop = 0;
+	let modalBodyEl: HTMLDivElement;
 
 	// Library filters
 	let filterType = '';
@@ -335,23 +338,39 @@
 	function openGoalDetail(goal: DiscoveredGoal) {
 		selectedGoal = normalizeGoal(goal);
 		showGoalPopup = true;
-		// Close the goals modal so the articulation popup isn't hidden behind the dialog top-layer
+		// Save scroll position and close the goals modal so the articulation popup
+		// isn't hidden behind the native dialog top-layer
+		if (modalBodyEl) {
+			modalScrollTop = modalBodyEl.scrollTop;
+		}
+		openingDetail = true;
 		if (dialogEl?.open) {
 			dialogEl.close();
 		}
+		openingDetail = false;
 	}
 
-	function closeGoalDetail() {
+	async function closeGoalDetail() {
 		showGoalPopup = false;
 		selectedGoal = null;
+		// Reopen the goals list modal if we came from it, restoring scroll position
+		if (modalDiscovery) {
+			showGoalsModal = true;
+			await tick();
+			if (modalBodyEl) {
+				modalBodyEl.scrollTop = modalScrollTop;
+			}
+		}
 	}
 
 	function closeGoalsModal() {
 		showGoalsModal = false;
-		modalDiscovery = null;
-		if (goalsSavedDuringModal) {
-			flashLibraryTab = true;
-			setTimeout(() => { flashLibraryTab = false; }, 5000);
+		if (!openingDetail) {
+			modalDiscovery = null;
+			if (goalsSavedDuringModal) {
+				flashLibraryTab = true;
+				setTimeout(() => { flashLibraryTab = false; }, 5000);
+			}
 		}
 	}
 
@@ -817,7 +836,7 @@
 					</svg>
 				</button>
 			</div>
-			<div class="modal-body">
+			<div class="modal-body" bind:this={modalBodyEl}>
 				<div class="modal-goals-list">
 					{#each modalGoals as goal (goal.id)}
 						{@const g = normalizeGoal(goal)}
