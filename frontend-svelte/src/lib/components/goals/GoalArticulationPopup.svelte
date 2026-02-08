@@ -87,7 +87,7 @@
 					</span>
 					<h3 id="goal-title">{goal.identity}</h3>
 					<span class="goal-confidence {getConfidenceColor(goal.confidence)}">
-						{goal.confidence}%
+						{goal.confidence}% confidence
 					</span>
 				</div>
 				<button class="close-btn" on:click={handleClose} aria-label="Close">

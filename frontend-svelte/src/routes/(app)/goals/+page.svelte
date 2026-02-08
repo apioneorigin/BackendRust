@@ -393,9 +393,9 @@
 		};
 
 		savedGoals = [...savedGoals, savedGoal];
+		goalsSavedDuringModal = true;
 		try {
 			await api.post('/api/goal-inventory/save', { goals: savedGoals });
-			goalsSavedDuringModal = true;
 			addToast('success', 'Goal saved to library');
 		} catch (error) {
 			addToast('error', 'Failed to save goal');
@@ -744,7 +744,7 @@
 										{/each}
 									</div>
 									<span class="goal-confidence {getConfidenceColor(g.confidence)}">
-										{g.confidence}%
+										{g.confidence}% confidence
 									</span>
 								</div>
 								<h3 class="goal-identity">{g.identity}</h3>
@@ -823,9 +823,9 @@
 									{g.type.replace('_', ' ')}
 								</span>
 								<span class="goal-identity-line">
-									{g.identity}
+									<span class="goal-identity-text">{g.identity}</span>
 									<span class="goal-confidence-inline {getConfidenceColor(g.confidence)}">
-										{g.confidence}%
+										{g.confidence}% confidence
 									</span>
 								</span>
 							</div>
@@ -1476,7 +1476,7 @@
 
 	.goal-row {
 		display: flex;
-		align-items: flex-start;
+		align-items: center;
 		gap: 0.5rem;
 		padding: 0.625rem 0.75rem;
 		background: var(--color-field-depth);
@@ -1484,7 +1484,7 @@
 		border-radius: 0.5rem;
 		flex: 1;
 		min-width: 0;
-		flex-wrap: wrap;
+		overflow: hidden;
 		transition: all 0.15s ease;
 	}
 
@@ -1500,9 +1500,16 @@
 		color: var(--color-text-source);
 		line-height: 1.4;
 		display: flex;
-		flex-wrap: wrap;
 		align-items: baseline;
 		gap: 0.5rem;
+		overflow: hidden;
+	}
+
+	.goal-identity-text {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		min-width: 0;
 	}
 
 	.goal-confidence-inline {
