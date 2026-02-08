@@ -504,7 +504,7 @@
 
 	/* Document Tabs */
 	.document-tabs-container {
-		padding: 0 0 0.25rem;
+		padding: 0 0 0.125rem;
 		flex-shrink: 0;
 	}
 
@@ -577,7 +577,7 @@
 		position: relative;
 		display: grid;
 		grid-template-columns: 105px repeat(5, 1fr);
-		grid-template-rows: 56px repeat(5, minmax(0, 1fr));
+		grid-template-rows: 48px repeat(5, minmax(0, 1fr));
 		column-gap: 2px;
 		row-gap: 6px;
 		flex: 1;
@@ -587,7 +587,7 @@
 
 	.compact .matrix-grid {
 		grid-template-columns: 100px repeat(5, 1fr);
-		grid-template-rows: 52px repeat(5, minmax(0, 1fr));
+		grid-template-rows: 44px repeat(5, minmax(0, 1fr));
 		column-gap: 2px;
 		row-gap: 4px;
 	}
