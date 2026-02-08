@@ -645,7 +645,7 @@
 	}
 
 	.conversation-title {
-		font-size: 13px;
+		font-size: var(--font-size-base);
 		font-weight: 400;
 		white-space: nowrap;
 		overflow: hidden;
