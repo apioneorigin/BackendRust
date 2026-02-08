@@ -128,21 +128,18 @@
 		return Object.keys(cells).length >= 100;
 	}
 
+	// Power Spot = cell is in the backend's leverage_points array (set via buildDisplayedMatrix)
 	function isPowerSpot(cell: CellData): boolean {
-		const avg = calcCellValueFromDimensions(cell.dimensions);
-		return avg >= 75 && cell.dimensions?.some(d => d.value >= 75);
+		return cell.isLeveragePoint;
 	}
 
+	// Risk cell = cell is in the backend's risk_analysis array (set via buildDisplayedMatrix)
 	function isRiskCell(cell: CellData): boolean {
-		const avg = calcCellValueFromDimensions(cell.dimensions);
-		return avg >= 50;
+		return cell.isRiskPoint;
 	}
 
 	function getCellRiskLevel(cell: CellData): 'low' | 'medium' | 'high' {
-		const avg = calcCellValueFromDimensions(cell.dimensions);
-		if (avg >= 80) return 'high';
-		if (avg >= 50) return 'medium';
-		return 'low';
+		return cell.riskLevel ?? 'low';
 	}
 
 	function shouldHideCell(cell: CellData): boolean {
