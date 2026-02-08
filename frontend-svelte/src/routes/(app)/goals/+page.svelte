@@ -408,8 +408,8 @@
 
 	async function saveGoalToInventory(goal: DiscoveredGoal) {
 		const g = normalizeGoal(goal);
-		// Ensure source files include the discovery's uploaded file names
-		if ((!g.sourceFiles || g.sourceFiles.length === 0) && modalDiscovery) {
+		// Always attach the discovery's uploaded file names as the authoritative source
+		if (modalDiscovery) {
 			g.sourceFiles = modalDiscovery.fileNames;
 		}
 		const savedGoal: SavedGoal = {
