@@ -9,8 +9,7 @@
 	 * - Dimensions use 3 steps: 0, 50, 100 (visual bars, no labels)
 	 */
 
-	import { createEventDispatcher } from 'svelte';
-	import { Button, Spinner } from '$lib/components/ui';
+	import { createEventDispatcher, onDestroy } from 'svelte';
 	import { matrix, matrixDocuments as documents, activeDocumentId, activeDocument } from '$lib/stores';
 	import type { CellData, CellDimension, MatrixDocument as Document } from '$lib/stores';
 
@@ -25,7 +24,6 @@
 
 	const dispatch = createEventDispatcher<{
 		cellClick: { row: number; col: number };
-		dimensionChange: { row: number; col: number; dimIndex: number; value: number };
 		documentChange: { documentId: string };
 		showPowerSpotExplanation: { row: number; col: number; cell: CellData };
 		showRiskExplanation: { row: number; col: number; cell: CellData };
@@ -41,12 +39,94 @@
 	let showCellPopup = false;
 	let isPopulatingDoc: string | null = null;  // Track which doc is being populated
 
-	// Track local edits and original values for change detection
-	let localDimensionEdits: Map<string, number> = new Map(); // key: "row-col-dimIdx", value: edited value
-	let originalDimensionValues: Map<string, number> = new Map(); // key: "row-col-dimIdx", value: original LLM value
+	// Undo/redo history
+	type DimensionChange = { row: number; col: number; dimIndex: number; oldValue: number; newValue: number };
+	type EditEntry = { changes: DimensionChange[] };
 
-	// Check if there are unsaved changes
-	$: hasUnsavedChanges = localDimensionEdits.size > 0;
+	let editHistory: EditEntry[] = [];
+	let editIndex = -1; // points to last applied edit (-1 = none)
+
+	$: canUndo = editIndex >= 0;
+	$: canRedo = editIndex < editHistory.length - 1;
+
+	// Clear edit history when active document changes
+	let prevDocId: string | null = null;
+	$: if ($activeDocumentId && $activeDocumentId !== prevDocId) {
+		prevDocId = $activeDocumentId;
+		editHistory = [];
+		editIndex = -1;
+		if (autoSaveTimer) clearTimeout(autoSaveTimer);
+	}
+
+	// Auto-save: debounced persistence to backend
+	let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
+
+	function scheduleAutoSave() {
+		if (autoSaveTimer) clearTimeout(autoSaveTimer);
+		autoSaveTimer = setTimeout(autoSave, 1500);
+	}
+
+	async function autoSave() {
+		autoSaveTimer = null;
+		// Collect all touched dimensions from full history
+		const touchedDims = new Set<string>();
+		for (const entry of editHistory) {
+			for (const ch of entry.changes) {
+				touchedDims.add(`${ch.row}-${ch.col}-${ch.dimIndex}`);
+			}
+		}
+		if (touchedDims.size === 0) return;
+
+		// Read current values from matrixData prop (reflects undo/redo state)
+		const changes: Array<{ row: number; col: number; dimIdx: number; value: number }> = [];
+		for (const key of touchedDims) {
+			const [row, col, dimIdx] = key.split('-').map(Number);
+			const cell = matrixData[row]?.[col];
+			if (!cell?.dimensions?.[dimIdx]) continue;
+			changes.push({ row, col, dimIdx, value: cell.dimensions[dimIdx].value });
+		}
+		if (changes.length === 0) return;
+		await matrix.saveCellChanges(changes);
+	}
+
+	// Push a batch of changes as a single undo-able operation
+	function pushEdit(changes: DimensionChange[]) {
+		if (changes.length === 0) return;
+		// Truncate any redo entries
+		editHistory = [...editHistory.slice(0, editIndex + 1), { changes }];
+		editIndex = editHistory.length - 1;
+		// Apply all changes to store
+		for (const ch of changes) {
+			matrix.updateCellDimension(ch.row, ch.col, ch.dimIndex, ch.newValue);
+		}
+		scheduleAutoSave();
+	}
+
+	function undo() {
+		if (!canUndo) return;
+		const entry = editHistory[editIndex];
+		// Revert in reverse order
+		for (let i = entry.changes.length - 1; i >= 0; i--) {
+			const ch = entry.changes[i];
+			matrix.updateCellDimension(ch.row, ch.col, ch.dimIndex, ch.oldValue);
+		}
+		editIndex--;
+		scheduleAutoSave();
+	}
+
+	function redo() {
+		if (!canRedo) return;
+		editIndex++;
+		const entry = editHistory[editIndex];
+		for (const ch of entry.changes) {
+			matrix.updateCellDimension(ch.row, ch.col, ch.dimIndex, ch.newValue);
+		}
+		scheduleAutoSave();
+	}
+
+	onDestroy(() => {
+		if (autoSaveTimer) clearTimeout(autoSaveTimer);
+	});
 
 	// Check if a document has full data (100 cells)
 	function hasFullData(doc: Document): boolean {
@@ -104,47 +184,38 @@
 		if (!cell?.dimensions) return;
 
 		const currentAvg = calcCellValueFromDimensions(cell.dimensions);
+		const changes: DimensionChange[] = [];
 
 		if (currentAvg === 0) {
-			// All dimensions are 0, set all to target
 			const targetStep = snapToStep(targetAvg);
-			cell.dimensions.forEach((_, idx) => {
-				applyDimensionEdit(row, col, idx, targetStep);
+			cell.dimensions.forEach((dim, idx) => {
+				if (dim.value !== targetStep) {
+					changes.push({ row, col, dimIndex: idx, oldValue: dim.value, newValue: targetStep });
+				}
 			});
 		} else {
-			// Scale proportionally
 			const scaleFactor = targetAvg / currentAvg;
 			cell.dimensions.forEach((dim, idx) => {
 				const newValue = snapToStep(Math.min(100, Math.max(0, dim.value * scaleFactor)));
-				applyDimensionEdit(row, col, idx, newValue);
+				if (dim.value !== newValue) {
+					changes.push({ row, col, dimIndex: idx, oldValue: dim.value, newValue });
+				}
 			});
 		}
+
+		pushEdit(changes);
 	}
 
-	// Handle dimension bar click - set directly
+	// Handle dimension bar click - single dimension change
 	function handleDimensionBarClick(dimIndex: number, stepIndex: number) {
 		if (!selectedCell) return;
+		const { row, col } = selectedCell;
 		const stepValue = DIM_STEPS[stepIndex];
-		applyDimensionEdit(selectedCell.row, selectedCell.col, dimIndex, stepValue);
-	}
-
-	// Apply a dimension edit: track in localDimensionEdits, store original, update visual state
-	function applyDimensionEdit(row: number, col: number, dimIndex: number, value: number) {
-		const key = `${row}-${col}-${dimIndex}`;
-		// Store original value on first edit only
-		if (!originalDimensionValues.has(key)) {
-			const cell = matrixData[row]?.[col];
-			if (cell?.dimensions?.[dimIndex]) {
-				originalDimensionValues.set(key, cell.dimensions[dimIndex].value);
-				originalDimensionValues = originalDimensionValues;
-			}
-		}
-		// Track the edit
-		localDimensionEdits.set(key, value);
-		localDimensionEdits = localDimensionEdits;
-		// Update visual state immediately
-		matrix.updateCellDimension(row, col, dimIndex, value);
-		dispatch('dimensionChange', { row, col, dimIndex, value });
+		const cell = matrixData[row]?.[col];
+		if (!cell?.dimensions?.[dimIndex]) return;
+		const oldValue = cell.dimensions[dimIndex].value;
+		if (oldValue === stepValue) return;
+		pushEdit([{ row, col, dimIndex, oldValue, newValue: stepValue }]);
 	}
 
 	// Get dimension bar fill count (0, 1, 2, 3 segments to fill)
@@ -200,51 +271,6 @@
 	function closeCellPopup() {
 		showCellPopup = false;
 		selectedCell = null;
-	}
-
-	let isSaving = false;
-
-	async function handleSave() {
-		if (localDimensionEdits.size === 0) {
-			closeCellPopup();
-			return;
-		}
-
-		isSaving = true;
-
-		// Convert local edits map to array of changes
-		const changes: Array<{ row: number; col: number; dimIdx: number; value: number }> = [];
-
-		localDimensionEdits.forEach((value, key) => {
-			const [row, col, dimIdx] = key.split('-').map(Number);
-			changes.push({ row, col, dimIdx, value });
-		});
-
-		try {
-			const result = await matrix.saveCellChanges(changes);
-
-			if (result.success) {
-				// Clear tracking after successful save
-				localDimensionEdits.clear();
-				originalDimensionValues.clear();
-				localDimensionEdits = localDimensionEdits;
-				closeCellPopup();
-			} else {
-				// Save failed - revert local edits to original values
-				localDimensionEdits.clear();
-				originalDimensionValues.clear();
-				localDimensionEdits = localDimensionEdits;
-				// Toast notification is shown by matrix store
-			}
-		} catch (error) {
-			console.error('Error saving changes:', error);
-			// Revert local edits on error
-			localDimensionEdits.clear();
-			originalDimensionValues.clear();
-			localDimensionEdits = localDimensionEdits;
-		} finally {
-			isSaving = false;
-		}
 	}
 
 	function handleDocumentTabClick(docId: string) {
@@ -373,6 +399,22 @@
 			</div>
 		{/if}
 	</div>
+
+	<!-- Floating undo/redo toolbar for cell bar edits -->
+	{#if (canUndo || canRedo) && !showCellPopup}
+		<div class="matrix-edit-toolbar">
+			<button class="undo-redo-btn" on:click={undo} disabled={!canUndo} title="Undo">
+				<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M3 7v6h6" /><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
+				</svg>
+			</button>
+			<button class="undo-redo-btn" on:click={redo} disabled={!canRedo} title="Redo">
+				<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M21 7v6h-6" /><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13" />
+				</svg>
+			</button>
+		</div>
+	{/if}
 </div>
 
 <!-- Cell detail popup -->
@@ -385,12 +427,26 @@
 				<h3>
 					{rowHeaders[selectedCell.row]} × {columnHeaders[selectedCell.col]}
 				</h3>
-				<button class="close-btn" on:click={closeCellPopup}>
-					<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						<path d="M18 6 6 18" />
-						<path d="m6 6 12 12" />
-					</svg>
-				</button>
+				<div class="popup-header-actions">
+					{#if canUndo || canRedo}
+						<button class="undo-redo-btn" on:click={undo} disabled={!canUndo} title="Undo">
+							<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M3 7v6h6" /><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
+							</svg>
+						</button>
+						<button class="undo-redo-btn" on:click={redo} disabled={!canRedo} title="Redo">
+							<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M21 7v6h-6" /><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13" />
+							</svg>
+						</button>
+					{/if}
+					<button class="close-btn" on:click={closeCellPopup}>
+						<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M18 6 6 18" />
+							<path d="m6 6 12 12" />
+						</svg>
+					</button>
+				</div>
 			</div>
 
 			<div class="popup-body">
@@ -426,14 +482,6 @@
 				{/if}
 			</div>
 
-			<div class="popup-footer">
-				<Button variant="ghost" on:click={closeCellPopup}>Close</Button>
-				{#if hasUnsavedChanges}
-					<Button variant="primary" on:click={handleSave} disabled={isSaving}>
-						{isSaving ? 'Saving...' : 'Save'}
-					</Button>
-				{/if}
-			</div>
 		</div>
 	</div>
 {/if}
@@ -763,6 +811,7 @@
 
 	.popup-body {
 		padding: 0.75rem 1rem;
+		border-radius: 0 0 1rem 1rem;
 	}
 
 	/* Dimensions list in popup */
@@ -840,13 +889,44 @@
 		font-weight: 500;
 	}
 
-	.popup-footer {
+	/* Popup header actions (undo/redo + close) */
+	.popup-header-actions {
 		display: flex;
-		justify-content: flex-end;
-		gap: 0.75rem;
-		padding: 0.75rem 1rem;
+		align-items: center;
+		gap: 0.25rem;
+	}
+
+	/* Undo/redo buttons (shared between popup header and matrix toolbar) */
+	.undo-redo-btn {
+		padding: 0.375rem;
+		background: none;
+		border: none;
+		color: var(--color-text-whisper);
+		cursor: pointer;
+		border-radius: 0.375rem;
+		transition: all 0.15s ease;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.undo-redo-btn:hover:not(:disabled) {
 		background: var(--color-field-depth);
-		border-radius: 0 0 1rem 1rem;
+		color: var(--color-text-source);
+	}
+
+	.undo-redo-btn:disabled {
+		opacity: 0.3;
+		cursor: default;
+	}
+
+	/* Floating edit toolbar on matrix panel */
+	.matrix-edit-toolbar {
+		display: flex;
+		justify-content: center;
+		gap: 0.25rem;
+		padding: 0.25rem 0;
+		flex-shrink: 0;
 	}
 
 	/* Stub mode: cells invisible so headers stand out */
