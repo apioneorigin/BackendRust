@@ -4,9 +4,9 @@
 	 *
 	 * ARCHITECTURE:
 	 * - Shows document tabs at top (each with its own matrix)
-	 * - Each cell displays a 5-segment bar (no numbers)
+	 * - Both cell bars and dimension bars use 3 segments matching DIM_STEPS [0, 50, 100]
 	 * - Cell value = average of 5 dimensions (bidirectional sync)
-	 * - Dimensions use 3 steps: 0, 50, 100 (visual bars, no labels)
+	 * - Clicking a cell bar segment sets ALL dimensions to that step
 	 */
 
 	import { createEventDispatcher, onDestroy } from 'svelte';
@@ -29,11 +29,8 @@
 		showRiskExplanation: { row: number; col: number; cell: CellData };
 	}>();
 
-	// Dimension steps: 0, 50, 100
+	// Both cell bars and dimension bars use the same 3 steps
 	const DIM_STEPS = [0, 50, 100];
-
-	// Cell bar has 5 segments, each representing 20% range
-	const CELL_SEGMENTS = 5;
 
 	let selectedCell: { row: number; col: number } | null = null;
 	let showCellPopup = false;
@@ -175,35 +172,56 @@
 		return 100;
 	}
 
-	// When user clicks a cell bar segment, scale all dimensions proportionally
+	// When user clicks a cell bar segment, adjust dimensions to reach target filled count.
+	// Steps individual dimensions up/down (0→50→100 or 100→50→0) one at a time,
+	// picking the lowest-value dim when going up and the highest when going down.
 	function handleCellBarClick(row: number, col: number, segmentIndex: number) {
-		// Target average based on segment clicked (0-4 maps to 10, 30, 50, 70, 90)
-		const targetAvg = (segmentIndex + 1) * 20 - 10; // 10, 30, 50, 70, 90
-
 		const cell = matrixData[row]?.[col];
 		if (!cell?.dimensions) return;
 
 		// Respect filtered views - don't allow editing hidden cells
 		if (shouldHideCell(cell)) return;
 
+		// Target average based on segment clicked (0-4 maps to 10, 30, 50, 70, 90)
+		const targetAvg = (segmentIndex + 1) * 20 - 10;
+		const targetFilled = getFilledSegments(targetAvg);
 		const currentAvg = calcCellValueFromDimensions(cell.dimensions);
-		const changes: DimensionChange[] = [];
+		const currentFilled = getFilledSegments(currentAvg);
 
-		if (currentAvg === 0) {
-			const targetStep = snapToStep(targetAvg);
-			cell.dimensions.forEach((dim, idx) => {
-				if (dim.value !== targetStep) {
-					changes.push({ row, col, dimIndex: idx, oldValue: dim.value, newValue: targetStep });
+		if (currentFilled === targetFilled) return;
+
+		const goingUp = targetFilled > currentFilled;
+		const dims = cell.dimensions.map(d => d.value);
+
+		// Step dimensions one at a time until the displayed filled count matches target
+		for (let iter = 0; iter < 10; iter++) {
+			const avg = Math.round(dims.reduce((a, b) => a + b, 0) / dims.length);
+			if (getFilledSegments(avg) === targetFilled) break;
+
+			if (goingUp) {
+				// Step up the lowest-value dimension that can still increase
+				let minIdx = -1, minVal = 101;
+				for (let i = 0; i < dims.length; i++) {
+					if (dims[i] < 100 && dims[i] < minVal) { minVal = dims[i]; minIdx = i; }
 				}
-			});
-		} else {
-			const scaleFactor = targetAvg / currentAvg;
-			cell.dimensions.forEach((dim, idx) => {
-				const newValue = snapToStep(Math.min(100, Math.max(0, dim.value * scaleFactor)));
-				if (dim.value !== newValue) {
-					changes.push({ row, col, dimIndex: idx, oldValue: dim.value, newValue });
+				if (minIdx === -1) break;
+				dims[minIdx] = dims[minIdx] < 50 ? 50 : 100;
+			} else {
+				// Step down the highest-value dimension that can still decrease
+				let maxIdx = -1, maxVal = -1;
+				for (let i = 0; i < dims.length; i++) {
+					if (dims[i] > 0 && dims[i] > maxVal) { maxVal = dims[i]; maxIdx = i; }
 				}
-			});
+				if (maxIdx === -1) break;
+				dims[maxIdx] = dims[maxIdx] > 50 ? 50 : 0;
+			}
+		}
+
+		const changes: DimensionChange[] = [];
+		for (let i = 0; i < dims.length; i++) {
+			if (dims[i] !== cell.dimensions[i].value) {
+				changes.push({ row, col, dimIndex: i, oldValue: cell.dimensions[i].value, newValue: dims[i] });
+			}
 		}
 
 		pushEdit(changes);
