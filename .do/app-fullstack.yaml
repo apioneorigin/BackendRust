@@ -49,7 +49,7 @@ services:
   # SVELTEKIT FRONTEND
   # =================================================================
   - name: frontend
-    dockerfile_path: Dockerfile
+    dockerfile_path: frontend-svelte/Dockerfile
     http_port: 3000
     instance_count: 1
     instance_size_slug: apps-s-1vcpu-0.5gb
