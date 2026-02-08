@@ -129,11 +129,20 @@
 	}
 
 	function isPowerSpot(cell: CellData): boolean {
-		return cell.isLeveragePoint;
+		const avg = calcCellValueFromDimensions(cell.dimensions);
+		return avg >= 75 && cell.dimensions?.some(d => d.value >= 75);
 	}
 
 	function isRiskCell(cell: CellData): boolean {
-		return cell.riskLevel === 'medium' || cell.riskLevel === 'high';
+		const avg = calcCellValueFromDimensions(cell.dimensions);
+		return avg >= 50;
+	}
+
+	function getCellRiskLevel(cell: CellData): 'low' | 'medium' | 'high' {
+		const avg = calcCellValueFromDimensions(cell.dimensions);
+		if (avg >= 80) return 'high';
+		if (avg >= 50) return 'medium';
+		return 'low';
 	}
 
 	function shouldHideCell(cell: CellData): boolean {
@@ -251,12 +260,10 @@
 
 	function getCellColor(cell: CellData) {
 		if (showRiskView && isRiskCell(cell)) {
-			const colors = {
-				low: '',
-				medium: 'cell-risk-medium',
-				high: 'cell-risk-high'
-			};
-			return colors[cell.riskLevel || 'low'];
+			const level = getCellRiskLevel(cell);
+			if (level === 'high') return 'cell-risk-high';
+			if (level === 'medium') return 'cell-risk-medium';
+			return '';
 		}
 		if (showPowerSpotsView && isPowerSpot(cell)) {
 			return 'cell-power-spot';
