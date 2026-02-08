@@ -14,8 +14,6 @@ ingress:
     - component:
         name: backendrust
       match:
-        authority:
-          exact: ""
         path:
           prefix: /
 
@@ -35,6 +33,11 @@ services:
       deploy_on_push: true
 
     source_dir: /
+
+    health_check:
+      http_path: /health
+      initial_delay_seconds: 10
+      period_seconds: 30
 
     envs:
       # =================================================================
@@ -80,6 +83,10 @@ services:
       # =================================================================
       # PUBLIC CONFIGURATION (safe to commit)
       # =================================================================
+
+      - key: CORS_ORIGINS
+        scope: RUN_TIME
+        value: ${APP_URL}
 
       - key: ENVIRONMENT
         scope: RUN_TIME
