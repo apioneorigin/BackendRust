@@ -6,6 +6,7 @@ Leverage points and risk analysis are generated during matrix data generation
 (generate_matrix_data_llm) and cached per-document - no separate LLM calls needed.
 """
 
+import time
 from typing import Optional, List, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -19,6 +20,33 @@ from utils import get_or_404, CamelModel
 from logging_config import api_logger
 
 router = APIRouter(prefix="/api/matrix", tags=["matrix"])
+
+# In-memory cache for document previews so add_documents can use the exact same
+# documents the user previewed (instead of regenerating via LLM).
+# Key: conversation_id, Value: (timestamp, list of document dicts)
+_preview_cache: Dict[str, tuple[float, list[dict]]] = {}
+_PREVIEW_CACHE_TTL = 600  # 10 minutes
+
+
+def _cache_previews(conversation_id: str, documents: list[dict]) -> None:
+    """Cache generated preview documents for later retrieval by add_documents."""
+    _preview_cache[conversation_id] = (time.time(), documents)
+    # Evict stale entries
+    cutoff = time.time() - _PREVIEW_CACHE_TTL
+    stale = [k for k, (ts, _) in _preview_cache.items() if ts < cutoff]
+    for k in stale:
+        del _preview_cache[k]
+
+
+def _pop_cached_previews(conversation_id: str) -> Optional[list[dict]]:
+    """Retrieve and remove cached previews. Returns None if expired or missing."""
+    entry = _preview_cache.pop(conversation_id, None)
+    if entry is None:
+        return None
+    ts, docs = entry
+    if time.time() - ts > _PREVIEW_CACHE_TTL:
+        return None
+    return docs
 
 
 # Helpers to reduce repeated copy/find/save pattern across endpoints
@@ -421,6 +449,9 @@ async def preview_documents(
         api_logger.error(f"[DOC_PREVIEW] LLM returned None for conv {conversation_id}")
         raise HTTPException(status_code=500, detail="Failed to generate document previews")
 
+    # Cache the full document stubs so add_documents can use them directly
+    _cache_previews(conversation_id, new_documents)
+
     # Convert to preview format
     previews = []
     for i, doc in enumerate(new_documents):
@@ -467,7 +498,8 @@ async def add_documents(
     """
     Add selected document previews to the conversation.
 
-    Takes the preview IDs selected by user and adds those documents.
+    Uses cached previews from the preview endpoint so the user gets exactly
+    the documents they saw. Falls back to regeneration if cache expired.
     """
     from main import generate_document_previews_llm, get_model_config
 
@@ -477,17 +509,21 @@ async def add_documents(
     existing_docs = conversation.generated_documents or []
     next_doc_id = len(existing_docs)
 
-    context_messages = await _load_context_messages(conversation_id, db)
-    model_config = get_model_config(request.model)
+    # Use cached previews (exact same docs the user saw)
+    new_documents = _pop_cached_previews(conversation_id)
 
-    # Regenerate the documents (since previews are not persisted)
-    new_documents = await generate_document_previews_llm(
-        context_messages=context_messages,
-        existing_document_names=[doc.get("name", "") for doc in existing_docs],
-        start_doc_id=next_doc_id,
-        model_config=model_config,
-        count=3
-    )
+    if not new_documents:
+        # Fallback: regenerate if cache expired or missing
+        api_logger.warning(f"[ADD_DOCS] Cache miss for conv {conversation_id}, regenerating")
+        context_messages = await _load_context_messages(conversation_id, db)
+        model_config = get_model_config(request.model)
+        new_documents = await generate_document_previews_llm(
+            context_messages=context_messages,
+            existing_document_names=[doc.get("name", "") for doc in existing_docs],
+            start_doc_id=next_doc_id,
+            model_config=model_config,
+            count=3
+        )
 
     if not new_documents:
         raise HTTPException(status_code=500, detail="Failed to generate documents")

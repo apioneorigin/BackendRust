@@ -572,6 +572,8 @@ function createMatrixStore() {
 			const state = get({ subscribe });
 			if (!state.conversationId) return;
 
+			const previousDocIds = new Set(state.documents.map(d => d.id));
+
 			addDocsController = new AbortController();
 			update(s => ({ ...s, isProcessing: true }));
 			try {
@@ -587,7 +589,9 @@ function createMatrixStore() {
 				);
 
 				if (documents?.length) {
-					const activeDoc = documents.find(d => d.id === state.activeDocumentId) || documents[0];
+					// Switch to the first newly added document so it's immediately visible
+					const firstNewDoc = documents.find(d => !previousDocIds.has(d.id));
+					const activeDoc = firstNewDoc || documents.find(d => d.id === state.activeDocumentId) || documents[0];
 					const displayed = buildDisplayedMatrix(activeDoc);
 
 					update(s => ({
