@@ -335,6 +335,10 @@
 	function openGoalDetail(goal: DiscoveredGoal) {
 		selectedGoal = normalizeGoal(goal);
 		showGoalPopup = true;
+		// Close the goals modal so the articulation popup isn't hidden behind the dialog top-layer
+		if (dialogEl?.open) {
+			dialogEl.close();
+		}
 	}
 
 	function closeGoalDetail() {
@@ -817,24 +821,17 @@
 				<div class="modal-goals-list">
 					{#each modalGoals as goal (goal.id)}
 						{@const g = normalizeGoal(goal)}
-						<div class="goal-row-wrapper">
-							<div class="goal-row">
-								<span class="goal-type {goalTypeColors[g.type] || 'type-default'}">
-									{g.type.replace('_', ' ')}
+						<button class="goal-row" on:click={() => openGoalDetail(g)} title="View full articulation">
+							<span class="goal-type {goalTypeColors[g.type] || 'type-default'}">
+								{g.type.replace('_', ' ')}
+							</span>
+							<span class="goal-identity-line">
+								{g.identity}
+								<span class="goal-confidence-inline {getConfidenceColor(g.confidence)}">
+									{g.confidence}%
 								</span>
-								<span class="goal-identity-line">
-									{g.identity}
-									<span class="goal-confidence-inline {getConfidenceColor(g.confidence)}">
-										{g.confidence}%
-									</span>
-								</span>
-							</div>
-							<button class="articulation-expand-btn" on:click={() => openGoalDetail(g)} title="View full articulation">
-								<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-									<path d="m9 18 6-6-6-6"/>
-								</svg>
-							</button>
-						</div>
+							</span>
+						</button>
 					{/each}
 				</div>
 			</div>
@@ -1468,12 +1465,6 @@
 		max-height: 100%;
 	}
 
-	.goal-row-wrapper {
-		display: flex;
-		align-items: stretch;
-		gap: 0.5rem;
-	}
-
 	.goal-row {
 		display: flex;
 		align-items: flex-start;
@@ -1482,14 +1473,19 @@
 		background: var(--color-field-depth);
 		border: 1px solid transparent;
 		border-radius: 0.5rem;
-		flex: 1;
+		width: 100%;
 		min-width: 0;
 		flex-wrap: wrap;
 		transition: all 0.15s ease;
+		cursor: pointer;
+		text-align: left;
+		font-family: inherit;
+		font-size: inherit;
 	}
 
 	.goal-row:hover {
-		border-color: var(--color-veil-soft);
+		border-color: var(--color-primary-400);
+		background: var(--color-primary-50);
 	}
 
 	.goal-identity-line {
@@ -1511,26 +1507,6 @@
 		margin-left: auto;
 		flex-shrink: 0;
 		white-space: nowrap;
-	}
-
-	.articulation-expand-btn {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 36px;
-		background: var(--color-field-depth);
-		border: 1px solid var(--color-veil-thin);
-		border-radius: 0.5rem;
-		color: var(--color-text-whisper);
-		cursor: pointer;
-		transition: all 0.15s ease;
-		flex-shrink: 0;
-	}
-
-	.articulation-expand-btn:hover {
-		background: var(--color-primary-50);
-		border-color: var(--color-primary-400);
-		color: var(--color-primary-600);
 	}
 
 	.goal-type {
@@ -1797,7 +1773,8 @@
 
 	.modal-body {
 		padding: 0.75rem 1rem;
-		overflow: hidden;
+		overflow-y: auto;
+		overflow-x: hidden;
 		flex: 1;
 		min-height: 0;
 	}
