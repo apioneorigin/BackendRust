@@ -31,6 +31,7 @@
 		rowHeaders as rowHeadersStore,
 		columnHeaders as columnHeadersStore,
 		isMatrixGenerated,
+		matrixDocuments,
 		showRiskHeatmap as showRiskHeatmapStore,
 		coherence as coherenceStore,
 		population as populationStore,
@@ -66,7 +67,7 @@
 	$: isWelcomeState = $messages.length === 0 && !$isStreaming;
 
 	// Stub state - conversation has documents but active doc has no cells yet
-	$: isStubState = !isWelcomeState && !$isMatrixGenerated;
+	$: isStubState = !isWelcomeState && !$isMatrixGenerated && $matrixDocuments.length > 0;
 
 	// Popup state
 	let showContextPopup = false;
