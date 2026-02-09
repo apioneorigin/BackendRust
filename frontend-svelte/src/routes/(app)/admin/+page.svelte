@@ -5,41 +5,83 @@
 	import { Button, Card, Spinner } from '$lib/components/ui';
 	import { api } from '$lib/utils/api';
 
-	export let params: Record<string, string> = {};
-
+	// --- Interfaces ---
 	interface DashboardStats {
 		totalUsers: number;
-		activeUsers: number;
+		totalOrganizations: number;
+		totalSessions: number;
 		totalConversations: number;
-		totalMessages: number;
-		creditsUsed: number;
-		revenue: number;
+		activeUsers30d: number;
+		apiCallsToday: number;
 	}
 
 	interface UserListItem {
 		id: string;
 		email: string;
-		name: string;
+		name: string | null;
 		role: string;
-		credits: number;
+		organizationId: string;
+		creditsEnabled: boolean;
+		creditQuota: number | null;
 		createdAt: string;
-		lastActive: string;
+		lastLoginAt: string | null;
 	}
 
+	interface PromoCode {
+		id: string;
+		code: string;
+		credits: number;
+		maxUses: number;
+		usedCount: number;
+		createdBy: string;
+		createdAt: string;
+		expiresAt: string | null;
+		isActive: boolean;
+	}
+
+	interface GlobalSettings {
+		freeTrialCredits: number;
+		trialDurationDays: number;
+		updatedAt: string;
+		updatedBy: string | null;
+	}
+
+	// --- State ---
 	let isLoading = true;
 	let isRefreshing = false;
 	let stats: DashboardStats | null = null;
 	let users: UserListItem[] = [];
-	let selectedTab: 'overview' | 'users' | 'analytics' | 'logs' = 'overview';
+	let promoCodes: PromoCode[] = [];
+	let settings: GlobalSettings | null = null;
+	let selectedTab: 'overview' | 'users' | 'promo-codes' | 'settings' = 'overview';
+
+	// Promo code form state
+	let newPromoCode = '';
+	let newPromoCredits = 100;
+	let newPromoMaxUses = 1;
+	let newPromoExpires = '';
+	let isCreatingPromo = false;
+
+	// User credit editing state
+	let editingUserId: string | null = null;
+	let editCreditValue = 0;
+	let isSavingCredits = false;
+
+	// Settings form state
+	let settingsFreeTrialCredits = 0;
+	let settingsTrialDays = 14;
+	let isSavingSettings = false;
+
+	// Loading states for individual tabs
+	let isLoadingPromos = false;
+	let isLoadingSettings = false;
 
 	onMount(async () => {
-		// Check if user is admin
 		if (!$user?.isGlobalAdmin) {
 			addToast('error', 'Access denied. Admin privileges required.');
 			goto('/chat');
 			return;
 		}
-
 		await loadDashboard();
 	});
 
@@ -52,10 +94,10 @@
 		}
 		try {
 			const [dashboardData, usersData] = await Promise.all([
-				api.get<{ stats: DashboardStats }>('/api/admin/dashboard'),
+				api.get<DashboardStats>('/api/admin/dashboard'),
 				api.get<{ users: UserListItem[] }>('/api/admin/users/list')
 			]);
-			stats = dashboardData.stats;
+			stats = dashboardData;
 			users = usersData.users || [];
 		} catch (error: any) {
 			addToast('error', error.message || 'Failed to load dashboard');
@@ -65,18 +107,166 @@
 		}
 	}
 
+	// --- Promo code functions ---
+	async function loadPromoCodes() {
+		isLoadingPromos = true;
+		try {
+			promoCodes = await api.get<PromoCode[]>('/api/admin/promo-codes');
+		} catch (error: any) {
+			addToast('error', error.message || 'Failed to load promo codes');
+		} finally {
+			isLoadingPromos = false;
+		}
+	}
+
+	async function createPromoCode(e: Event) {
+		e.preventDefault();
+		if (!newPromoCode.trim()) {
+			addToast('warning', 'Please enter a promo code');
+			return;
+		}
+		if (newPromoCredits <= 0) {
+			addToast('warning', 'Credits must be greater than 0');
+			return;
+		}
+
+		isCreatingPromo = true;
+		try {
+			const body: any = {
+				code: newPromoCode.trim().toUpperCase(),
+				credits: newPromoCredits,
+				max_uses: newPromoMaxUses
+			};
+			if (newPromoExpires) {
+				body.expires_at = new Date(newPromoExpires).toISOString();
+			}
+			await api.post('/api/admin/promo-codes', body);
+			addToast('success', `Promo code "${body.code}" created`);
+			newPromoCode = '';
+			newPromoCredits = 100;
+			newPromoMaxUses = 1;
+			newPromoExpires = '';
+			await loadPromoCodes();
+		} catch (error: any) {
+			addToast('error', error.message || 'Failed to create promo code');
+		} finally {
+			isCreatingPromo = false;
+		}
+	}
+
+	async function togglePromoCode(code: PromoCode) {
+		try {
+			await api.patch(`/api/admin/promo-codes/${code.id}`, {
+				is_active: !code.isActive
+			});
+			addToast('success', `Promo code ${code.isActive ? 'deactivated' : 'activated'}`);
+			await loadPromoCodes();
+		} catch (error: any) {
+			addToast('error', error.message || 'Failed to update promo code');
+		}
+	}
+
+	// --- User credit functions ---
+	function startEditCredits(userItem: UserListItem) {
+		editingUserId = userItem.id;
+		editCreditValue = userItem.creditQuota ?? 0;
+	}
+
+	function cancelEditCredits() {
+		editingUserId = null;
+		editCreditValue = 0;
+	}
+
+	async function saveUserCredits(userItem: UserListItem) {
+		isSavingCredits = true;
+		try {
+			await api.patch(`/api/admin/users/${userItem.id}/credits?credits=${editCreditValue}`);
+			addToast('success', `Credits updated for ${userItem.email}`);
+			// Update local state
+			const idx = users.findIndex(u => u.id === userItem.id);
+			if (idx >= 0) {
+				users[idx] = { ...users[idx], creditQuota: editCreditValue };
+				users = users;
+			}
+			editingUserId = null;
+		} catch (error: any) {
+			addToast('error', error.message || 'Failed to update credits');
+		} finally {
+			isSavingCredits = false;
+		}
+	}
+
+	// --- Settings functions ---
+	async function loadSettings() {
+		isLoadingSettings = true;
+		try {
+			settings = await api.get<GlobalSettings>('/api/admin/settings');
+			settingsFreeTrialCredits = settings.freeTrialCredits;
+			settingsTrialDays = settings.trialDurationDays;
+		} catch (error: any) {
+			addToast('error', error.message || 'Failed to load settings');
+		} finally {
+			isLoadingSettings = false;
+		}
+	}
+
+	async function saveSettings(e: Event) {
+		e.preventDefault();
+		isSavingSettings = true;
+		try {
+			settings = await api.patch<GlobalSettings>('/api/admin/settings', {
+				free_trial_credits: settingsFreeTrialCredits,
+				trial_duration_days: settingsTrialDays
+			});
+			addToast('success', 'Settings saved');
+		} catch (error: any) {
+			addToast('error', error.message || 'Failed to save settings');
+		} finally {
+			isSavingSettings = false;
+		}
+	}
+
+	// --- Tab switching ---
+	function switchTab(tab: typeof selectedTab) {
+		selectedTab = tab;
+		if (tab === 'promo-codes' && promoCodes.length === 0) {
+			loadPromoCodes();
+		}
+		if (tab === 'settings' && !settings) {
+			loadSettings();
+		}
+	}
+
+	// --- Helpers ---
 	function formatNumber(num: number): string {
 		if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
 		if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
 		return num.toString();
 	}
 
-	function formatDate(dateStr: string): string {
+	function formatDate(dateStr: string | null): string {
+		if (!dateStr) return 'Never';
 		return new Date(dateStr).toLocaleDateString('en-US', {
 			month: 'short',
 			day: 'numeric',
 			year: 'numeric'
 		});
+	}
+
+	function formatDateTime(dateStr: string | null): string {
+		if (!dateStr) return 'Never';
+		return new Date(dateStr).toLocaleDateString('en-US', {
+			month: 'short',
+			day: 'numeric',
+			year: 'numeric',
+			hour: '2-digit',
+			minute: '2-digit'
+		});
+	}
+
+	function handlePromoCodeInput(e: Event) {
+		const target = e.target as HTMLInputElement;
+		newPromoCode = target.value.toUpperCase();
 	}
 </script>
 
@@ -94,17 +284,7 @@
 			{#if isRefreshing}
 				<Spinner size="sm" />
 			{:else}
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					width="16"
-					height="16"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-				>
+				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 					<path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
 					<path d="M3 3v5h5" />
 					<path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
@@ -117,30 +297,10 @@
 
 	<!-- Tabs -->
 	<div class="tabs">
-		<button
-			class="tab"
-			class:active={selectedTab === 'overview'}
-			on:click={() => (selectedTab = 'overview')}
-		>
-			Overview
-		</button>
-		<button
-			class="tab"
-			class:active={selectedTab === 'users'}
-			on:click={() => (selectedTab = 'users')}
-		>
-			Users
-		</button>
-		<button
-			class="tab"
-			class:active={selectedTab === 'analytics'}
-			on:click={() => (selectedTab = 'analytics')}
-		>
-			Analytics
-		</button>
-		<button class="tab" class:active={selectedTab === 'logs'} on:click={() => (selectedTab = 'logs')}>
-			Logs
-		</button>
+		<button class="tab" class:active={selectedTab === 'overview'} on:click={() => switchTab('overview')}>Overview</button>
+		<button class="tab" class:active={selectedTab === 'users'} on:click={() => switchTab('users')}>Users</button>
+		<button class="tab" class:active={selectedTab === 'promo-codes'} on:click={() => switchTab('promo-codes')}>Promo Codes</button>
+		<button class="tab" class:active={selectedTab === 'settings'} on:click={() => switchTab('settings')}>Settings</button>
 	</div>
 
 	{#if isLoading}
@@ -155,17 +315,7 @@
 				<Card variant="floating" padding="lg">
 					<div class="stat-card">
 						<div class="stat-icon users">
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								width="24"
-								height="24"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="2"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-							>
+							<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 								<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
 								<circle cx="9" cy="7" r="4" />
 								<path d="M22 21v-2a4 4 0 0 0-3-3.87" />
@@ -182,23 +332,13 @@
 				<Card variant="floating" padding="lg">
 					<div class="stat-card">
 						<div class="stat-icon active">
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								width="24"
-								height="24"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="2"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-							>
+							<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 								<path d="M22 12h-4l-3 9L9 3l-3 9H2" />
 							</svg>
 						</div>
 						<div class="stat-content">
-							<span class="stat-value">{formatNumber(stats?.activeUsers ?? 0)}</span>
-							<span class="stat-label">Active Users</span>
+							<span class="stat-value">{formatNumber(stats?.activeUsers30d ?? 0)}</span>
+							<span class="stat-label">Active (30d)</span>
 						</div>
 					</div>
 				</Card>
@@ -206,17 +346,7 @@
 				<Card variant="floating" padding="lg">
 					<div class="stat-card">
 						<div class="stat-icon conversations">
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								width="24"
-								height="24"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="2"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-							>
+							<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 								<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
 							</svg>
 						</div>
@@ -229,75 +359,46 @@
 
 				<Card variant="floating" padding="lg">
 					<div class="stat-card">
-						<div class="stat-icon messages">
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								width="24"
-								height="24"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="2"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-							>
-								<path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z" />
+						<div class="stat-icon sessions">
+							<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<rect width="18" height="18" x="3" y="3" rx="2" />
+								<path d="M3 9h18" />
+								<path d="M9 21V9" />
 							</svg>
 						</div>
 						<div class="stat-content">
-							<span class="stat-value">{formatNumber(stats?.totalMessages ?? 0)}</span>
-							<span class="stat-label">Messages</span>
+							<span class="stat-value">{formatNumber(stats?.totalSessions ?? 0)}</span>
+							<span class="stat-label">Sessions</span>
 						</div>
 					</div>
 				</Card>
 
 				<Card variant="floating" padding="lg">
 					<div class="stat-card">
-						<div class="stat-icon credits">
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								width="24"
-								height="24"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="2"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-							>
-								<circle cx="12" cy="12" r="10" />
-								<path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" />
-								<path d="M12 18V6" />
+						<div class="stat-icon orgs">
+							<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M18 21H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2z" />
+								<path d="m10 7 5 5-5 5" />
 							</svg>
 						</div>
 						<div class="stat-content">
-							<span class="stat-value">{formatNumber(stats?.creditsUsed ?? 0)}</span>
-							<span class="stat-label">Credits Used</span>
+							<span class="stat-value">{formatNumber(stats?.totalOrganizations ?? 0)}</span>
+							<span class="stat-label">Organizations</span>
 						</div>
 					</div>
 				</Card>
 
 				<Card variant="floating" padding="lg">
 					<div class="stat-card">
-						<div class="stat-icon revenue">
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								width="24"
-								height="24"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="2"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-							>
-								<line x1="12" x2="12" y1="2" y2="22" />
-								<path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+						<div class="stat-icon api-calls">
+							<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M3 3v18h18" />
+								<path d="m19 9-5 5-4-4-3 3" />
 							</svg>
 						</div>
 						<div class="stat-content">
-							<span class="stat-value">${formatNumber(stats?.revenue ?? 0)}</span>
-							<span class="stat-label">Revenue</span>
+							<span class="stat-value">{formatNumber(stats?.apiCallsToday ?? 0)}</span>
+							<span class="stat-label">API Calls Today</span>
 						</div>
 					</div>
 				</Card>
@@ -316,7 +417,7 @@
 									<th>Role</th>
 									<th>Credits</th>
 									<th>Joined</th>
-									<th>Last Active</th>
+									<th>Last Login</th>
 									<th>Actions</th>
 								</tr>
 							</thead>
@@ -326,7 +427,7 @@
 										<td>
 											<div class="user-cell">
 												<div class="user-avatar">
-													{userItem.name?.[0] || userItem.email[0]}
+													{(userItem.name?.[0] || userItem.email[0]).toUpperCase()}
 												</div>
 												<div class="user-info">
 													<span class="user-name">{userItem.name || 'No name'}</span>
@@ -335,24 +436,50 @@
 											</div>
 										</td>
 										<td>
-											<span class="role-badge" class:admin={userItem.role === 'ADMIN'}>
+											<span class="role-badge" class:admin={userItem.role === 'ADMIN' || userItem.role === 'SUPER_ADMIN'}>
 												{userItem.role}
 											</span>
 										</td>
-										<td>{userItem.credits}</td>
-										<td>{formatDate(userItem.createdAt)}</td>
-										<td>{formatDate(userItem.lastActive)}</td>
 										<td>
-											<Button variant="ghost" size="sm">Edit</Button>
+											{#if editingUserId === userItem.id}
+												<div class="credit-edit">
+													<input
+														type="number"
+														class="credit-input"
+														bind:value={editCreditValue}
+														min="0"
+														disabled={isSavingCredits}
+													/>
+													<button class="action-btn save" on:click={() => saveUserCredits(userItem)} disabled={isSavingCredits}>
+														{#if isSavingCredits}<Spinner size="sm" />{:else}Save{/if}
+													</button>
+													<button class="action-btn cancel" on:click={cancelEditCredits} disabled={isSavingCredits}>
+														Cancel
+													</button>
+												</div>
+											{:else}
+												<span class="credit-value" class:zero={userItem.creditQuota === 0}>
+													{userItem.creditQuota ?? 'N/A'}
+												</span>
+											{/if}
+										</td>
+										<td>{formatDate(userItem.createdAt)}</td>
+										<td>{formatDate(userItem.lastLoginAt)}</td>
+										<td>
+											{#if editingUserId !== userItem.id}
+												<Button variant="ghost" size="sm" on:click={() => startEditCredits(userItem)}>
+													Edit Credits
+												</Button>
+											{/if}
 										</td>
 									</tr>
 								{:else}
-								<tr>
-									<td colspan="6" class="empty-state">
-										<p>No users found</p>
-									</td>
-								</tr>
-							{/each}
+									<tr>
+										<td colspan="6" class="empty-state">
+											<p>No users found</p>
+										</td>
+									</tr>
+								{/each}
 							</tbody>
 						</table>
 					</div>
@@ -360,58 +487,182 @@
 			</div>
 		{/if}
 
-		<!-- Analytics Tab -->
-		{#if selectedTab === 'analytics'}
-			<div class="analytics-placeholder">
+		<!-- Promo Codes Tab -->
+		{#if selectedTab === 'promo-codes'}
+			<div class="promo-section">
+				<!-- Create promo code form -->
 				<Card variant="floating" padding="lg">
-					<div class="placeholder-content">
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							width="48"
-							height="48"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="1.5"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-						>
-							<path d="M3 3v18h18" />
-							<path d="m19 9-5 5-4-4-3 3" />
-						</svg>
-						<h3>Analytics Coming Soon</h3>
-						<p>Detailed usage analytics and charts will be available here.</p>
-					</div>
+					<h3 class="section-title">Create Promo Code</h3>
+					<form on:submit={createPromoCode} class="promo-form">
+						<div class="form-grid">
+							<div class="form-group">
+								<label for="promoCode">Code</label>
+								<input
+									id="promoCode"
+									type="text"
+									value={newPromoCode}
+									on:input={handlePromoCodeInput}
+									placeholder="WELCOME100"
+									disabled={isCreatingPromo}
+									autocomplete="off"
+								/>
+							</div>
+							<div class="form-group">
+								<label for="promoCredits">Credits</label>
+								<input
+									id="promoCredits"
+									type="number"
+									bind:value={newPromoCredits}
+									min="1"
+									placeholder="100"
+									disabled={isCreatingPromo}
+								/>
+							</div>
+							<div class="form-group">
+								<label for="promoMaxUses">Max Uses</label>
+								<input
+									id="promoMaxUses"
+									type="number"
+									bind:value={newPromoMaxUses}
+									min="1"
+									placeholder="1"
+									disabled={isCreatingPromo}
+								/>
+							</div>
+							<div class="form-group">
+								<label for="promoExpires">Expires (optional)</label>
+								<input
+									id="promoExpires"
+									type="date"
+									bind:value={newPromoExpires}
+									disabled={isCreatingPromo}
+								/>
+							</div>
+						</div>
+						<div class="form-actions">
+							<Button variant="primary" type="submit" loading={isCreatingPromo} disabled={!newPromoCode.trim() || newPromoCredits <= 0}>
+								Create Promo Code
+							</Button>
+						</div>
+					</form>
 				</Card>
+
+				<!-- Promo code list -->
+				<div class="promo-list-header">
+					<h3 class="section-title">Existing Promo Codes</h3>
+					<Button variant="ghost" size="sm" on:click={loadPromoCodes} disabled={isLoadingPromos}>
+						Refresh
+					</Button>
+				</div>
+
+				{#if isLoadingPromos}
+					<div class="loading-state small">
+						<Spinner size="md" />
+					</div>
+				{:else}
+					<Card variant="default" padding="none">
+						<div class="table-container">
+							<table class="promo-table">
+								<thead>
+									<tr>
+										<th>Code</th>
+										<th>Credits</th>
+										<th>Uses</th>
+										<th>Created</th>
+										<th>Expires</th>
+										<th>Status</th>
+										<th>Actions</th>
+									</tr>
+								</thead>
+								<tbody>
+									{#each promoCodes as code (code.id)}
+										<tr class:inactive={!code.isActive}>
+											<td><span class="code-text">{code.code}</span></td>
+											<td><span class="credit-badge">+{code.credits}</span></td>
+											<td>{code.usedCount} / {code.maxUses}</td>
+											<td>{formatDate(code.createdAt)}</td>
+											<td>{code.expiresAt ? formatDate(code.expiresAt) : 'Never'}</td>
+											<td>
+												<span class="status-badge" class:active={code.isActive} class:disabled={!code.isActive}>
+													{code.isActive ? 'Active' : 'Inactive'}
+												</span>
+											</td>
+											<td>
+												<Button
+													variant={code.isActive ? 'ghost' : 'outline'}
+													size="sm"
+													on:click={() => togglePromoCode(code)}
+												>
+													{code.isActive ? 'Deactivate' : 'Activate'}
+												</Button>
+											</td>
+										</tr>
+									{:else}
+										<tr>
+											<td colspan="7" class="empty-state">
+												<p>No promo codes yet. Create one above.</p>
+											</td>
+										</tr>
+									{/each}
+								</tbody>
+							</table>
+						</div>
+					</Card>
+				{/if}
 			</div>
 		{/if}
 
-		<!-- Logs Tab -->
-		{#if selectedTab === 'logs'}
-			<div class="logs-placeholder">
-				<Card variant="floating" padding="lg">
-					<div class="placeholder-content">
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							width="48"
-							height="48"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="1.5"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-						>
-							<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
-							<polyline points="14 2 14 8 20 8" />
-							<line x1="16" x2="8" y1="13" y2="13" />
-							<line x1="16" x2="8" y1="17" y2="17" />
-							<line x1="10" x2="8" y1="9" y2="9" />
-						</svg>
-						<h3>System Logs</h3>
-						<p>View system logs and error reports here.</p>
+		<!-- Settings Tab -->
+		{#if selectedTab === 'settings'}
+			<div class="settings-section">
+				{#if isLoadingSettings}
+					<div class="loading-state small">
+						<Spinner size="md" />
 					</div>
-				</Card>
+				{:else}
+					<Card variant="floating" padding="lg">
+						<h3 class="section-title">Global Settings</h3>
+						<form on:submit={saveSettings} class="settings-form">
+							<div class="form-grid two-col">
+								<div class="form-group">
+									<label for="freeTrialCredits">Free Trial Credits</label>
+									<input
+										id="freeTrialCredits"
+										type="number"
+										bind:value={settingsFreeTrialCredits}
+										min="0"
+										disabled={isSavingSettings}
+									/>
+									<span class="form-hint">Credits given to new users on registration</span>
+								</div>
+								<div class="form-group">
+									<label for="trialDays">Trial Duration (days)</label>
+									<input
+										id="trialDays"
+										type="number"
+										bind:value={settingsTrialDays}
+										min="1"
+										disabled={isSavingSettings}
+									/>
+									<span class="form-hint">How long the free trial period lasts</span>
+								</div>
+							</div>
+							{#if settings}
+								<div class="settings-meta">
+									<span>Last updated: {formatDateTime(settings.updatedAt)}</span>
+									{#if settings.updatedBy}
+										<span>by {settings.updatedBy}</span>
+									{/if}
+								</div>
+							{/if}
+							<div class="form-actions">
+								<Button variant="primary" type="submit" loading={isSavingSettings}>
+									Save Settings
+								</Button>
+							</div>
+						</form>
+					</Card>
+				{/if}
 			</div>
 		{/if}
 	{/if}
@@ -442,6 +693,7 @@
 		color: var(--color-text-whisper);
 	}
 
+	/* Tabs */
 	.tabs {
 		display: flex;
 		gap: 0.25rem;
@@ -474,6 +726,7 @@
 		box-shadow: var(--shadow-sm);
 	}
 
+	/* Loading states */
 	.loading-state {
 		display: flex;
 		flex-direction: column;
@@ -484,9 +737,14 @@
 		color: var(--color-text-whisper);
 	}
 
+	.loading-state.small {
+		padding: 2rem;
+	}
+
+	/* Stats grid */
 	.stats-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+		grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 		gap: 1rem;
 	}
 
@@ -506,35 +764,12 @@
 		flex-shrink: 0;
 	}
 
-	.stat-icon.users {
-		background: var(--color-primary-100);
-		color: var(--color-primary-600);
-	}
-
-	.stat-icon.active {
-		background: #d1fae5;
-		color: #059669;
-	}
-
-	.stat-icon.conversations {
-		background: rgba(6, 182, 212, 0.1);
-		color: #0891b2;
-	}
-
-	.stat-icon.messages {
-		background: #fce7f3;
-		color: #db2777;
-	}
-
-	.stat-icon.credits {
-		background: #fef3c7;
-		color: #d97706;
-	}
-
-	.stat-icon.revenue {
-		background: #d1fae5;
-		color: #059669;
-	}
+	.stat-icon.users { background: var(--color-primary-100); color: var(--color-primary-600); }
+	.stat-icon.active { background: #d1fae5; color: #059669; }
+	.stat-icon.conversations { background: rgba(6, 182, 212, 0.1); color: #0891b2; }
+	.stat-icon.sessions { background: #fce7f3; color: #db2777; }
+	.stat-icon.orgs { background: #fef3c7; color: #d97706; }
+	.stat-icon.api-calls { background: #ede9fe; color: #7c3aed; }
 
 	.stat-content {
 		display: flex;
@@ -552,23 +787,28 @@
 		color: var(--color-text-whisper);
 	}
 
+	/* Tables shared */
 	.table-container {
 		overflow-x: auto;
 	}
 
-	.users-table {
+	.users-table,
+	.promo-table {
 		width: 100%;
 		border-collapse: collapse;
 	}
 
 	.users-table th,
-	.users-table td {
-		padding: 1rem;
+	.users-table td,
+	.promo-table th,
+	.promo-table td {
+		padding: 0.875rem 1rem;
 		text-align: left;
 		border-bottom: 1px solid var(--color-veil-thin);
 	}
 
-	.users-table th {
+	.users-table th,
+	.promo-table th {
 		font-size: 0.75rem;
 		font-weight: 600;
 		text-transform: uppercase;
@@ -577,6 +817,7 @@
 		background: var(--color-field-depth);
 	}
 
+	/* User cells */
 	.user-cell {
 		display: flex;
 		align-items: center;
@@ -625,6 +866,198 @@
 		color: var(--color-primary-700);
 	}
 
+	/* Credit editing */
+	.credit-value {
+		font-weight: 500;
+		color: var(--color-text-manifest);
+	}
+
+	.credit-value.zero {
+		color: var(--color-error-500, #ef4444);
+	}
+
+	.credit-edit {
+		display: flex;
+		align-items: center;
+		gap: 0.375rem;
+	}
+
+	.credit-input {
+		width: 80px;
+		padding: 0.375rem 0.5rem;
+		font-size: 0.875rem;
+		border: 1px solid var(--color-veil-thin);
+		border-radius: 0.375rem;
+		background: var(--color-field-void);
+		color: var(--color-text-source);
+	}
+
+	.credit-input:focus {
+		outline: none;
+		border-color: var(--color-primary-400);
+	}
+
+	.action-btn {
+		padding: 0.25rem 0.5rem;
+		font-size: 0.75rem;
+		font-weight: 500;
+		border: none;
+		border-radius: 0.375rem;
+		cursor: pointer;
+		white-space: nowrap;
+	}
+
+	.action-btn.save {
+		background: var(--color-primary-500);
+		color: white;
+	}
+
+	.action-btn.save:hover:not(:disabled) {
+		background: var(--color-primary-600);
+	}
+
+	.action-btn.cancel {
+		background: var(--color-field-depth);
+		color: var(--color-text-manifest);
+	}
+
+	.action-btn.cancel:hover:not(:disabled) {
+		background: var(--color-field-elevated);
+	}
+
+	.action-btn:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	/* Promo codes section */
+	.promo-section {
+		display: flex;
+		flex-direction: column;
+		gap: 1.5rem;
+	}
+
+	.section-title {
+		font-size: 1rem;
+		font-weight: 600;
+		color: var(--color-text-source);
+		margin-bottom: 1rem;
+	}
+
+	.promo-list-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+
+	.promo-list-header .section-title {
+		margin-bottom: 0;
+	}
+
+	.promo-form .form-grid,
+	.settings-form .form-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+		gap: 1rem;
+		margin-bottom: 1rem;
+	}
+
+	.settings-form .form-grid.two-col {
+		grid-template-columns: repeat(2, 1fr);
+	}
+
+	.form-group {
+		display: flex;
+		flex-direction: column;
+		gap: 0.375rem;
+	}
+
+	.form-group label {
+		font-size: 0.8125rem;
+		font-weight: 500;
+		color: var(--color-text-manifest);
+	}
+
+	.form-group input {
+		padding: 0.625rem 0.75rem;
+		font-size: 0.875rem;
+		border: 1px solid var(--color-veil-thin);
+		border-radius: 0.5rem;
+		background: var(--color-field-void);
+		color: var(--color-text-source);
+	}
+
+	.form-group input::placeholder {
+		color: var(--color-text-hint);
+	}
+
+	.form-group input:focus {
+		outline: none;
+		border-color: var(--color-primary-400);
+	}
+
+	.form-group input:disabled {
+		opacity: 0.6;
+	}
+
+	.form-hint {
+		font-size: 0.75rem;
+		color: var(--color-text-hint);
+	}
+
+	.form-actions {
+		display: flex;
+		justify-content: flex-end;
+	}
+
+	/* Promo table specific */
+	.code-text {
+		font-family: monospace;
+		font-weight: 600;
+		color: var(--color-text-source);
+		letter-spacing: 0.025em;
+	}
+
+	.credit-badge {
+		font-weight: 600;
+		color: var(--color-success-500, #22c55e);
+	}
+
+	.status-badge {
+		padding: 0.25rem 0.625rem;
+		border-radius: 9999px;
+		font-size: 0.75rem;
+		font-weight: 500;
+	}
+
+	.status-badge.active {
+		background: rgba(34, 197, 94, 0.1);
+		color: #16a34a;
+	}
+
+	.status-badge.disabled {
+		background: rgba(239, 68, 68, 0.1);
+		color: #dc2626;
+	}
+
+	tr.inactive {
+		opacity: 0.6;
+	}
+
+	/* Settings section */
+	.settings-section {
+		max-width: 600px;
+	}
+
+	.settings-meta {
+		display: flex;
+		gap: 0.5rem;
+		font-size: 0.75rem;
+		color: var(--color-text-hint);
+		margin-bottom: 1rem;
+	}
+
+	/* Empty state */
 	.empty-state {
 		text-align: center;
 		padding: 3rem 1rem;
@@ -633,31 +1066,6 @@
 
 	.empty-state p {
 		font-size: 0.875rem;
-	}
-
-	.placeholder-content {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		text-align: center;
-		padding: 3rem;
-		color: var(--color-text-whisper);
-	}
-
-	.placeholder-content svg {
-		margin-bottom: 1rem;
-		opacity: 0.5;
-	}
-
-	.placeholder-content h3 {
-		font-size: 1.125rem;
-		font-weight: 600;
-		color: var(--color-text-source);
-		margin-bottom: 0.5rem;
-	}
-
-	.placeholder-content p {
-		max-width: 300px;
 	}
 
 	/* Mobile responsive */
@@ -674,6 +1082,14 @@
 		.tabs {
 			width: 100%;
 			overflow-x: auto;
+		}
+
+		.settings-form .form-grid.two-col {
+			grid-template-columns: 1fr;
+		}
+
+		.credit-edit {
+			flex-wrap: wrap;
 		}
 	}
 </style>
