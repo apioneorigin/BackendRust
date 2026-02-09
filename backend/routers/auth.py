@@ -58,6 +58,7 @@ class UserResponse(BaseModel):
     organization_id: str
     credits_enabled: bool
     credit_quota: Optional[int]
+    isGlobalAdmin: bool = False
 
 
 def _hash_password_sync(password: str) -> str:
@@ -272,6 +273,7 @@ async def login(
 
     await db.commit()
 
+    from database.models.enums import is_super_admin
     return TokenResponse(
         token=token,
         user={
@@ -280,6 +282,9 @@ async def login(
             "name": user.name,
             "role": user.role.value,
             "organization_id": user.organization_id,
+            "credits_enabled": user.credits_enabled,
+            "credit_quota": user.credit_quota,
+            "isGlobalAdmin": is_super_admin(user),
         }
     )
 
@@ -307,6 +312,7 @@ async def get_me(
     current_user: User = Depends(get_current_user)
 ):
     """Get current user info."""
+    from database.models.enums import is_super_admin
     return UserResponse(
         id=current_user.id,
         email=current_user.email,
@@ -315,6 +321,7 @@ async def get_me(
         organization_id=current_user.organization_id,
         credits_enabled=current_user.credits_enabled,
         credit_quota=current_user.credit_quota,
+        isGlobalAdmin=is_super_admin(current_user),
     )
 
 
