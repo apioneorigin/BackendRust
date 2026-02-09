@@ -22,16 +22,16 @@ alerts:
 ingress:
   rules:
     - component:
-        name: frontend
-      match:
-        path:
-          prefix: /
-
-    - component:
         name: backend
       match:
         path:
           prefix: /api
+
+    - component:
+        name: frontend
+      match:
+        path:
+          prefix: /
 
 # =============================================================================
 # Services

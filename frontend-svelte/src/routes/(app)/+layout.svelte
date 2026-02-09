@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto, beforeNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { theme, addToast, chat, conversations, currentConversation, messages, llmBusy } from '$lib/stores';
+	import { auth, theme, addToast, chat, conversations, currentConversation, messages, llmBusy } from '$lib/stores';
 	import { ConfirmDialog } from '$lib/components/ui';
 	import type { LayoutData } from './$types';
 
@@ -11,7 +11,10 @@
 	// User guaranteed by hooks.server.ts guard
 	$: user = data.user;
 
-	// Store is initialized from SSR data in +layout.ts before this component renders
+	// Hydrate auth store with organization data (user already set by root layout)
+	$: if (data.organization) {
+		auth.setFromServer(data.user as any, data.organization as any);
+	}
 
 	let mobileMenuOpen = false;
 	let userMenuOpen = false;

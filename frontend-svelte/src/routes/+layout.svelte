@@ -2,9 +2,15 @@
 	import { onMount } from 'svelte';
 	import { auth, theme } from '$lib/stores';
 	import { ToastContainer } from '$lib/components/ui';
+	import type { LayoutData } from './$types';
 	import '../styles/globals.css';
 
-	export let params: Record<string, string> = {};
+	export let data: LayoutData;
+
+	// Hydrate auth store from server data (avoids client-side /api/auth/me call)
+	$: if (data.user) {
+		auth.setFromServer(data.user as any);
+	}
 
 	// Initialize theme on mount
 	onMount(() => {
@@ -17,9 +23,6 @@
 		} else {
 			theme.setLight();
 		}
-
-		// Try to load user on mount
-		auth.loadUser();
 
 		// Listen for system theme changes
 		const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');

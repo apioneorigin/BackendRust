@@ -1,41 +1,27 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { auth, credits, creditBalance } from '$lib/stores';
+	import { user } from '$lib/stores';
+	import type { PageData } from './$types';
 
-	export let params: Record<string, string> = {};
-
-	// Super admin bypasses credit check
-	const SUPER_ADMIN_EMAIL = 'raghavan.vinod@gmail.com';
+	export let data: PageData;
 
 	let loadError = '';
 
 	onMount(async () => {
 		try {
-			// Try to load user, redirect based on auth status
-			const user = await auth.loadUser();
+			// User data comes from server (hooks.server.ts → layout.server.ts)
+			// No client-side API call needed
+			const userData = data.user || $user;
 
-			if (!user) {
+			if (!userData) {
 				goto('/login');
 				return;
 			}
 
-			// Super admin bypasses credit check
-			if (user.email === SUPER_ADMIN_EMAIL) {
-				goto('/chat');
-				return;
-			}
-
-			// User is authenticated - check credits
-			await credits.loadBalance();
-
-			// If user has no credits, redirect to add-credits page
-			if (!$creditBalance?.creditQuota || $creditBalance.creditQuota < 1) {
-				goto('/add-credits');
-			} else {
-				// User has credits, go to chat
-				goto('/chat');
-			}
+			// hooks.server.ts already redirects 0-credit users to /add-credits
+			// Just send authenticated users to chat
+			goto('/chat');
 		} catch (error: any) {
 			loadError = error.message || 'Failed to load. Please check your connection.';
 		}
