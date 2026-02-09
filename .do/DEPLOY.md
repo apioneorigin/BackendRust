@@ -1,157 +1,100 @@
-# Deploy to DigitalOcean App Platform
+# Deploy Backend Only to DigitalOcean App Platform
 
-## Quick Start - Create New App
+## 1. Create Databases
 
-### 1. Generate New JWT Secret
+### PostgreSQL
 
-```bash
-openssl rand -hex 32
+1. **DO Console** -> **Databases** -> **Create Database Cluster**
+2. Engine: **PostgreSQL 16**
+3. Region: **NYC** (same as app)
+4. Plan: Basic ($15/mo) or whatever fits your needs
+5. Wait for status: **Online**
+6. Copy the **connection string** from Connection Details
+
+### Redis / Valkey (optional)
+
+1. **DO Console** -> **Databases** -> **Create Database Cluster**
+2. Engine: **Redis** (or Valkey)
+3. Region: **NYC**
+4. Plan: Basic ($15/mo)
+5. Copy the **connection string** from Connection Details
+
+## 2. Create the App
+
+1. **DO Console** -> **Apps** -> **Create App**
+2. Source: **GitHub** -> select `apioneorigin/BackendRust`, branch `main`
+3. Click **Edit App Spec** and paste the contents of `.do/app.yaml`
+4. Save and proceed
+
+## 3. Set Secret Environment Variables
+
+Go to **Settings** -> **backend** component -> **Environment Variables** and set:
+
+| Variable | Value | Notes |
+|----------|-------|-------|
+| `OPENAI_API_KEY` | your key | from platform.openai.com |
+| `ANTHROPIC_API_KEY` | your key | from console.anthropic.com |
+| `JWT_SECRET` | `openssl rand -hex 32` | generate fresh |
+| `DATABASE_URL` | connection string | from step 1 |
+| `REDIS_URL` | connection string | from step 1 (optional) |
+
+All are marked `type: SECRET` so they won't appear in logs.
+
+### Database URL format
+
+```
+postgresql://user:password@host:25060/defaultdb?sslmode=require
 ```
 
-Copy the output - you'll need it for step 3.
+Use the **public** hostname initially. Switch to `private-` prefix later for faster VPC networking.
 
-### 2. Get New API Keys
+### Redis URL format
 
-Get fresh API keys (revoke any exposed ones):
-- **OpenAI**: https://platform.openai.com/api-keys
-- **Anthropic**: https://console.anthropic.com/settings/keys
-
-### 3. Update app-with-credentials.yaml
-
-Edit `.do/app-with-credentials.yaml` and replace these values:
-
-```yaml
-OPENAI_API_KEY: YOUR_NEW_OPENAI_KEY_HERE
-ANTHROPIC_API_KEY: YOUR_NEW_ANTHROPIC_KEY_HERE
-JWT_SECRET: YOUR_NEW_JWT_SECRET_HERE
+```
+rediss://default:password@host:25061
 ```
 
-**Database credentials are already set** with your new databases:
-- PostgreSQL: `db-postgresql-nyc1-83404`
-- Redis: `db-valkey-nyc1-88974`
+Note the double `s` in `rediss://` -- this means TLS.
 
-### 4. Create App in DigitalOcean
+## 4. Deploy
 
-1. Go to **DigitalOcean Console** → **Apps**
-2. Click **Create App**
-3. Choose **GitHub** as source
-4. Select repository: `apioneorigin/BackendRust`
-5. Select branch: `main`
-6. Click **Next**
-7. On the "Configure" screen, click **Edit App Spec**
-8. Delete the auto-generated spec
-9. Copy the ENTIRE contents of `.do/app-with-credentials.yaml`
-10. Paste into the editor
-11. Click **Save**
-12. Review the configuration
-13. Click **Next** → **Create Resources**
+Save the environment variables. The app will build and deploy automatically.
 
-### 5. Wait for Deployment
+### Verify
 
-The app will:
-- ✅ Build from your Dockerfile
-- ✅ Connect to PostgreSQL (public hostname)
-- ✅ Connect to Redis (public hostname)
-- ✅ Deploy to 2 instances (for high availability)
+Check **Runtime Logs** for:
 
-Check the **Runtime Logs** for:
 ```
-[Database] Using PostgreSQL: db-postgresql-nyc1-83404...
+[Database] Using PostgreSQL: your-host...
 Database initialized
-✓ Application startup complete
+INFO: Uvicorn running on http://0.0.0.0:8000
 ```
 
-### 6. Verify It's Working
+Test the health endpoint:
 
-Once deployed, visit your app URL and check:
-- App loads successfully
-- No timeout errors
-- Database connections work
+```
+curl https://your-app.ondigitalocean.app/health
+```
 
-## Configuration Details
+## 5. Post-Deploy
 
-### Current Setup
-
-- **PostgreSQL**: `db-postgresql-nyc1-83404` (Public hostname)
-- **Redis**: `db-valkey-nyc1-88974` (Public hostname)
-- **Instances**: 2x apps-s-1vcpu-1gb (1GB RAM, 1 vCPU each)
-- **Region**: NYC1
-- **Auto-deploy**: Enabled on `main` branch
-
-### Why Public Hostnames?
-
-Using public database hostnames (without `private-` prefix) ensures:
-- ✅ No VPC timeout issues
-- ✅ Immediate connectivity
-- ✅ Works even if VPC isn't fully provisioned
-
-You can switch to VPC private hostnames later for:
-- Faster performance (< 1ms latency)
-- Better security (private network)
-- No bandwidth charges
-
-### Switching to VPC Later
-
-Once databases are fully provisioned (~30 minutes):
-
-1. Update environment variables to use `private-` hostnames:
-   ```
-   postgresql://...@private-db-postgresql-nyc1-83404...
-   rediss://...@private-db-valkey-nyc1-88974...
-   ```
-2. Save and redeploy
-3. Verify connection in logs
+- **Custom domain**: Settings -> Domains -> Add Domain
+- **VPC networking**: Once databases are fully provisioned, switch to `private-` hostnames for lower latency
+- **Scaling**: Increase `instance_count` in app spec if needed (keep single uvicorn process per instance)
 
 ## Troubleshooting
 
-### If deployment fails:
-
-1. **Check Runtime Logs**: Apps → Your app → Runtime Logs
-2. **Look for errors**: Authentication, timeout, or connection errors
-3. **Verify database status**: Databases → Check both are "Online"
-4. **Check Trusted Sources**: Databases → Settings → Trusted Sources
-   - Your app should be listed
-   - Or set to "All sources" for testing
-
-### Common Issues:
-
-| Issue | Solution |
-|-------|----------|
-| Timeout errors | Databases still provisioning - wait 5-10 min |
-| Auth failures | Double-check passwords in app spec |
-| Connection refused | Check Trusted Sources settings |
-| Build failures | Check Dockerfile and dependencies |
-
-## Security Checklist
-
-Before going live:
-
-- [ ] New JWT_SECRET generated
-- [ ] New OpenAI API key
-- [ ] New Anthropic API key
-- [ ] All old credentials revoked
-- [ ] `app-with-credentials.yaml` NOT committed to git
-- [ ] Environment variables set with `type: SECRET`
-- [ ] Databases have Trusted Sources configured
-- [ ] HTTPS enabled (automatic with DO App Platform)
+| Symptom | Fix |
+|---------|-----|
+| Build fails | Check Dockerfile builds locally: `docker build -t test .` |
+| Health check fails | Verify `/health` endpoint returns 200. Check runtime logs |
+| DB connection refused | Ensure database is Online and Trusted Sources includes your app |
+| DB auth failure | Re-copy connection string from DO Console (passwords rotate) |
+| Timeout on startup | Increase `initial_delay_seconds` in health check |
 
 ## Cost Estimate
 
-Current configuration:
-- App Platform: 2x apps-s-1vcpu-1gb = ~$24/month
-- PostgreSQL: Basic plan = ~$15/month
-- Redis: Basic plan = ~$15/month
-- **Total**: ~$54/month
-
-## Next Steps After Deployment
-
-1. ✅ Verify app is running
-2. ✅ Test database connections
-3. ✅ Monitor logs for errors
-4. ⏳ Wait 30-60 min, then switch to VPC hostnames
-5. 🔒 Set up custom domain with SSL
-6. 📊 Configure monitoring and alerts
-
----
-
-**Need help?** Check `README.md` or `DATABASE_FIX.md` for detailed troubleshooting.
+- App Platform 1x 1vCPU/1GB: ~$12/mo
+- PostgreSQL Basic: ~$15/mo
+- Redis Basic: ~$15/mo
+- **Total**: ~$42/mo

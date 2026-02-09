@@ -1,190 +1,116 @@
-# Deploy Full Stack App (Frontend + Backend)
+# Deploy Full Stack to DigitalOcean App Platform
 
-## Overview
-
-This configuration deploys:
-- **Frontend**: SvelteKit app on port 3000
-- **Backend**: FastAPI API on port 8000
-- **Databases**: PostgreSQL + Redis
-
-## Routing
+Deploys both the SvelteKit frontend and FastAPI backend as a single DO app.
 
 ```
-https://your-app.ondigitalocean.app/          → Frontend (SvelteKit)
-https://your-app.ondigitalocean.app/api/      → Backend (FastAPI)
+https://your-app.ondigitalocean.app/        -> Frontend (SvelteKit)
+https://your-app.ondigitalocean.app/api/*   -> Backend  (FastAPI)
 ```
 
-## Quick Deploy
+## 1. Create Databases
 
-### 1. Update App Spec in DigitalOcean
+### PostgreSQL
 
-1. Go to **DigitalOcean Console** → **Apps** → Your app
-2. Click **Settings** → **App Spec**
-3. Click **Edit**
-4. Copy the contents of `.do/app-fullstack.yaml`
-5. Paste and **Save**
+1. **DO Console** -> **Databases** -> **Create Database Cluster**
+2. Engine: **PostgreSQL 16**, Region: **NYC**, Plan: Basic
+3. Wait for **Online** status
+4. Copy the **connection string**
 
-### 2. Set Environment Variables
+### Redis / Valkey (optional)
 
-Go to **Settings** → **Environment Variables** and set these for the **backend** service:
+1. **DO Console** -> **Databases** -> **Create Database Cluster**
+2. Engine: **Redis/Valkey**, Region: **NYC**, Plan: Basic
+3. Copy the **connection string**
 
-```
-OPENAI_API_KEY = your-new-openai-key
-ANTHROPIC_API_KEY = your-new-anthropic-key
-JWT_SECRET = (from: openssl rand -hex 32)
-DATABASE_URL = postgresql://doadmin:YOUR_PASSWORD@db-postgresql-nyc1-83404-do-user-33112092-0.m.db.ondigitalocean.com:25060/defaultdb?sslmode=require
-REDIS_URL = rediss://default:YOUR_PASSWORD@db-valkey-nyc1-88974-do-user-33112092-0.m.db.ondigitalocean.com:25061
-```
+## 2. Create the App
 
-**Note:** Frontend environment variables are auto-generated using `${backend.PUBLIC_URL}` references.
+1. **DO Console** -> **Apps** -> **Create App**
+2. Source: **GitHub** -> `apioneorigin/BackendRust`, branch `main`
+3. Click **Edit App Spec** and paste the contents of `.do/app-fullstack.yaml`
+4. Save and proceed
 
-### 3. Deploy
+## 3. Set Secret Environment Variables
 
-Click **Deploy** and wait for both services to build.
+Go to **Settings** -> **backend** component -> **Environment Variables** and set:
 
-## What Gets Deployed
+| Variable | Value |
+|----------|-------|
+| `OPENAI_API_KEY` | your OpenAI key |
+| `ANTHROPIC_API_KEY` | your Anthropic key |
+| `JWT_SECRET` | output of `openssl rand -hex 32` |
+| `DATABASE_URL` | `postgresql://user:pass@host:25060/defaultdb?sslmode=require` |
+| `REDIS_URL` | `rediss://default:pass@host:25061` |
 
-### Frontend Service
+Frontend env vars (`BACKEND_URL`, `PUBLIC_API_URL`, `ORIGIN`) are auto-wired via `${APP_URL}` and `${backend.PRIVATE_URL}` references in the spec.
 
-- **Name**: `frontend`
-- **Port**: 3000
-- **Build**: Multi-stage Docker build (Node.js)
-- **Source**: `/frontend-svelte` directory
-- **Instances**: 1x 0.5GB RAM
+## 4. Deploy and Verify
 
-**Environment Variables (Auto-set):**
-- `BACKEND_URL`: Internal backend URL for server-side calls
-- `PUBLIC_API_URL`: Public API URL for browser calls
-- `ORIGIN`: Frontend public URL
-- `NODE_ENV`: production
+Save variables. Both services build and deploy automatically.
 
-### Backend Service
+### Check logs
 
-- **Name**: `backend`
-- **Port**: 8000
-- **Build**: Dockerfile (Python/FastAPI)
-- **Source**: `/` (root directory)
-- **Route**: `/api` prefix
-- **Instances**: 2x 1GB RAM (HA)
-
-**Environment Variables:**
-- API keys and secrets (set manually)
-- Database connections
-- CORS origins (auto-set to frontend URL)
-
-## Verify Deployment
-
-### Check Logs
-
-**Frontend logs:**
+**Frontend** should show:
 ```
 Listening on 0.0.0.0:3000
 ```
 
-**Backend logs:**
+**Backend** should show:
 ```
-[Database] Using PostgreSQL: db-postgresql-nyc1-83404...
-Database initialized
+[Database] Using PostgreSQL: ...
 INFO: Uvicorn running on http://0.0.0.0:8000
 ```
 
-### Test Routes
+### Test endpoints
 
-1. **Frontend**: Visit `https://your-app.ondigitalocean.app/`
-   - Should show your SvelteKit UI
+```bash
+# Frontend
+curl -I https://your-app.ondigitalocean.app/
 
-2. **Backend API**: Visit `https://your-app.ondigitalocean.app/api/health/`
-   - Should return JSON: `{"status": "ok", "app": "Reality Transformer API"}`
-
-3. **Frontend → Backend**: Use your app
-   - Frontend should successfully call backend API
+# Backend health
+curl https://your-app.ondigitalocean.app/api/health/
+```
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────┐
-│          DigitalOcean App Platform          │
-├─────────────────────────────────────────────┤
-│                                             │
-│  ┌──────────────┐      ┌──────────────┐    │
-│  │   Frontend   │      │   Backend    │    │
-│  │  (SvelteKit) │─────→│   (FastAPI)  │    │
-│  │  Port 3000   │      │  Port 8000   │    │
-│  └──────────────┘      └───────┬──────┘    │
-│         │                      │            │
-│         │                      ├───→ PostgreSQL
-│         │                      └───→ Redis
-│         ↓                                   │
-│    User Browser                             │
-└─────────────────────────────────────────────┘
+                    DO App Platform
+   ┌─────────────────────────────────────────┐
+   │              Ingress Router              │
+   │   /  -> frontend    /api -> backend     │
+   ├──────────────┬──────────────────────────┤
+   │  Frontend    │    Backend               │
+   │  SvelteKit   │    FastAPI               │
+   │  :3000       │    :8000                 │
+   │  0.5GB       │    1GB                   │
+   └──────────────┴───────┬──────────────────┘
+                          │
+                  ┌───────┴───────┐
+                  │  PostgreSQL   │
+                  │  Redis        │
+                  └───────────────┘
 ```
 
-## Routing Details
+## 5. Post-Deploy
 
-DigitalOcean's ingress handles routing:
-
-1. Request to `/` → Routed to `frontend` service
-2. Request to `/api/*` → Routed to `backend` service
-3. Request to `/about` → Routed to `frontend` service (SvelteKit routing)
-
-## Cost Estimate
-
-- Frontend: 1x apps-s-1vcpu-0.5gb = ~$5/month
-- Backend: 2x apps-s-1vcpu-1gb = ~$24/month
-- PostgreSQL: Basic = ~$15/month
-- Redis: Basic = ~$15/month
-- **Total**: ~$59/month
+- **Custom domain**: Settings -> Domains
+- **VPC**: Switch DB hostnames to `private-` prefix once provisioned
+- **Scale backend**: Increase `instance_count` in app spec
+- **Scale frontend**: Usually 1 instance is fine; add more if needed
 
 ## Troubleshooting
 
-### Frontend Can't Connect to Backend
+| Symptom | Fix |
+|---------|-----|
+| Frontend can't reach backend | Check `BACKEND_URL` in frontend env vars |
+| CORS errors in browser | Verify `CORS_ORIGINS` matches `${APP_URL}` |
+| API returns 404 | Ensure ingress routes `/api` to backend component |
+| Build fails (frontend) | Check `npm run build` locally in `frontend-svelte/` |
+| Build fails (backend) | Check `docker build -t test .` locally from repo root |
 
-**Check CORS configuration:**
-- Backend should have `CORS_ORIGINS` set to frontend URL
-- This is auto-configured with `${frontend.PUBLIC_URL}`
+## Cost Estimate
 
-**Check environment variables:**
-```bash
-# In frontend service logs, verify:
-BACKEND_URL=https://backend-xxx.ondigitalocean.app
-PUBLIC_API_URL=https://your-app.ondigitalocean.app/api
-```
-
-### Backend API 404 Errors
-
-**Verify route prefix:**
-- Backend should have `routes: - path: /api` configured
-- API calls should use `/api/` prefix
-
-### Frontend Shows 404
-
-**Check build logs:**
-- SvelteKit build should complete successfully
-- `npm run build` should generate `/build` directory
-
-## Scaling
-
-### Frontend (Low Traffic)
-- Current: 1 instance (0.5GB RAM)
-- Scale up: Increase to 2 instances for HA
-- Or upgrade to 1GB RAM for better performance
-
-### Backend (Database-Heavy)
-- Current: 2 instances (1GB RAM each)
-- Already configured for HA
-- Monitor CPU/memory in DO Console
-
-## Next Steps
-
-After successful deployment:
-
-1. ✅ Test all frontend pages
-2. ✅ Test API endpoints from frontend
-3. ✅ Verify database connections
-4. ⏳ Wait 30-60 min, then switch to VPC hostnames
-5. 🌐 Set up custom domain
-6. 🔒 Configure SSL (automatic with DO)
-
----
-
-**Your full-stack app with frontend + backend + databases is now deployed!** 🚀
+- Frontend 1x 0.5GB: ~$5/mo
+- Backend 1x 1GB: ~$12/mo
+- PostgreSQL Basic: ~$15/mo
+- Redis Basic: ~$15/mo
+- **Total**: ~$47/mo

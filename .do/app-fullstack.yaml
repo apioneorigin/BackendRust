@@ -1,25 +1,32 @@
-# DigitalOcean App Platform Specification - Full Stack
-# Frontend (SvelteKit) + Backend (FastAPI)
-# Databases attached manually via UI (see deployment instructions)
+# =============================================================================
+# DigitalOcean App Platform — Full Stack (Frontend + Backend)
+# =============================================================================
+# Usage:
+#   1. Create a new app in DO Console → Apps → Create App
+#   2. Connect your GitHub repo (apioneorigin/BackendRust, branch: main)
+#   3. Paste this spec in Settings → App Spec → Edit
+#   4. Set SECRET env vars in Settings → Environment Variables
+#
+# Routing:
+#   /        → Frontend (SvelteKit)
+#   /api/*   → Backend  (FastAPI)
+# =============================================================================
+
+name: reality-transformer
+region: nyc
 
 alerts:
   - rule: DEPLOYMENT_FAILED
-  - rule: DOMAIN_FAILED
   - rule: DEPLOYMENT_LIVE
-
-features:
-  - buildpack-stack=ubuntu-22
 
 ingress:
   rules:
-    # Frontend - serve root path
     - component:
         name: frontend
       match:
         path:
           prefix: /
 
-    # Backend API - serve /api path
     - component:
         name: backend
       match:
@@ -44,11 +51,11 @@ name: backendrust
 region: nyc
 
 services:
-  # =================================================================
-  # SVELTEKIT FRONTEND
-  # =================================================================
+
+  # ── SvelteKit Frontend ───────────────────────────────────────────────────
   - name: frontend
     dockerfile_path: frontend-svelte/Dockerfile
+    source_dir: /frontend-svelte
     http_port: 3000
     instance_count: 1
     instance_size_slug: apps-s-1vcpu-0.5gb
@@ -66,22 +73,18 @@ services:
       period_seconds: 30
 
     envs:
-      # Backend API URL for server-side calls
       - key: BACKEND_URL
         scope: RUN_AND_BUILD_TIME
-        value: ${backend.PUBLIC_URL}
+        value: ${backend.PRIVATE_URL}
 
-      # Public API URL for client-side calls
       - key: PUBLIC_API_URL
         scope: RUN_AND_BUILD_TIME
-        value: ${_self.PUBLIC_URL}/api
+        value: ${APP_URL}/api
 
       - key: ORIGIN
         scope: RUN_TIME
-        value: ${_self.PUBLIC_URL}
+        value: ${APP_URL}
 
-      # Required: Tell SvelteKit to trust DO's reverse proxy headers
-      # Without these, SvelteKit doesn't know requests are HTTPS
       - key: PROTOCOL_HEADER
         scope: RUN_TIME
         value: X-Forwarded-Proto
@@ -94,13 +97,12 @@ services:
         scope: RUN_TIME
         value: production
 
-  # =================================================================
-  # FASTAPI BACKEND
-  # =================================================================
+  # ── FastAPI Backend ──────────────────────────────────────────────────────
   - name: backend
     dockerfile_path: Dockerfile
+    source_dir: /
     http_port: 8000
-    instance_count: 2
+    instance_count: 1
     instance_size_slug: apps-s-1vcpu-1gb
 
     github:
@@ -108,7 +110,12 @@ services:
       branch: main
       deploy_on_push: true
 
-    source_dir: /
+    health_check:
+      http_path: /health
+      initial_delay_seconds: 15
+      period_seconds: 30
+      timeout_seconds: 5
+      failure_threshold: 3
 
     health_check:
       http_path: /health
@@ -116,10 +123,7 @@ services:
       period_seconds: 30
 
     envs:
-      # =================================================================
-      # SECRETS - Set actual values in DigitalOcean Console UI
-      # =================================================================
-
+      # ── Secrets (set values in DO Console UI) ────────────────────────
       - key: OPENAI_API_KEY
         scope: RUN_TIME
         type: SECRET
@@ -131,11 +135,6 @@ services:
       - key: JWT_SECRET
         scope: RUN_TIME
         type: SECRET
-
-      # =================================================================
-      # DATABASE CONNECTIONS
-      # Auto-injected by DigitalOcean from database components
-      # =================================================================
 
       - key: DATABASE_URL
         scope: RUN_TIME
@@ -157,14 +156,19 @@ services:
       # PUBLIC CONFIGURATION
       # =================================================================
 
+      # ── Public config ────────────────────────────────────────────────
       - key: ENVIRONMENT
         scope: RUN_TIME
         value: production
 
       - key: HOST
         scope: RUN_TIME
-        value: 0.0.0.0
+        value: "0.0.0.0"
 
       - key: PORT
         scope: RUN_TIME
         value: "8000"
+
+      - key: CORS_ORIGINS
+        scope: RUN_TIME
+        value: ${APP_URL}

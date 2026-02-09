@@ -1,7 +1,15 @@
+# =============================================================================
+# backend/.dockerignore — used by backend/Dockerfile (docker-compose)
+# Context: backend/ directory
+# =============================================================================
+
 __pycache__
 *.pyc
+*.pyo
+.pytest_cache
 .env
 data/
-.git
 .venv
 venv
+.git
+tests/
