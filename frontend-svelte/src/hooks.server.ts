@@ -10,7 +10,7 @@ const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8000';
 const AUTH_COOKIE = 'auth_token';
 
 // Routes that don't require authentication
-const PUBLIC_ROUTES = ['/login', '/register', '/api'];
+const PUBLIC_ROUTES = ['/login', '/register', '/api', '/healthz'];
 
 export const handle: Handle = async ({ event, resolve }) => {
 	const token = event.cookies.get(AUTH_COOKIE);
