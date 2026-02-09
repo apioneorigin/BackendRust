@@ -40,7 +40,7 @@ export const POST: RequestHandler = async ({ request, params, cookies }) => {
 
 	// Forward request to backend
 	const backendResponse = await fetch(
-		`${BACKEND_URL}/api/chat/conversations/${conversationId}/messages`,
+		`${BACKEND_URL}/chat/conversations/${conversationId}/messages`,
 		{
 			method: 'POST',
 			headers: {

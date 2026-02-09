@@ -19,7 +19,7 @@ from routers.auth import get_current_user, generate_id
 from utils import to_response, to_response_list
 from logging_config import api_logger
 
-router = APIRouter(prefix="/api", tags=["credits"])
+router = APIRouter(prefix="", tags=["credits"])
 
 
 # ─── Credit enforcement dependency ─────────────────────────────────────────

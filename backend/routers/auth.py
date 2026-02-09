@@ -19,7 +19,7 @@ from sqlalchemy.orm import joinedload
 from database import get_db, User, UserSession, Organization, UserRole
 from logging_config import api_logger
 
-router = APIRouter(prefix="/api/auth", tags=["auth"])
+router = APIRouter(prefix="/auth", tags=["auth"])
 
 # JWT Configuration
 JWT_SECRET = os.getenv("JWT_SECRET", "your-secret-key-change-in-production")

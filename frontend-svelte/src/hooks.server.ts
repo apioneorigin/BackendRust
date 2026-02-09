@@ -21,7 +21,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 	// Try to get user if token exists
 	if (token) {
 		try {
-			const response = await fetch(`${BACKEND_URL}/api/auth/me`, {
+			const response = await fetch(`${BACKEND_URL}/auth/me`, {
 				headers: {
 					'Authorization': `Bearer ${token}`,
 					'Content-Type': 'application/json'

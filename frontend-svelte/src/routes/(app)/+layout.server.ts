@@ -16,7 +16,7 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 	let organization = null;
 	if (token) {
 		try {
-			const response = await fetch(`${BACKEND_URL}/api/organization`, {
+			const response = await fetch(`${BACKEND_URL}/organization`, {
 				headers: {
 					'Authorization': `Bearer ${token}`,
 					'Content-Type': 'application/json'
@@ -34,7 +34,7 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 	let conversations: any[] = [];
 	if (token) {
 		try {
-			const response = await fetch(`${BACKEND_URL}/api/chat/conversations`, {
+			const response = await fetch(`${BACKEND_URL}/chat/conversations`, {
 				headers: {
 					'Authorization': `Bearer ${token}`,
 					'Content-Type': 'application/json'

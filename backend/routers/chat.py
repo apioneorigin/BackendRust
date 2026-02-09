@@ -30,7 +30,7 @@ from security.guardrails import (
 )
 
 
-router = APIRouter(prefix="/api/chat", tags=["chat"])
+router = APIRouter(prefix="/chat", tags=["chat"])
 
 
 class CreateConversationRequest(BaseModel):

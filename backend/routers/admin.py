@@ -19,7 +19,7 @@ from database.models.enums import is_super_admin
 from routers.auth import get_current_user, generate_id
 from utils import to_response, to_response_list, paginate, CamelModel
 
-router = APIRouter(prefix="/api/admin", tags=["admin"])
+router = APIRouter(prefix="/admin", tags=["admin"])
 
 
 def require_admin(current_user: User = Depends(get_current_user)) -> User:
