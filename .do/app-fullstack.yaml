@@ -33,23 +33,9 @@ ingress:
         path:
           prefix: /api
 
-databases:
-  - cluster_name: db-postgresql-nyc1-83404
-    db_name: defaultdb
-    db_user: doadmin
-    engine: PG
-    name: db-postgresql-nyc1-83404
-    production: true
-    version: "18"
-  - cluster_name: db-valkey-nyc1-88974
-    engine: VALKEY
-    name: db-valkey-nyc1-88974
-    production: true
-    version: "8"
-
-name: backendrust
-region: nyc
-
+# =============================================================================
+# Services
+# =============================================================================
 services:
 
   # ── SvelteKit Frontend ───────────────────────────────────────────────────
@@ -64,8 +50,6 @@ services:
       repo: apioneorigin/BackendRust
       branch: main
       deploy_on_push: true
-
-    source_dir: /frontend-svelte
 
     health_check:
       http_path: /healthz
@@ -117,11 +101,6 @@ services:
       timeout_seconds: 5
       failure_threshold: 3
 
-    health_check:
-      http_path: /health
-      initial_delay_seconds: 10
-      period_seconds: 30
-
     envs:
       # ── Secrets (set values in DO Console UI) ────────────────────────
       - key: OPENAI_API_KEY
@@ -138,23 +117,11 @@ services:
 
       - key: DATABASE_URL
         scope: RUN_TIME
-        value: "${db-postgresql-nyc1-83404.DATABASE_URL}"
+        type: SECRET
 
       - key: REDIS_URL
         scope: RUN_TIME
-        value: "${db-valkey-nyc1-88974.DATABASE_URL}"
-
-      # =================================================================
-      # CORS Configuration
-      # =================================================================
-
-      - key: CORS_ORIGINS
-        scope: RUN_TIME
-        value: ${frontend.PUBLIC_URL}
-
-      # =================================================================
-      # PUBLIC CONFIGURATION
-      # =================================================================
+        type: SECRET
 
       # ── Public config ────────────────────────────────────────────────
       - key: ENVIRONMENT
