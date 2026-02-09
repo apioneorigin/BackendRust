@@ -12,6 +12,9 @@ const AUTH_COOKIE = 'auth_token';
 // Routes that don't require authentication
 const PUBLIC_ROUTES = ['/login', '/register', '/api', '/healthz'];
 
+// Routes accessible with 0 credits (add-credits page + credits page for redeeming)
+const ZERO_CREDIT_ROUTES = ['/add-credits', '/credits', '/logout'];
+
 export const handle: Handle = async ({ event, resolve }) => {
 	const token = event.cookies.get(AUTH_COOKIE);
 
@@ -57,6 +60,21 @@ export const handle: Handle = async ({ event, resolve }) => {
 	// Redirect unauthenticated users to login (except public routes)
 	if (!isPublicRoute && !event.locals.user) {
 		throw redirect(302, '/login');
+	}
+
+	// Redirect 0-credit users to add-credits page (skip for allowed routes)
+	if (event.locals.user && !isPublicRoute) {
+		const user = event.locals.user as any;
+		const isZeroCreditRoute = ZERO_CREDIT_ROUTES.some(route => event.url.pathname.startsWith(route));
+		if (
+			user.credits_enabled &&
+			(user.credit_quota === 0 || user.credit_quota === null) &&
+			!user.isGlobalAdmin &&
+			user.role !== 'SUPER_ADMIN' &&
+			!isZeroCreditRoute
+		) {
+			throw redirect(302, '/add-credits');
+		}
 	}
 
 	return resolve(event);
