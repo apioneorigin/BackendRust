@@ -17,7 +17,7 @@ from database import (
 )
 from database.models.enums import is_super_admin
 from routers.auth import get_current_user, generate_id
-from utils import to_response, to_response_list, paginate
+from utils import to_response, to_response_list, paginate, CamelModel
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -53,7 +53,7 @@ class UpdatePromoCodeRequest(BaseModel):
     expires_at: Optional[datetime] = None
 
 
-class PromoCodeResponse(BaseModel):
+class PromoCodeResponse(CamelModel):
     id: str
     code: str
     credits: int
@@ -70,14 +70,14 @@ class UpdateGlobalSettingsRequest(BaseModel):
     trial_duration_days: Optional[int] = None
 
 
-class GlobalSettingsResponse(BaseModel):
+class GlobalSettingsResponse(CamelModel):
     free_trial_credits: int
     trial_duration_days: int
     updated_at: datetime
     updated_by: Optional[str]
 
 
-class DashboardStatsResponse(BaseModel):
+class DashboardStatsResponse(CamelModel):
     total_users: int
     total_organizations: int
     total_sessions: int
@@ -86,7 +86,7 @@ class DashboardStatsResponse(BaseModel):
     api_calls_today: int
 
 
-class UserAdminResponse(BaseModel):
+class UserAdminResponse(CamelModel):
     id: str
     email: str
     name: Optional[str]
@@ -267,17 +267,16 @@ async def get_dashboard_stats(
 
 
 # User Management
-@router.get("/users", response_model=List[UserAdminResponse])
-async def list_all_users(
-    limit: int = Query(50, ge=1, le=200),
-    offset: int = Query(0, ge=0),
-    current_user: User = Depends(require_admin),
-    db: AsyncSession = Depends(get_db)
+async def _get_users_list(
+    limit: int,
+    offset: int,
+    current_user: User,
+    db: AsyncSession,
 ):
-    """List all users (admin only)."""
-    # For org admins, only show users in their org
+    """Shared logic for listing users."""
     query = select(User)
-    if current_user.role != UserRole.ADMIN:
+    # Super admins and global admins see all; org admins see only their org
+    if not is_super_admin(current_user) and current_user.role != UserRole.ADMIN:
         query = query.where(User.organization_id == current_user.organization_id)
 
     result = await db.execute(
@@ -285,8 +284,30 @@ async def list_all_users(
         .offset(offset)
         .limit(limit)
     )
-    users = result.scalars().all()
+    return result.scalars().all()
 
+
+@router.get("/users/list")
+async def list_users_wrapped(
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    current_user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """List all users (wrapped in {users: [...]}) - used by admin frontend."""
+    users = await _get_users_list(limit, offset, current_user, db)
+    return {"users": to_response_list(users, UserAdminResponse)}
+
+
+@router.get("/users", response_model=List[UserAdminResponse])
+async def list_all_users(
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    current_user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """List all users (bare array)."""
+    users = await _get_users_list(limit, offset, current_user, db)
     return to_response_list(users, UserAdminResponse)
 
 
@@ -304,8 +325,8 @@ async def set_user_credits(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Org admins can only modify users in their org
-    if current_user.role != UserRole.ADMIN and user.organization_id != current_user.organization_id:
+    # Org admins can only modify users in their org (super admins can modify any)
+    if not is_super_admin(current_user) and current_user.role != UserRole.ADMIN and user.organization_id != current_user.organization_id:
         raise HTTPException(status_code=403, detail="Cannot modify users in other organizations")
 
     user.credit_quota = credits
