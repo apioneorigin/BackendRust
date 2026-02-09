@@ -17,6 +17,7 @@ from sse_starlette.sse import EventSourceResponse
 
 from database import get_db, User, ChatConversation, ChatMessage, ChatSummary, Session, AsyncSessionLocal
 from routers.auth import get_current_user, generate_id
+from routers.credits import require_credits, deduct_credit
 from utils import get_or_404, paginate, to_response, to_response_list, safe_json_loads, CamelModel
 from logging_config import api_logger
 from file_parser import parse_file, ParsedFile
@@ -189,7 +190,7 @@ async def send_message(
     conversation_id: str,
     request: SendMessageRequest,
     http_request: Request,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_credits),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -606,6 +607,25 @@ async def send_message(
 
             await save_db.commit()
             api_logger.info(f"[CHAT SAVE] Committed changes for conv {conversation_id}")
+
+            # Deduct 1 credit for this LLM call
+            # Re-fetch user inside this session to avoid detached instance
+            from database import User as UserModel
+            user_result = await save_db.execute(
+                select(UserModel).where(UserModel.id == current_user.id)
+            )
+            fresh_user = user_result.scalar_one_or_none()
+            if fresh_user:
+                await deduct_credit(
+                    fresh_user,
+                    save_db,
+                    amount=1,
+                    metadata={
+                        "conversation_id": conversation_id,
+                        "input_tokens": input_tokens,
+                        "output_tokens": output_tokens,
+                    },
+                )
 
     # Use ping interval to keep connection alive during long operations
     # Without pings, proxies/browsers may close the connection during long LLM responses

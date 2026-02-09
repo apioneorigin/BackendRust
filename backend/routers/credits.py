@@ -1,5 +1,6 @@
 """
 Credits and billing endpoints.
+Includes credit enforcement dependency used by other routers.
 """
 
 from datetime import datetime
@@ -13,11 +14,83 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database import (
     get_db, User, Organization, PromoCode, PromoCodeRedemption, UsageRecord
 )
-from database.models.enums import is_super_admin
+from database.models.enums import is_super_admin, UsageType
 from routers.auth import get_current_user, generate_id
 from utils import to_response, to_response_list
+from logging_config import api_logger
 
 router = APIRouter(prefix="/api", tags=["credits"])
+
+
+# ─── Credit enforcement dependency ─────────────────────────────────────────
+# Use as: current_user: User = Depends(require_credits)
+
+async def require_credits(
+    current_user: User = Depends(get_current_user),
+) -> User:
+    """
+    FastAPI dependency that blocks users with 0 credits.
+    Super admins and users with credits_enabled=False bypass this check.
+    """
+    if is_super_admin(current_user):
+        return current_user
+
+    if not current_user.credits_enabled:
+        return current_user
+
+    quota = current_user.credit_quota
+    if quota is None or quota <= 0:
+        raise HTTPException(
+            status_code=403,
+            detail="Insufficient credits. Please redeem a promo code to continue.",
+        )
+
+    return current_user
+
+
+async def deduct_credit(
+    user: User,
+    db: AsyncSession,
+    amount: int = 1,
+    usage_type: UsageType = UsageType.CREDITS_SPENT,
+    metadata: Optional[dict] = None,
+) -> None:
+    """
+    Deduct credits from a user and record usage.
+    Call this AFTER a successful LLM call / chat message.
+    Super admins and credits-disabled users are skipped.
+    """
+    if is_super_admin(user):
+        return
+    if not user.credits_enabled:
+        return
+
+    # Deduct from user quota
+    if user.credit_quota is not None:
+        user.credit_quota = max(0, user.credit_quota - amount)
+
+    # Increment org used_credits
+    if user.organization_id:
+        result = await db.execute(
+            select(Organization).where(Organization.id == user.organization_id)
+        )
+        org = result.scalar_one_or_none()
+        if org:
+            org.used_credits += amount
+
+    # Record usage
+    record = UsageRecord(
+        id=generate_id(),
+        organization_id=user.organization_id,
+        user_id=user.id,
+        usage_type=usage_type,
+        quantity=amount,
+        usage_metadata=metadata,
+    )
+    db.add(record)
+
+    await db.commit()
+    api_logger.debug(f"[Credits] Deducted {amount} from user {user.email}, remaining: {user.credit_quota}")
 
 
 class RedeemCodeRequest(BaseModel):
