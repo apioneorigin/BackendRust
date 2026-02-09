@@ -36,10 +36,11 @@ export const actions: Actions = {
 
 			if (!response.ok) {
 				const errorData = await response.json().catch(() => ({}));
-				return fail(response.status, {
-					error: errorData.detail || 'Invalid email or password',
-					email
-				});
+				const message =
+					response.status >= 500
+						? 'Server error — please try again later'
+						: errorData.detail || errorData.error || 'Invalid email or password';
+				return fail(response.status, { error: message, email });
 			}
 
 			const result = await response.json();
