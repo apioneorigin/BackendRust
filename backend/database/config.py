@@ -17,7 +17,25 @@ load_dotenv()
 
 # Get DATABASE_URL from environment
 DATABASE_URL = os.getenv("DATABASE_URL", "")
+IS_PRODUCTION = os.getenv("ENVIRONMENT") == "production"
 USE_SQLITE = os.getenv("USE_SQLITE", "").lower() in ("true", "1", "yes") or not DATABASE_URL
+
+# In production, DATABASE_URL is required — never fall back to ephemeral SQLite
+if IS_PRODUCTION and USE_SQLITE:
+    print(f"\n{'='*80}")
+    print(f"[Database] FATAL: DATABASE_URL is not set in production!")
+    print(f"{'='*80}")
+    print(f"[Database] Without DATABASE_URL, the app uses SQLite inside the container.")
+    print(f"[Database] Container storage is EPHEMERAL — all data is lost on each deploy.")
+    print(f"[Database]")
+    print(f"[Database] To fix this:")
+    print(f"[Database] 1. Go to DigitalOcean Console → Apps → reality-transformer → Settings")
+    print(f"[Database] 2. Click 'backend' component → Environment Variables")
+    print(f"[Database] 3. Set DATABASE_URL to your PostgreSQL connection string:")
+    print(f"[Database]    postgresql://user:password@host:25060/defaultdb?sslmode=require")
+    print(f"[Database] 4. Save and redeploy")
+    print(f"{'='*80}\n")
+    raise RuntimeError("DATABASE_URL required in production — set it in DigitalOcean environment variables")
 
 # Determine which database to use
 if USE_SQLITE:
@@ -90,15 +108,13 @@ else:
     try:
         ASYNC_DATABASE_URL, connect_args = prepare_async_url(DATABASE_URL)
     except Exception as e:
-        print(f"[Database] ERROR parsing DATABASE_URL: {e}")
-        print(f"[Database] Falling back to SQLite")
-        USE_SQLITE = True
-        DATA_DIR = Path(__file__).parent.parent / "data"
-        DATA_DIR.mkdir(exist_ok=True)
-        SQLITE_PATH = DATA_DIR / "dev.db"
-        ASYNC_DATABASE_URL = f"sqlite+aiosqlite:///{SQLITE_PATH}"
-        connect_args = {"check_same_thread": False}
-        engine = create_async_engine(ASYNC_DATABASE_URL, echo=False, connect_args=connect_args)
+        print(f"\n{'='*80}")
+        print(f"[Database] FATAL: Cannot parse DATABASE_URL: {e}")
+        print(f"{'='*80}")
+        print(f"[Database] DATABASE_URL is set but cannot be parsed.")
+        print(f"[Database] Fix the DATABASE_URL environment variable in DigitalOcean.")
+        print(f"{'='*80}\n")
+        raise
 
     if not USE_SQLITE:
         # Create async engine for PostgreSQL
