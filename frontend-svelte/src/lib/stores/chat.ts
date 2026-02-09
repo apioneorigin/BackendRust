@@ -337,6 +337,8 @@ function createChatStore() {
 				const conv = await this.createConversation();
 				if (!conv) return;
 				conversationId = conv.id;
+				// Clear stale matrix data from the previous conversation
+				matrix.initializeMatrix();
 			}
 
 			if (!conversationId) return; // Safety guard
