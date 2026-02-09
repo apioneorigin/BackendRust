@@ -46,11 +46,11 @@ export const actions: Actions = {
 
 			if (!response.ok) {
 				const errorData = await response.json().catch(() => ({}));
-				return fail(response.status, {
-					error: errorData.detail || 'Registration failed',
-					email,
-					name
-				});
+				const message =
+					response.status >= 500
+						? 'Server error — please try again later'
+						: errorData.detail || errorData.error || 'Registration failed';
+				return fail(response.status, { error: message, email, name });
 			}
 
 			const result = await response.json();

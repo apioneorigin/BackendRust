@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
 from database import get_db, User, UserSession, Organization, UserRole
+from database.models.enums import is_super_admin
 from logging_config import api_logger
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -276,7 +277,6 @@ async def login(
 
     await db.commit()
 
-    from database.models.enums import is_super_admin
     return TokenResponse(
         token=token,
         user={
@@ -315,7 +315,6 @@ async def get_me(
     current_user: User = Depends(get_current_user)
 ):
     """Get current user info."""
-    from database.models.enums import is_super_admin
     return UserResponse(
         id=current_user.id,
         email=current_user.email,
