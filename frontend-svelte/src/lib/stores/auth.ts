@@ -46,6 +46,21 @@ function createAuthStore() {
 	return {
 		subscribe,
 
+		/**
+		 * Hydrate auth store from server-side data (no API call needed).
+		 * Called by root +layout.svelte with data from +layout.server.ts.
+		 */
+		setFromServer(userData: User | null, org?: Organization | null) {
+			update(state => ({
+				...state,
+				user: userData,
+				organization: org !== undefined ? org : state.organization,
+				isAuthenticated: !!userData,
+				isLoading: false,
+				error: null,
+			}));
+		},
+
 		// Alias for initialize - used by layout
 		async loadUser() {
 			return this.initialize();
