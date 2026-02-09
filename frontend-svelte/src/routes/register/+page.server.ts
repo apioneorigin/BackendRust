@@ -64,7 +64,12 @@ export const actions: Actions = {
 				maxAge: 60 * 60 * 24 * 7 // 7 days
 			});
 
-			// New users need to add credits
+			// Super admins bypass credit requirements
+			if (result.user?.isGlobalAdmin) {
+				throw redirect(302, '/chat');
+			}
+
+			// Regular new users need to add credits
 			throw redirect(302, '/add-credits');
 		} catch (error) {
 			if (error instanceof Response || (error as any)?.status === 302) {

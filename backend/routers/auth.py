@@ -234,6 +234,9 @@ async def register(
             "name": user.name,
             "role": user.role.value,
             "organization_id": user.organization_id,
+            "credits_enabled": user.credits_enabled,
+            "credit_quota": user.credit_quota,
+            "isGlobalAdmin": is_super_admin(user),
         }
     )
 

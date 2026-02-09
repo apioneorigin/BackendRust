@@ -53,8 +53,13 @@ export const actions: Actions = {
 				maxAge: 60 * 60 * 24 * 7 // 7 days
 			});
 
-			// Check credits and redirect appropriately
-			if (result.user?.credits_enabled && result.user?.credit_quota === 0) {
+			// Super admins bypass credit requirements
+			// Regular users with 0 credits go to add-credits
+			if (
+				!result.user?.isGlobalAdmin &&
+				result.user?.credits_enabled &&
+				(result.user?.credit_quota === 0 || result.user?.credit_quota === null)
+			) {
 				throw redirect(302, '/add-credits');
 			}
 
