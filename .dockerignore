@@ -1,23 +1,49 @@
-__pycache__
-*.pyc
-.env
-backend/data/
-backend/.env
-backend/.venv
-backend/venv
+# =============================================================================
+# Root .dockerignore — used by root Dockerfile (DO App Platform / standalone)
+# Context: repo root → copies backend/ and root-level .txt prompt files
+# =============================================================================
+
+# ── Git / IDE ────────────────────────────────────────────────────────────────
 .git
+.gitignore
+.github
+.vscode
+.idea
+
+# ── Frontend (not needed for backend image) ──────────────────────────────────
 frontend/
 frontend-svelte/
+
+# ── Deployment configs (not needed inside image) ────────────────────────────
 deploy/
+.do/
+render.yaml
+Procfile
+
+# ── Docs / media ────────────────────────────────────────────────────────────
 *.md
 *.png
 *.pdf
 *.ps1
 *.bat
 
-# Allow required root-level .txt files
-# (LLM_Call_*.txt, Goal_Discovery_Call_*.txt)
+# ── Python caches ────────────────────────────────────────────────────────────
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+
+# ── Virtual environments ─────────────────────────────────────────────────────
+backend/.venv
+backend/venv
+backend/.env
+
+# ── Dev data (don't ship SQLite into production image) ───────────────────────
+backend/data/
+
+# ── Keep root-level prompt .txt files (needed by main.py) ───────────────────
 !LLM_Call_1.txt
 !LLM_Call_2.txt
 !Goal_Discovery_Call_1.txt
 !Goal_Discovery_Call_2.txt
+!Goal_Discovery_OOF_Reference.txt

@@ -1,8 +1,14 @@
-FROM python:3.12-slim
+# =============================================================================
+# Reality Transformer — Backend (standalone / docker-compose)
+# Used by: deploy/docker-compose.yml
+# Context: backend/ directory
+# =============================================================================
+
+# ── Stage 1: install Python deps ────────────────────────────────────────────
+FROM python:3.12-slim AS deps
 
 WORKDIR /app
 
-# System deps for asyncpg, cryptography, Pillow
 RUN apt-get update \
     && apt-get install -y --no-install-recommends build-essential libpq-dev \
     && rm -rf /var/lib/apt/lists/*
@@ -10,11 +16,31 @@ RUN apt-get update \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# ── Stage 2: production image ───────────────────────────────────────────────
+FROM python:3.12-slim
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libpq5 curl \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN groupadd --gid 1000 appuser \
+    && useradd --uid 1000 --gid appuser --create-home appuser
+
+WORKDIR /app
+
+COPY --from=deps /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+COPY --from=deps /usr/local/bin /usr/local/bin
+
 COPY . .
 
-# Single uvicorn process — required for asyncio background tasks (session
-# cleanup) and SSE long-lived connections. Do NOT switch to gunicorn with
-# multiple uvicorn workers: worker recycling kills background tasks and
-# drops SSE streams mid-flight.
-EXPOSE 8000
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--timeout-keep-alive", "75"]
+RUN mkdir -p /app/data && chown -R appuser:appuser /app
+
+USER appuser
+
+ENV PORT=8000
+EXPOSE ${PORT}
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+    CMD curl -f http://localhost:${PORT}/health || exit 1
+
+CMD uvicorn main:app --host 0.0.0.0 --port ${PORT} --timeout-keep-alive 75
