@@ -267,17 +267,16 @@ async def get_dashboard_stats(
 
 
 # User Management
-@router.get("/users", response_model=List[UserAdminResponse])
-async def list_all_users(
-    limit: int = Query(50, ge=1, le=200),
-    offset: int = Query(0, ge=0),
-    current_user: User = Depends(require_admin),
-    db: AsyncSession = Depends(get_db)
+async def _get_users_list(
+    limit: int,
+    offset: int,
+    current_user: User,
+    db: AsyncSession,
 ):
-    """List all users (admin only)."""
-    # For org admins, only show users in their org
+    """Shared logic for listing users."""
     query = select(User)
-    if current_user.role != UserRole.ADMIN:
+    # Super admins and global admins see all; org admins see only their org
+    if not is_super_admin(current_user) and current_user.role != UserRole.ADMIN:
         query = query.where(User.organization_id == current_user.organization_id)
 
     result = await db.execute(
@@ -285,8 +284,30 @@ async def list_all_users(
         .offset(offset)
         .limit(limit)
     )
-    users = result.scalars().all()
+    return result.scalars().all()
 
+
+@router.get("/users/list")
+async def list_users_wrapped(
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    current_user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """List all users (wrapped in {users: [...]}) - used by admin frontend."""
+    users = await _get_users_list(limit, offset, current_user, db)
+    return {"users": to_response_list(users, UserAdminResponse)}
+
+
+@router.get("/users", response_model=List[UserAdminResponse])
+async def list_all_users(
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    current_user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """List all users (bare array)."""
+    users = await _get_users_list(limit, offset, current_user, db)
     return to_response_list(users, UserAdminResponse)
 
 
