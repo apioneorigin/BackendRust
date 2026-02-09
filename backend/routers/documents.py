@@ -17,7 +17,7 @@ from database import (
 from routers.auth import get_current_user, generate_id
 from utils import get_or_404, paginate, to_response, to_response_list
 
-router = APIRouter(prefix="/api/documents", tags=["documents"])
+router = APIRouter(prefix="/documents", tags=["documents"])
 
 
 class CreateDocumentRequest(BaseModel):

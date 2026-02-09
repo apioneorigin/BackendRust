@@ -697,7 +697,7 @@ async def root():
     return {"status": "ok", "app": "Reality Transformer API", "version": "4.1.0"}
 
 
-@app.get("/api/run")
+@app.get("/run")
 async def run_inference(
     request: Request,
     prompt: str = Query(..., description="User query"),
@@ -770,7 +770,7 @@ async def run_inference(
 # CONSTELLATION Q&A ENDPOINTS
 # =====================================================================
 
-@app.post("/api/answer")
+@app.post("/answer")
 async def process_constellation_answer(
     session_id: str = Query(..., description="Session ID from question event"),
     selected_option: str = Query(..., description="Selected option (option_1, option_2, option_3, option_4)")
@@ -812,11 +812,11 @@ async def process_constellation_answer(
     return {
         "status": "success",
         "selected_option": selected_option,
-        "continue_url": f"/api/run/continue?session_id={session_id}"
+        "continue_url": f"/run/continue?session_id={session_id}"
     }
 
 
-@app.get("/api/run/continue")
+@app.get("/run/continue")
 async def continue_inference(
     session_id: str = Query(..., description="Session ID to continue")
 ):

@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 
-router = APIRouter(prefix="/api/health", tags=["health"])
+router = APIRouter(prefix="/healthz", tags=["health"])
 
 
 class HealthResponse(BaseModel):

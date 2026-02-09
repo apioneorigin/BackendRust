@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database import get_db, User, Organization, UserRole
 from routers.auth import get_current_user, generate_id
 
-router = APIRouter(prefix="/api", tags=["users"])
+router = APIRouter(prefix="", tags=["users"])
 
 
 class UpdateUserRequest(BaseModel):

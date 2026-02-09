@@ -96,7 +96,7 @@ def sanitize_goal_text(text: str) -> str:
 
     return text.strip()
 
-router = APIRouter(prefix="/api", tags=["goals"])
+router = APIRouter(prefix="", tags=["goals"])
 
 
 def repair_truncated_json(text: str) -> str:

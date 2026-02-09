@@ -19,7 +19,7 @@ from routers.auth import get_current_user
 from utils import get_or_404, CamelModel
 from logging_config import api_logger
 
-router = APIRouter(prefix="/api/matrix", tags=["matrix"])
+router = APIRouter(prefix="/matrix", tags=["matrix"])
 
 # In-memory cache for document previews so add_documents can use the exact same
 # documents the user previewed (instead of regenerating via LLM).

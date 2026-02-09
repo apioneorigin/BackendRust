@@ -55,19 +55,19 @@ MAX_REQUEST_BODY_SIZE = int(os.getenv("MAX_REQUEST_BODY_SIZE", str(10 * 1024 * 1
 IS_PRODUCTION = os.getenv("ENVIRONMENT") == "production"
 
 # AI endpoints that need prompt injection detection
-AI_ENDPOINTS = {"/api/chat", "/api/insights", "/api/generate", "/stream"}
+AI_ENDPOINTS = {"/chat", "/insights", "/generate", "/stream"}
 
 # Admin endpoints with stricter rate limits
-ADMIN_ENDPOINTS = {"/api/admin"}
+ADMIN_ENDPOINTS = {"/admin"}
 
 # Auth endpoints with auth-specific rate limits
-AUTH_ENDPOINTS = {"/api/auth/login", "/api/auth/register"}
+AUTH_ENDPOINTS = {"/auth/login", "/auth/register"}
 
 # Public endpoints (no auth required)
 PUBLIC_ENDPOINTS = {
-    "/api/auth/login",
-    "/api/auth/register",
-    "/api/health",
+    "/auth/login",
+    "/auth/register",
+    "/healthz",
     "/health",
     "/docs",
     "/openapi.json",

@@ -8,6 +8,7 @@ export default defineConfig({
 			'/api': {
 				target: 'http://localhost:8000',
 				changeOrigin: true,
+				rewrite: (path) => path.replace(/^\/api/, ''),
 				configure: (proxy, options) => {
 					// Handle SSE streaming - disable buffering
 					proxy.on('proxyRes', (proxyRes, req, res) => {

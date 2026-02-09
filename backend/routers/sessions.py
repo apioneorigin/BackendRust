@@ -14,7 +14,7 @@ from database import get_db, User, Session, Organization
 from routers.auth import get_current_user, generate_id
 from utils import get_or_404, paginate, to_response, to_response_list
 
-router = APIRouter(prefix="/api/session", tags=["sessions"])
+router = APIRouter(prefix="/session", tags=["sessions"])
 
 
 class CreateSessionRequest(BaseModel):
