@@ -2346,13 +2346,15 @@ def _extract_anthropic_text(data: dict) -> str:
 
 
 def _strip_markdown_json(text: str) -> str:
-    """Strip markdown code fences from LLM JSON responses."""
+    """Strip markdown code fences from LLM JSON responses (including truncated ones)."""
     text = text.strip()
-    # Remove ```json ... ``` or ``` ... ```
-    m = re.match(r'^```(?:json)?\s*\n(.*)\n```\s*$', text, re.DOTALL)
-    if m:
-        return m.group(1).strip()
-    return text
+    # Strip opening ```json or ``` fence
+    if text.startswith('```'):
+        text = re.sub(r'^```(?:json)?\s*\n?', '', text)
+    # Strip closing ``` fence if present (may be absent in truncated responses)
+    if text.endswith('```'):
+        text = re.sub(r'\n?```\s*$', '', text)
+    return text.strip()
 
 
 async def generate_document_previews_llm(
@@ -2714,7 +2716,7 @@ REQUIREMENTS:
                 }
                 request_body = {
                     "model": model,
-                    "max_tokens": 16384,
+                    "max_tokens": 32768,
                     "messages": [{"role": "user", "content": prompt_text}]
                 }
                 response = await client.post(endpoint, headers=headers, json=request_body)
@@ -2735,7 +2737,7 @@ REQUIREMENTS:
                 }
                 request_body = {
                     "model": model,
-                    "max_completion_tokens": 16384,
+                    "max_completion_tokens": 32768,
                     "messages": [{"role": "user", "content": prompt_text}],
                     "response_format": {"type": "json_object"}
                 }
