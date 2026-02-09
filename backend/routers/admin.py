@@ -15,6 +15,7 @@ from database import (
     get_db, User, Organization, PromoCode, GlobalSettings, UserRole,
     Session, ChatConversation, AIServiceLog
 )
+from database.models.enums import is_super_admin
 from routers.auth import get_current_user, generate_id
 from utils import to_response, to_response_list, paginate
 
@@ -23,6 +24,8 @@ router = APIRouter(prefix="/api/admin", tags=["admin"])
 
 def require_admin(current_user: User = Depends(get_current_user)) -> User:
     """Dependency to require admin role."""
+    if is_super_admin(current_user):
+        return current_user
     if current_user.role not in [UserRole.ADMIN, UserRole.ORG_OWNER, UserRole.ORG_ADMIN]:
         raise HTTPException(status_code=403, detail="Admin access required")
     return current_user
@@ -30,6 +33,8 @@ def require_admin(current_user: User = Depends(get_current_user)) -> User:
 
 def require_global_admin(current_user: User = Depends(get_current_user)) -> User:
     """Dependency to require global admin role."""
+    if is_super_admin(current_user):
+        return current_user
     if current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Global admin access required")
     return current_user
