@@ -139,11 +139,11 @@ services:
 
       - key: DATABASE_URL
         scope: RUN_TIME
-        value: ${db-postgresql-nyc1-83404.DATABASE_URL}
+        value: "${db-postgresql-nyc1-83404.DATABASE_URL}"
 
       - key: REDIS_URL
         scope: RUN_TIME
-        value: ${db-valkey-nyc1-88974.DATABASE_URL}
+        value: "${db-valkey-nyc1-88974.DATABASE_URL}"
 
       # =================================================================
       # CORS Configuration
