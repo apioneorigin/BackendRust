@@ -5,11 +5,20 @@
 #   1. Create a new app in DO Console → Apps → Create App
 #   2. Connect your GitHub repo (apioneorigin/BackendRust, branch: main)
 #   3. Paste this spec in Settings → App Spec → Edit
-#   4. Set SECRET env vars in Settings → Environment Variables
+#   4. Set SECRET env vars in DO Console → Settings → Environment Variables:
+#      - OPENAI_API_KEY, ANTHROPIC_API_KEY, JWT_SECRET
+#      - DATABASE_URL (from DO Managed Database — must include ?sslmode=require)
+#      - REDIS_URL (from DO Managed Redis, or leave blank for in-memory fallback)
+#   5. Add a DO Managed PostgreSQL database (Dev or Basic plan)
+#   6. Optionally add a DO Managed Redis instance
 #
 # Routing:
 #   /        → Frontend (SvelteKit)
-#   /api/*   → Backend  (FastAPI)
+#   /api/*   → Backend  (FastAPI, middleware strips /api prefix)
+#
+# Health checks:
+#   Frontend: GET /healthz  → SvelteKit server route
+#   Backend:  GET /healthz/ → FastAPI health endpoint (trailing slash required)
 # =============================================================================
 
 name: reality-transformer
@@ -21,12 +30,14 @@ alerts:
 
 ingress:
   rules:
+    # /api/* routes to backend (backend middleware strips /api prefix)
     - component:
         name: backend
       match:
         path:
           prefix: /api
 
+    # Everything else routes to SvelteKit frontend
     - component:
         name: frontend
       match:
@@ -57,6 +68,7 @@ services:
       period_seconds: 30
 
     envs:
+      # Backend URL for server-side calls (hooks, SSE proxy, layout loads)
       - key: BACKEND_URL
         scope: RUN_AND_BUILD_TIME
         value: ${backend.PRIVATE_URL}
@@ -65,10 +77,12 @@ services:
         scope: RUN_AND_BUILD_TIME
         value: ${APP_URL}/api
 
+      # SvelteKit CSRF origin check
       - key: ORIGIN
         scope: RUN_TIME
         value: ${APP_URL}
 
+      # Required for SvelteKit behind DO reverse proxy
       - key: PROTOCOL_HEADER
         scope: RUN_TIME
         value: X-Forwarded-Proto
@@ -95,7 +109,7 @@ services:
       deploy_on_push: true
 
     health_check:
-      http_path: /health
+      http_path: /healthz/
       initial_delay_seconds: 15
       period_seconds: 30
       timeout_seconds: 5
@@ -115,10 +129,13 @@ services:
         scope: RUN_TIME
         type: SECRET
 
+      # PostgreSQL connection string from DO Managed Database
+      # Format: postgresql://user:pass@host:25060/db?sslmode=require
       - key: DATABASE_URL
         scope: RUN_TIME
         type: SECRET
 
+      # Redis connection string (optional — falls back to in-memory)
       - key: REDIS_URL
         scope: RUN_TIME
         type: SECRET
@@ -127,6 +144,11 @@ services:
       - key: ENVIRONMENT
         scope: RUN_TIME
         value: production
+
+      # Force PostgreSQL — fail fast if DATABASE_URL is missing
+      - key: USE_SQLITE
+        scope: RUN_TIME
+        value: "false"
 
       - key: HOST
         scope: RUN_TIME

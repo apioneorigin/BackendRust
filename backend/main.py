@@ -262,6 +262,20 @@ app.add_middleware(UnifiedSecurityMiddleware, rate_limiter=_rate_limiter, config
 
 api_logger.info("Security middleware initialized")
 
+# =====================================================================
+# PATH PREFIX STRIPPING (must be last middleware → runs first on request)
+# =====================================================================
+# DigitalOcean App Platform routes /api/* to the backend but does NOT strip
+# the /api prefix (unlike Nginx which does). This middleware normalizes all
+# incoming paths so the backend works identically under both deployments.
+# Harmless when the prefix is already stripped (Nginx, Vite dev proxy).
+@app.middleware("http")
+async def strip_api_prefix(request, call_next):
+    if request.url.path.startswith("/api"):
+        # Rewrite /api/chat/... → /chat/...
+        request.scope["path"] = request.url.path[4:] or "/"
+    return await call_next(request)
+
 # Include routers
 from routers import (
     auth_router,
