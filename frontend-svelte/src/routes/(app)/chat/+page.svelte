@@ -117,6 +117,13 @@
 
 	$: greeting = getGreeting();
 
+	// Group questions by the message that generated them for inline rendering
+	$: questionsByMessage = $questions.reduce((acc: Record<string, typeof $questions>, q) => {
+		const key = q.messageId || '__streaming__';
+		(acc[key] = acc[key] || []).push(q);
+		return acc;
+	}, {} as Record<string, typeof $questions>);
+
 	// Copy message content to clipboard
 	async function copyToClipboard(text: string) {
 		try {
@@ -563,6 +570,27 @@
 							</div>
 						</div>
 					</div>
+					<!-- Questions linked to this message (rendered inline after parent) -->
+					{#if questionsByMessage[message.id]?.length}
+						{#each questionsByMessage[message.id] as q (q.id)}
+							<div class="question-card" class:answered={q.selectedOption}>
+								<div class="question-text">{q.text}</div>
+								<div class="question-options">
+									{#each q.options as option}
+										<button
+											class="question-option"
+											class:selected={q.selectedOption === option.id}
+											class:not-selected={q.selectedOption && q.selectedOption !== option.id}
+											on:click={() => !q.selectedOption && chat.answerQuestion(q.id, option.id)}
+											disabled={!!q.selectedOption}
+										>
+											{option.text}
+										</button>
+									{/each}
+								</div>
+							</div>
+						{/each}
+					{/if}
 				{/each}
 
 				<!-- Streaming message -->
@@ -580,6 +608,24 @@
 							</div>
 						</div>
 					</div>
+					<!-- Questions arriving during current stream (not yet linked to a message) -->
+					{#if questionsByMessage['__streaming__']?.length}
+						{#each questionsByMessage['__streaming__'] as q (q.id)}
+							<div class="question-card">
+								<div class="question-text">{q.text}</div>
+								<div class="question-options">
+									{#each q.options as option}
+										<button
+											class="question-option"
+											on:click={() => chat.answerQuestion(q.id, option.id)}
+										>
+											{option.text}
+										</button>
+									{/each}
+								</div>
+							</div>
+						{/each}
+					{/if}
 				{/if}
 
 				{#if $chat?.error && !$isStreaming}
@@ -587,28 +633,6 @@
 						<p>{$chat.error}</p>
 						<button on:click={() => chat.clearError()}>Dismiss</button>
 					</div>
-				{/if}
-
-				<!-- Questions -->
-				{#if $questions.length > 0}
-					{#each $questions as q (q.id)}
-						<div class="question-card" class:answered={q.selectedOption}>
-							<div class="question-text">{q.text}</div>
-							<div class="question-options">
-								{#each q.options as option}
-									<button
-										class="question-option"
-										class:selected={q.selectedOption === option.id}
-										class:not-selected={q.selectedOption && q.selectedOption !== option.id}
-										on:click={() => !q.selectedOption && chat.answerQuestion(q.id, option.id)}
-										disabled={!!q.selectedOption}
-									>
-										{option.text}
-									</button>
-								{/each}
-							</div>
-						</div>
-					{/each}
 				{/if}
 			{/if}
 

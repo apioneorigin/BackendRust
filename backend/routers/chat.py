@@ -616,8 +616,10 @@ async def send_message(
                             conv.generated_presets = structured_data["presets"]
                             flag_modified(conv, "generated_presets")
 
-                    # Save/update questions to conversation
+                    # Save/update questions to conversation (link to assistant message)
                     if pending_questions:
+                        for q in pending_questions:
+                            q["message_id"] = assistant_message.id
                         existing_questions = conv.question_answers or {"questions": []}
                         if not isinstance(existing_questions, dict):
                             existing_questions = {"questions": []}
@@ -846,6 +848,7 @@ class QuestionResponse(CamelModel):
     options: List[dict]
     type: str
     selected_option: Optional[str]
+    message_id: Optional[str] = None
 
 
 @router.get("/conversations/{conversation_id}/questions", response_model=List[QuestionResponse])
@@ -868,7 +871,8 @@ async def get_conversation_questions(
             text=q.get("text", ""),
             options=q.get("options", []),
             type=q.get("type", "question"),
-            selected_option=q.get("selected_option")
+            selected_option=q.get("selected_option"),
+            message_id=q.get("message_id")
         )
         for q in questions
     ]
