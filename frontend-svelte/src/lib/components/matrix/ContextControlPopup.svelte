@@ -17,7 +17,7 @@
 		activeDocument,
 		addToast
 	} from '$lib/stores';
-	import type { ArticulatedInsight, RowOption, ColumnOption, DocumentPreview } from '$lib/stores/matrix';
+	import type { ArticulatedInsight, ArticulatedOutcome, RowOption, ColumnOption, DocumentPreview } from '$lib/stores/matrix';
 	import { Button, ConfirmDialog } from '$lib/components/ui';
 	import InsightPopup from './InsightPopup.svelte';
 
@@ -82,6 +82,7 @@
 	// Insight popup state
 	let showInsightPopup = false;
 	let selectedInsight: ArticulatedInsight | null = null;
+	let selectedOutcome: ArticulatedOutcome | null = null;
 	let selectedOptionLabel = '';
 	let selectedOptionType: 'row' | 'column' = 'row';
 	let generatingInsightKey: string | null = null;
@@ -191,20 +192,41 @@
 
 		const insightIndex = idx + (type === 'column' ? 10 : 0);
 
-		// Content already exists and viewed — show directly (no backend call)
-		if (viewedInsightIndices.includes(insightIndex) && opt.articulated_insight?.the_truth) {
-			selectedInsight = opt.articulated_insight;
-			showInsightPopup = true;
-			return;
-		}
+		if (type === 'column') {
+			const colOpt = opt as ColumnOption;
+			// Check for outcome content (new format) or legacy insight content
+			const hasOutcome = colOpt.articulated_outcome?.the_arc;
+			const hasLegacyInsight = colOpt.articulated_insight?.the_truth;
 
-		// Content exists but not yet marked as viewed — show directly, mark via backend
-		if (opt.articulated_insight?.the_truth) {
-			selectedInsight = opt.articulated_insight;
-			showInsightPopup = true;
-			// Fire-and-forget: mark as viewed on backend (no loading state needed)
-			matrix.generateInsights(insightIndex, model).catch(() => {});
-			return;
+			if (hasOutcome) {
+				selectedOutcome = colOpt.articulated_outcome!;
+				selectedInsight = null;
+				showInsightPopup = true;
+				if (!viewedInsightIndices.includes(insightIndex)) {
+					matrix.generateInsights(insightIndex, model).catch(() => {});
+				}
+				return;
+			}
+			if (hasLegacyInsight) {
+				selectedInsight = colOpt.articulated_insight!;
+				selectedOutcome = null;
+				showInsightPopup = true;
+				if (!viewedInsightIndices.includes(insightIndex)) {
+					matrix.generateInsights(insightIndex, model).catch(() => {});
+				}
+				return;
+			}
+		} else {
+			// Row — check driver insight content
+			if (opt.articulated_insight?.the_truth) {
+				selectedInsight = opt.articulated_insight;
+				selectedOutcome = null;
+				showInsightPopup = true;
+				if (!viewedInsightIndices.includes(insightIndex)) {
+					matrix.generateInsights(insightIndex, model).catch(() => {});
+				}
+				return;
+			}
 		}
 
 		// No content yet — call backend to generate + mark as viewed
@@ -213,13 +235,24 @@
 		try {
 			const updatedDoc = await matrix.generateInsights(insightIndex, model);
 			if (updatedDoc) {
-				const options = type === 'row'
-					? updatedDoc.matrix_data?.row_options
-					: updatedDoc.matrix_data?.column_options;
-				const updatedOpt = options?.[idx];
-				if (updatedOpt?.articulated_insight) {
-					selectedInsight = updatedOpt.articulated_insight;
-					showInsightPopup = true;
+				if (type === 'column') {
+					const updatedOpt = updatedDoc.matrix_data?.column_options?.[idx];
+					if (updatedOpt?.articulated_outcome) {
+						selectedOutcome = updatedOpt.articulated_outcome;
+						selectedInsight = null;
+						showInsightPopup = true;
+					} else if (updatedOpt?.articulated_insight) {
+						selectedInsight = updatedOpt.articulated_insight;
+						selectedOutcome = null;
+						showInsightPopup = true;
+					}
+				} else {
+					const updatedOpt = updatedDoc.matrix_data?.row_options?.[idx];
+					if (updatedOpt?.articulated_insight) {
+						selectedInsight = updatedOpt.articulated_insight;
+						selectedOutcome = null;
+						showInsightPopup = true;
+					}
 				}
 			}
 		} catch (error: any) {
@@ -233,6 +266,7 @@
 	function handleCloseInsight() {
 		showInsightPopup = false;
 		selectedInsight = null;
+		selectedOutcome = null;
 	}
 </script>
 
@@ -436,7 +470,7 @@
 									{@const isSelected = selectedColumns.includes(idx)}
 									{@const canSelect = selectedColumns.length < 5}
 									{@const canToggle = isSelected || canSelect}
-									{@const hasInsight = !!(opt?.insight_title || opt?.articulated_insight)}
+									{@const hasInsight = !!(opt?.insight_title || opt?.articulated_outcome || opt?.articulated_insight)}
 									{@const isGenerated = viewedInsightIndices.includes(10 + idx)}
 									{@const isThisLoading = generatingInsightKey === `column-${idx}`}
 									{#if opt}
@@ -502,6 +536,7 @@
 <InsightPopup
 	bind:open={showInsightPopup}
 	insight={selectedInsight}
+	outcome={selectedOutcome}
 	optionLabel={selectedOptionLabel}
 	optionType={selectedOptionType}
 	on:close={handleCloseInsight}

@@ -2936,6 +2936,130 @@ REQUIREMENTS:
         return None
 
 
+def _build_driver_articulation_prompt(driver_items: list) -> str:
+    """Build prompt section for driver insights (rows, indices 0-9).
+
+    Uses the 9-field structure: micro_moment → the_truth → your_truth → the_mark.
+    Describes each field FUNCTIONALLY — no hardcoded phrases for the LLM to parrot.
+    """
+    items_list = "\n".join([
+        f"- Index {i['index']}: row '{i['label']}' — title: '{i['title']}'"
+        for i in driver_items
+    ])
+    return f"""
+## DRIVER INSIGHTS (rows — indices 0-9)
+
+Generate for these drivers:
+{items_list}
+
+Each driver insight has 9 fields. Here is the FUNCTION of each field — express these functions using your own varied, natural language:
+
+**title**: Use the provided title exactly as given.
+
+**micro_moment** (40-60 words): A fly-on-the-wall scene set in the user's actual world. Present tense, sensory. Capture the precise instant where the pattern reveals itself — a meeting, a dashboard glance, a conversation. The reader should feel immediate recognition: "that's exactly what happens."
+
+**the_truth** (80-120 words): An analogy drawn from OUTSIDE the user's domain — a completely different world that maps perfectly onto what was just shown in the micro moment. Immersive present tense, rich sensory detail. The analogy should illuminate the underlying pattern in a way the user's own domain language cannot.
+
+**the_truth_law** (15-25 words): A single universal principle distilled from the analogy, wrapped in **bold**. This should feel like a law of nature, not advice.
+
+**your_truth** (50-80 words): Two functions here — WITNESS and EQUIP. First, demonstrate that you see what the user has been carrying, doing, or navigating. Then provide a future detection mechanism — reframe the pattern so they will catch it going forward. This is recognition plus liberation, not analysis plus blame.
+
+**your_truth_revelation**: A bold statement (wrapped in **bold**) revealing what is now visible that wasn't before.
+
+**the_mark_name** (2-5 words): A memorable concept name that installs this insight as a permanent pattern. Should feel like naming something that always existed but never had a name.
+
+**the_mark_prediction**: Where and when they will encounter this pattern next. Be specific to their context.
+
+**the_mark_identity**: A bold statement (wrapped in **bold**) of the new capability or identity this insight grants.
+
+CRITICAL — ANTI-REPETITION RULES:
+- Each insight in this batch MUST feel distinct. Vary your analogy domains, sentence structures, and openings.
+- Do NOT start multiple your_truth fields with the same phrase or sentence pattern.
+- Do NOT use the same opening structure across micro_moments.
+- Every field within a single insight must contain unique content — never repeat or near-duplicate a sentence within the same insight.
+- Vary the_mark_name naming conventions — mix metaphors, roles, principles, and spatial concepts.
+
+Output format for each driver (indices 0-9):
+{{
+  "title": "...",
+  "micro_moment": "...",
+  "the_truth": "...",
+  "the_truth_law": "**...**",
+  "your_truth": "...",
+  "your_truth_revelation": "**...**",
+  "the_mark_name": "...",
+  "the_mark_prediction": "...",
+  "the_mark_identity": "**...**"
+}}
+"""
+
+
+def _build_outcome_articulation_prompt(outcome_items: list) -> str:
+    """Build prompt section for outcome projections (columns, indices 10-19).
+
+    Uses the 8-field structure: the_arc → the_landscape → the_anchor.
+    Physics: PROJECTION (traces forces forward to resting states).
+    Domain: INSIDE user's world (not outside analogies).
+    """
+    items_list = "\n".join([
+        f"- Index {i['index']}: column '{i['label']}' — title: '{i['title']}'"
+        for i in outcome_items
+    ])
+    return f"""
+## OUTCOME PROJECTIONS (columns — indices 10-19)
+
+Generate for these outcomes:
+{items_list}
+
+GOVERNING PRINCIPLE: You are PROJECTING where forces land, not collapsing hidden realities. Outcomes trace the trajectory of drivers forward to their resting states. Stay INSIDE the user's domain — no borrowed metaphors from distant worlds (that is driver territory).
+
+INTERNAL ANALYSIS (do NOT output this — let it shape your writing):
+Before generating each outcome, internally determine:
+1. Operator signature — which force is dominant? (Karma=compounding momentum, Entropy=dissolution-into-renewal, Void=emergence-from-nothing, Resonance=amplification-through-alignment, Grace=acceleration-beyond-effort, Attachment=tightening-grip)
+2. Domain concreteness — how tangible is the user's world? (concrete domains get specific operational language; abstract domains get spatial/directional language)
+3. Trajectory type — is this accelerating, decelerating, oscillating, or approaching threshold?
+4. S-level calibration — how far along the growth curve? (early=potential language, mid=momentum language, late=refinement language)
+5. Scale/polarity — macro or micro outcome? Positive trajectory or risk trajectory?
+
+Each outcome has 8 fields. Express these FUNCTIONS using varied, natural language:
+
+**title**: Use the provided title exactly as given.
+
+**the_arc** (80-120 words): Three beats — force in motion, inflection point, resolution. Written in progressive present tense (time-lapse feel, not frozen moment). The arc STAYS INSIDE the user's domain. Show the force building, reaching its turning point, and settling into its natural resting state. The shape of the arc should reflect the dominant operator (e.g., Karma arcs compound and echo; Entropy arcs dissolve before renewing; Void arcs emerge from apparent emptiness).
+
+**the_arc_destination** (15-25 words): A bold statement (wrapped in **bold**) naming the specific destination this arc reaches. This is NOT a universal law — it is a specific landing point for THIS user's situation.
+
+**the_landscape** (50-80 words): Three beats — current position, fork, state description. Show the user where they stand, then present a fork where two qualitatively DIFFERENT realities diverge (not optimistic vs pessimistic versions of the same thing, but genuinely different kinds of futures). Describe the terrain of the path they are heading toward. Orient, don't predict. Map the territory, don't judge the traveler.
+
+**the_landscape_operating_reality**: A bold statement (wrapped in **bold**) describing the operating reality of the achieved state — what becomes true in daily practice.
+
+**the_anchor_name** (2-5 words): A destination or position name in Title Case. This names WHERE they arrive, not what they are diagnosed with. Think geographic/positional, not clinical.
+
+**the_anchor_signal**: An observable marker of arrival — a specific, concrete thing that happens in their world that tells them they have arrived. Not abstract feelings, but visible shifts.
+
+**the_anchor_identity**: A bold statement (wrapped in **bold**) of positional identity — how they operate from this new position. Frame as "from X, not Y" when possible.
+
+RESTRAINTS:
+- No universal laws (that is driver territory — outcomes project, they don't legislate)
+- No "You'll see this in..." or "You'll notice..." patterns (that is driver Mark language)
+- No borrowed metaphors from distant domains in concrete contexts — stay in the user's operational world
+- Each outcome must trace a genuinely different trajectory. Vary arc shapes, fork structures, and anchor names across the batch.
+- Never repeat or near-duplicate sentences within a single outcome.
+
+Output format for each outcome (indices 10-19):
+{{
+  "title": "...",
+  "the_arc": "...",
+  "the_arc_destination": "**...**",
+  "the_landscape": "...",
+  "the_landscape_operating_reality": "**...**",
+  "the_anchor_name": "...",
+  "the_anchor_signal": "...",
+  "the_anchor_identity": "**...**"
+}}
+"""
+
+
 async def generate_insights_batch_llm(
     document: dict,
     missing_indices: List[int],
@@ -2943,19 +3067,20 @@ async def generate_insights_batch_llm(
     model_config: dict
 ) -> Optional[dict]:
     """
-    Generate all missing articulated insights for a document in a single call.
+    Generate all missing articulated insights/outcomes for a document in a single call.
 
     Called when user clicks on any insight title that hasn't been generated yet.
-    Generates ALL missing insights to maximize efficiency of input tokens.
+    Generates ALL missing items to maximize efficiency of input tokens.
+    Rows (0-9) get driver articulation; columns (10-19) get outcome articulation.
 
     Args:
         document: Document with row_options and column_options
-        missing_indices: List of indices (0-19) for missing insights (0-9 = rows, 10-19 = columns)
+        missing_indices: List of indices (0-19) for missing items (0-9 = rows, 10-19 = columns)
         context_messages: Recent conversation messages for context
         model_config: Model configuration from user selection
 
     Returns:
-        Dict with 'insights' mapping index to full ArticulatedInsight, or None on failure
+        Dict with 'insights' mapping index to full articulation dict, or None on failure
     """
     provider = model_config.get("provider")
     api_key = model_config.get("api_key")
@@ -2974,81 +3099,57 @@ async def generate_insights_batch_llm(
     row_options = matrix_data.get("row_options", [])
     col_options = matrix_data.get("column_options", [])
 
-    # Build list of insights to generate
-    insights_to_generate = []
+    # Partition into driver (0-9) and outcome (10-19) items
+    driver_items = []
+    outcome_items = []
     for idx in missing_indices:
         if idx < 10:
-            # Row insight
             row = row_options[idx] if idx < len(row_options) else {}
-            insights_to_generate.append({
+            driver_items.append({
                 "index": idx,
-                "type": "row",
                 "label": row.get("label", f"Row {idx}"),
                 "title": row.get("insight_title", "")
             })
         else:
-            # Column insight
             col_idx = idx - 10
             col = col_options[col_idx] if col_idx < len(col_options) else {}
-            insights_to_generate.append({
+            outcome_items.append({
                 "index": idx,
-                "type": "column",
                 "label": col.get("label", f"Column {col_idx}"),
                 "title": col.get("insight_title", "")
             })
 
-    insights_list = "\n".join([
-        f"- Index {i['index']}: {i['type']} '{i['label']}' with title '{i['title']}'"
-        for i in insights_to_generate
-    ])
-
-    prompt_text = f"""Generate articulated insights for the following row/column options.
+    # Build prompt — only include relevant sections
+    prompt_text = f"""Generate articulated content for the following matrix options.
 
 DOCUMENT: {document.get("name", "Unknown")}
 
 CONVERSATION CONTEXT:
 {context_summary}
+"""
 
-INSIGHTS TO GENERATE:
-{insights_list}
+    if driver_items:
+        prompt_text += _build_driver_articulation_prompt(driver_items)
 
-For each insight, generate the full 9-field ArticulatedInsight structure:
+    if outcome_items:
+        prompt_text += _build_outcome_articulation_prompt(outcome_items)
 
-**TITLE**: Use the provided title exactly
-**MICRO MOMENT (40-60 words)**: Fly-on-the-wall scene set in the USER'S actual world. Present tense. Sensory. Capture the precise instant where the truth reveals itself — a meeting, a dashboard, a conversation. The reader should think "that's exactly what happens."
-**THE TRUTH (80-120 words)**: Analogy from OUTSIDE user's domain. Immersive present tense, sensory details. A completely different world that maps perfectly onto the micro moment.
-**THE TRUTH LAW**: One-line universal law in **bold** (15-25 words)
-**YOUR TRUTH (50-80 words)**: Opens with "I see you...", includes "never miss again" trigger
-**YOUR TRUTH REVELATION**: Bold revelation - what's now visible
-**THE MARK NAME**: Memorable concept name, 2-5 words
-**THE MARK PREDICTION**: Where they'll recognize this pattern
-**THE MARK IDENTITY**: New capability in **bold**
+    prompt_text += """
+Return ONLY valid JSON with ALL requested indices:
 
-Return ONLY valid JSON:
-
-{{
-  "insights": {{
-    "0": {{
-      "title": "The title provided",
-      "micro_moment": "You're sitting in the Monday standup...",
-      "the_truth": "...",
-      "the_truth_law": "**...**",
-      "your_truth": "I see you...",
-      "your_truth_revelation": "**...**",
-      "the_mark_name": "...",
-      "the_mark_prediction": "...",
-      "the_mark_identity": "**...**"
-    }},
-    ... (one entry per missing index)
-  }}
-}}
+{
+  "insights": {
+    "<index>": { ... fields per type ... },
+    ...
+  }
+}
 
 REQUIREMENTS:
-- Generate insights for ALL indices listed above
-- Each insight should be 200-300 words total across all fields
-- micro_moment MUST come first and ground the insight in the user's real world
+- Generate content for ALL indices listed above
+- Each item should be 200-300 words total across all fields
+- Use the exact title provided for each item
 - User should think: "I can't unsee this now"
-- Use the exact title provided for each insight"""
+"""
 
     try:
         async with httpx.AsyncClient(timeout=300.0) as client:
@@ -3104,10 +3205,10 @@ REQUIREMENTS:
             result = json.loads(response_text)
             insights = result.get("insights", {})
 
-            api_logger.info(f"[INSIGHT_GEN] Generated {len(insights)} insights for document '{document.get('name')}'")
+            api_logger.info(f"[INSIGHT_GEN] Generated {len(insights)} items for document '{document.get('name')}'")
 
             if len(insights) < len(missing_indices):
-                api_logger.warning(f"[INSIGHT_GEN] Only got {len(insights)} insights, expected {len(missing_indices)}")
+                api_logger.warning(f"[INSIGHT_GEN] Only got {len(insights)} items, expected {len(missing_indices)}")
 
             return {"insights": insights}
 

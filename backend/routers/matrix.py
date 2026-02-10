@@ -336,15 +336,15 @@ async def generate_insights(
         documents[doc_index]["matrix_data"]["viewed_insight_indices"] = viewed
         needs_save = True
 
-    # Find missing insights (indices 0-9 = rows, 10-19 = columns)
+    # Find missing insights (indices 0-9 = rows use driver articulation, 10-19 = columns use outcome articulation)
     missing_indices = []
     for i, row in enumerate(row_options):
         insight = row.get("articulated_insight")
         if not insight or not insight.get("the_truth"):
             missing_indices.append(i)
     for i, col in enumerate(col_options):
-        insight = col.get("articulated_insight")
-        if not insight or not insight.get("the_truth"):
+        outcome = col.get("articulated_outcome")
+        if not outcome or not outcome.get("the_arc"):
             missing_indices.append(10 + i)
 
     if missing_indices:
@@ -365,19 +365,21 @@ async def generate_insights(
         insights = result["insights"]
         insights_applied = 0
 
-        for idx_str, insight in insights.items():
+        for idx_str, insight_data in insights.items():
             try:
                 idx = int(idx_str)
             except (ValueError, TypeError):
                 continue
             if idx < 10:
+                # Rows get driver articulation (articulated_insight)
                 if idx < len(row_options):
-                    documents[doc_index]["matrix_data"]["row_options"][idx]["articulated_insight"] = insight
+                    documents[doc_index]["matrix_data"]["row_options"][idx]["articulated_insight"] = insight_data
                     insights_applied += 1
             else:
+                # Columns get outcome articulation (articulated_outcome)
                 col_idx = idx - 10
                 if col_idx < len(col_options):
-                    documents[doc_index]["matrix_data"]["column_options"][col_idx]["articulated_insight"] = insight
+                    documents[doc_index]["matrix_data"]["column_options"][col_idx]["articulated_outcome"] = insight_data
                     insights_applied += 1
 
         api_logger.info(f"[INSIGHTS] Generated {insights_applied} insights for doc {doc_id}")
