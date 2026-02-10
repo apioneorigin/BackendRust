@@ -44,7 +44,6 @@ class SendMessageRequest(BaseModel):
     model: str = "claude-opus-4-5-20251101"
     web_search_data: bool = True
     web_search_insights: bool = True
-    search_provider: str = "llm"  # "tavily" or "llm" (built-in Claude/OpenAI web search)
     attachments: Optional[List[dict]] = None  # File attachments: [{"name": "file.pdf", "content": "...", "type": "pdf"}]
     active_document_id: Optional[str] = None  # ID of the currently active document in matrix view
 
@@ -499,8 +498,7 @@ async def send_message(
                 model_config,
                 request.web_search_data,
                 request.web_search_insights,
-                conversation_context.model_dump(),  # Pass conversation context
-                search_provider=request.search_provider,
+                conversation_context.model_dump()  # Pass conversation context
             ):
                 # Parse SSE event
                 if isinstance(event, dict):
