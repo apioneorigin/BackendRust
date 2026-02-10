@@ -1,5 +1,5 @@
 # =============================================================================
-# DigitalOcean App Platform — Full Stack (Frontend + Backend)
+# DigitalOcean App Platform — Full Stack (Frontend + Backend + Databases)
 # =============================================================================
 # Usage:
 #   1. Create a new app in DO Console → Apps → Create App
@@ -7,10 +7,7 @@
 #   3. Paste this spec in Settings → App Spec → Edit
 #   4. Set SECRET env vars in DO Console → Settings → Environment Variables:
 #      - OPENAI_API_KEY, ANTHROPIC_API_KEY, JWT_SECRET
-#      - DATABASE_URL (from DO Managed Database — must include ?sslmode=require)
-#      - REDIS_URL (from DO Managed Redis, or leave blank for in-memory fallback)
-#   5. Add a DO Managed PostgreSQL database (Dev or Basic plan)
-#   6. Optionally add a DO Managed Redis instance
+#   5. DATABASE_URL and REDIS_URL are auto-wired from the database components
 #
 # Routing:
 #   /        → Frontend (SvelteKit)
@@ -19,6 +16,11 @@
 # Health checks:
 #   Frontend: GET /healthz  → SvelteKit server route
 #   Backend:  GET /healthz/ → FastAPI health endpoint (trailing slash required)
+#
+# Databases:
+#   PostgreSQL and Valkey are defined as app components below.
+#   Template variables (${db.DATABASE_URL}, ${cache.DATABASE_URL}) resolve
+#   automatically — no need to copy/paste connection strings manually.
 # =============================================================================
 
 name: reality-transformer
@@ -43,6 +45,25 @@ ingress:
       match:
         path:
           prefix: /
+
+# =============================================================================
+# Databases
+# =============================================================================
+databases:
+
+  # ── PostgreSQL ────────────────────────────────────────────────────────────
+  # To use an existing managed cluster, add:  cluster_name: your-cluster-name
+  - name: db
+    engine: PG
+    version: "18"
+    production: true
+
+  # ── Valkey (Redis-compatible) ─────────────────────────────────────────────
+  # To use an existing managed cluster, add:  cluster_name: your-cluster-name
+  - name: cache
+    engine: REDIS
+    version: "8"
+    production: true
 
 # =============================================================================
 # Services
@@ -129,16 +150,14 @@ services:
         scope: RUN_TIME
         type: SECRET
 
-      # PostgreSQL connection string from DO Managed Database
-      # Format: postgresql://user:pass@host:25060/db?sslmode=require
+      # ── Database connections (auto-wired from database components) ───
       - key: DATABASE_URL
         scope: RUN_TIME
-        type: SECRET
+        value: ${db.DATABASE_URL}
 
-      # Redis connection string (optional — falls back to in-memory)
       - key: REDIS_URL
         scope: RUN_TIME
-        type: SECRET
+        value: ${cache.DATABASE_URL}
 
       # ── Public config ────────────────────────────────────────────────
       - key: ENVIRONMENT
