@@ -2,6 +2,9 @@
 Database configuration with SQLite for development and PostgreSQL for production.
 - Set DATABASE_URL for PostgreSQL (production)
 - Leave DATABASE_URL unset or set USE_SQLITE=true for SQLite (development)
+
+On DigitalOcean App Platform, DATABASE_URL is auto-discovered from attached
+database components — no manual env var entry needed.  See utils/resolve_do_env.py.
 """
 
 import os
@@ -15,8 +18,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Get DATABASE_URL from environment
-DATABASE_URL = os.getenv("DATABASE_URL", "")
+# Auto-discover DATABASE_URL from DigitalOcean-injected env vars (or explicit)
+from utils.resolve_do_env import resolve_database_url
+DATABASE_URL = resolve_database_url()
 IS_PRODUCTION = os.getenv("ENVIRONMENT") == "production"
 USE_SQLITE = os.getenv("USE_SQLITE", "").lower() in ("true", "1", "yes") or not DATABASE_URL
 

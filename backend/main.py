@@ -161,28 +161,30 @@ async def lifespan(app: FastAPI):
     await init_db()
     api_logger.info("Database initialized")
 
+    # Resolve Redis/Valkey URL (auto-discovers DigitalOcean-injected vars)
+    from utils.resolve_do_env import resolve_redis_url
+    _redis_url = resolve_redis_url()
+
     # Connect cache to Redis if available
     from utils.cache import cache
-    _cache_redis_url = os.getenv("REDIS_URL", "").strip()
-    if _cache_redis_url:
-        connected = await cache.connect(_cache_redis_url)
+    if _redis_url:
+        connected = await cache.connect(_redis_url)
         if connected:
             api_logger.info("[CACHE] Connected to Redis")
         else:
             api_logger.warning("[CACHE] Redis unavailable, using in-memory cache (no TTL support)")
     else:
-        api_logger.info("[CACHE] No REDIS_URL, using in-memory cache")
+        api_logger.info("[CACHE] No REDIS_URL found, using in-memory cache")
 
     # Connect session store to Redis if available
-    _session_redis_url = os.getenv("REDIS_URL", "").strip()
-    if _session_redis_url:
-        connected = await api_session_store.connect_redis(_session_redis_url)
+    if _redis_url:
+        connected = await api_session_store.connect_redis(_redis_url)
         if connected:
             api_logger.info("[SESSION STORE] Connected to Redis — sessions persist across restarts")
         else:
             api_logger.warning("[SESSION STORE] Redis unavailable, using in-memory session store")
     else:
-        api_logger.info("[SESSION STORE] No REDIS_URL, using in-memory session store")
+        api_logger.info("[SESSION STORE] No REDIS_URL found, using in-memory session store")
 
     # Start background session cleanup task
     cleanup_task = asyncio.create_task(_session_cleanup_task())
