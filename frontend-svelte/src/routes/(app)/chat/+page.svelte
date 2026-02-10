@@ -58,7 +58,6 @@
 	let fileInputElement: HTMLInputElement;
 	let selectedModel = 'claude-opus-4-5-20251101';
 	let webSearchEnabled = false;
-	let searchProvider: 'llm' | 'tavily' = 'llm';
 	let attachedFiles: File[] = [];
 	let isDragging = false;
 	let placeholderIndex = 0;
@@ -302,7 +301,7 @@
 		}
 
 		try {
-			await chat.sendMessage(content, selectedModel, processedAttachments, webSearchEnabled, webSearchEnabled ? searchProvider : 'llm');
+			await chat.sendMessage(content, selectedModel, processedAttachments, webSearchEnabled);
 		} catch (error: any) {
 			addToast('error', error.message || 'Failed to send message');
 		}
@@ -759,13 +758,6 @@
 						</svg>
 						<span>Research</span>
 					</label>
-
-					{#if webSearchEnabled}
-						<select bind:value={searchProvider} class="search-provider-select" title="Search provider">
-							<option value="llm">LLM Search</option>
-							<option value="tavily">Tavily</option>
-						</select>
-					{/if}
 
 					<button
 						class="send-btn"
@@ -1532,26 +1524,6 @@
 	}
 
 	.model-select:focus {
-		outline: none;
-	}
-
-	.search-provider-select {
-		padding: 0.375rem 0.5rem;
-		border: none;
-		border-radius: 0.375rem;
-		background: transparent;
-		color: var(--color-text-whisper);
-		font-size: var(--font-size-base);
-		cursor: pointer;
-		transition: all 0.1s ease;
-	}
-
-	.search-provider-select:hover {
-		background: var(--color-accent-subtle);
-		color: var(--color-text-source);
-	}
-
-	.search-provider-select:focus {
 		outline: none;
 	}
 

@@ -150,11 +150,6 @@ services:
         scope: RUN_TIME
         type: SECRET
 
-      # Tavily web search API key (optional — enables cheaper dedicated search)
-      - key: TAVILY_API_KEY
-        scope: RUN_TIME
-        type: SECRET
-
       # ── Database connections (auto-wired from database components) ───
       - key: DATABASE_URL
         scope: RUN_TIME
