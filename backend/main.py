@@ -2766,7 +2766,7 @@ REQUIREMENTS:
                 }
                 request_body = {
                     "model": model,
-                    "max_tokens": 32768,
+                    "max_tokens": 65536,
                     "messages": [{"role": "user", "content": prompt_text}]
                 }
                 response = await client.post(endpoint, headers=headers, json=request_body)
@@ -2787,7 +2787,7 @@ REQUIREMENTS:
                 }
                 request_body = {
                     "model": model,
-                    "max_completion_tokens": 32768,
+                    "max_completion_tokens": 65536,
                     "messages": [{"role": "user", "content": prompt_text}],
                     "response_format": {"type": "json_object"}
                 }
