@@ -161,6 +161,18 @@ async def lifespan(app: FastAPI):
     await init_db()
     api_logger.info("Database initialized")
 
+    # Connect cache to Redis if available
+    from utils.cache import cache
+    _cache_redis_url = os.getenv("REDIS_URL", "").strip()
+    if _cache_redis_url:
+        connected = await cache.connect(_cache_redis_url)
+        if connected:
+            api_logger.info("[CACHE] Connected to Redis")
+        else:
+            api_logger.warning("[CACHE] Redis unavailable, using in-memory cache (no TTL support)")
+    else:
+        api_logger.info("[CACHE] No REDIS_URL, using in-memory cache")
+
     # Start background session cleanup task
     cleanup_task = asyncio.create_task(_session_cleanup_task())
     api_logger.info("Session cleanup task started")
@@ -174,6 +186,9 @@ async def lifespan(app: FastAPI):
     except asyncio.CancelledError:
         pass
     api_logger.info("Session cleanup task stopped")
+
+    # Disconnect cache
+    await cache.disconnect()
 
     from database import close_db
     await close_db()
@@ -193,17 +208,38 @@ apply_concealment(app, custom_server_name="API Server")
 # =====================================================================
 
 # Allowed origins for CORS (production-safe)
-CORS_ORIGINS = os.getenv("CORS_ORIGINS", "").split(",") if os.getenv("CORS_ORIGINS") else [
-    "http://localhost:5173",  # SvelteKit dev
-    "http://localhost:3000",  # Alternative dev port
-    "http://127.0.0.1:5173",
-    "http://127.0.0.1:3000",
-]
-# Filter out empty strings
-CORS_ORIGINS = [origin.strip() for origin in CORS_ORIGINS if origin.strip()]
+# Note: DigitalOcean SECRET env vars may inject empty strings — treat as unset
+_cors_env = os.getenv("CORS_ORIGINS", "").strip()
+if _cors_env:
+    CORS_ORIGINS = [origin.strip() for origin in _cors_env.split(",") if origin.strip()]
+else:
+    CORS_ORIGINS = [
+        "http://localhost:5173",  # SvelteKit dev
+        "http://localhost:3000",  # Alternative dev port
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:3000",
+    ]
+
+if os.getenv("ENVIRONMENT") == "production" and not CORS_ORIGINS:
+    api_logger.warning("[CORS] WARNING: No CORS origins configured in production! Set CORS_ORIGINS env var.")
 
 # Initialize security components
-_rate_limiter = RateLimiter()
+# Connect rate limiter to Redis if available (prevents data loss on restart)
+_redis_client = None
+_redis_url = os.getenv("REDIS_URL", "").strip()
+if _redis_url:
+    try:
+        import redis.asyncio as _redis_module
+        _redis_client = _redis_module.from_url(_redis_url, decode_responses=True)
+        api_logger.info(f"[REDIS] Rate limiter connected to Redis")
+    except ImportError:
+        api_logger.warning("[REDIS] redis package not installed, using in-memory rate limiter")
+    except Exception as e:
+        api_logger.warning(f"[REDIS] Failed to connect to Redis: {e}, using in-memory rate limiter")
+else:
+    api_logger.info("[REDIS] No REDIS_URL set, using in-memory rate limiter (state lost on restart)")
+
+_rate_limiter = RateLimiter(redis_client=_redis_client)
 set_rate_limiter(_rate_limiter)
 _audit_logger = AuditLogger()
 set_audit_logger(_audit_logger)
@@ -309,6 +345,11 @@ class APISessionStore:
 
 # Global session store instance for API endpoints
 api_session_store = APISessionStore()
+if os.getenv("ENVIRONMENT") == "production":
+    api_logger.warning(
+        "[SESSION STORE] Using in-memory session store — active Q&A sessions "
+        "will be lost on container restart/redeploy. Consider migrating to Redis."
+    )
 
 # =====================================================================
 # END SESSION STORAGE
@@ -983,7 +1024,7 @@ especially operators that were uncertain (low confidence) in the initial extract
         # Log inference results
         formula_count = posteriors.get('formula_count')
         tiers_executed = posteriors.get('tiers_executed')
-        posteriors_count = len(posteriors.get('values'))
+        posteriors_count = len(posteriors.get('values') or {})
         api_logger.info(f"[INFERENCE] Formulas: {formula_count} | Tiers: {tiers_executed} | Posteriors: {posteriors_count}")
 
         yield sse_status(f"Inference complete: {formula_count} formulas, {tiers_executed} tiers, {posteriors_count} posteriors")
@@ -1235,7 +1276,7 @@ async def inference_stream(
             api_logger.info(f"[TITLE] Generated: {conversation_title}")
             yield sse_event("title", {"title": conversation_title})
 
-        obs_count = len(evidence.get('observations'))
+        obs_count = len(evidence.get('observations') or [])
         api_logger.info(f"[EVIDENCE] Extracted {obs_count} observations")
         api_logger.debug(f"[EVIDENCE] Goal: {evidence.get('goal')}")
         api_logger.debug(f"[EVIDENCE] Domain: {evidence.get('domain')}")
@@ -1263,10 +1304,10 @@ async def inference_stream(
 
         # Log search guidance for evidence grounding (Phase 6 metrics)
         query_pattern = evidence.get('query_pattern')
-        search_guidance = evidence.get('search_guidance')
-        high_priority_values = search_guidance.get('high_priority_values')
-        evidence_search_queries = search_guidance.get('evidence_search_queries')
-        consciousness_mappings = search_guidance.get('consciousness_to_reality_mappings')
+        search_guidance = evidence.get('search_guidance') or {}
+        high_priority_values = search_guidance.get('high_priority_values') or []
+        evidence_search_queries = search_guidance.get('evidence_search_queries') or []
+        consciousness_mappings = search_guidance.get('consciousness_to_reality_mappings') or []
 
         api_logger.info(f"[EVIDENCE GROUNDING] Query pattern: {query_pattern}")
         api_logger.info(f"[EVIDENCE GROUNDING] High-priority values: {len(high_priority_values)}")
@@ -1281,8 +1322,8 @@ async def inference_stream(
 
         pipeline_logger.log_step("Evidence Extraction", {
             "observations": obs_count,
-            "search_queries": len(search_queries),
-            "key_facts": len(key_facts),
+            "search_queries": len(search_queries or []),
+            "key_facts": len(key_facts or []),
             "query_pattern": query_pattern,
             "high_priority_values": len(high_priority_values),
             "evidence_search_queries": len(evidence_search_queries),
@@ -1351,7 +1392,7 @@ async def inference_stream(
         # Log inference results
         formula_count = posteriors.get('formula_count')
         tiers_executed = posteriors.get('tiers_executed')
-        posteriors_count = len(posteriors.get('values'))
+        posteriors_count = len(posteriors.get('values') or {})
         api_logger.info(f"[INFERENCE] Formulas: {formula_count} | Tiers: {tiers_executed} | Posteriors: {posteriors_count}")
         pipeline_logger.log_step("Inference", {"formulas": formula_count, "tiers": tiers_executed, "posteriors": posteriors_count})
 
@@ -1374,7 +1415,7 @@ async def inference_stream(
         posteriors_values = posteriors.get('values')
         total_values = len([v for v in posteriors_values.values() if v is not None]) if isinstance(posteriors_values, dict) else None
         api_logger.info(f"[PURE ARCHITECTURE] Sending ALL {total_values} non-null values to LLM Call 2")
-        api_logger.info(f"[PURE ARCHITECTURE] Context provided: targets={len(evidence.get('targets'))}, query_pattern={evidence.get('query_pattern')}")
+        api_logger.info(f"[PURE ARCHITECTURE] Context provided: targets={len(evidence.get('targets') or [])}, query_pattern={evidence.get('query_pattern')}")
 
         s_current = consciousness_state.tier1.s_level.current
         articulation_logger.info(f"[VALUE ORGANIZER] S-Level: {f'{s_current:.1f}' if s_current is not None else 'N/C'} ({consciousness_state.tier1.s_level.label})")
@@ -1536,8 +1577,8 @@ async def inference_stream(
 
         # Log comprehensive evidence-grounding metrics
         query_pattern = evidence.get('query_pattern')
-        search_guidance = evidence.get('search_guidance')
-        posteriors_values = posteriors.get('values')
+        search_guidance = evidence.get('search_guidance') or {}
+        posteriors_values = posteriors.get('values') or {}
         extreme_values = sum(1 for v in posteriors_values.values()
                            if isinstance(v, (int, float)) and (v > 0.7 or v < 0.3))
 
@@ -1545,13 +1586,13 @@ async def inference_stream(
 [EVIDENCE GROUNDING METRICS]
 Query: {prompt[:100]}...
 Query Pattern: {query_pattern}
-Targets Requested: {len(evidence.get('targets'))}
-Search Guidance Entries: {len(search_guidance.get('high_priority_values'))}
-Evidence Search Queries: {len(search_guidance.get('evidence_search_queries'))}
-Consciousness→Reality Mappings: {len(search_guidance.get('consciousness_to_reality_mappings'))}
+Targets Requested: {len(evidence.get('targets') or [])}
+Search Guidance Entries: {len(search_guidance.get('high_priority_values') or [])}
+Evidence Search Queries: {len(search_guidance.get('evidence_search_queries') or [])}
+Consciousness→Reality Mappings: {len(search_guidance.get('consciousness_to_reality_mappings') or [])}
 Values Sent to LLM: {len(posteriors_values)}
 Extreme Values (>0.7 or <0.3): {extreme_values}
-Web Searches in Call 1: {len(evidence.get('search_queries_used'))}
+Web Searches in Call 1: {len(evidence.get('search_queries_used') or [])}
 Web Search Enabled Call 2: {web_search_insights}
 Articulation Tokens: {token_count}
 """)
@@ -3043,7 +3084,7 @@ async def format_results_streaming_bridge(
     query_pattern = evidence.get('query_pattern')
     if search_guidance_data:
         search_guidance_data['query_pattern'] = query_pattern
-        articulation_logger.info(f"[ARTICULATION BRIDGE] Search guidance: {len(search_guidance_data.get('high_priority_values'))} high-priority values, pattern={query_pattern}")
+        articulation_logger.info(f"[ARTICULATION BRIDGE] Search guidance: {len(search_guidance_data.get('high_priority_values') or [])} high-priority values, pattern={query_pattern}")
 
     # Log conversation context for Call 2
     if conversation_context:
@@ -3106,9 +3147,9 @@ async def format_results_streaming_bridge(
     if search_guidance_data:
         articulation_logger.info("[ARTICULATION BRIDGE] Evidence grounding enabled:")
         articulation_logger.info(f"  - Query pattern: {query_pattern}")
-        articulation_logger.info(f"  - High-priority values: {len(search_guidance_data.get('high_priority_values'))}")
-        articulation_logger.info(f"  - Evidence search queries: {len(search_guidance_data.get('evidence_search_queries'))}")
-        articulation_logger.info(f"  - Consciousness→reality mappings: {len(search_guidance_data.get('consciousness_to_reality_mappings'))}")
+        articulation_logger.info(f"  - High-priority values: {len(search_guidance_data.get('high_priority_values') or [])}")
+        articulation_logger.info(f"  - Evidence search queries: {len(search_guidance_data.get('evidence_search_queries') or [])}")
+        articulation_logger.info(f"  - Consciousness→reality mappings: {len(search_guidance_data.get('consciousness_to_reality_mappings') or [])}")
         if search_guidance_data.get('evidence_search_queries'):
             for esq in search_guidance_data['evidence_search_queries'][:3]:
                 articulation_logger.debug(f"  [SEARCH QUERY] {esq.get('target_value')}: {esq.get('search_query')}")

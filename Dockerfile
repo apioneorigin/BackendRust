@@ -53,7 +53,7 @@ ENV PORT=8000
 EXPOSE ${PORT}
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-    CMD curl -f http://localhost:${PORT}/health || exit 1
+    CMD curl -f http://localhost:${PORT}/healthz/ || exit 1
 
 # Single uvicorn process — required for:
 #   • asyncio background tasks (session cleanup)

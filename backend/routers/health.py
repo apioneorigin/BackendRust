@@ -72,7 +72,7 @@ async def full_health_check(db: AsyncSession = Depends(get_db)):
 
     # Inference engine check
     try:
-        from ..formulas import OOFInferenceEngine
+        from formulas import OOFInferenceEngine
         engine = OOFInferenceEngine()
         inference_status = "loaded"
     except Exception as e:
