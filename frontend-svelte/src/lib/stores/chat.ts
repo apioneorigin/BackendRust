@@ -321,7 +321,7 @@ function createChatStore() {
 			}
 		},
 
-		async sendMessage(content: string, model: string = 'claude-opus-4-5-20251101', attachments: { name: string; content: string; type: string; encoding: string }[] = [], webSearch: boolean = true) {
+		async sendMessage(content: string, model: string = 'claude-opus-4-5-20251101', attachments: { name: string; content: string; type: string; encoding: string }[] = [], webSearch: boolean = true, searchProvider: string = 'llm') {
 			// Use update() to safely read state without creating synchronous subscription issues
 			let isFirstMessage = false;
 			let needsNewConversation = false;
@@ -374,6 +374,7 @@ function createChatStore() {
 						model,
 						web_search_data: webSearch,
 						web_search_insights: webSearch,
+						search_provider: searchProvider,
 						attachments: attachments.length > 0 ? attachments : undefined,
 					},
 					streamController.signal

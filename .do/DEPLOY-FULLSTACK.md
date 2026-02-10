@@ -27,6 +27,7 @@ Go to **Settings** -> **backend** component -> **Environment Variables** and set
 | `OPENAI_API_KEY` | your OpenAI key |
 | `ANTHROPIC_API_KEY` | your Anthropic key |
 | `JWT_SECRET` | output of `openssl rand -hex 32` |
+| `TAVILY_API_KEY` | your Tavily key (optional — enables cheaper web search) |
 
 `DATABASE_URL` and `REDIS_URL` are auto-wired from the database components via `${db.DATABASE_URL}` and `${cache.DATABASE_URL}` — no manual copy/paste needed.
 
