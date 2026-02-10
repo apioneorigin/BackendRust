@@ -967,7 +967,6 @@ async def continue_inference(
     prompt = session_data.get('prompt')
     web_search_data = session_data.get('web_search_data', True)
     web_search_insights = session_data.get('web_search_insights')
-    search_provider = session_data.get('search_provider', 'llm')
     selected_answer_text = session_data.get('_selected_answer_text', '')
     question_text = session_data.get('_question_text', '')
 
@@ -981,8 +980,7 @@ async def continue_inference(
             web_search_data=web_search_data,
             web_search_insights=web_search_insights,
             answer_text=selected_answer_text,
-            question_text=question_text,
-            search_provider=search_provider,
+            question_text=question_text
         ),
         media_type="text/event-stream",
         ping=15
@@ -997,8 +995,7 @@ async def inference_stream_continue(
     web_search_data: bool = True,
     web_search_insights: bool = True,
     answer_text: str = '',
-    question_text: str = '',
-    search_provider: str = "llm",
+    question_text: str = ''
 ) -> AsyncGenerator[dict, None]:
     """
     Continue inference pipeline after question has been answered.
@@ -1061,7 +1058,7 @@ the user's inner experience. Re-evaluate ALL operators with this combined contex
 especially operators that were uncertain (low confidence) in the initial extraction."""
 
             new_evidence = await parse_query_with_web_research(
-                combined_prompt, model_config, use_web_search=web_search_data, search_provider=search_provider
+                combined_prompt, model_config, use_web_search=web_search_data
             )
             call1_token_usage = new_evidence.pop('_call1_token_usage', None)
 
@@ -1291,8 +1288,7 @@ async def inference_stream(
     model_config: dict,
     web_search_data: bool = True,
     web_search_insights: bool = True,
-    conversation_context: Optional[dict] = None,
-    search_provider: str = "llm",
+    conversation_context: Optional[dict] = None
 ) -> AsyncGenerator[dict, None]:
     """Generate SSE events for the inference pipeline with evidence enrichment and optional reverse mapping.
 
@@ -1302,7 +1298,6 @@ async def inference_stream(
         web_search_data: Enable web search for data gathering in Call 1
         web_search_insights: Enable web search for evidence grounding in Call 2
         conversation_context: Context from conversation history and files
-        search_provider: "tavily" or "llm"
             {
                 "messages": [{"role": "user"|"assistant", "content": "..."}],
                 "file_summaries": [{"name": "...", "summary": "...", "type": "..."}],
@@ -1319,7 +1314,6 @@ async def inference_stream(
         'model_config': model_config,
         'web_search_data': web_search_data,
         'web_search_insights': web_search_insights,
-        'search_provider': search_provider,
         'conversation_context': conversation_context,  # Store context in session
         'evidence': None,
         '_pending_question': None,
@@ -1363,7 +1357,7 @@ async def inference_stream(
         api_logger.info(f"[STEP 1] Parsing query (web_search_data={web_search_data})")
         yield sse_status(f"{'Researching context and parsing' if web_search_data else 'Parsing'} query...")
 
-        evidence = await parse_query_with_web_research(context_enhanced_prompt, model_config, web_search_data, context_images, search_provider=search_provider)
+        evidence = await parse_query_with_web_research(context_enhanced_prompt, model_config, web_search_data, context_images)
         call1_token_usage = evidence.pop('_call1_token_usage', None)
 
         # Extract and emit conversation title (generated in Call 1)
@@ -1795,7 +1789,7 @@ Articulation Tokens: {token_count}
         yield sse_error(str(e))
 
 
-async def parse_query_with_web_research(prompt: str, model_config: dict, use_web_search: bool = True, images: Optional[List[dict]] = None, search_provider: str = "llm") -> dict:
+async def parse_query_with_web_research(prompt: str, model_config: dict, use_web_search: bool = True, images: Optional[List[dict]] = None) -> dict:
     """
     Use LLM API with optional web_search tool to:
     1. Research relevant context about user's query (if web search enabled)
@@ -1810,7 +1804,6 @@ async def parse_query_with_web_research(prompt: str, model_config: dict, use_web
         model_config: Model configuration (provider, api_key, model)
         use_web_search: Enable web search for data gathering
         images: Optional list of image dicts with 'name', 'base64', 'media_type' for vision support
-        search_provider: "tavily" for dedicated search API, "llm" for built-in LLM web search tools
     """
     provider = model_config.get("provider")
     api_key = model_config.get("api_key")
@@ -1819,48 +1812,10 @@ async def parse_query_with_web_research(prompt: str, model_config: dict, use_web
     if not api_key:
         raise ValueError(f"No API key configured for provider: {provider}")
 
-    api_logger.info(f"[PARSE] Web search enabled: {use_web_search}, search_provider: {search_provider}")
-
-    # When using Tavily, pre-fetch search results and inject as context
-    # The LLM's built-in web search tools are NOT used in this mode
-    tavily_context = ""
-    tavily_queries_logged = []
-    if use_web_search and search_provider == "tavily":
-        from web_search import tavily_search, format_tavily_for_llm
-        try:
-            search_queries = [
-                prompt[:200],
-                f"{prompt[:100]} market position recent news",
-                f"{prompt[:100]} competitors challenges opportunities",
-            ]
-            api_logger.info(f"[TAVILY] Running {len(search_queries)} searches")
-
-            tavily_results = await asyncio.gather(
-                *[tavily_search(q, max_results=3, search_depth="advanced") for q in search_queries],
-                return_exceptions=True,
-            )
-
-            successful_results = []
-            for r in tavily_results:
-                if isinstance(r, dict):
-                    successful_results.append(r)
-                    tavily_queries_logged.append(r.get("query", ""))
-                else:
-                    api_logger.warning(f"[TAVILY] Search failed: {r}")
-
-            if successful_results:
-                tavily_context = format_tavily_for_llm(successful_results)
-                api_logger.info(f"[TAVILY] Got {len(successful_results)} result sets, {len(tavily_context)} chars of context")
-        except Exception as e:
-            api_logger.error(f"[TAVILY] Pre-search failed: {e}")
-            raise
-
-    # Determine whether to enable LLM's built-in web search tools
-    use_llm_web_search = use_web_search and search_provider == "llm"
+    api_logger.info(f"[PARSE] Web search enabled: {use_web_search}")
 
     # Build web search instructions conditionally
-    if use_llm_web_search:
-        web_search_instructions = """
+    web_search_instructions = """
 2. Use web_search EXTENSIVELY to research:
    - The assumed entity's current market position, revenue, competitors
    - Recent news, challenges, opportunities
@@ -1874,21 +1829,7 @@ For example:
 - "I am Nirma" → Search for "Nirma Ltd market position 2024", "Nirma vs competitors", "Indian detergent market"
 - Use SPECIFIC search queries for the assumed entity
 - Make operator values reflect REAL situation from web data
-- Higher confidence when backed by web evidence"""
-    elif tavily_context:
-        web_search_instructions = f"""
-2. Use the PRE-FETCHED WEB RESEARCH below to inform your operator calculations.
-   Do NOT use the web_search tool — research has already been done for you.
-
-=== PRE-FETCHED WEB RESEARCH ===
-{tavily_context}
-=== END WEB RESEARCH ===
-
-3. Calculate ACCURATE tier-1 operator values based on the REAL DATA provided above.
-- Make operator values reflect the REAL situation from the web research data
-- Higher confidence when backed by evidence from the research above"""
-    else:
-        web_search_instructions = """
+- Higher confidence when backed by web evidence""" if use_web_search else """
 2. Calculate tier-1 operator values based on your knowledge and the query context
 
 3. Use your best judgment to estimate operator values based on available information"""
@@ -2086,7 +2027,7 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
                 if provider == "anthropic":
                     # Anthropic Claude API with optional web search and prompt caching
                     user_content_text = f"User query:\n{prompt}"
-                    if use_llm_web_search:
+                    if use_web_search:
                         user_content_text += "\n\nIMPORTANT: Use the web_search tool to gather real data before responding."
                     # Strong JSON enforcement at end of user content
                     user_content_text += "\n\nAFTER completing any research, respond with ONLY the JSON object. No markdown, no explanation, no prose - just the raw JSON starting with { and ending with }."
@@ -2239,8 +2180,8 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
                         ]
                     }
 
-                    # Add web search tool if using LLM's built-in search
-                    if use_llm_web_search:
+                    # Add web search tool if enabled
+                    if use_web_search:
                         request_body["tools"] = [{
                             "type": "web_search_20250305",
                             "name": "web_search",
@@ -2252,13 +2193,13 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
                         "anthropic-version": "2023-06-01",
                         "Content-Type": "application/json"
                     }
-                    # Add web-search beta header if using LLM's built-in search
-                    if use_llm_web_search:
+                    # Add web-search beta header if enabled
+                    if use_web_search:
                         headers["anthropic-beta"] = "web-search-2025-03-05"
 
                     endpoint = model_config.get("endpoint")
 
-                    api_logger.info(f"[PARSE] Calling Anthropic {model} (llm_web_search={use_llm_web_search}, tavily={'yes' if tavily_context else 'no'}, prompt_caching=enabled)")
+                    api_logger.info(f"[PARSE] Calling Anthropic {model} (web_search={use_web_search}, prompt_caching=enabled)")
                     response = await client.post(endpoint, headers=headers, json=request_body)
 
                     if response.status_code != 200:
@@ -2335,8 +2276,8 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
                         }
                     }
 
-                    # Add web search tool if using LLM's built-in search
-                    if use_llm_web_search:
+                    # Add web search tool if enabled
+                    if use_web_search:
                         request_body["tools"] = [{
                             "type": "web_search",
                             "user_location": {"type": "approximate", "timezone": "UTC"}
@@ -2349,7 +2290,7 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
                     }
                     endpoint = model_config.get("endpoint")
 
-                    api_logger.info(f"[PARSE] Calling OpenAI {model} (llm_web_search={use_llm_web_search}, tavily={'yes' if tavily_context else 'no'})")
+                    api_logger.info(f"[PARSE] Calling OpenAI {model} (web_search={use_web_search})")
                     response = await client.post(endpoint, headers=headers, json=request_body)
 
                     if response.status_code != 200:
@@ -2481,12 +2422,8 @@ CRITICAL REQUIREMENTS FOR TARGET SELECTION:
                     api_logger.info("[PARSE] JSON repair successful")
 
                 # Inject logged search queries if not present in result
-                all_queries = search_queries_logged + tavily_queries_logged
-                if all_queries and not result.get("search_queries_used"):
-                    result["search_queries_used"] = all_queries
-
-                # Tag search provider used
-                result["_search_provider"] = search_provider
+                if search_queries_logged and not result.get("search_queries_used"):
+                    result["search_queries_used"] = search_queries_logged
 
                 # Post-hoc schema validation (enforces same schema for both Anthropic and OpenAI)
                 # This validates structure and logs any issues, raises ValueError for critical missing fields
