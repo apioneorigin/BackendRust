@@ -173,6 +173,17 @@ async def lifespan(app: FastAPI):
     else:
         api_logger.info("[CACHE] No REDIS_URL, using in-memory cache")
 
+    # Connect session store to Redis if available
+    _session_redis_url = os.getenv("REDIS_URL", "").strip()
+    if _session_redis_url:
+        connected = await api_session_store.connect_redis(_session_redis_url)
+        if connected:
+            api_logger.info("[SESSION STORE] Connected to Redis — sessions persist across restarts")
+        else:
+            api_logger.warning("[SESSION STORE] Redis unavailable, using in-memory session store")
+    else:
+        api_logger.info("[SESSION STORE] No REDIS_URL, using in-memory session store")
+
     # Start background session cleanup task
     cleanup_task = asyncio.create_task(_session_cleanup_task())
     api_logger.info("Session cleanup task started")
@@ -186,6 +197,9 @@ async def lifespan(app: FastAPI):
     except asyncio.CancelledError:
         pass
     api_logger.info("Session cleanup task stopped")
+
+    # Disconnect session store
+    await api_session_store.disconnect()
 
     # Disconnect cache
     await cache.disconnect()
@@ -262,6 +276,20 @@ app.add_middleware(UnifiedSecurityMiddleware, rate_limiter=_rate_limiter, config
 
 api_logger.info("Security middleware initialized")
 
+# =====================================================================
+# PATH PREFIX STRIPPING (must be last middleware → runs first on request)
+# =====================================================================
+# DigitalOcean App Platform routes /api/* to the backend but does NOT strip
+# the /api prefix (unlike Nginx which does). This middleware normalizes all
+# incoming paths so the backend works identically under both deployments.
+# Harmless when the prefix is already stripped (Nginx, Vite dev proxy).
+@app.middleware("http")
+async def strip_api_prefix(request, call_next):
+    if request.url.path.startswith("/api"):
+        # Rewrite /api/chat/... → /chat/...
+        request.scope["path"] = request.url.path[4:] or "/"
+    return await call_next(request)
+
 # Include routers
 from routers import (
     auth_router,
@@ -298,36 +326,98 @@ import uuid
 class APISessionStore:
     """
     Async-safe session storage for constellation Q&A flow.
-    Simple key-value store for FastAPI endpoints.
+    Uses Redis/Valkey when available, falls back to in-memory dict.
 
     Note: This is distinct from session_store.SessionStore which handles
     operator canonicalization and complex session state management.
-
-    In production, replace with Redis or database-backed storage.
     """
+
+    SESSION_KEY_PREFIX = "qasession:"
+    SESSION_TTL = 3600  # 1 hour
 
     def __init__(self):
         self._sessions: Dict[str, Dict[str, Any]] = {}
         self._lock = asyncio.Lock()
+        self._redis = None
+
+    async def connect_redis(self, redis_url: str) -> bool:
+        """Connect to Redis/Valkey. Returns True if connected."""
+        try:
+            import redis.asyncio as aioredis
+            self._redis = aioredis.from_url(
+                redis_url, encoding="utf-8", decode_responses=True
+            )
+            await self._redis.ping()
+            return True
+        except Exception as e:
+            api_logger.warning(f"[SESSION STORE] Redis connection failed: {e}, using in-memory fallback")
+            self._redis = None
+            return False
+
+    @property
+    def is_redis(self) -> bool:
+        return self._redis is not None
 
     async def create(self, session_id: str, data: Dict[str, Any]) -> None:
+        if self._redis:
+            try:
+                await self._redis.setex(
+                    f"{self.SESSION_KEY_PREFIX}{session_id}",
+                    self.SESSION_TTL,
+                    json.dumps(data, default=str),
+                )
+                return
+            except Exception as e:
+                api_logger.warning(f"[SESSION STORE] Redis write failed: {e}, falling back to memory")
         async with self._lock:
             self._sessions[session_id] = data
 
     def get(self, session_id: str) -> Optional[Dict[str, Any]]:
-        """Get session data (non-blocking read)."""
+        """Get session data. For Redis, use async get_async() instead."""
+        if self._redis:
+            return None  # Caller should use get_async()
+        return self._sessions.get(session_id)
+
+    async def get_async(self, session_id: str) -> Optional[Dict[str, Any]]:
+        """Get session data (async, works with both Redis and memory)."""
+        if self._redis:
+            try:
+                data = await self._redis.get(f"{self.SESSION_KEY_PREFIX}{session_id}")
+                if data:
+                    return json.loads(data)
+                return None
+            except Exception as e:
+                api_logger.warning(f"[SESSION STORE] Redis read failed: {e}, falling back to memory")
         return self._sessions.get(session_id)
 
     async def update(self, session_id: str, data: Dict[str, Any]) -> None:
+        if self._redis:
+            try:
+                await self._redis.setex(
+                    f"{self.SESSION_KEY_PREFIX}{session_id}",
+                    self.SESSION_TTL,
+                    json.dumps(data, default=str),
+                )
+                return
+            except Exception as e:
+                api_logger.warning(f"[SESSION STORE] Redis write failed: {e}, falling back to memory")
         async with self._lock:
             self._sessions[session_id] = data
 
     async def delete(self, session_id: str) -> None:
+        if self._redis:
+            try:
+                await self._redis.delete(f"{self.SESSION_KEY_PREFIX}{session_id}")
+                return
+            except Exception as e:
+                api_logger.warning(f"[SESSION STORE] Redis delete failed: {e}, falling back to memory")
         async with self._lock:
             self._sessions.pop(session_id, None)
 
     async def cleanup_expired(self, max_age_seconds: int = 3600) -> int:
-        """Remove sessions older than max_age_seconds."""
+        """Remove sessions older than max_age_seconds. Redis handles TTL automatically."""
+        if self._redis:
+            return 0  # Redis TTL handles expiry
         now = time.time()
         expired = []
         async with self._lock:
@@ -340,16 +430,17 @@ class APISessionStore:
         return len(expired)
 
     def session_count(self) -> int:
-        """Get current session count."""
+        """Get current session count (in-memory only, approximate for Redis)."""
         return len(self._sessions)
+
+    async def disconnect(self) -> None:
+        """Close Redis connection."""
+        if self._redis:
+            await self._redis.close()
+            self._redis = None
 
 # Global session store instance for API endpoints
 api_session_store = APISessionStore()
-if os.getenv("ENVIRONMENT") == "production":
-    api_logger.warning(
-        "[SESSION STORE] Using in-memory session store — active Q&A sessions "
-        "will be lost on container restart/redeploy. Consider migrating to Redis."
-    )
 
 # =====================================================================
 # END SESSION STORAGE
@@ -825,7 +916,7 @@ async def process_constellation_answer(
     actual operator values — no hardcoded mappings.
     """
     # Retrieve pending session data
-    session_data = api_session_store.get(session_id)
+    session_data = await api_session_store.get_async(session_id)
     if not session_data:
         raise HTTPException(status_code=404, detail="Session not found")
 
@@ -867,7 +958,7 @@ async def continue_inference(
     Runs LLM Call 1 on the combined context (original query + user's answer)
     to extract actual operator values, then re-runs full inference pipeline.
     """
-    session_data = api_session_store.get(session_id)
+    session_data = await api_session_store.get_async(session_id)
     if not session_data:
         raise HTTPException(status_code=404, detail="Session not found")
 
@@ -1001,7 +1092,7 @@ especially operators that were uncertain (low confidence) in the initial extract
             api_logger.info(f"[STEP 1B] Re-extracted {new_obs_count} observations with answer context")
 
             # Update session evidence
-            session_data = api_session_store.get(session_id)
+            session_data = await api_session_store.get_async(session_id)
             if session_data:
                 session_data['evidence'] = evidence
                 await api_session_store.update(session_id, session_data)
@@ -1361,7 +1452,7 @@ async def inference_stream(
         api_logger.info(f"[OPERATORS] Extracted: {len(extracted_operators)} | Missing: {len(missing_operators)}")
 
         # Store evidence in session
-        session_data = api_session_store.get(session_id)
+        session_data = await api_session_store.get_async(session_id)
         session_data['evidence'] = evidence
         await api_session_store.update(session_id, session_data)
 
@@ -1653,7 +1744,7 @@ Articulation Tokens: {token_count}
                         goal_context=goal_context
                     )
 
-                    session_data = api_session_store.get(session_id)
+                    session_data = await api_session_store.get_async(session_id)
                     session_data['evidence'] = evidence
                     session_data['_pending_question'] = question
                     session_data['_question_asked'] = True

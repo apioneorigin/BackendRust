@@ -37,7 +37,7 @@ services:
       deploy_on_push: true
 
     health_check:
-      http_path: /health
+      http_path: /healthz/
       initial_delay_seconds: 15
       period_seconds: 30
       timeout_seconds: 5
