@@ -55,14 +55,14 @@ databases:
   # To use an existing managed cluster, add:  cluster_name: your-cluster-name
   - name: db
     engine: PG
-    version: "16"
+    version: "18"
     production: true
 
   # ── Valkey (Redis-compatible) ─────────────────────────────────────────────
   # To use an existing managed cluster, add:  cluster_name: your-cluster-name
   - name: cache
     engine: REDIS
-    version: "7"
+    version: "8"
     production: true
 
 # =============================================================================
