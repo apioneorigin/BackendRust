@@ -3221,7 +3221,7 @@ REQUIREMENTS:
             result = json.loads(response_text)
             insights = result.get("insights", {})
 
-            api_logger.info(f"[INSIGHT_GEN] Generated {len(insights)} items for document '{document.get('name')}'")
+            api_logger.info(f"[INSIGHT_GEN] Generated {len(insights)} items for document '{document.get('name')}' using {model}")
 
             if len(insights) < len(missing_indices):
                 api_logger.warning(f"[INSIGHT_GEN] Only got {len(insights)} items, expected {len(missing_indices)}")

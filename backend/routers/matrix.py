@@ -111,6 +111,18 @@ class ArticulatedInsight(BaseModel):
     the_mark_identity: str
 
 
+class ArticulatedOutcome(BaseModel):
+    """3-component outcome projection: THE ARC → THE LANDSCAPE → THE ANCHOR"""
+    title: str
+    the_arc: str
+    the_arc_destination: str
+    the_landscape: str
+    the_landscape_operating_reality: str
+    the_anchor_name: str
+    the_anchor_signal: str
+    the_anchor_identity: str
+
+
 class RowOption(BaseModel):
     id: str
     label: str
@@ -125,6 +137,7 @@ class ColumnOption(BaseModel):
     insight_title: Optional[str] = None
     description: Optional[str] = None
     articulated_insight: Optional[ArticulatedInsight] = None
+    articulated_outcome: Optional[ArticulatedOutcome] = None
 
 
 class PresetStep(CamelModel):
