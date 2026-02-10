@@ -118,11 +118,15 @@
 	$: greeting = getGreeting();
 
 	// Group questions by the message that generated them for inline rendering
-	$: questionsByMessage = $questions.reduce((acc: Record<string, typeof $questions>, q) => {
-		const key = q.messageId || '__streaming__';
-		(acc[key] = acc[key] || []).push(q);
-		return acc;
-	}, {} as Record<string, typeof $questions>);
+	// Questions without messageId: use '__streaming__' during streaming, otherwise link to last assistant message
+	$: questionsByMessage = (() => {
+		const lastAssistantId = $isStreaming ? null : [...$messages].reverse().find(m => m.role === 'assistant')?.id;
+		return $questions.reduce((acc: Record<string, typeof $questions>, q) => {
+			const key = q.messageId || ($isStreaming ? '__streaming__' : lastAssistantId) || '__orphan__';
+			(acc[key] = acc[key] || []).push(q);
+			return acc;
+		}, {} as Record<string, typeof $questions>);
+	})();
 
 	// Copy message content to clipboard
 	async function copyToClipboard(text: string) {

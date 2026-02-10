@@ -508,16 +508,29 @@ function createChatStore() {
 					createdAt: new Date(),
 				};
 
-				update(state => ({
-					...state,
-					messages: [...state.messages, assistantMessage],
-					isStreaming: false,
-					streamingContent: '',
-					// Associate any unlinked questions (from this stream) with the new message
-					questions: state.questions.map(q =>
+				update(state => {
+					const updatedMessages = [...state.messages, assistantMessage];
+					const updatedQuestions = state.questions.map(q =>
 						!q.messageId ? { ...q, messageId: assistantMessage.id } : q
-					),
-				}));
+					);
+
+					// Update LRU cache so conversation switch-back shows current data
+					if (conversationId) {
+						cacheSet(conversationId, {
+							messages: updatedMessages,
+							questions: updatedQuestions,
+							timestamp: Date.now()
+						});
+					}
+
+					return {
+						...state,
+						messages: updatedMessages,
+						isStreaming: false,
+						streamingContent: '',
+						questions: updatedQuestions,
+					};
+				});
 
 				// Title is now generated in Call 1 and sent via SSE 'title' event
 
