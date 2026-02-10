@@ -5,12 +5,15 @@
 #   1. Create a new app in DO Console → Apps → Create App
 #   2. Connect your GitHub repo (apioneorigin/BackendRust, branch: main)
 #   3. Paste this spec in Settings → App Spec → Edit
-#   4. Set SECRET env vars in DO Console → Settings → Environment Variables:
+#   4. Replace <your-pg-cluster> / <your-valkey-cluster> below with the
+#      names of your managed database clusters (Databases → cluster name)
+#   5. Set SECRET env vars in DO Console → Settings → Environment Variables:
 #      - OPENAI_API_KEY
 #      - ANTHROPIC_API_KEY
 #      - JWT_SECRET
-#      - DATABASE_URL (use format: postgresql+asyncpg://user:pass@host:port/db?ssl=require)
-#      - REDIS_URL (use format: rediss://user:pass@host:port)
+#
+# DATABASE_URL and REDIS_URL are auto-injected from the attached database
+# components — no manual copy/paste of connection strings needed.
 #
 # Routing:
 #   /        → Frontend (SvelteKit)
@@ -21,9 +24,8 @@
 #   Backend:  GET /healthz/ → FastAPI health endpoint (trailing slash required)
 #
 # Databases:
-#   Create PostgreSQL 18 and Valkey 8 clusters separately in DO Console.
-#   Add their connection strings to the environment variables above.
-#   Remember to add this app to the database "Trusted Sources" firewall.
+#   Attach your PostgreSQL and Valkey clusters via the databases: section
+#   below.  Remember to add this app to each cluster's "Trusted Sources".
 # =============================================================================
 
 name: reality-transformer
@@ -48,6 +50,24 @@ ingress:
       match:
         path:
           prefix: /
+
+# =============================================================================
+# Databases — attach your existing managed clusters here
+# =============================================================================
+# Replace the cluster_name values with YOUR cluster names from DO Console.
+# Once attached, ${db.DATABASE_URL} and ${valkey.DATABASE_URL} are auto-
+# injected into the backend service below.
+# =============================================================================
+databases:
+  - name: db
+    engine: PG
+    production: true
+    cluster_name: <your-pg-cluster>
+
+  - name: valkey
+    engine: REDIS
+    production: true
+    cluster_name: <your-valkey-cluster>
 
 # =============================================================================
 # Services
@@ -134,14 +154,14 @@ services:
         scope: RUN_TIME
         type: SECRET
 
-      # ── Database connections (set in DO Console UI) ───
+      # ── Auto-injected from attached database components ──────────────
       - key: DATABASE_URL
         scope: RUN_TIME
-        type: SECRET
+        value: ${db.DATABASE_URL}
 
       - key: REDIS_URL
         scope: RUN_TIME
-        type: SECRET
+        value: ${valkey.DATABASE_URL}
 
       # ── Public config ────────────────────────────────────────────────
       - key: ENVIRONMENT
