@@ -870,6 +870,8 @@ async def get_conversation_questions(
     question_data = conversation.question_answers or {}
     questions = question_data.get("questions", [])
 
+    # Explicitly serialize with camelCase keys (consistent with messages endpoint)
+    # Do NOT return raw Pydantic models — FastAPI's implicit serialization may not apply alias_generator
     return [
         QuestionResponse(
             id=q.get("id", ""),
@@ -878,7 +880,7 @@ async def get_conversation_questions(
             type=q.get("type", "question"),
             selected_option=q.get("selected_option"),
             message_id=q.get("message_id")
-        )
+        ).model_dump(by_alias=True, mode='json')
         for q in questions
     ]
 
