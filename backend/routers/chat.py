@@ -81,6 +81,7 @@ class MessageResponse(CamelModel):
     output_tokens: Optional[int]
     total_tokens: Optional[int]
     feedback: Optional[str]
+    attachments: Optional[list] = None
     created_at: datetime
 
 
@@ -96,7 +97,7 @@ async def create_conversation(
     db: AsyncSession = Depends(get_db)
 ):
     """Create a new chat conversation."""
-    # Validate session if provided
+    # Validate session if provided and link conversation back to it
     if request.session_id:
         result = await db.execute(
             select(Session).where(
@@ -104,7 +105,8 @@ async def create_conversation(
                 Session.organization_id == current_user.organization_id
             )
         )
-        if not result.scalar_one_or_none():
+        session = result.scalar_one_or_none()
+        if not session:
             raise HTTPException(status_code=404, detail="Session not found")
 
     conversation = ChatConversation(
@@ -116,6 +118,11 @@ async def create_conversation(
         context=request.context,
     )
     db.add(conversation)
+
+    # Update session's last_conversation_id so it can resume the right conversation
+    if request.session_id:
+        session.last_conversation_id = conversation.id
+
     await db.commit()
     await db.refresh(conversation)
 
@@ -211,12 +218,12 @@ async def send_message(
     conversation, history_result = await asyncio.gather(conversation_task, history_task)
     previous_messages = history_result.scalars().all()
 
-    # Extract file summaries from system messages with attachments
+    # Extract file summaries from all messages with attachments (user + system)
     existing_file_summaries = []
     for msg in previous_messages:
-        if msg.role == "system" and msg.attachments:
+        if msg.attachments:
             for att in msg.attachments:
-                if isinstance(att, dict):
+                if isinstance(att, dict) and att.get("summary"):
                     existing_file_summaries.append({
                         "name": att.get("name", "unnamed"),
                         "summary": att.get("summary", "")[:5000],
@@ -332,6 +339,7 @@ async def send_message(
     )
 
     # Add any new file attachments from this request (parse binary formats)
+    new_file_summaries = []
     if request.attachments:
         for attachment in request.attachments:
             name = attachment.get("name", "unnamed")
@@ -351,14 +359,17 @@ async def send_message(
                     file_entry["image_base64"] = parsed.image_base64
                     file_entry["image_media_type"] = parsed.image_media_type
                 conversation_context.file_summaries.append(file_entry)
+                new_file_summaries.append(file_entry)
 
-    # Save user message with attachments
+    # Save user message with parsed file summaries (not raw base64) so they
+    # can be extracted for context on subsequent messages via the same format
+    # as system message attachments ({name, summary, type}).
     user_message = ChatMessage(
         id=generate_id(),
         conversation_id=conversation_id,
         role="user",
         content=request.content,
-        attachments=request.attachments,
+        attachments=new_file_summaries if new_file_summaries else None,
     )
     db.add(user_message)
     await db.commit()
@@ -459,173 +470,190 @@ async def send_message(
     model_config = get_model_config(request.model)
 
     async def stream_response():
-        """Stream the inference response and save assistant message."""
+        """Stream the inference response and save assistant message.
+
+        Uses try/finally to ensure the assistant response is saved even if the
+        client disconnects mid-stream (page refresh, navigation, network drop).
+        Without this, the user's message would exist in the DB but the response
+        would be completely lost.
+        """
         full_response = ""
         input_tokens = 0
         output_tokens = 0
         structured_data = None  # Capture matrix_data, paths, documents
         pending_questions = []  # Capture questions for persistence
         conversation_title = None  # Capture title from LLM Call 1
+        stream_completed = False
 
-        # Zone C: Inject ethical preamble before LLM response
-        if zone_classification.zone == "C":
-            preamble = get_ethical_preamble(zone_classification.ethical_flag)
-            if preamble:
-                full_response = preamble
-                yield {"event": "token", "data": json.dumps({"text": preamble})}
+        try:
+            # Zone C: Inject ethical preamble before LLM response
+            if zone_classification.zone == "C":
+                preamble = get_ethical_preamble(zone_classification.ethical_flag)
+                if preamble:
+                    full_response = preamble
+                    yield {"event": "token", "data": json.dumps({"text": preamble})}
 
-        async for event in inference_stream(
-            request.content,
-            model_config,
-            request.web_search_data,
-            request.web_search_insights,
-            conversation_context.model_dump()  # Pass conversation context
-        ):
-            # Parse SSE event
-            if isinstance(event, dict):
-                event_type = event.get("event", "token")
-                data = event.get("data", "")
+            async for event in inference_stream(
+                request.content,
+                model_config,
+                request.web_search_data,
+                request.web_search_insights,
+                conversation_context.model_dump()  # Pass conversation context
+            ):
+                # Parse SSE event
+                if isinstance(event, dict):
+                    event_type = event.get("event", "token")
+                    data = event.get("data", "")
 
-                if event_type == "token":
-                    token_data = safe_json_loads(data)
-                    full_response += token_data.get("text", "")
-                elif event_type == "usage":
-                    usage_data = safe_json_loads(data)
-                    input_tokens = usage_data.get("input_tokens", 0)
-                    output_tokens = usage_data.get("output_tokens", 0)
-                elif event_type == "structured_data":
-                    # Capture structured data for saving to conversation
-                    structured_data = safe_json_loads(data)
-                elif event_type == "title":
-                    # Capture title for saving to conversation
-                    title_data = safe_json_loads(data)
-                    if title_data:
-                        conversation_title = title_data.get("title")
-                elif event_type in ("question", "validation_question"):
-                    # Capture questions for persistence
-                    question_data = safe_json_loads(data)
-                    if question_data:
-                        pending_questions.append({
-                            "id": question_data.get("question_id"),
-                            "text": question_data.get("question_text"),
-                            "options": question_data.get("options", []),
-                            "type": event_type,
-                            "selected_option": None
-                        })
+                    if event_type == "token":
+                        token_data = safe_json_loads(data)
+                        full_response += token_data.get("text", "")
+                    elif event_type == "usage":
+                        usage_data = safe_json_loads(data)
+                        input_tokens = usage_data.get("input_tokens", 0)
+                        output_tokens = usage_data.get("output_tokens", 0)
+                    elif event_type == "structured_data":
+                        # Capture structured data for saving to conversation
+                        structured_data = safe_json_loads(data)
+                    elif event_type == "title":
+                        # Capture title for saving to conversation
+                        title_data = safe_json_loads(data)
+                        if title_data:
+                            conversation_title = title_data.get("title")
+                    elif event_type in ("question", "validation_question"):
+                        # Capture questions for persistence
+                        question_data = safe_json_loads(data)
+                        if question_data:
+                            pending_questions.append({
+                                "id": question_data.get("question_id"),
+                                "text": question_data.get("question_text"),
+                                "options": question_data.get("options", []),
+                                "type": event_type,
+                                "selected_option": None
+                            })
 
-                # Zone D: Append disclaimer before "done" event
-                if event_type == "done" and zone_classification.zone == "D":
-                    disclaimer = get_disclaimer(
-                        ethical_flag=zone_classification.ethical_flag,
-                        user_input=request.content
+                    # Zone D: Append disclaimer before "done" event
+                    if event_type == "done" and zone_classification.zone == "D":
+                        disclaimer = get_disclaimer(
+                            ethical_flag=zone_classification.ethical_flag,
+                            user_input=request.content
+                        )
+                        if disclaimer:
+                            full_response += disclaimer
+                            yield {"event": "token", "data": json.dumps({"text": disclaimer})}
+
+                    # Yield dict directly - EventSourceResponse handles formatting
+                    yield {"event": event_type, "data": data}
+
+            stream_completed = True
+
+        except (asyncio.CancelledError, GeneratorExit):
+            # Client disconnected mid-stream (page refresh, navigation, network drop)
+            api_logger.warning(f"[CHAT] Stream interrupted for conv {conversation_id}, saving partial response ({len(full_response)} chars)")
+        except Exception as e:
+            api_logger.error(f"[CHAT] Stream error for conv {conversation_id}: {e}")
+        finally:
+            # CRITICAL: Save whatever response was accumulated, even on interruption.
+            # Without this, the user's message exists in the DB but the response is
+            # completely lost on page refresh, navigation, or network drop.
+            if not full_response:
+                return  # Nothing to save (stream failed before any tokens)
+
+            try:
+                async with AsyncSessionLocal() as save_db:
+                    assistant_message = ChatMessage(
+                        id=generate_id(),
+                        conversation_id=conversation_id,
+                        role="assistant",
+                        content=full_response,
+                        input_tokens=input_tokens,
+                        output_tokens=output_tokens,
+                        total_tokens=input_tokens + output_tokens,
                     )
-                    if disclaimer:
-                        full_response += disclaimer
-                        yield {"event": "token", "data": json.dumps({"text": disclaimer})}
+                    save_db.add(assistant_message)
 
-                # Yield dict directly - EventSourceResponse handles formatting
-                yield {"event": event_type, "data": data}
+                    # Update conversation totals and save structured data
+                    conv_result = await save_db.execute(
+                        select(ChatConversation).where(ChatConversation.id == conversation_id)
+                    )
+                    conv = conv_result.scalar_one()
+                    conv.total_input_tokens += input_tokens
+                    conv.total_output_tokens += output_tokens
+                    conv.total_tokens += input_tokens + output_tokens
+                    conv.updated_at = datetime.utcnow()
 
-        # Save assistant message and structured data after streaming completes
-        async with AsyncSessionLocal() as save_db:
-            assistant_message = ChatMessage(
-                id=generate_id(),
-                conversation_id=conversation_id,
-                role="assistant",
-                content=full_response,
-                input_tokens=input_tokens,
-                output_tokens=output_tokens,
-                total_tokens=input_tokens + output_tokens,
-            )
-            save_db.add(assistant_message)
+                    # Save conversation title if generated (only on first message)
+                    if conversation_title and not conv.title:
+                        conv.title = conversation_title
 
-            # Update conversation totals and save structured data
-            conv_result = await save_db.execute(
-                select(ChatConversation).where(ChatConversation.id == conversation_id)
-            )
-            conv = conv_result.scalar_one()
-            conv.total_input_tokens += input_tokens
-            conv.total_output_tokens += output_tokens
-            conv.total_tokens += input_tokens + output_tokens
-            conv.updated_at = datetime.utcnow()
+                    # Save structured data (documents with matrices, paths) to conversation
+                    if structured_data:
+                        documents = structured_data.get("documents", [])
 
-            # Save conversation title if generated (only on first message)
-            if conversation_title and not conv.title:
-                conv.title = conversation_title
+                        # Merge incoming documents with existing: update matching IDs, preserve the rest
+                        if documents:
+                            existing_docs = conv.generated_documents or []
 
-            # Save structured data (documents with matrices, paths) to conversation
-            api_logger.info(f"[CHAT SAVE] structured_data present: {structured_data is not None}")
-            if structured_data:
-                # Documents array format - doc-0 with labels + titles only (no cells, no full insights)
-                documents = structured_data.get("documents", [])
-                api_logger.info(f"[CHAT SAVE] documents count: {len(documents)}")
+                            if len(existing_docs) == 0:
+                                conv.generated_documents = documents
+                            else:
+                                incoming_by_id = {d.get("id"): d for d in documents}
+                                updated_docs = []
+                                for existing in existing_docs:
+                                    incoming = incoming_by_id.pop(existing.get("id"), None)
+                                    if incoming:
+                                        old_matrix = existing.get("matrix_data", {})
+                                        new_matrix = incoming.get("matrix_data", {})
+                                        existing["name"] = incoming.get("name", existing.get("name"))
+                                        if old_matrix and new_matrix:
+                                            old_matrix["row_options"] = new_matrix.get("row_options", old_matrix.get("row_options", []))
+                                            old_matrix["column_options"] = new_matrix.get("column_options", old_matrix.get("column_options", []))
+                                            old_matrix["selected_rows"] = new_matrix.get("selected_rows", old_matrix.get("selected_rows", [0, 1, 2, 3, 4]))
+                                            old_matrix["selected_columns"] = new_matrix.get("selected_columns", old_matrix.get("selected_columns", [0, 1, 2, 3, 4]))
+                                    updated_docs.append(existing)
+                                for doc in incoming_by_id.values():
+                                    updated_docs.append(doc)
+                                conv.generated_documents = updated_docs
 
-                # Merge incoming documents with existing: update matching IDs, preserve the rest
-                if documents:
-                    existing_docs = conv.generated_documents or []
+                            flag_modified(conv, "generated_documents")
 
-                    if len(existing_docs) == 0:
-                        # First response - save all incoming documents
-                        conv.generated_documents = documents
-                    else:
-                        # Merge: update existing docs that match by ID, preserve user-added docs
-                        incoming_by_id = {d.get("id"): d for d in documents}
-                        updated_docs = []
-                        for existing in existing_docs:
-                            incoming = incoming_by_id.pop(existing.get("id"), None)
-                            if incoming:
-                                # Update labels/titles from LLM, preserve generated cells/insights
-                                old_matrix = existing.get("matrix_data", {})
-                                new_matrix = incoming.get("matrix_data", {})
-                                existing["name"] = incoming.get("name", existing.get("name"))
-                                if old_matrix and new_matrix:
-                                    old_matrix["row_options"] = new_matrix.get("row_options", old_matrix.get("row_options", []))
-                                    old_matrix["column_options"] = new_matrix.get("column_options", old_matrix.get("column_options", []))
-                                    old_matrix["selected_rows"] = new_matrix.get("selected_rows", old_matrix.get("selected_rows", [0, 1, 2, 3, 4]))
-                                    old_matrix["selected_columns"] = new_matrix.get("selected_columns", old_matrix.get("selected_columns", [0, 1, 2, 3, 4]))
-                            updated_docs.append(existing)
-                        # Append any new docs from LLM that don't exist yet
-                        for doc in incoming_by_id.values():
-                            updated_docs.append(doc)
-                        conv.generated_documents = updated_docs
+                        if structured_data.get("presets"):
+                            conv.generated_presets = structured_data["presets"]
+                            flag_modified(conv, "generated_presets")
 
-                    flag_modified(conv, "generated_documents")
-                    api_logger.info(f"[CHAT SAVE] Updated generated_documents for conv {conversation_id}")
+                    # Save/update questions to conversation (link to assistant message)
+                    if pending_questions:
+                        for q in pending_questions:
+                            q["message_id"] = assistant_message.id
+                        existing_questions = conv.question_answers or {"questions": []}
+                        if not isinstance(existing_questions, dict):
+                            existing_questions = {"questions": []}
+                        existing_questions.setdefault("questions", []).extend(pending_questions)
+                        conv.question_answers = existing_questions
+                        flag_modified(conv, "question_answers")
 
-                if structured_data.get("presets"):
-                    conv.generated_presets = structured_data["presets"]
-                    flag_modified(conv, "generated_presets")
+                    await save_db.commit()
+                    api_logger.info(f"[CHAT SAVE] Committed {'partial' if not stream_completed else 'full'} response for conv {conversation_id}")
 
-            # Save/update questions to conversation
-            if pending_questions:
-                existing_questions = conv.question_answers or {"questions": []}
-                if not isinstance(existing_questions, dict):
-                    existing_questions = {"questions": []}
-                existing_questions.setdefault("questions", []).extend(pending_questions)
-                conv.question_answers = existing_questions
-                flag_modified(conv, "question_answers")
-
-            await save_db.commit()
-            api_logger.info(f"[CHAT SAVE] Committed changes for conv {conversation_id}")
-
-            # Deduct 1 credit for this LLM call
-            # Re-fetch user inside this session to avoid detached instance
-            from database import User as UserModel
-            user_result = await save_db.execute(
-                select(UserModel).where(UserModel.id == current_user.id)
-            )
-            fresh_user = user_result.scalar_one_or_none()
-            if fresh_user:
-                await deduct_credit(
-                    fresh_user,
-                    save_db,
-                    amount=1,
-                    metadata={
-                        "conversation_id": conversation_id,
-                        "input_tokens": input_tokens,
-                        "output_tokens": output_tokens,
-                    },
-                )
+                    # Deduct 1 credit for this LLM call
+                    from database import User as UserModel
+                    user_result = await save_db.execute(
+                        select(UserModel).where(UserModel.id == current_user.id)
+                    )
+                    fresh_user = user_result.scalar_one_or_none()
+                    if fresh_user:
+                        await deduct_credit(
+                            fresh_user,
+                            save_db,
+                            amount=1,
+                            metadata={
+                                "conversation_id": conversation_id,
+                                "input_tokens": input_tokens,
+                                "output_tokens": output_tokens,
+                            },
+                        )
+            except Exception as save_err:
+                api_logger.error(f"[CHAT SAVE] Failed to save response for conv {conversation_id}: {save_err}")
 
     # Use ping interval to keep connection alive during long operations
     # Without pings, proxies/browsers may close the connection during long LLM responses
@@ -825,6 +853,7 @@ class QuestionResponse(CamelModel):
     options: List[dict]
     type: str
     selected_option: Optional[str]
+    message_id: Optional[str] = None
 
 
 @router.get("/conversations/{conversation_id}/questions", response_model=List[QuestionResponse])
@@ -847,7 +876,8 @@ async def get_conversation_questions(
             text=q.get("text", ""),
             options=q.get("options", []),
             type=q.get("type", "question"),
-            selected_option=q.get("selected_option")
+            selected_option=q.get("selected_option"),
+            message_id=q.get("message_id")
         )
         for q in questions
     ]
@@ -886,6 +916,7 @@ async def answer_question(
 
     question_data["questions"] = questions
     conversation.question_answers = question_data
+    flag_modified(conversation, "question_answers")  # Required: same dict reference, SQLAlchemy won't detect mutation
     conversation.updated_at = datetime.utcnow()
     await db.commit()
 
