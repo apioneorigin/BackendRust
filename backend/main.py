@@ -605,8 +605,6 @@ def normalize_dimension_values(data: dict) -> dict:
             return 100
 
     normalized_count = 0
-    missing_explanations = 0
-    _value_labels = {0: "Not present", 33: "Low", 50: "Moderate", 67: "Medium", 100: "High"}
 
     # Process documents
     for doc in data.get("documents", []):
@@ -621,16 +619,9 @@ def normalize_dimension_values(data: dict) -> dict:
                     if isinstance(original, (int, float)) and original not in [33, 67, 100]:
                         dim["value"] = snap_to_step(int(original))
                         normalized_count += 1
-                # Enforce dimension explanations
-                if not dim.get("explanation"):
-                    val_label = _value_labels.get(dim.get("value", 67), "Active")
-                    dim["explanation"] = f"{val_label} — {dim.get('name', 'dimension')}"[:60]
-                    missing_explanations += 1
 
     if normalized_count > 0:
         api_logger.info(f"[STRUCTURED DATA] Normalized {normalized_count} dimension values to 33/67/100")
-    if missing_explanations > 0:
-        api_logger.warning(f"[STRUCTURED DATA] Added {missing_explanations} missing dimension explanations")
 
     return data
 
@@ -2837,18 +2828,6 @@ REQUIREMENTS:
                 api_logger.warning(f"[MATRIX_GEN] Only got {plays_count} plays, expected 3-5")
             if presets_count < 5:
                 api_logger.warning(f"[MATRIX_GEN] Only got {presets_count} presets, expected 5")
-
-            # Enforce dimension explanations — LLM often omits them to save tokens
-            _VALUE_LABELS = {0: "Not present", 33: "Low", 50: "Moderate", 67: "Medium", 100: "High"}
-            missing_explanations = 0
-            for cell_key, cell in cells.items():
-                for dim in cell.get("dimensions", []):
-                    if not dim.get("explanation"):
-                        val_label = _VALUE_LABELS.get(dim.get("value", 67), "Active")
-                        dim["explanation"] = f"{val_label} — {dim.get('name', 'dimension')}"[:60]
-                        missing_explanations += 1
-            if missing_explanations:
-                api_logger.warning(f"[MATRIX_GEN] Added {missing_explanations} missing dimension explanations")
 
             return {
                 "cells": cells,
