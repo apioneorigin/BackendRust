@@ -7,13 +7,14 @@ from typing import Optional, List
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, EmailStr
-from sqlalchemy import select, desc
+from sqlalchemy import select, desc, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db, User, Organization, UserRole
-from routers.auth import get_current_user, generate_id
+from database.models.enums import is_super_admin
+from routers.auth import get_current_user, generate_id, hash_password
 
-router = APIRouter(prefix="/api", tags=["users"])
+router = APIRouter(prefix="", tags=["users"])
 
 
 class UpdateUserRequest(BaseModel):
@@ -182,3 +183,116 @@ async def get_organization_usage(
         },
         "reset_at": org.usage_reset_at.isoformat() if org.usage_reset_at else None,
     }
+
+
+# ── Org-Admin Endpoints ─────────────────────────────────────────────────────
+
+
+def _require_org_admin(current_user: User = Depends(get_current_user)) -> User:
+    """Require at least ORG_OWNER or ORG_ADMIN role (or super admin)."""
+    if is_super_admin(current_user):
+        return current_user
+    if current_user.role not in [UserRole.ADMIN, UserRole.ORG_OWNER, UserRole.ORG_ADMIN]:
+        raise HTTPException(status_code=403, detail="Organization admin access required")
+    return current_user
+
+
+@router.get("/org-admin/users/list")
+async def org_admin_list_users(
+    current_user: User = Depends(_require_org_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """List users in the current organization with org credit info."""
+    result = await db.execute(
+        select(User)
+        .where(User.organization_id == current_user.organization_id)
+        .order_by(desc(User.created_at))
+    )
+    users = result.scalars().all()
+
+    result = await db.execute(
+        select(Organization).where(Organization.id == current_user.organization_id)
+    )
+    org = result.scalar_one_or_none()
+
+    total_allocated = sum(u.credit_quota or 0 for u in users)
+
+    return {
+        "success": True,
+        "users": [
+            {
+                "id": u.id,
+                "email": u.email,
+                "name": u.name,
+                "role": u.role.value,
+                "credits": u.credit_quota or 0,
+                "creditsEnabled": u.credits_enabled,
+                "creditQuota": u.credit_quota or 0,
+                "createdAt": u.created_at.isoformat() if u.created_at else None,
+                "lastLoginAt": u.last_login_at.isoformat() if u.last_login_at else None,
+            }
+            for u in users
+        ],
+        "organization": {
+            "id": org.id if org else None,
+            "creditsPool": org.max_credits_per_month if org else 0,
+            "usedCredits": org.used_credits if org else 0,
+            "totalAllocated": total_allocated,
+            "availableForAllocation": (org.max_credits_per_month if org else 0) - total_allocated,
+        } if org else None,
+    }
+
+
+@router.post("/org-admin/upgrade")
+async def org_admin_upgrade(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Upgrade current user to ORG_ADMIN (must be ORG_OWNER)."""
+    if current_user.role != UserRole.ORG_OWNER:
+        raise HTTPException(status_code=403, detail="Only organization owners can upgrade")
+
+    current_user.role = UserRole.ORG_ADMIN
+    current_user.updated_at = datetime.utcnow()
+    await db.commit()
+
+    return {"success": True}
+
+
+class CreateOrgUserRequest(BaseModel):
+    email: EmailStr
+    name: Optional[str] = None
+    creditQuota: int = 0
+
+
+@router.post("/org-admin/users/create")
+async def org_admin_create_user(
+    request: CreateOrgUserRequest,
+    current_user: User = Depends(_require_org_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Create a new user in the current organization."""
+    # Check if email already exists
+    result = await db.execute(select(User).where(User.email == request.email))
+    if result.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    # Create user with a temporary password
+    import secrets
+    temp_password = secrets.token_urlsafe(12)
+    password_hash = await hash_password(temp_password)
+
+    user = User(
+        id=generate_id(),
+        organization_id=current_user.organization_id,
+        email=request.email,
+        name=request.name,
+        password_hash=password_hash,
+        role=UserRole.USER,
+        credits_enabled=True,
+        credit_quota=request.creditQuota,
+    )
+    db.add(user)
+    await db.commit()
+
+    return {"success": True}

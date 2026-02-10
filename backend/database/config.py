@@ -17,7 +17,34 @@ load_dotenv()
 
 # Get DATABASE_URL from environment
 DATABASE_URL = os.getenv("DATABASE_URL", "")
+IS_PRODUCTION = os.getenv("ENVIRONMENT") == "production"
 USE_SQLITE = os.getenv("USE_SQLITE", "").lower() in ("true", "1", "yes") or not DATABASE_URL
+
+# Log env var status at startup (always, regardless of environment)
+print(f"[Database] ENVIRONMENT={os.getenv('ENVIRONMENT', '<unset>')}")
+print(f"[Database] DATABASE_URL={'set (' + str(len(DATABASE_URL)) + ' chars)' if DATABASE_URL else 'EMPTY or unset'}")
+print(f"[Database] USE_SQLITE={USE_SQLITE}")
+
+# In production, DATABASE_URL is required — never fall back to ephemeral SQLite
+if IS_PRODUCTION and USE_SQLITE:
+    raise RuntimeError(
+        "\n" + "="*80 + "\n"
+        "[Database] FATAL: DATABASE_URL is not set (or is empty) in production!\n"
+        "="*80 + "\n"
+        "Without DATABASE_URL, the app uses SQLite inside the container.\n"
+        "Container storage is EPHEMERAL — all data is lost on each deploy.\n\n"
+        "DigitalOcean 'type: SECRET' env vars are injected as EMPTY strings\n"
+        "until you enter the actual value in the Console UI.\n\n"
+        "To fix:\n"
+        "  1. Go to DigitalOcean Console → Apps → reality-transformer\n"
+        "  2. Click Settings → backend component → Environment Variables\n"
+        "  3. Click 'Edit' next to DATABASE_URL\n"
+        "  4. PASTE the actual PostgreSQL connection string from:\n"
+        "     Databases → your cluster → Connection Details → Connection String\n"
+        "  5. Also set JWT_SECRET to any random 32+ character string\n"
+        "  6. Save → Redeploy\n"
+        + "="*80
+    )
 
 # Determine which database to use
 if USE_SQLITE:
@@ -90,15 +117,13 @@ else:
     try:
         ASYNC_DATABASE_URL, connect_args = prepare_async_url(DATABASE_URL)
     except Exception as e:
-        print(f"[Database] ERROR parsing DATABASE_URL: {e}")
-        print(f"[Database] Falling back to SQLite")
-        USE_SQLITE = True
-        DATA_DIR = Path(__file__).parent.parent / "data"
-        DATA_DIR.mkdir(exist_ok=True)
-        SQLITE_PATH = DATA_DIR / "dev.db"
-        ASYNC_DATABASE_URL = f"sqlite+aiosqlite:///{SQLITE_PATH}"
-        connect_args = {"check_same_thread": False}
-        engine = create_async_engine(ASYNC_DATABASE_URL, echo=False, connect_args=connect_args)
+        print(f"\n{'='*80}")
+        print(f"[Database] FATAL: Cannot parse DATABASE_URL: {e}")
+        print(f"{'='*80}")
+        print(f"[Database] DATABASE_URL is set but cannot be parsed.")
+        print(f"[Database] Fix the DATABASE_URL environment variable in DigitalOcean.")
+        print(f"{'='*80}\n")
+        raise
 
     if not USE_SQLITE:
         # Create async engine for PostgreSQL
@@ -108,6 +133,7 @@ else:
             pool_size=10,
             max_overflow=20,
             pool_pre_ping=True,
+            pool_recycle=300,  # Recycle connections every 5 min to prevent stale connection errors
             connect_args=connect_args,
         )
 
@@ -241,55 +267,84 @@ async def _migrate_articulated_insights():
 
 
 async def init_db():
-    """Initialize database tables and run migrations."""
-    try:
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
+    """Initialize database tables and run migrations.
 
-            # For SQLite, run migrations to add missing columns
-            if USE_SQLITE:
-                await _run_sqlite_migrations(conn)
+    Retries connection up to 4 times with exponential backoff (2s, 4s, 8s, 16s)
+    to handle race conditions when the database container is still starting.
+    """
+    import asyncio
 
-        # Run data migrations
-        await _migrate_articulated_insights()
+    max_retries = 4 if not USE_SQLITE else 0  # Only retry for PostgreSQL
+    last_error = None
 
-    except Exception as e:
-        error_type = type(e).__name__
+    for attempt in range(max_retries + 1):
+        try:
+            async with engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
 
-        # Provide helpful error messages for common database issues
-        if "InvalidPasswordError" in error_type or "authentication failed" in str(e).lower():
-            print(f"\n{'='*80}")
-            print(f"[Database] AUTHENTICATION ERROR: Password authentication failed")
-            print(f"{'='*80}")
-            print(f"[Database] Your DATABASE_URL has incorrect or expired credentials.")
-            print(f"[Database]")
-            print(f"[Database] To fix this:")
-            print(f"[Database] 1. Go to DigitalOcean Console → Databases")
-            print(f"[Database] 2. Select your PostgreSQL cluster")
-            print(f"[Database] 3. Copy the connection string from 'Connection Details'")
-            print(f"[Database] 4. Update DATABASE_URL in App Platform environment variables")
-            print(f"[Database]")
-            print(f"[Database] See DATABASE_FIX.md for detailed instructions.")
-            print(f"{'='*80}\n")
-        elif "could not connect" in str(e).lower() or "connection refused" in str(e).lower():
-            print(f"\n{'='*80}")
-            print(f"[Database] CONNECTION ERROR: Cannot reach database server")
-            print(f"{'='*80}")
-            print(f"[Database] The database server is unreachable.")
-            print(f"[Database] Check if:")
-            print(f"[Database] - The database is running in DigitalOcean")
-            print(f"[Database] - Network connectivity is working")
-            print(f"[Database] - Firewall rules allow connections")
-            print(f"{'='*80}\n")
-        else:
-            print(f"\n{'='*80}")
-            print(f"[Database] ERROR: {error_type}")
-            print(f"{'='*80}")
-            print(f"[Database] {e}")
-            print(f"{'='*80}\n")
+                # For SQLite, run migrations to add missing columns
+                if USE_SQLITE:
+                    await _run_sqlite_migrations(conn)
 
-        # Re-raise to stop the application
-        raise
+            # Run data migrations
+            await _migrate_articulated_insights()
+            return  # Success
+
+        except Exception as e:
+            last_error = e
+            error_type = type(e).__name__
+            error_str = str(e).lower()
+
+            # Only retry on connection errors, not auth or schema errors
+            is_connection_error = (
+                "could not connect" in error_str
+                or "connection refused" in error_str
+                or "connection reset" in error_str
+                or "timeout" in error_str
+                or "ConnectionRefusedError" in error_type
+                or "OSError" in error_type
+            )
+
+            if is_connection_error and attempt < max_retries:
+                delay = 2 ** (attempt + 1)  # 2s, 4s, 8s, 16s
+                print(f"[Database] Connection failed (attempt {attempt + 1}/{max_retries + 1}), retrying in {delay}s...")
+                await asyncio.sleep(delay)
+                continue
+
+            # Non-retryable error or final attempt — provide helpful messages
+            if "InvalidPasswordError" in error_type or "authentication failed" in error_str:
+                print(f"\n{'='*80}")
+                print(f"[Database] AUTHENTICATION ERROR: Password authentication failed")
+                print(f"{'='*80}")
+                print(f"[Database] Your DATABASE_URL has incorrect or expired credentials.")
+                print(f"[Database]")
+                print(f"[Database] To fix this:")
+                print(f"[Database] 1. Go to DigitalOcean Console → Databases")
+                print(f"[Database] 2. Select your PostgreSQL cluster")
+                print(f"[Database] 3. Copy the connection string from 'Connection Details'")
+                print(f"[Database] 4. Update DATABASE_URL in App Platform environment variables")
+                print(f"[Database]")
+                print(f"[Database] See DATABASE_FIX.md for detailed instructions.")
+                print(f"{'='*80}\n")
+            elif is_connection_error:
+                print(f"\n{'='*80}")
+                print(f"[Database] CONNECTION ERROR: Cannot reach database server after {max_retries + 1} attempts")
+                print(f"{'='*80}")
+                print(f"[Database] The database server is unreachable.")
+                print(f"[Database] Check if:")
+                print(f"[Database] - The database is running in DigitalOcean")
+                print(f"[Database] - Network connectivity is working")
+                print(f"[Database] - Firewall rules allow connections")
+                print(f"{'='*80}\n")
+            else:
+                print(f"\n{'='*80}")
+                print(f"[Database] ERROR: {error_type}")
+                print(f"{'='*80}")
+                print(f"[Database] {e}")
+                print(f"{'='*80}\n")
+
+            # Re-raise to stop the application
+            raise
 
 
 async def close_db():

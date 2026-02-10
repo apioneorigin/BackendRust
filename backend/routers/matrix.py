@@ -19,11 +19,17 @@ from routers.auth import get_current_user
 from utils import get_or_404, CamelModel
 from logging_config import api_logger
 
-router = APIRouter(prefix="/api/matrix", tags=["matrix"])
+router = APIRouter(prefix="/matrix", tags=["matrix"])
 
 # In-memory cache for document previews so add_documents can use the exact same
 # documents the user previewed (instead of regenerating via LLM).
 # Key: conversation_id, Value: (timestamp, list of document dicts)
+#
+# WARNING: This cache is lost on container restart/redeploy. If the user previews
+# documents, the container restarts, then they click "add", they'll get regenerated
+# (potentially different) documents instead of the ones they saw. The fallback in
+# add_documents handles this gracefully by regenerating, but the user may notice
+# different document names/titles than what they previewed.
 _preview_cache: Dict[str, tuple[float, list[dict]]] = {}
 _PREVIEW_CACHE_TTL = 600  # 10 minutes
 

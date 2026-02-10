@@ -28,7 +28,7 @@ export const actions: Actions = {
 		}
 
 		try {
-			const response = await fetch(`${BACKEND_URL}/api/auth/login`, {
+			const response = await fetch(`${BACKEND_URL}/auth/login`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ email, password })
@@ -36,10 +36,11 @@ export const actions: Actions = {
 
 			if (!response.ok) {
 				const errorData = await response.json().catch(() => ({}));
-				return fail(response.status, {
-					error: errorData.detail || 'Invalid email or password',
-					email
-				});
+				const message =
+					response.status >= 500
+						? 'Server error — please try again later'
+						: errorData.detail || errorData.error || 'Invalid email or password';
+				return fail(response.status, { error: message, email });
 			}
 
 			const result = await response.json();
@@ -53,8 +54,13 @@ export const actions: Actions = {
 				maxAge: 60 * 60 * 24 * 7 // 7 days
 			});
 
-			// Check credits and redirect appropriately
-			if (result.user?.credits_enabled && result.user?.credit_quota === 0) {
+			// Super admins bypass credit requirements
+			// Regular users with 0 credits go to add-credits
+			if (
+				!result.user?.isGlobalAdmin &&
+				result.user?.credits_enabled &&
+				(result.user?.credit_quota === 0 || result.user?.credit_quota === null)
+			) {
 				throw redirect(302, '/add-credits');
 			}
 

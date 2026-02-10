@@ -17,14 +17,36 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
 from database import get_db, User, UserSession, Organization, UserRole
+from database.models.enums import is_super_admin
 from logging_config import api_logger
 
-router = APIRouter(prefix="/api/auth", tags=["auth"])
+router = APIRouter(prefix="/auth", tags=["auth"])
 
 # JWT Configuration
-JWT_SECRET = os.getenv("JWT_SECRET", "your-secret-key-change-in-production")
+_jwt_env = os.getenv("JWT_SECRET", "")
+JWT_SECRET = _jwt_env if _jwt_env else "dev-only-secret-not-for-production"
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRATION_HOURS = 24 * 7  # 7 days
+
+# In production, JWT_SECRET must be set — empty key breaks token validation
+IS_PRODUCTION = os.getenv("ENVIRONMENT") == "production"
+if IS_PRODUCTION and not _jwt_env:
+    raise RuntimeError(
+        "\n" + "="*80 + "\n"
+        "[Auth] FATAL: JWT_SECRET is not set (or is empty) in production!\n"
+        "="*80 + "\n"
+        "An empty JWT_SECRET means:\n"
+        "  - Tokens signed with a 0-byte key (insecure)\n"
+        "  - Any attacker can forge valid tokens\n\n"
+        "To fix:\n"
+        "  1. Go to DigitalOcean Console → Apps → reality-transformer\n"
+        "  2. Click Settings → backend component → Environment Variables\n"
+        "  3. Click 'Edit' next to JWT_SECRET\n"
+        "  4. Enter any random string (32+ chars), e.g.:\n"
+        "     python3 -c \"import secrets; print(secrets.token_urlsafe(48))\"\n"
+        "  5. Save → Redeploy\n"
+        + "="*80
+    )
 
 
 # Pydantic models
@@ -234,6 +256,9 @@ async def register(
             "name": user.name,
             "role": user.role.value,
             "organization_id": user.organization_id,
+            "credits_enabled": user.credits_enabled,
+            "credit_quota": user.credit_quota,
+            "isGlobalAdmin": is_super_admin(user),
         }
     )
 
@@ -273,7 +298,6 @@ async def login(
 
     await db.commit()
 
-    from database.models.enums import is_super_admin
     return TokenResponse(
         token=token,
         user={
@@ -312,7 +336,6 @@ async def get_me(
     current_user: User = Depends(get_current_user)
 ):
     """Get current user info."""
-    from database.models.enums import is_super_admin
     return UserResponse(
         id=current_user.id,
         email=current_user.email,

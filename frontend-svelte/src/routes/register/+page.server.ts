@@ -38,7 +38,7 @@ export const actions: Actions = {
 		}
 
 		try {
-			const response = await fetch(`${BACKEND_URL}/api/auth/register`, {
+			const response = await fetch(`${BACKEND_URL}/auth/register`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ email, password, name })
@@ -46,11 +46,11 @@ export const actions: Actions = {
 
 			if (!response.ok) {
 				const errorData = await response.json().catch(() => ({}));
-				return fail(response.status, {
-					error: errorData.detail || 'Registration failed',
-					email,
-					name
-				});
+				const message =
+					response.status >= 500
+						? 'Server error — please try again later'
+						: errorData.detail || errorData.error || 'Registration failed';
+				return fail(response.status, { error: message, email, name });
 			}
 
 			const result = await response.json();
@@ -64,7 +64,12 @@ export const actions: Actions = {
 				maxAge: 60 * 60 * 24 * 7 // 7 days
 			});
 
-			// New users need to add credits
+			// Super admins bypass credit requirements
+			if (result.user?.isGlobalAdmin) {
+				throw redirect(302, '/chat');
+			}
+
+			// Regular new users need to add credits
 			throw redirect(302, '/add-credits');
 		} catch (error) {
 			if (error instanceof Response || (error as any)?.status === 302) {

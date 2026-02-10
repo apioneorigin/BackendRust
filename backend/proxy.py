@@ -17,7 +17,9 @@ class ProxyHandler(http.server.SimpleHTTPRequestHandler):
             self.proxy('POST')
 
     def proxy(self, method):
-        url = f"http://localhost:8000{self.path}"
+        # Strip /api prefix - backend routes don't include it
+        backend_path = self.path[4:] if self.path.startswith('/api/') else self.path
+        url = f"http://localhost:8000{backend_path}"
         try:
             length = int(self.headers.get('Content-Length', 0))
             body = self.rfile.read(length) if length else None

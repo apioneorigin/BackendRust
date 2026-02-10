@@ -15,7 +15,7 @@ export const POST: RequestHandler = async ({ cookies, locals }) => {
 	// Try to logout from backend
 	if (token) {
 		try {
-			await fetch(`${BACKEND_URL}/api/auth/logout`, {
+			await fetch(`${BACKEND_URL}/auth/logout`, {
 				method: 'POST',
 				headers: {
 					'Authorization': `Bearer ${token}`,
