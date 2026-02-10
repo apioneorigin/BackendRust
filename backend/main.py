@@ -2477,6 +2477,22 @@ def _extract_anthropic_text(data: dict) -> str:
     return ""
 
 
+def _extract_openai_response_text(data: dict) -> str:
+    """Extract text from OpenAI Responses API response."""
+    # Path 1: Direct output_text field
+    if data.get("output_text"):
+        return data["output_text"]
+    # Path 2: output array with message type
+    for item in data.get("output", []):
+        if item.get("type") == "message":
+            for c in item.get("content", []):
+                if c.get("type") in ("output_text", "text"):
+                    text = c.get("text", "")
+                    if text:
+                        return text
+    return ""
+
+
 def _strip_markdown_json(text: str) -> str:
     """Strip markdown code fences from LLM JSON responses (including truncated ones)."""
     text = text.strip()
@@ -2640,9 +2656,9 @@ REQUIREMENTS:
                 }
                 request_body = {
                     "model": model,
-                    "max_completion_tokens": 4096,
-                    "messages": [{"role": "user", "content": prompt_text}],
-                    "response_format": {"type": "json_object"}
+                    "max_output_tokens": 4096,
+                    "input": [{"type": "message", "role": "user", "content": prompt_text}],
+                    "text": {"format": {"type": "json_object"}}
                 }
                 response = await client.post(endpoint, headers=headers, json=request_body)
 
@@ -2651,9 +2667,9 @@ REQUIREMENTS:
                     return None
 
                 data = response.json()
-                response_text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                response_text = _extract_openai_response_text(data)
                 usage = data.get("usage", {})
-                api_logger.info(f"[DOC_PREVIEW] Tokens - Input: {usage.get('prompt_tokens')}, Output: {usage.get('completion_tokens')}")
+                api_logger.info(f"[DOC_PREVIEW] Tokens - Input: {usage.get('input_tokens')}, Output: {usage.get('output_tokens')}")
 
             # Parse JSON response (strip markdown fences if present)
             response_text = _strip_markdown_json(response_text)
@@ -2869,9 +2885,9 @@ REQUIREMENTS:
                 }
                 request_body = {
                     "model": model,
-                    "max_completion_tokens": 65536,
-                    "messages": [{"role": "user", "content": prompt_text}],
-                    "response_format": {"type": "json_object"}
+                    "max_output_tokens": 65536,
+                    "input": [{"type": "message", "role": "user", "content": prompt_text}],
+                    "text": {"format": {"type": "json_object"}}
                 }
                 response = await client.post(endpoint, headers=headers, json=request_body)
 
@@ -2880,9 +2896,9 @@ REQUIREMENTS:
                     return None
 
                 data = response.json()
-                response_text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                response_text = _extract_openai_response_text(data)
                 usage = data.get("usage", {})
-                api_logger.info(f"[MATRIX_GEN] Tokens - Input: {usage.get('prompt_tokens')}, Output: {usage.get('completion_tokens')}")
+                api_logger.info(f"[MATRIX_GEN] Tokens - Input: {usage.get('input_tokens')}, Output: {usage.get('output_tokens')}")
 
             # Parse JSON response (strip markdown fences if present)
             response_text = _strip_markdown_json(response_text)
@@ -3182,9 +3198,9 @@ REQUIREMENTS:
                 }
                 request_body = {
                     "model": model,
-                    "max_completion_tokens": 8192,
-                    "messages": [{"role": "user", "content": prompt_text}],
-                    "response_format": {"type": "json_object"}
+                    "max_output_tokens": 8192,
+                    "input": [{"type": "message", "role": "user", "content": prompt_text}],
+                    "text": {"format": {"type": "json_object"}}
                 }
                 response = await client.post(endpoint, headers=headers, json=request_body)
 
@@ -3193,9 +3209,9 @@ REQUIREMENTS:
                     return None
 
                 data = response.json()
-                response_text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                response_text = _extract_openai_response_text(data)
                 usage = data.get("usage", {})
-                api_logger.info(f"[INSIGHT_GEN] Tokens - Input: {usage.get('prompt_tokens')}, Output: {usage.get('completion_tokens')}")
+                api_logger.info(f"[INSIGHT_GEN] Tokens - Input: {usage.get('input_tokens')}, Output: {usage.get('output_tokens')}")
 
             # Parse JSON response (strip markdown fences if present)
             response_text = _strip_markdown_json(response_text)
