@@ -20,22 +20,31 @@ DATABASE_URL = os.getenv("DATABASE_URL", "")
 IS_PRODUCTION = os.getenv("ENVIRONMENT") == "production"
 USE_SQLITE = os.getenv("USE_SQLITE", "").lower() in ("true", "1", "yes") or not DATABASE_URL
 
+# Log env var status at startup (always, regardless of environment)
+print(f"[Database] ENVIRONMENT={os.getenv('ENVIRONMENT', '<unset>')}")
+print(f"[Database] DATABASE_URL={'set (' + str(len(DATABASE_URL)) + ' chars)' if DATABASE_URL else 'EMPTY or unset'}")
+print(f"[Database] USE_SQLITE={USE_SQLITE}")
+
 # In production, DATABASE_URL is required — never fall back to ephemeral SQLite
 if IS_PRODUCTION and USE_SQLITE:
-    print(f"\n{'='*80}")
-    print(f"[Database] FATAL: DATABASE_URL is not set in production!")
-    print(f"{'='*80}")
-    print(f"[Database] Without DATABASE_URL, the app uses SQLite inside the container.")
-    print(f"[Database] Container storage is EPHEMERAL — all data is lost on each deploy.")
-    print(f"[Database]")
-    print(f"[Database] To fix this:")
-    print(f"[Database] 1. Go to DigitalOcean Console → Apps → reality-transformer → Settings")
-    print(f"[Database] 2. Click 'backend' component → Environment Variables")
-    print(f"[Database] 3. Set DATABASE_URL to your PostgreSQL connection string:")
-    print(f"[Database]    postgresql://user:password@host:25060/defaultdb?sslmode=require")
-    print(f"[Database] 4. Save and redeploy")
-    print(f"{'='*80}\n")
-    raise RuntimeError("DATABASE_URL required in production — set it in DigitalOcean environment variables")
+    raise RuntimeError(
+        "\n" + "="*80 + "\n"
+        "[Database] FATAL: DATABASE_URL is not set (or is empty) in production!\n"
+        "="*80 + "\n"
+        "Without DATABASE_URL, the app uses SQLite inside the container.\n"
+        "Container storage is EPHEMERAL — all data is lost on each deploy.\n\n"
+        "DigitalOcean 'type: SECRET' env vars are injected as EMPTY strings\n"
+        "until you enter the actual value in the Console UI.\n\n"
+        "To fix:\n"
+        "  1. Go to DigitalOcean Console → Apps → reality-transformer\n"
+        "  2. Click Settings → backend component → Environment Variables\n"
+        "  3. Click 'Edit' next to DATABASE_URL\n"
+        "  4. PASTE the actual PostgreSQL connection string from:\n"
+        "     Databases → your cluster → Connection Details → Connection String\n"
+        "  5. Also set JWT_SECRET to any random 32+ character string\n"
+        "  6. Save → Redeploy\n"
+        + "="*80
+    )
 
 # Determine which database to use
 if USE_SQLITE:
