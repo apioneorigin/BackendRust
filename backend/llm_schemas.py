@@ -214,7 +214,7 @@ ARTICULATED_INSIGHT_SCHEMA: Dict[str, Any] = {
         "the_truth_law": {"type": "string"},       # Bold one-line universal law (15-25 words)
 
         # YOUR TRUTH (50-80 words): Recognition + future protection
-        "your_truth": {"type": "string"},          # "I see you" + "never miss again" trigger
+        "your_truth": {"type": "string"},          # Recognition of user's reality + future detection tool
         "your_truth_revelation": {"type": "string"},  # Bold revelation - what's now visible
 
         # THE MARK (30-50 words): Install the insight as permanent pattern
@@ -231,14 +231,46 @@ ARTICULATED_INSIGHT_SCHEMA: Dict[str, Any] = {
     "additionalProperties": False
 }
 
-# Row/Column option schema with insight_title (minimal) or full articulated_insight (after generation)
+# Articulated Outcome schema (based on Outcomes articulation logic.pdf)
+# 3-component structure: THE ARC → THE LANDSCAPE → THE ANCHOR
+# Total: 160-250 words per outcome
+# Physics: PROJECTION (traces forces forward to resting states, not COLLAPSE)
+ARTICULATED_OUTCOME_SCHEMA: Dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        # Outcome title (max 10 words) - displayed in popup header
+        "title": {"type": "string"},
+
+        # THE ARC (80-120 words): Force in motion → inflection → resolution
+        "the_arc": {"type": "string"},             # Progressive present tense, time-lapse, inside user's domain
+        "the_arc_destination": {"type": "string"},  # Bold destination statement (15-25 words, specific not universal)
+
+        # THE LANDSCAPE (50-80 words): Current position → fork → state description
+        "the_landscape": {"type": "string"},                    # Position + conditional fork based on driver execution
+        "the_landscape_operating_reality": {"type": "string"},  # Bold operating reality of the achieved state
+
+        # THE ANCHOR (30-50 words): Destination name + arrival signal + positional identity
+        "the_anchor_name": {"type": "string"},      # Destination/position name, 2-5 words, Title Case
+        "the_anchor_signal": {"type": "string"},    # Observable marker of arrival
+        "the_anchor_identity": {"type": "string"}   # Bold positional identity
+    },
+    "required": [
+        "title", "the_arc", "the_arc_destination",
+        "the_landscape", "the_landscape_operating_reality",
+        "the_anchor_name", "the_anchor_signal", "the_anchor_identity"
+    ],
+    "additionalProperties": False
+}
+
+# Row/Column option schema with insight_title (minimal) or full articulated content (after generation)
 ROW_COLUMN_OPTION_SCHEMA: Dict[str, Any] = {
     "type": "object",
     "properties": {
         "id": {"type": "string"},
         "label": {"type": "string"},
         "insight_title": {"type": "string"},  # Always present - title only from Call 2
-        "articulated_insight": ARTICULATED_INSIGHT_SCHEMA  # Optional - full insight after user generates
+        "articulated_insight": ARTICULATED_INSIGHT_SCHEMA,  # Optional - full insight for rows (drivers)
+        "articulated_outcome": ARTICULATED_OUTCOME_SCHEMA   # Optional - full outcome for columns
     },
     "required": ["id", "label", "insight_title"]
 }

@@ -1,21 +1,27 @@
 <script lang="ts">
 	/**
-	 * InsightPopup - Displays articulated insights for matrix row/column options
+	 * InsightPopup - Displays articulated insights (drivers) or outcomes (columns)
 	 *
-	 * Enhanced structure:
-	 * 1. Micro-moment (user's context) - Fly on the Wall
-	 * 2. Distant anchor (far domain analogy)
+	 * Driver structure (rows):
+	 * 1. Micro-moment (user's context)
+	 * 2. The Truth (far domain analogy)
 	 * 3. Principle (universal law)
 	 * 4. Installation (recognition + name + identity)
+	 *
+	 * Outcome structure (columns):
+	 * 1. The Arc (force → inflection → resolution)
+	 * 2. The Landscape (position → fork → state)
+	 * 3. The Anchor (destination name + signal + identity)
 	 *
 	 * Total: 200-300 words, displayed as continuous prose
 	 */
 
 	import { createEventDispatcher } from 'svelte';
-	import type { ArticulatedInsight } from '$lib/stores/matrix';
+	import type { ArticulatedInsight, ArticulatedOutcome } from '$lib/stores/matrix';
 
 	export let open = false;
 	export let insight: ArticulatedInsight | null = null;
+	export let outcome: ArticulatedOutcome | null = null;
 	export let optionLabel = '';
 	export let optionType: 'row' | 'column' = 'row';
 
@@ -25,6 +31,8 @@
 
 	// Map internal types to user-friendly labels
 	$: displayType = optionType === 'row' ? 'driver' : 'outcome';
+	$: displayTitle = (outcome?.title || insight?.title || optionLabel);
+	$: hasContent = !!(outcome || insight);
 
 	function handleClose() {
 		open = false;
@@ -53,7 +61,7 @@
 	}
 </script>
 
-{#if open && insight}
+{#if open && hasContent}
 	<div
 		class="popup-overlay"
 		on:click={handleClose}
@@ -75,7 +83,7 @@
 					<span class="option-type-badge" class:driver={optionType === 'row'} class:outcome={optionType === 'column'}>
 						{displayType}
 					</span>
-					<h3 id="insight-title">{insight.title || optionLabel}</h3>
+					<h3 id="insight-title">{displayTitle}</h3>
 				</div>
 				<button class="close-btn" on:click={handleClose} aria-label="Close">
 					<svg
@@ -96,32 +104,57 @@
 			</div>
 
 			<div class="popup-body">
-				<!-- 4-component insight: Micro Moment → The Truth → Your Truth → The Mark -->
 				<article class="insight-prose">
-					{#if insight.micro_moment}
-						<p class="micro-moment">{@html parseBold(insight.micro_moment)}</p>
-					{/if}
+					{#if outcome}
+						<!-- OUTCOME: The Arc → The Landscape → The Anchor -->
+						{#if outcome.the_arc}
+							<p class="the-arc">{@html parseBold(outcome.the_arc)}</p>
+						{/if}
 
-					{#if insight.the_truth}
-						<p>{@html parseBold(insight.the_truth)}</p>
-					{/if}
+						{#if outcome.the_arc_destination}
+							<p class="destination">{@html parseBold(outcome.the_arc_destination)}</p>
+						{/if}
 
-					{#if insight.the_truth_law}
-						<p>{@html parseBold(insight.the_truth_law)}</p>
-					{/if}
+						{#if outcome.the_landscape}
+							<p>{@html parseBold(outcome.the_landscape)}</p>
+						{/if}
 
-					{#if insight.your_truth}
-						<p>{@html parseBold(insight.your_truth)}</p>
-					{/if}
+						{#if outcome.the_landscape_operating_reality}
+							<p>{@html parseBold(outcome.the_landscape_operating_reality)}</p>
+						{/if}
 
-					{#if insight.your_truth_revelation}
-						<p>{@html parseBold(insight.your_truth_revelation)}</p>
-					{/if}
+						{#if outcome.the_anchor_name || outcome.the_anchor_signal || outcome.the_anchor_identity}
+							<p>
+								{#if outcome.the_anchor_name}<span class="anchor-name">{outcome.the_anchor_name}.</span> {/if}{outcome.the_anchor_signal || ''} {@html parseBold(outcome.the_anchor_identity || '')}
+							</p>
+						{/if}
+					{:else if insight}
+						<!-- DRIVER: Micro Moment → The Truth → Your Truth → The Mark -->
+						{#if insight.micro_moment}
+							<p class="micro-moment">{@html parseBold(insight.micro_moment)}</p>
+						{/if}
 
-					{#if insight.the_mark_name || insight.the_mark_prediction || insight.the_mark_identity}
-						<p>
-							{#if insight.the_mark_name}<span class="mark-name">{insight.the_mark_name}</span> {/if}{insight.the_mark_prediction || ''} {@html parseBold(insight.the_mark_identity || '')}
-						</p>
+						{#if insight.the_truth}
+							<p>{@html parseBold(insight.the_truth)}</p>
+						{/if}
+
+						{#if insight.the_truth_law}
+							<p>{@html parseBold(insight.the_truth_law)}</p>
+						{/if}
+
+						{#if insight.your_truth}
+							<p>{@html parseBold(insight.your_truth)}</p>
+						{/if}
+
+						{#if insight.your_truth_revelation}
+							<p>{@html parseBold(insight.your_truth_revelation)}</p>
+						{/if}
+
+						{#if insight.the_mark_name || insight.the_mark_prediction || insight.the_mark_identity}
+							<p>
+								{#if insight.the_mark_name}<span class="mark-name">{insight.the_mark_name}</span> {/if}{insight.the_mark_prediction || ''} {@html parseBold(insight.the_mark_identity || '')}
+							</p>
+						{/if}
 					{/if}
 				</article>
 			</div>
@@ -222,7 +255,7 @@
 		overflow-y: auto;
 	}
 
-	/* Continuous prose insight styling - clean, no templates */
+	/* Continuous prose styling - clean, no templates */
 	.insight-prose {
 		font-size: 0.9375rem;
 		line-height: 1.8;
@@ -237,12 +270,30 @@
 		margin-bottom: 0;
 	}
 
-	/* Micro moment — grounding scene in user's world */
+	/* Driver: Micro moment — grounding scene in user's world */
 	.insight-prose .micro-moment {
 		font-style: italic;
 		color: var(--color-text-source);
 		border-left: 3px solid var(--color-primary-300);
 		padding-left: 1rem;
+	}
+
+	/* Outcome: The Arc — progressive present tense, flows naturally */
+	.insight-prose .the-arc {
+		color: var(--color-text-source);
+	}
+
+	/* Outcome: Arc destination — bold landing point */
+	.insight-prose .destination {
+		font-weight: 600;
+		color: var(--color-primary-700);
+	}
+
+	/* Outcome: Anchor name — positional emphasis */
+	.insight-prose .anchor-name {
+		font-style: italic;
+		color: var(--color-text-source);
+		font-weight: 500;
 	}
 
 	/* Bold text styling (from markdown **text**) */
@@ -251,7 +302,7 @@
 		font-weight: 600;
 	}
 
-	/* Mark name styling - subtle emphasis */
+	/* Driver: Mark name styling - subtle emphasis */
 	.insight-prose .mark-name {
 		font-style: italic;
 		color: var(--color-text-source);
