@@ -81,6 +81,7 @@ class MessageResponse(CamelModel):
     output_tokens: Optional[int]
     total_tokens: Optional[int]
     feedback: Optional[str]
+    attachments: Optional[list] = None
     created_at: datetime
 
 
@@ -217,12 +218,12 @@ async def send_message(
     conversation, history_result = await asyncio.gather(conversation_task, history_task)
     previous_messages = history_result.scalars().all()
 
-    # Extract file summaries from system messages with attachments
+    # Extract file summaries from all messages with attachments (user + system)
     existing_file_summaries = []
     for msg in previous_messages:
-        if msg.role == "system" and msg.attachments:
+        if msg.attachments:
             for att in msg.attachments:
-                if isinstance(att, dict):
+                if isinstance(att, dict) and att.get("summary"):
                     existing_file_summaries.append({
                         "name": att.get("name", "unnamed"),
                         "summary": att.get("summary", "")[:5000],
@@ -338,6 +339,7 @@ async def send_message(
     )
 
     # Add any new file attachments from this request (parse binary formats)
+    new_file_summaries = []
     if request.attachments:
         for attachment in request.attachments:
             name = attachment.get("name", "unnamed")
@@ -357,14 +359,17 @@ async def send_message(
                     file_entry["image_base64"] = parsed.image_base64
                     file_entry["image_media_type"] = parsed.image_media_type
                 conversation_context.file_summaries.append(file_entry)
+                new_file_summaries.append(file_entry)
 
-    # Save user message with attachments
+    # Save user message with parsed file summaries (not raw base64) so they
+    # can be extracted for context on subsequent messages via the same format
+    # as system message attachments ({name, summary, type}).
     user_message = ChatMessage(
         id=generate_id(),
         conversation_id=conversation_id,
         role="user",
         content=request.content,
-        attachments=request.attachments,
+        attachments=new_file_summaries if new_file_summaries else None,
     )
     db.add(user_message)
     await db.commit()
