@@ -1,13 +1,16 @@
 # =============================================================================
-# DigitalOcean App Platform — Full Stack (Frontend + Backend + Databases)
+# DigitalOcean App Platform — Full Stack (Frontend + Backend)
 # =============================================================================
 # Usage:
 #   1. Create a new app in DO Console → Apps → Create App
 #   2. Connect your GitHub repo (apioneorigin/BackendRust, branch: main)
 #   3. Paste this spec in Settings → App Spec → Edit
 #   4. Set SECRET env vars in DO Console → Settings → Environment Variables:
-#      - OPENAI_API_KEY, ANTHROPIC_API_KEY, JWT_SECRET
-#   5. DATABASE_URL and REDIS_URL are auto-wired from the database components
+#      - OPENAI_API_KEY
+#      - ANTHROPIC_API_KEY
+#      - JWT_SECRET
+#      - DATABASE_URL (use format: postgresql+asyncpg://user:pass@host:port/db?ssl=require)
+#      - REDIS_URL (use format: rediss://user:pass@host:port)
 #
 # Routing:
 #   /        → Frontend (SvelteKit)
@@ -18,9 +21,9 @@
 #   Backend:  GET /healthz/ → FastAPI health endpoint (trailing slash required)
 #
 # Databases:
-#   PostgreSQL and Valkey are defined as app components below.
-#   Template variables (${db.DATABASE_URL}, ${cache.DATABASE_URL}) resolve
-#   automatically — no need to copy/paste connection strings manually.
+#   Create PostgreSQL 18 and Valkey 8 clusters separately in DO Console.
+#   Add their connection strings to the environment variables above.
+#   Remember to add this app to the database "Trusted Sources" firewall.
 # =============================================================================
 
 name: reality-transformer
@@ -45,25 +48,6 @@ ingress:
       match:
         path:
           prefix: /
-
-# =============================================================================
-# Databases
-# =============================================================================
-databases:
-
-  # ── PostgreSQL ────────────────────────────────────────────────────────────
-  # To use an existing managed cluster, add:  cluster_name: your-cluster-name
-  - name: db
-    engine: PG
-    version: "18"
-    production: true
-
-  # ── Valkey (Redis-compatible) ─────────────────────────────────────────────
-  # To use an existing managed cluster, add:  cluster_name: your-cluster-name
-  - name: cache
-    engine: REDIS
-    version: "8"
-    production: true
 
 # =============================================================================
 # Services
@@ -150,14 +134,14 @@ services:
         scope: RUN_TIME
         type: SECRET
 
-      # ── Database connections (auto-wired from database components) ───
+      # ── Database connections (set in DO Console UI) ───
       - key: DATABASE_URL
         scope: RUN_TIME
-        value: ${db.DATABASE_URL}
+        type: SECRET
 
       - key: REDIS_URL
         scope: RUN_TIME
-        value: ${cache.DATABASE_URL}
+        type: SECRET
 
       # ── Public config ────────────────────────────────────────────────
       - key: ENVIRONMENT
