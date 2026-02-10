@@ -2,10 +2,12 @@
 Document management endpoints.
 """
 
+import json
 from datetime import datetime
 from typing import Optional, List
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import Response
 from pydantic import BaseModel
 from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -123,6 +125,36 @@ async def get_document(
     """Get a specific document."""
     document = await get_or_404(db, Document, document_id, user_id=current_user.id)
     return to_response(document, DocumentResponse)
+
+
+@router.get("/{document_id}/download")
+async def download_document(
+    document_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Download a document as JSON file."""
+    document = await get_or_404(db, Document, document_id, user_id=current_user.id)
+
+    content = json.dumps({
+        "title": document.title,
+        "sections": document.sections,
+        "domain": document.domain,
+        "format": document.format,
+        "version": document.version,
+        "goal_title": document.goal_title,
+        "cells": document.cells,
+        "cascade_rules": document.cascade_rules,
+        "created_at": document.created_at.isoformat() if document.created_at else None,
+        "last_updated_at": document.last_updated_at.isoformat() if document.last_updated_at else None,
+    }, indent=2)
+
+    filename = f"{document.title.replace(' ', '_')}.json"
+    return Response(
+        content=content,
+        media_type="application/json",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.patch("/{document_id}", response_model=DocumentResponse)
