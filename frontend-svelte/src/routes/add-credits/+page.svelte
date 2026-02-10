@@ -8,7 +8,7 @@
 
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { user, isAuthenticated, credits, creditBalance, addToast } from '$lib/stores';
+	import { user, isAuthenticated, credits, creditBalance, addToast, auth } from '$lib/stores';
 	import { Spinner } from '$lib/components/ui';
 
 	export let params: Record<string, string> = {};
@@ -206,6 +206,19 @@
 					<p class="info-text">Contact your admin to receive a promo code and start using the app.</p>
 				</div>
 			</div>
+
+			<!-- Logout -->
+			<button
+				class="logout-btn"
+				on:click={async () => { await auth.logout(); goto('/login'); }}
+			>
+				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+					<polyline points="16 17 21 12 16 7" />
+					<line x1="21" y1="12" x2="9" y2="12" />
+				</svg>
+				Log out
+			</button>
 		</div>
 	{/if}
 </div>
@@ -417,5 +430,29 @@
 
 	.info-text {
 		color: var(--color-text-whisper);
+	}
+
+	.logout-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+		width: 100%;
+		margin-top: 1rem;
+		padding: 0.625rem 1rem;
+		font-size: 0.875rem;
+		font-weight: 500;
+		color: var(--color-text-whisper);
+		background: none;
+		border: 1px solid var(--color-veil-thin);
+		border-radius: 0.75rem;
+		cursor: pointer;
+		transition: all 0.15s ease;
+	}
+
+	.logout-btn:hover {
+		color: var(--color-error-500);
+		border-color: var(--color-error-300);
+		background: var(--color-error-50, rgba(239, 68, 68, 0.05));
 	}
 </style>
