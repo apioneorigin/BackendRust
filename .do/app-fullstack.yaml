@@ -62,12 +62,12 @@ databases:
   - name: db
     engine: PG
     production: true
-    cluster_name: <your-pg-cluster>
+    cluster_name: reality-transformer-pg
 
   - name: valkey
     engine: REDIS
     production: true
-    cluster_name: <your-valkey-cluster>
+    cluster_name: db-valkey-nyc1-21088
 
 # =============================================================================
 # Services

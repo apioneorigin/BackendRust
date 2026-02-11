@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
+	import { addToast } from '$lib/stores';
 
 	interface DiscoveredGoal {
 		id: string;
@@ -61,6 +62,24 @@
 			handleClose();
 		}
 	}
+
+	function getGoalText(): string {
+		if (!goal) return '';
+		const parts: string[] = [];
+		if (goal.goalStatement) parts.push(goal.goalStatement);
+		if (goal.articulation) parts.push(goal.articulation);
+		if (goal.firstMove) parts.push(`First Move: ${goal.firstMove}`);
+		return parts.join('\n\n');
+	}
+
+	async function copyToClipboard() {
+		try {
+			await navigator.clipboard.writeText(getGoalText());
+			addToast('success', 'Copied to clipboard');
+		} catch {
+			addToast('error', 'Failed to copy');
+		}
+	}
 </script>
 
 {#if open && goal}
@@ -115,6 +134,13 @@
 			</div>
 
 			<div class="popup-footer">
+				<button class="action-btn copy-btn" on:click={copyToClipboard} title="Copy to clipboard">
+					<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
+						<path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+					</svg>
+					Copy
+				</button>
 				<button
 					class="action-btn save-btn"
 					on:click={() => goal && dispatch('save', goal)}
@@ -322,6 +348,18 @@
 		font-weight: 500;
 		cursor: pointer;
 		transition: all 0.15s ease;
+	}
+
+	.copy-btn {
+		background: var(--color-field-depth);
+		border: 1px solid var(--color-veil-thin);
+		color: var(--color-text-manifest);
+	}
+
+	.copy-btn:hover {
+		background: var(--color-primary-50);
+		border-color: var(--color-primary-400);
+		color: var(--color-primary-700);
 	}
 
 	.save-btn {
