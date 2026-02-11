@@ -2139,8 +2139,23 @@ JSON structure:
   ],
   "targets": ["At_attachment", "F_fear", "R_resistance", ...],
   "relevant_oof_components": ["Sacred Chain", "Cascade", "UCB", "Seven Matrices", "Death Architecture"],
-  "missing_operator_priority": ["V", "Se", "Ce", "Su"]
+  "missing_operator_priority": ["V", "Se", "Ce", "Su"],
+  "conversation_title": "4-8 word concise descriptive title for this conversation"
 }}
+
+CONVERSATION TITLE (REQUIRED):
+- Generate a concise, descriptive title (4-8 words) that captures the essence of the user's query
+- Focus on the core topic/intent, not generic phrases
+- Examples: "NVIDIA Investment Analysis", "Career Change to Tech", "Startup Growth Strategy"
+- Return ONLY the title text, no quotes or punctuation at the end
+
+MISSING OPERATOR PRIORITY (CRITICAL):
+- 'missing_operator_priority' lists operators you could NOT confidently extract from the user input
+- Order them by IMPORTANCE to the user's specific query — most critical missing data first
+- These operators will be targeted in follow-up constellation questions
+- Only include operators where you had to GUESS (confidence < 0.4) or had NO data at all
+- The backend will use this list to prioritize which missing data to ask about first
+- This is the LLM's OPINION on what data matters most for THIS user's query — the backend does NOT decide this
 
 CRITICAL REQUIREMENTS FOR TARGET SELECTION:
 - 'targets' must be QUERY-SPECIFIC based on query pattern analysis (not the generic example)
@@ -2627,6 +2642,9 @@ REQUIREMENTS:
 - NO cells in this response - user generates those separately per document
 - Each document must have a unique perspective"""
 
+    if not api_key:
+        raise ValueError(f"No API key configured for provider: {provider}. Set {'ANTHROPIC_API_KEY' if provider == 'anthropic' else 'OPENAI_API_KEY'} in environment variables.")
+
     try:
         async with httpx.AsyncClient(timeout=300.0) as client:
             if provider == "anthropic":
@@ -2643,8 +2661,9 @@ REQUIREMENTS:
                 response = await client.post(endpoint, headers=headers, json=request_body)
 
                 if response.status_code != 200:
-                    api_logger.error(f"[DOC_PREVIEW] Anthropic error: {response.status_code} - {response.text}")
-                    return None
+                    error_detail = response.text[:500]
+                    api_logger.error(f"[DOC_PREVIEW] Anthropic error: {response.status_code} - {error_detail}")
+                    raise RuntimeError(f"Anthropic API {response.status_code}: {error_detail}")
 
                 data = response.json()
                 response_text = _extract_anthropic_text(data)
@@ -2665,8 +2684,9 @@ REQUIREMENTS:
                 response = await client.post(endpoint, headers=headers, json=request_body)
 
                 if response.status_code != 200:
-                    api_logger.error(f"[DOC_PREVIEW] OpenAI error: {response.status_code} - {response.text}")
-                    return None
+                    error_detail = response.text[:500]
+                    api_logger.error(f"[DOC_PREVIEW] OpenAI error: {response.status_code} - {error_detail}")
+                    raise RuntimeError(f"OpenAI API {response.status_code}: {error_detail}")
 
                 data = response.json()
                 response_text = _extract_openai_response_text(data)
@@ -2856,6 +2876,9 @@ REQUIREMENTS:
 - Generate 5 presets with steps
 - Each play must reference actual leverage_point cell_ids"""
 
+    if not api_key:
+        raise ValueError(f"No API key configured for provider: {provider}. Set {'ANTHROPIC_API_KEY' if provider == 'anthropic' else 'OPENAI_API_KEY'} in environment variables.")
+
     try:
         async with httpx.AsyncClient(timeout=300.0) as client:
             if provider == "anthropic":
@@ -2872,8 +2895,9 @@ REQUIREMENTS:
                 response = await client.post(endpoint, headers=headers, json=request_body)
 
                 if response.status_code != 200:
-                    api_logger.error(f"[MATRIX_GEN] Anthropic error: {response.status_code} - {response.text}")
-                    return None
+                    error_detail = response.text[:500]
+                    api_logger.error(f"[MATRIX_GEN] Anthropic error: {response.status_code} - {error_detail}")
+                    raise RuntimeError(f"Anthropic API {response.status_code}: {error_detail}")
 
                 data = response.json()
                 response_text = _extract_anthropic_text(data)
@@ -2894,8 +2918,9 @@ REQUIREMENTS:
                 response = await client.post(endpoint, headers=headers, json=request_body)
 
                 if response.status_code != 200:
-                    api_logger.error(f"[MATRIX_GEN] OpenAI error: {response.status_code} - {response.text}")
-                    return None
+                    error_detail = response.text[:500]
+                    api_logger.error(f"[MATRIX_GEN] OpenAI error: {response.status_code} - {error_detail}")
+                    raise RuntimeError(f"OpenAI API {response.status_code}: {error_detail}")
 
                 data = response.json()
                 response_text = _extract_openai_response_text(data)
@@ -3169,6 +3194,9 @@ REQUIREMENTS:
 - User should think: "I can't unsee this now"
 """
 
+    if not api_key:
+        raise ValueError(f"No API key configured for provider: {provider}. Set {'ANTHROPIC_API_KEY' if provider == 'anthropic' else 'OPENAI_API_KEY'} in environment variables.")
+
     try:
         async with httpx.AsyncClient(timeout=300.0) as client:
             if provider == "anthropic":
@@ -3185,8 +3213,9 @@ REQUIREMENTS:
                 response = await client.post(endpoint, headers=headers, json=request_body)
 
                 if response.status_code != 200:
-                    api_logger.error(f"[INSIGHT_GEN] Anthropic error: {response.status_code} - {response.text}")
-                    return None
+                    error_detail = response.text[:500]
+                    api_logger.error(f"[INSIGHT_GEN] Anthropic error: {response.status_code} - {error_detail}")
+                    raise RuntimeError(f"Anthropic API {response.status_code}: {error_detail}")
 
                 data = response.json()
                 response_text = _extract_anthropic_text(data)
@@ -3207,8 +3236,9 @@ REQUIREMENTS:
                 response = await client.post(endpoint, headers=headers, json=request_body)
 
                 if response.status_code != 200:
-                    api_logger.error(f"[INSIGHT_GEN] OpenAI error: {response.status_code} - {response.text}")
-                    return None
+                    error_detail = response.text[:500]
+                    api_logger.error(f"[INSIGHT_GEN] OpenAI error: {response.status_code} - {error_detail}")
+                    raise RuntimeError(f"OpenAI API {response.status_code}: {error_detail}")
 
                 data = response.json()
                 response_text = _extract_openai_response_text(data)

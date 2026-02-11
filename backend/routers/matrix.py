@@ -272,14 +272,18 @@ async def design_reality(
     context_messages = await _load_context_messages(conversation_id, db)
     model_config = get_model_config(request.model)
 
-    result = await generate_matrix_data_llm(
-        document_stub=doc_stub,
-        context_messages=context_messages,
-        model_config=model_config
-    )
+    try:
+        result = await generate_matrix_data_llm(
+            document_stub=doc_stub,
+            context_messages=context_messages,
+            model_config=model_config
+        )
+    except Exception as e:
+        api_logger.error(f"[DESIGN_REALITY] LLM call exception: {type(e).__name__}: {e}")
+        raise HTTPException(status_code=500, detail=f"Matrix generation failed: {type(e).__name__}: {str(e)[:300]}")
 
     if not result or "cells" not in result:
-        raise HTTPException(status_code=500, detail="Failed to generate matrix data")
+        raise HTTPException(status_code=500, detail="LLM returned no cells — check server logs for [MATRIX_GEN] errors")
 
     # Update document with generated data
     documents[doc_index]["matrix_data"]["cells"] = result["cells"]
@@ -351,15 +355,19 @@ async def generate_insights(
         context_messages = await _load_context_messages(conversation_id, db)
         model_config = get_model_config(request.model)
 
-        result = await generate_insights_batch_llm(
-            document=doc,
-            missing_indices=missing_indices,
-            context_messages=context_messages,
-            model_config=model_config
-        )
+        try:
+            result = await generate_insights_batch_llm(
+                document=doc,
+                missing_indices=missing_indices,
+                context_messages=context_messages,
+                model_config=model_config
+            )
+        except Exception as e:
+            api_logger.error(f"[INSIGHTS] LLM call exception: {type(e).__name__}: {e}")
+            raise HTTPException(status_code=500, detail=f"Insight generation failed: {type(e).__name__}: {str(e)[:300]}")
 
         if not result or "insights" not in result:
-            raise HTTPException(status_code=500, detail="Failed to generate insights")
+            raise HTTPException(status_code=500, detail="LLM returned no insights — check server logs for [INSIGHT_GEN] errors")
 
         # Apply generated insights to document
         insights = result["insights"]
