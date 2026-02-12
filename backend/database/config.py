@@ -268,12 +268,22 @@ async def _migrate_articulated_insights():
 async def init_db():
     """Initialize database tables and run migrations."""
     try:
+        # Verify database connectivity first
+        from sqlalchemy import text
+        async with engine.connect() as conn:
+            result = await conn.execute(text("SELECT 1"))
+            result.fetchone()
+        db_type = "PostgreSQL" if not USE_SQLITE else "SQLite"
+        print(f"[Database] Connection verified: {db_type} is reachable")
+
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
 
             # For SQLite, run migrations to add missing columns
             if USE_SQLITE:
                 await _run_sqlite_migrations(conn)
+
+        print(f"[Database] Tables created/verified successfully")
 
         # Run data migrations
         await _migrate_articulated_insights()
