@@ -269,10 +269,10 @@ class DiscoveredGoal(Base):
     confidence: Mapped[float] = mapped_column(Float, nullable=False)
     rationale: Mapped[str] = mapped_column(Text, nullable=False)
     impact: Mapped[str] = mapped_column(Text, nullable=False)
-    evidence: Mapped[dict] = mapped_column(JSON, default=list)
+    evidence: Mapped[list] = mapped_column(JSON, default=list)
 
     # OOF integration
-    relevant_operators: Mapped[dict] = mapped_column(JSON, default=list)
+    relevant_operators: Mapped[list] = mapped_column(JSON, default=list)
     operator_deficit: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     operator_confusion: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     operator_potential: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
@@ -280,7 +280,7 @@ class DiscoveredGoal(Base):
     consciousness_evolution: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 
     # Metadata
-    source_files: Mapped[dict] = mapped_column(JSON, default=list)
+    source_files: Mapped[list] = mapped_column(JSON, default=list)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     # Selection
@@ -319,14 +319,14 @@ class FileGoalDiscovery(Base):
     organization_id: Mapped[str] = mapped_column(String, nullable=False)
 
     # File info
-    file_names: Mapped[dict] = mapped_column(JSON, nullable=False)  # List of file names
+    file_names: Mapped[list] = mapped_column(JSON, nullable=False)  # List of file names
     file_count: Mapped[int] = mapped_column(Integer, nullable=False)
 
     # File summary (derived from file content, not goals)
     file_summary: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
     # Discovered goals data
-    goals: Mapped[dict] = mapped_column(JSON, nullable=False)  # Full goals array
+    goals: Mapped[list] = mapped_column(JSON, nullable=False)  # Full goals array
     goal_count: Mapped[int] = mapped_column(Integer, nullable=False)
 
     # Metadata

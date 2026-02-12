@@ -65,9 +65,9 @@ async def create_session(
     db: AsyncSession = Depends(get_db)
 ):
     """Create a new transformation session."""
-    # Check organization limits
+    # Check organization limits (with row lock to prevent race conditions)
     result = await db.execute(
-        select(Organization).where(Organization.id == current_user.organization_id)
+        select(Organization).where(Organization.id == current_user.organization_id).with_for_update()
     )
     org = result.scalar_one_or_none()
     if not org:

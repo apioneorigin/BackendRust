@@ -287,8 +287,8 @@ class DocumentProgress(Base):
     id: Mapped[str] = mapped_column(String, primary_key=True)
     document_id: Mapped[str] = mapped_column(String, ForeignKey("documents.id", ondelete="CASCADE"), unique=True, nullable=False)
     overall_progress: Mapped[int] = mapped_column(Integer, default=0)
-    milestones: Mapped[dict] = mapped_column(JSON, default=list)
-    blockers: Mapped[dict] = mapped_column(JSON, default=list)
+    milestones: Mapped[list] = mapped_column(JSON, default=list)
+    blockers: Mapped[list] = mapped_column(JSON, default=list)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

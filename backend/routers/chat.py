@@ -576,7 +576,10 @@ async def send_message(
                     conv_result = await save_db.execute(
                         select(ChatConversation).where(ChatConversation.id == conversation_id)
                     )
-                    conv = conv_result.scalar_one()
+                    conv = conv_result.scalar_one_or_none()
+                    if not conv:
+                        api_logger.error(f"[CHAT SAVE] Conversation {conversation_id} not found during save")
+                        return
                     conv.total_input_tokens += input_tokens
                     conv.total_output_tokens += output_tokens
                     conv.total_tokens += input_tokens + output_tokens
