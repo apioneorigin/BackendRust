@@ -736,21 +736,21 @@
 						</button>
 
 						<label class="auto-refresh-toggle" title="Auto-update matrix on next query. LLM may add 1 new document per update.">
-							<input type="checkbox" checked={$autoRefreshStore} on:change={() => matrix.toggleAutoRefresh()} />
+							<input type="checkbox" id="auto-refresh" name="auto-refresh" checked={$autoRefreshStore} on:change={() => matrix.toggleAutoRefresh()} />
 							<span>Auto Refresh</span>
 						</label>
 					{/if}
 				</div>
 
 				<div class="controls-right">
-					<select bind:value={selectedModel} class="model-select">
+					<select id="model-select" name="model-select" bind:value={selectedModel} class="model-select">
 						{#each models as model}
 							<option value={model.id}>{model.name}</option>
 						{/each}
 					</select>
 
 					<label class="web-search-toggle" title={webSearchEnabled ? "Disable web research" : "Enable web research"}>
-						<input type="checkbox" bind:checked={webSearchEnabled} />
+						<input type="checkbox" id="web-search-chat" name="web-search-chat" bind:checked={webSearchEnabled} />
 						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 							<circle cx="12" cy="12" r="10"/>
 							<path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>

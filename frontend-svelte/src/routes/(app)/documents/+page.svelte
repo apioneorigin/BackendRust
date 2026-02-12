@@ -133,11 +133,11 @@
 				<circle cx="11" cy="11" r="8" />
 				<path d="m21 21-4.3-4.3" />
 			</svg>
-			<input type="text" placeholder="Search documents..." bind:value={searchQuery} />
+			<input type="text" id="doc-search" name="doc-search" placeholder="Search documents..." bind:value={searchQuery} />
 		</div>
 
 		{#if domains.length > 0}
-			<select bind:value={domainFilter} class="domain-filter">
+			<select id="domain-filter" name="domain-filter" bind:value={domainFilter} class="domain-filter">
 				<option value="">All domains</option>
 				{#each domains as domain}
 					<option value={domain}>{domain}</option>

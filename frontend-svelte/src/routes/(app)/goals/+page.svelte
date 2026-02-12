@@ -639,7 +639,7 @@
 					Browse
 				</label>
 				<label class="web-search-toggle" title="Enrich with real-world data: benchmarks, trends, comparables">
-					<input type="checkbox" bind:checked={webSearchEnabled} />
+					<input type="checkbox" id="web-search-goals" name="web-search-goals" bind:checked={webSearchEnabled} />
 					<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 						<circle cx="12" cy="12" r="10" />
 						<path d="M2 12h20" />
@@ -750,13 +750,13 @@
 				</div>
 			{:else}
 				<div class="library-filters">
-					<select class="library-filter-select" bind:value={filterType}>
+					<select id="filter-type" name="filter-type" class="library-filter-select" bind:value={filterType}>
 						<option value="">All Types</option>
 						{#each libraryGoalTypes as t}
 							<option value={t}>{t.replace('_', ' ')}</option>
 						{/each}
 					</select>
-					<select class="library-filter-select" bind:value={filterFile}>
+					<select id="filter-file" name="filter-file" class="library-filter-select" bind:value={filterFile}>
 						<option value="">All Files</option>
 						{#each librarySourceFiles as f}
 							<option value={f}>{f}</option>

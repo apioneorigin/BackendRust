@@ -6,42 +6,12 @@
 	 * Users must redeem a promo code to access the app.
 	 */
 
-	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { user, isAuthenticated, credits, creditBalance, addToast, auth } from '$lib/stores';
+	import { user, credits, addToast, auth } from '$lib/stores';
 	import { Spinner } from '$lib/components/ui';
-
-	export let params: Record<string, string> = {};
 
 	let promoCode = '';
 	let isRedeeming = false;
-	let isCheckingCredits = true;
-
-	let loadError = '';
-
-	onMount(async () => {
-		// Wait for auth to settle
-		await new Promise((resolve) => setTimeout(resolve, 100));
-
-		if (!$isAuthenticated) {
-			goto('/login');
-			return;
-		}
-
-		try {
-			// Check current credits
-			await credits.loadBalance();
-			isCheckingCredits = false;
-
-			// If user has credits, redirect to chat
-			if ($creditBalance && $creditBalance.creditQuota && $creditBalance.creditQuota > 0) {
-				goto('/chat');
-			}
-		} catch (error: any) {
-			isCheckingCredits = false;
-			loadError = error.message || 'Failed to load credits';
-		}
-	});
 
 	async function handleRedeemCode(e: Event) {
 		e.preventDefault();
@@ -83,17 +53,7 @@
 </svelte:head>
 
 <div class="add-credits-page">
-	{#if isCheckingCredits}
-		<div class="loading-container">
-			<Spinner size="lg" />
-		</div>
-	{:else if loadError}
-		<div class="loading-container error-container">
-			<p class="error-text">{loadError}</p>
-			<button class="retry-btn" on:click={() => location.reload()}>Retry</button>
-		</div>
-	{:else}
-		<div class="credits-card">
+	<div class="credits-card">
 			<!-- Header -->
 			<div class="card-header">
 				<div class="icon-container">
@@ -220,7 +180,6 @@
 				Log out
 			</button>
 		</div>
-	{/if}
 </div>
 
 <style>
@@ -237,40 +196,6 @@
 			var(--color-primary-100) 50%,
 			var(--color-primary-200) 100%
 		);
-	}
-
-	.loading-container {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-
-	.error-container {
-		flex-direction: column;
-		gap: 1rem;
-	}
-
-	.error-text {
-		color: var(--color-error-500);
-		font-size: 0.9375rem;
-		text-align: center;
-		max-width: 300px;
-	}
-
-	.retry-btn {
-		padding: 0.625rem 1.5rem;
-		background: var(--gradient-primary);
-		color: white;
-		border: none;
-		border-radius: 0.5rem;
-		font-size: 0.875rem;
-		font-weight: 500;
-		cursor: pointer;
-		transition: opacity 0.15s ease;
-	}
-
-	.retry-btn:hover {
-		opacity: 0.9;
 	}
 
 	.credits-card {

@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { user, addToast } from '$lib/stores';
-	import { goto } from '$app/navigation';
 	import { Button, Card, Spinner } from '$lib/components/ui';
 	import { api } from '$lib/utils/api';
 
@@ -77,11 +76,6 @@
 	let isLoadingSettings = false;
 
 	onMount(async () => {
-		if (!$user?.isGlobalAdmin) {
-			addToast('error', 'Access denied. Admin privileges required.');
-			goto('/chat');
-			return;
-		}
 		await loadDashboard();
 	});
 
