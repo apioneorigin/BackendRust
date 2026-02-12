@@ -1,6 +1,12 @@
 /**
  * SvelteKit Server Hooks
- * Handles authentication middleware and request processing
+ *
+ * Handles:
+ * 1. API proxy — ALL /api/* requests are proxied to the backend with
+ *    auth from HttpOnly cookies, /api prefix stripped, and native SSE
+ *    streaming support. This is the single source of truth for API
+ *    routing in every environment (dev, docker, DO App Platform).
+ * 2. Auth middleware — validates tokens and guards protected routes.
  */
 
 import type { Handle } from '@sveltejs/kit';
@@ -16,6 +22,59 @@ const PUBLIC_ROUTES = ['/login', '/register', '/api', '/healthz'];
 const ZERO_CREDIT_ROUTES = ['/add-credits', '/credits', '/logout'];
 
 export const handle: Handle = async ({ event, resolve }) => {
+	// ── API Proxy ────────────────────────────────────────────────────────
+	// Intercept ALL /api/* requests and proxy to the backend.
+	// Strips the /api prefix: /api/chat/... → BACKEND_URL/chat/...
+	// Attaches auth token from HttpOnly cookie as Bearer header.
+	// Streams SSE responses natively — no buffering, no external proxy needed.
+	if (event.url.pathname.startsWith('/api/')) {
+		const token = event.cookies.get(AUTH_COOKIE);
+		const backendPath = event.url.pathname.replace(/^\/api/, '') + event.url.search;
+
+		const headers: Record<string, string> = {};
+		if (token) {
+			headers['Authorization'] = `Bearer ${token}`;
+		}
+
+		// Forward content-type and body for non-GET requests
+		const contentType = event.request.headers.get('content-type');
+		if (contentType) {
+			headers['Content-Type'] = contentType;
+		}
+
+		const init: RequestInit = {
+			method: event.request.method,
+			headers,
+		};
+
+		// Forward body for methods that have one
+		if (event.request.method !== 'GET' && event.request.method !== 'HEAD') {
+			init.body = event.request.body;
+			// @ts-expect-error -- Node fetch supports duplex streaming
+			init.duplex = 'half';
+		}
+
+		const backendResponse = await fetch(`${BACKEND_URL}${backendPath}`, init);
+
+		// Stream the response back with original headers
+		const responseHeaders = new Headers();
+		const backendContentType = backendResponse.headers.get('content-type') || '';
+		responseHeaders.set('Content-Type', backendContentType);
+
+		// SSE-specific headers — disable all buffering
+		if (backendContentType.includes('text/event-stream')) {
+			responseHeaders.set('Cache-Control', 'no-cache, no-transform');
+			responseHeaders.set('Connection', 'keep-alive');
+			responseHeaders.set('X-Accel-Buffering', 'no');
+		}
+
+		return new Response(backendResponse.body, {
+			status: backendResponse.status,
+			headers: responseHeaders,
+		});
+	}
+
+	// ── Auth Middleware ───────────────────────────────────────────────────
 	const token = event.cookies.get(AUTH_COOKIE);
 
 	// Try to get user if token exists
