@@ -551,9 +551,11 @@ def repair_truncated_json(text: str) -> str:
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 
-# Startup diagnostics — log whether API keys are configured (never log actual values)
+# Startup diagnostics — log whether secrets are configured (length only, never actual values)
+_jwt = os.getenv("JWT_SECRET", "")
 api_logger.info(f"[CONFIG] ANTHROPIC_API_KEY: {'set (' + str(len(ANTHROPIC_API_KEY)) + ' chars)' if ANTHROPIC_API_KEY else 'NOT SET'}")
 api_logger.info(f"[CONFIG] OPENAI_API_KEY: {'set (' + str(len(OPENAI_API_KEY)) + ' chars)' if OPENAI_API_KEY else 'NOT SET'}")
+api_logger.info(f"[CONFIG] JWT_SECRET: {'set (' + str(len(_jwt)) + ' chars)' if _jwt else 'NOT SET'}")
 
 # Model configurations with pricing (per million tokens)
 # Anthropic prompt caching: 5-min cache_write = 1.25x input, cache_read = 0.1x input
