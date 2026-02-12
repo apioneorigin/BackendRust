@@ -10,8 +10,6 @@ database components — no manual env var entry needed.  See utils/resolve_do_en
 import os
 import ssl
 from pathlib import Path
-from urllib.parse import urlparse
-from sqlalchemy import make_url
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
 from dotenv import load_dotenv
@@ -72,62 +70,49 @@ if USE_SQLITE:
 
 else:
     # PostgreSQL for production
-    def prepare_async_url(url: str) -> tuple[str, dict]:
-        """
-        Prepare database URL for asyncpg.
-        Uses SQLAlchemy's make_url to safely handle password encoding.
-        Handles DigitalOcean/Heroku URL formats, strips unsupported params.
-        """
-        # Normalize scheme: postgres:// → postgresql://
-        if url.startswith('postgres://'):
-            url = 'postgresql://' + url[len('postgres://'):]
+    from urllib.parse import urlparse, unquote
+    from sqlalchemy import URL
 
-        sa_url = make_url(url)
+    # Parse the raw URL to extract components
+    _raw = DATABASE_URL
+    if _raw.startswith('postgres://'):
+        _raw = 'postgresql://' + _raw[len('postgres://'):]
 
-        # Validate
-        if not sa_url.host:
-            raise ValueError(
-                f"Could not parse DATABASE_URL: missing hostname. "
-                f"Expected format: postgresql://user:pass@host:port/dbname"
-            )
+    _parsed = urlparse(_raw)
+    if not _parsed.hostname:
+        raise ValueError(f"DATABASE_URL missing hostname. Expected: postgresql://user:pass@host:port/db")
 
-        # Strip unsupported query params, check SSL
-        query = dict(sa_url.query)
-        ssl_required = query.pop('sslmode', None) in ('require', 'verify-ca', 'verify-full')
-        query.pop('channel_binding', None)  # asyncpg doesn't support this
+    _password = unquote(_parsed.password) if _parsed.password else None
+    _host = _parsed.hostname
+    _port = _parsed.port or 25060
+    _user = unquote(_parsed.username) if _parsed.username else "doadmin"
+    _database = _parsed.path.lstrip('/') or "defaultdb"
 
-        # Rebuild URL with asyncpg driver and cleaned query params
-        sa_url = sa_url.set(
-            drivername='postgresql+asyncpg',
-            query=query,
-        )
+    # Check sslmode from query string
+    _qs = dict(p.split('=', 1) for p in _parsed.query.split('&') if '=' in p) if _parsed.query else {}
+    _ssl_required = _qs.get('sslmode') in ('require', 'verify-ca', 'verify-full')
 
-        # Prepare connect_args for SSL
-        conn_args = {}
-        if ssl_required:
-            ssl_context = ssl.create_default_context()
-            ssl_context.check_hostname = False
-            ssl_context.verify_mode = ssl.CERT_NONE
-            conn_args['ssl'] = ssl_context
+    # Log parsed components (mask password)
+    print(f"[Database] Received DATABASE_URL: postgresql://{_user}:***@{_host}:{_port}/{_database}?sslmode={_qs.get('sslmode', 'unset')}")
+    print(f"[Database] Password length: {len(_password) if _password else 0} chars")
 
-        return str(sa_url), conn_args
+    # Build SQLAlchemy URL with explicit components (avoids URL re-encoding issues)
+    ASYNC_DATABASE_URL = URL.create(
+        drivername='postgresql+asyncpg',
+        username=_user,
+        password=_password,
+        host=_host,
+        port=_port,
+        database=_database,
+    )
 
-    # Log what we received (mask password)
-    _parsed_for_log = urlparse(DATABASE_URL)
-    _masked = DATABASE_URL.replace(f":{_parsed_for_log.password}@", ":***@") if _parsed_for_log.password else DATABASE_URL
-    print(f"[Database] Received DATABASE_URL: {_masked}")
-
-    # Convert to async URL and get SSL config
-    try:
-        ASYNC_DATABASE_URL, connect_args = prepare_async_url(DATABASE_URL)
-    except Exception as e:
-        print(f"\n{'='*80}")
-        print(f"[Database] FATAL: Cannot parse DATABASE_URL: {e}")
-        print(f"{'='*80}")
-        print(f"[Database] DATABASE_URL is set but cannot be parsed.")
-        print(f"[Database] Fix the DATABASE_URL environment variable in DigitalOcean.")
-        print(f"{'='*80}\n")
-        raise
+    # Prepare connect_args for SSL
+    connect_args = {}
+    if _ssl_required:
+        ssl_context = ssl.create_default_context()
+        ssl_context.check_hostname = False
+        ssl_context.verify_mode = ssl.CERT_NONE
+        connect_args['ssl'] = ssl_context
 
     if not USE_SQLITE:
         # Create async engine for PostgreSQL
@@ -141,7 +126,7 @@ else:
             connect_args=connect_args,
         )
 
-        print(f"[Database] Using PostgreSQL: {urlparse(DATABASE_URL).hostname}")
+    print(f"[Database] Using PostgreSQL: {_host}")
 
 # Create async session factory
 AsyncSessionLocal = async_sessionmaker(
