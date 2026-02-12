@@ -204,18 +204,16 @@ async def send_message(
     Send a message and get streaming response.
     This integrates with the consciousness inference engine.
     """
-    # Parallel queries: verify access and load history simultaneously
-    conversation_task = get_or_404(
+    # Sequential queries — async sessions don't support concurrent ops on one connection
+    conversation = await get_or_404(
         db, ChatConversation, conversation_id, user_id=current_user.id
     )
-    history_task = db.execute(
+    history_result = await db.execute(
         select(ChatMessage)
         .where(ChatMessage.conversation_id == conversation_id)
         .order_by(ChatMessage.created_at)
         .limit(20)  # Last 20 messages for context
     )
-
-    conversation, history_result = await asyncio.gather(conversation_task, history_task)
     previous_messages = history_result.scalars().all()
 
     # Extract file summaries from all messages with attachments (user + system)
@@ -696,18 +694,16 @@ async def generate_title(
     Auto-generate a title for a conversation using LLM.
     Uses first few messages as context with priority weighting.
     """
-    # Verify access and load conversation + messages in parallel
-    conversation_task = get_or_404(
+    # Sequential queries — async sessions don't support concurrent ops on one connection
+    conversation = await get_or_404(
         db, ChatConversation, conversation_id, user_id=current_user.id
     )
-    messages_task = db.execute(
+    messages_result = await db.execute(
         select(ChatMessage)
         .where(ChatMessage.conversation_id == conversation_id)
         .order_by(ChatMessage.created_at)
         .limit(6)  # First 6 messages for context
     )
-
-    conversation, messages_result = await asyncio.gather(conversation_task, messages_task)
     messages = messages_result.scalars().all()
 
     if not messages:
