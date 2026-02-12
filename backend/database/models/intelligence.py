@@ -24,10 +24,10 @@ class UserIntelligence(Base):
     organization_id: Mapped[str] = mapped_column(String, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
 
     # Operator evolution
-    metric_trends: Mapped[dict] = mapped_column(JSON, default=list)
+    metric_trends: Mapped[list] = mapped_column(JSON, default=list)
 
     # Behavioral patterns
-    action_patterns: Mapped[dict] = mapped_column(JSON, default=list)
+    action_patterns: Mapped[list] = mapped_column(JSON, default=list)
 
     # Transformation metrics
     progress_velocity: Mapped[float] = mapped_column(Float, default=0.0)
@@ -35,20 +35,20 @@ class UserIntelligence(Base):
     avg_session_duration_min: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
 
     # Predictive intelligence
-    likely_blockers: Mapped[dict] = mapped_column(JSON, default=list)
+    likely_blockers: Mapped[list] = mapped_column(JSON, default=list)
     milestone_probability: Mapped[float] = mapped_column(Float, default=0.5)
-    recommended_actions: Mapped[dict] = mapped_column(JSON, default=list)
+    recommended_actions: Mapped[list] = mapped_column(JSON, default=list)
 
     # Archetype intelligence
     primary_archetype: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     archetype_stability: Mapped[float] = mapped_column(Float, default=0.5)
-    archetype_evolution: Mapped[dict] = mapped_column(JSON, default=list)
+    archetype_evolution: Mapped[list] = mapped_column(JSON, default=list)
 
     # Goal achievement
     goals_completed: Mapped[int] = mapped_column(Integer, default=0)
     goals_abandoned: Mapped[int] = mapped_column(Integer, default=0)
     avg_goal_duration_days: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    goal_achievement_patterns: Mapped[dict] = mapped_column(JSON, default=list)
+    goal_achievement_patterns: Mapped[list] = mapped_column(JSON, default=list)
 
     # Learning metadata
     sessions_analyzed: Mapped[int] = mapped_column(Integer, default=0)
@@ -110,9 +110,9 @@ class BehaviorPattern(Base):
     occurrences: Mapped[int] = mapped_column(Integer, default=1)
     first_detected: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     last_detected: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    contexts: Mapped[dict] = mapped_column(JSON, default=list)
-    triggers: Mapped[dict] = mapped_column(JSON, default=list)
-    impacts: Mapped[dict] = mapped_column(JSON, default=list)
+    contexts: Mapped[list] = mapped_column(JSON, default=list)
+    triggers: Mapped[list] = mapped_column(JSON, default=list)
+    impacts: Mapped[list] = mapped_column(JSON, default=list)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

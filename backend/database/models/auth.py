@@ -40,7 +40,7 @@ class Organization(Base):
     usage_reset_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     # Features
-    enabled_features: Mapped[dict] = mapped_column(JSON, default=list)
+    enabled_features: Mapped[list] = mapped_column(JSON, default=list)
 
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

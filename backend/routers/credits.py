@@ -164,12 +164,12 @@ async def redeem_promo_code(
     db: AsyncSession = Depends(get_db)
 ):
     """Redeem a promo code for credits."""
-    # Find promo code
+    # Find promo code (with row lock to prevent race conditions)
     result = await db.execute(
         select(PromoCode).where(
             PromoCode.code == request.code.upper(),
             PromoCode.is_active == True
-        )
+        ).with_for_update()
     )
     promo_code = result.scalar_one_or_none()
 

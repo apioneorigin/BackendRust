@@ -561,7 +561,10 @@ async def add_documents(
     selected_indices = []
     for preview_id in request.selected_preview_ids:
         if preview_id.startswith("preview-"):
-            idx = int(preview_id.split("-")[1])
+            try:
+                idx = int(preview_id.split("-")[1])
+            except (ValueError, IndexError):
+                continue
             if 0 <= idx < len(new_documents):
                 selected_indices.append(idx)
 

@@ -4,33 +4,38 @@ Provides structured logging for all components with configurable levels
 """
 
 import logging
+import os
 import sys
 from typing import Optional
 from datetime import datetime
 
+_IS_PRODUCTION = os.getenv("ENVIRONMENT") == "production"
+_DEFAULT_LEVEL = logging.INFO if _IS_PRODUCTION else logging.DEBUG
+
 # Define log levels for different components
+# In production, all components default to INFO to avoid verbose debug logs
 COMPONENT_LEVELS = {
-    'inference': logging.DEBUG,
-    'formulas': logging.DEBUG,
+    'inference': _DEFAULT_LEVEL,
+    'formulas': _DEFAULT_LEVEL,
     'articulation': logging.INFO,
-    'reverse_causality': logging.DEBUG,
-    'consciousness': logging.DEBUG,
-    'value_organizer': logging.DEBUG,
-    'bottleneck': logging.DEBUG,
-    'leverage': logging.DEBUG,
+    'reverse_causality': _DEFAULT_LEVEL,
+    'consciousness': _DEFAULT_LEVEL,
+    'value_organizer': _DEFAULT_LEVEL,
+    'bottleneck': _DEFAULT_LEVEL,
+    'leverage': _DEFAULT_LEVEL,
     'api': logging.INFO,
     'pipeline': logging.INFO,
     # Zero-fallback components
     'zero_fallback': logging.INFO,
-    'priority_detector': logging.DEBUG,
-    'question_generator': logging.DEBUG,
-    'answer_mapper': logging.DEBUG,
-    'context_assembler': logging.DEBUG,
+    'priority_detector': _DEFAULT_LEVEL,
+    'question_generator': _DEFAULT_LEVEL,
+    'answer_mapper': _DEFAULT_LEVEL,
+    'context_assembler': _DEFAULT_LEVEL,
     # Evidence-grounding components
     'evidence_grounding': logging.INFO,
     # Unity Principle components
-    'unity_principle': logging.DEBUG,
-    'dual_pathway': logging.DEBUG,
+    'unity_principle': _DEFAULT_LEVEL,
+    'dual_pathway': _DEFAULT_LEVEL,
 }
 
 
