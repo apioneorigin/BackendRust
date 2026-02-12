@@ -23,6 +23,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db, User, Goal, MatrixValue, DiscoveredGoal, UserGoalInventory, FileGoalDiscovery
 from routers.auth import get_current_user, generate_id
+from routers.credits import require_credits_amount, deduct_credit
 from utils import get_or_404, paginate, to_response, to_response_list, CamelModel
 from logging_config import api_logger
 
@@ -860,7 +861,7 @@ def get_goal_discovery_model_config() -> Dict[str, Any]:
 @router.post("/goals/discover-from-files", response_model=DiscoverGoalsResponse)
 async def discover_goals_from_files(
     request: DiscoverGoalsRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_credits_amount(10)),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -1629,8 +1630,20 @@ Return valid JSON with a "goals" array containing all skeletons with your 3 arti
         db.add(discovery)
         await db.commit()
         api_logger.info(f"[GOAL DISCOVERY] Persisted discovery {discovery_id} with {len(final_goals)} goals")
+
+        # Deduct 10 credits for goal discovery (2 LLM calls)
+        await deduct_credit(
+            current_user, db, amount=10,
+            metadata={
+                "action": "goal_discovery",
+                "file_count": len(request.files),
+                "goal_count": len(final_goals),
+                "input_tokens": total_usage.get("total_input_tokens", 0),
+                "output_tokens": total_usage.get("total_output_tokens", 0),
+            },
+        )
     except Exception as e:
-        api_logger.error(f"[GOAL DISCOVERY] DB persist failed ({type(e).__name__}): {e}")
+        api_logger.error(f"[GOAL DISCOVERY] DB persist/credit deduction failed ({type(e).__name__}): {e}")
         await db.rollback()
 
     return DiscoverGoalsResponse(

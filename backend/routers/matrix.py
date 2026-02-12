@@ -16,6 +16,7 @@ from sqlalchemy.orm.attributes import flag_modified
 
 from database import get_db, User, ChatConversation, ChatMessage
 from routers.auth import get_current_user
+from routers.credits import require_credits, deduct_credit
 from utils import get_or_404, CamelModel
 from logging_config import api_logger
 
@@ -270,7 +271,7 @@ async def design_reality(
     conversation_id: str,
     doc_id: str,
     request: DesignRealityRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_credits),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -308,6 +309,12 @@ async def design_reality(
 
     await _save_documents(conversation, documents, db)
 
+    # Deduct 1 credit for design-reality generation
+    await deduct_credit(
+        current_user, db, amount=1,
+        metadata={"conversation_id": conversation_id, "doc_id": doc_id, "action": "design_reality"},
+    )
+
     api_logger.info(f"[DESIGN_REALITY] Generated matrix data for doc {doc_id}")
 
     return documents[doc_index]
@@ -329,7 +336,7 @@ async def generate_insights(
     conversation_id: str,
     doc_id: str,
     request: GenerateInsightsRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_credits),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -405,6 +412,12 @@ async def generate_insights(
 
         api_logger.info(f"[INSIGHTS] Generated {insights_applied} insights for doc {doc_id}")
         needs_save = True
+
+        # Deduct 1 credit for insight generation (only when LLM was called)
+        await deduct_credit(
+            current_user, db, amount=1,
+            metadata={"conversation_id": conversation_id, "doc_id": doc_id, "action": "generate_insights"},
+        )
 
     if needs_save:
         await _save_documents(conversation, documents, db)

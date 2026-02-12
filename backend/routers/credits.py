@@ -24,6 +24,7 @@ router = APIRouter(prefix="", tags=["credits"])
 
 # ─── Credit enforcement dependency ─────────────────────────────────────────
 # Use as: current_user: User = Depends(require_credits)
+# For higher-cost operations: current_user: User = Depends(require_credits_amount(10))
 
 async def require_credits(
     current_user: User = Depends(get_current_user),
@@ -46,6 +47,23 @@ async def require_credits(
         )
 
     return current_user
+
+
+def require_credits_amount(amount: int):
+    """Factory for a dependency that requires at least `amount` credits."""
+    async def _check(current_user: User = Depends(get_current_user)) -> User:
+        if is_super_admin(current_user):
+            return current_user
+        if not current_user.credits_enabled:
+            return current_user
+        quota = current_user.credit_quota
+        if quota is None or quota < amount:
+            raise HTTPException(
+                status_code=403,
+                detail=f"Insufficient credits. This action requires {amount} credits.",
+            )
+        return current_user
+    return _check
 
 
 async def deduct_credit(
