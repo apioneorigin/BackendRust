@@ -490,6 +490,16 @@ function createChatStore() {
 									}
 									break;
 
+								case 'error':
+									// Backend pipeline error — surface to user
+									update(state => ({
+										...state,
+										error: parsed.message || 'An error occurred',
+										isStreaming: false,
+										streamingContent: '',
+									}));
+									addToast('error', parsed.message || 'An error occurred');
+									break;
 								case 'done':
 									// Message complete
 									break;
@@ -500,37 +510,45 @@ function createChatStore() {
 					}
 				}
 
-				// Add final assistant message and link stream questions to it
-				const assistantMessage: Message = {
-					id: `msg-${Date.now()}`,
-					role: 'assistant',
-					content: fullContent,
-					createdAt: new Date(),
-				};
+				// Only add assistant message if content was received (skip on error/empty)
+				if (fullContent) {
+					const assistantMessage: Message = {
+						id: `msg-${Date.now()}`,
+						role: 'assistant',
+						content: fullContent,
+						createdAt: new Date(),
+					};
 
-				update(state => {
-					const updatedMessages = [...state.messages, assistantMessage];
-					const updatedQuestions = state.questions.map(q =>
-						!q.messageId ? { ...q, messageId: assistantMessage.id } : q
-					);
+					update(state => {
+						const updatedMessages = [...state.messages, assistantMessage];
+						const updatedQuestions = state.questions.map(q =>
+							!q.messageId ? { ...q, messageId: assistantMessage.id } : q
+						);
 
-					// Update LRU cache so conversation switch-back shows current data
-					if (conversationId) {
-						cacheSet(conversationId, {
+						// Update LRU cache so conversation switch-back shows current data
+						if (conversationId) {
+							cacheSet(conversationId, {
+								messages: updatedMessages,
+								questions: updatedQuestions,
+								timestamp: Date.now()
+							});
+						}
+
+						return {
+							...state,
 							messages: updatedMessages,
+							isStreaming: false,
+							streamingContent: '',
 							questions: updatedQuestions,
-							timestamp: Date.now()
-						});
-					}
-
-					return {
+						};
+					});
+				} else {
+					update(state => ({
 						...state,
-						messages: updatedMessages,
 						isStreaming: false,
 						streamingContent: '',
-						questions: updatedQuestions,
-					};
-				});
+					}));
+				}
 
 				// Title is now generated in Call 1 and sent via SSE 'title' event
 
