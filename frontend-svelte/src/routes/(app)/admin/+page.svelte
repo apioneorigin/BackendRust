@@ -79,7 +79,7 @@
 	onMount(async () => {
 		if (!$user?.isGlobalAdmin) {
 			addToast('error', 'Access denied. Admin privileges required.');
-			goto('/chat');
+			goto('/chat', { replaceState: true });
 			return;
 		}
 		await loadDashboard();

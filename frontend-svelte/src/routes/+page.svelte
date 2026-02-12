@@ -15,13 +15,13 @@
 			const userData = data.user || $user;
 
 			if (!userData) {
-				goto('/login');
+				goto('/login', { replaceState: true });
 				return;
 			}
 
 			// hooks.server.ts already redirects 0-credit users to /add-credits
 			// Just send authenticated users to chat
-			goto('/chat');
+			goto('/chat', { replaceState: true });
 		} catch (error: any) {
 			loadError = error.message || 'Failed to load. Please check your connection.';
 		}

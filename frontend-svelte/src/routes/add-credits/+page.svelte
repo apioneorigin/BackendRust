@@ -24,7 +24,7 @@
 		await new Promise((resolve) => setTimeout(resolve, 100));
 
 		if (!$isAuthenticated) {
-			goto('/login');
+			goto('/login', { replaceState: true });
 			return;
 		}
 
@@ -35,7 +35,7 @@
 
 			// If user has credits, redirect to chat
 			if ($creditBalance && $creditBalance.creditQuota && $creditBalance.creditQuota > 0) {
-				goto('/chat');
+				goto('/chat', { replaceState: true });
 			}
 		} catch (error: any) {
 			isCheckingCredits = false;

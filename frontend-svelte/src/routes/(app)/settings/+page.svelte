@@ -91,7 +91,7 @@
 
 	onMount(async () => {
 		if (!$isAuthenticated) {
-			goto('/login');
+			goto('/login', { replaceState: true });
 			return;
 		}
 
