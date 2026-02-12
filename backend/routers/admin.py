@@ -2,7 +2,6 @@
 Admin endpoints for managing users, organizations, and system settings.
 """
 
-import asyncio
 from datetime import datetime
 from typing import Optional, List
 
@@ -235,26 +234,17 @@ async def get_dashboard_stats(
     db: AsyncSession = Depends(get_db)
 ):
     """Get admin dashboard statistics."""
-    # Compute date boundaries
-    thirty_days_ago = datetime.utcnow().replace(day=max(1, datetime.utcnow().day - 30))
+    from datetime import timedelta
+    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
     today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
 
-    # Run all count queries in parallel (6x faster than sequential)
-    results = await asyncio.gather(
-        db.execute(select(func.count(User.id))),
-        db.execute(select(func.count(Organization.id))),
-        db.execute(select(func.count(Session.id))),
-        db.execute(select(func.count(ChatConversation.id))),
-        db.execute(select(func.count(User.id)).where(User.last_login_at >= thirty_days_ago)),
-        db.execute(select(func.count(AIServiceLog.id)).where(AIServiceLog.created_at >= today_start)),
-    )
-
-    total_users = results[0].scalar() or 0
-    total_orgs = results[1].scalar() or 0
-    total_sessions = results[2].scalar() or 0
-    total_convos = results[3].scalar() or 0
-    active_users = results[4].scalar() or 0
-    api_calls = results[5].scalar() or 0
+    # Sequential queries — async sessions don't support concurrent ops on one connection
+    total_users = (await db.execute(select(func.count(User.id)))).scalar() or 0
+    total_orgs = (await db.execute(select(func.count(Organization.id)))).scalar() or 0
+    total_sessions = (await db.execute(select(func.count(Session.id)))).scalar() or 0
+    total_convos = (await db.execute(select(func.count(ChatConversation.id)))).scalar() or 0
+    active_users = (await db.execute(select(func.count(User.id)).where(User.last_login_at >= thirty_days_ago))).scalar() or 0
+    api_calls = (await db.execute(select(func.count(AIServiceLog.id)).where(AIServiceLog.created_at >= today_start))).scalar() or 0
 
     return DashboardStatsResponse(
         total_users=total_users,
