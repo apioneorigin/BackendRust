@@ -374,8 +374,9 @@ async def send_message(
 
     # Guardrail rate limiting
     from security.rate_limiter import get_rate_limiter
+    from security.middleware import get_client_ip
     rate_limiter = get_rate_limiter()
-    client_ip = http_request.client.host if http_request.client else "unknown"
+    client_ip = get_client_ip(http_request)
     identifier = await rate_limiter.get_client_identifier(client_ip, current_user.id)
 
     # Check if user is in guardrail cooldown

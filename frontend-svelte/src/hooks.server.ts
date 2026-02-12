@@ -36,6 +36,12 @@ export const handle: Handle = async ({ event, resolve }) => {
 			headers['Authorization'] = `Bearer ${token}`;
 		}
 
+		// Forward client IP for backend rate limiting + session logging
+		// (backend reads X-Forwarded-For via security/middleware.py get_client_ip)
+		const clientIp = event.request.headers.get('x-forwarded-for')
+			|| event.getClientAddress();
+		headers['X-Forwarded-For'] = clientIp;
+
 		// Forward content-type and body for non-GET requests
 		const contentType = event.request.headers.get('content-type');
 		if (contentType) {
