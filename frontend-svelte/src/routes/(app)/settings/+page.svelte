@@ -11,7 +11,7 @@
 
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { user, isAuthenticated, credits, creditBalance, isLoadingCreditHistory, addToast } from '$lib/stores';
+	import { user, credits, creditBalance, isLoadingCreditHistory, addToast } from '$lib/stores';
 	import { Spinner } from '$lib/components/ui';
 	import { api } from '$lib/utils/api';
 
@@ -90,11 +90,6 @@
 	$: isOrgAdmin = userRole === 'ORG_ADMIN' || userRole === 'ORG_OWNER';
 
 	onMount(async () => {
-		if (!$isAuthenticated) {
-			goto('/login', { replaceState: true });
-			return;
-		}
-
 		await fetchUserInfo();
 		await credits.loadBalance();
 		if ($creditBalance) {
