@@ -352,10 +352,11 @@ async def generate_insights(
     row_options = matrix_data.get("row_options", [])
     col_options = matrix_data.get("column_options", [])
 
-    # Mark clicked insight as viewed
+    # Mark clicked insight as viewed — 1 credit per first-time view
     viewed = matrix_data.get("viewed_insight_indices") or []
     needs_save = False
-    if request.insight_index not in viewed:
+    first_time_view = request.insight_index not in viewed
+    if first_time_view:
         viewed.append(request.insight_index)
         documents[doc_index]["matrix_data"]["viewed_insight_indices"] = viewed
         needs_save = True
@@ -413,10 +414,11 @@ async def generate_insights(
         api_logger.info(f"[INSIGHTS] Generated {insights_applied} insights for doc {doc_id}")
         needs_save = True
 
-        # Deduct 1 credit for insight generation (only when LLM was called)
+    # Deduct 1 credit per first-time insight view
+    if first_time_view:
         await deduct_credit(
             current_user, db, amount=1,
-            metadata={"conversation_id": conversation_id, "doc_id": doc_id, "action": "generate_insights"},
+            metadata={"conversation_id": conversation_id, "doc_id": doc_id, "insight_index": request.insight_index, "action": "generate_insights"},
         )
 
     if needs_save:
