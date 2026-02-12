@@ -46,6 +46,8 @@ def prepare_async_url(url: str) -> tuple[str, dict]:
 MISSING_COLUMNS = [
     ("chat_conversations", "generated_paths", "JSONB"),
     ("chat_conversations", "generated_documents", "JSONB"),
+    ("chat_messages", "feedback", "TEXT"),
+    ("chat_messages", "attachments", "JSONB"),
 ]
 
 
