@@ -93,7 +93,7 @@ class ChatMessage(Base):
     feedback: Mapped[Optional[str]] = mapped_column(String, nullable=True)  # 'up', 'down', or null
 
     # Attachments
-    attachments: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    attachments: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
 
     # Timestamp
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

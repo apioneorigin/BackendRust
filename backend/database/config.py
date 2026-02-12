@@ -159,6 +159,7 @@ async def _run_sqlite_migrations(conn):
     # Define columns that may need to be added (table, column, type, default)
     migrations = [
         ("chat_messages", "feedback", "TEXT", None),
+        ("chat_messages", "attachments", "TEXT", None),
         ("chat_conversations", "generated_presets", "TEXT", None),
         ("chat_conversations", "generated_documents", "TEXT", None),
         ("file_goal_discoveries", "file_summary", "TEXT", None),
@@ -178,6 +179,37 @@ async def _run_sqlite_migrations(conn):
                 print(f"[Database] Added missing column: {table}.{column}")
             except Exception as e:
                 print(f"[Database] Migration warning: {e}")
+
+
+async def _run_pg_migrations(conn):
+    """Run PostgreSQL migrations to add missing columns to existing tables."""
+    from sqlalchemy import text
+
+    # Define columns that may need to be added (table, column, pg_type)
+    migrations = [
+        ("chat_messages", "feedback", "TEXT"),
+        ("chat_messages", "attachments", "JSONB"),
+        ("chat_conversations", "generated_presets", "JSONB"),
+        ("chat_conversations", "generated_documents", "JSONB"),
+        ("file_goal_discoveries", "file_summary", "TEXT"),
+    ]
+
+    # Get all existing columns in one query
+    result = await conn.execute(text(
+        "SELECT table_name, column_name FROM information_schema.columns "
+        "WHERE table_schema = 'public'"
+    ))
+    existing = {(row[0], row[1]) for row in result.fetchall()}
+
+    for table, column, col_type in migrations:
+        if (table, column) not in existing:
+            try:
+                await conn.execute(
+                    text(f'ALTER TABLE "{table}" ADD COLUMN "{column}" {col_type}')
+                )
+                print(f"[Database] Added missing column: {table}.{column} ({col_type})")
+            except Exception as e:
+                print(f"[Database] Migration warning for {table}.{column}: {e}")
 
 
 async def _migrate_articulated_insights():
@@ -271,9 +303,11 @@ async def init_db():
             async with engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
 
-                # For SQLite, run migrations to add missing columns
+                # Run migrations to add missing columns to existing tables
                 if USE_SQLITE:
                     await _run_sqlite_migrations(conn)
+                else:
+                    await _run_pg_migrations(conn)
 
             # Run data migrations
             await _migrate_articulated_insights()
