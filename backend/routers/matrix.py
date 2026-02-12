@@ -24,6 +24,12 @@ router = APIRouter(prefix="/matrix", tags=["matrix"])
 # In-memory cache for document previews so add_documents can use the exact same
 # documents the user previewed (instead of regenerating via LLM).
 # Key: conversation_id, Value: (timestamp, list of document dicts)
+#
+# WARNING: This cache is lost on container restart/redeploy. If the user previews
+# documents, the container restarts, then they click "add", they'll get regenerated
+# (potentially different) documents instead of the ones they saw. The fallback in
+# add_documents handles this gracefully by regenerating, but the user may notice
+# different document names/titles than what they previewed.
 _preview_cache: Dict[str, tuple[float, list[dict]]] = {}
 _PREVIEW_CACHE_TTL = 600  # 10 minutes
 
@@ -105,6 +111,18 @@ class ArticulatedInsight(BaseModel):
     the_mark_identity: str
 
 
+class ArticulatedOutcome(BaseModel):
+    """3-component outcome projection: THE ARC → THE LANDSCAPE → THE ANCHOR"""
+    title: str
+    the_arc: str
+    the_arc_destination: str
+    the_landscape: str
+    the_landscape_operating_reality: str
+    the_anchor_name: str
+    the_anchor_signal: str
+    the_anchor_identity: str
+
+
 class RowOption(BaseModel):
     id: str
     label: str
@@ -119,6 +137,7 @@ class ColumnOption(BaseModel):
     insight_title: Optional[str] = None
     description: Optional[str] = None
     articulated_insight: Optional[ArticulatedInsight] = None
+    articulated_outcome: Optional[ArticulatedOutcome] = None
 
 
 class PresetStep(CamelModel):
@@ -266,14 +285,18 @@ async def design_reality(
     context_messages = await _load_context_messages(conversation_id, db)
     model_config = get_model_config(request.model)
 
-    result = await generate_matrix_data_llm(
-        document_stub=doc_stub,
-        context_messages=context_messages,
-        model_config=model_config
-    )
+    try:
+        result = await generate_matrix_data_llm(
+            document_stub=doc_stub,
+            context_messages=context_messages,
+            model_config=model_config
+        )
+    except Exception as e:
+        api_logger.error(f"[DESIGN_REALITY] LLM call exception: {type(e).__name__}: {e}")
+        raise HTTPException(status_code=500, detail=f"Matrix generation failed: {type(e).__name__}: {str(e)[:300]}")
 
     if not result or "cells" not in result:
-        raise HTTPException(status_code=500, detail="Failed to generate matrix data")
+        raise HTTPException(status_code=500, detail="LLM returned no cells — check server logs for [MATRIX_GEN] errors")
 
     # Update document with generated data
     documents[doc_index]["matrix_data"]["cells"] = result["cells"]
@@ -330,48 +353,54 @@ async def generate_insights(
         documents[doc_index]["matrix_data"]["viewed_insight_indices"] = viewed
         needs_save = True
 
-    # Find missing insights (indices 0-9 = rows, 10-19 = columns)
+    # Find missing insights (indices 0-9 = rows use driver articulation, 10-19 = columns use outcome articulation)
     missing_indices = []
     for i, row in enumerate(row_options):
         insight = row.get("articulated_insight")
         if not insight or not insight.get("the_truth"):
             missing_indices.append(i)
     for i, col in enumerate(col_options):
-        insight = col.get("articulated_insight")
-        if not insight or not insight.get("the_truth"):
+        outcome = col.get("articulated_outcome")
+        if not outcome or not outcome.get("the_arc"):
             missing_indices.append(10 + i)
 
     if missing_indices:
         context_messages = await _load_context_messages(conversation_id, db)
         model_config = get_model_config(request.model)
 
-        result = await generate_insights_batch_llm(
-            document=doc,
-            missing_indices=missing_indices,
-            context_messages=context_messages,
-            model_config=model_config
-        )
+        try:
+            result = await generate_insights_batch_llm(
+                document=doc,
+                missing_indices=missing_indices,
+                context_messages=context_messages,
+                model_config=model_config
+            )
+        except Exception as e:
+            api_logger.error(f"[INSIGHTS] LLM call exception: {type(e).__name__}: {e}")
+            raise HTTPException(status_code=500, detail=f"Insight generation failed: {type(e).__name__}: {str(e)[:300]}")
 
         if not result or "insights" not in result:
-            raise HTTPException(status_code=500, detail="Failed to generate insights")
+            raise HTTPException(status_code=500, detail="LLM returned no insights — check server logs for [INSIGHT_GEN] errors")
 
         # Apply generated insights to document
         insights = result["insights"]
         insights_applied = 0
 
-        for idx_str, insight in insights.items():
+        for idx_str, insight_data in insights.items():
             try:
                 idx = int(idx_str)
             except (ValueError, TypeError):
                 continue
             if idx < 10:
+                # Rows get driver articulation (articulated_insight)
                 if idx < len(row_options):
-                    documents[doc_index]["matrix_data"]["row_options"][idx]["articulated_insight"] = insight
+                    documents[doc_index]["matrix_data"]["row_options"][idx]["articulated_insight"] = insight_data
                     insights_applied += 1
             else:
+                # Columns get outcome articulation (articulated_outcome)
                 col_idx = idx - 10
                 if col_idx < len(col_options):
-                    documents[doc_index]["matrix_data"]["column_options"][col_idx]["articulated_insight"] = insight
+                    documents[doc_index]["matrix_data"]["column_options"][col_idx]["articulated_outcome"] = insight_data
                     insights_applied += 1
 
         api_logger.info(f"[INSIGHTS] Generated {insights_applied} insights for doc {doc_id}")

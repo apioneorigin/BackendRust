@@ -47,6 +47,7 @@ export interface Question {
 	text: string;
 	options: { id: string; text: string }[];
 	selectedOption?: string;
+	messageId?: string;
 }
 
 export interface StructuredData {
@@ -276,7 +277,8 @@ function createChatStore() {
 					id: q.id,
 					text: q.text,
 					options: q.options,
-					selectedOption: q.selectedOption
+					selectedOption: q.selectedOption,
+					messageId: q.messageId
 				}));
 
 				const messages = Array.isArray(messagesResponse) ? messagesResponse : [];
@@ -498,7 +500,7 @@ function createChatStore() {
 					}
 				}
 
-				// Add final assistant message
+				// Add final assistant message and link stream questions to it
 				const assistantMessage: Message = {
 					id: `msg-${Date.now()}`,
 					role: 'assistant',
@@ -506,12 +508,29 @@ function createChatStore() {
 					createdAt: new Date(),
 				};
 
-				update(state => ({
-					...state,
-					messages: [...state.messages, assistantMessage],
-					isStreaming: false,
-					streamingContent: '',
-				}));
+				update(state => {
+					const updatedMessages = [...state.messages, assistantMessage];
+					const updatedQuestions = state.questions.map(q =>
+						!q.messageId ? { ...q, messageId: assistantMessage.id } : q
+					);
+
+					// Update LRU cache so conversation switch-back shows current data
+					if (conversationId) {
+						cacheSet(conversationId, {
+							messages: updatedMessages,
+							questions: updatedQuestions,
+							timestamp: Date.now()
+						});
+					}
+
+					return {
+						...state,
+						messages: updatedMessages,
+						isStreaming: false,
+						streamingContent: '',
+						questions: updatedQuestions,
+					};
+				});
 
 				// Title is now generated in Call 1 and sent via SSE 'title' event
 
@@ -520,13 +539,18 @@ function createChatStore() {
 					// User cancelled — keep partial content as a message if any
 					update(state => {
 						const partial = state.streamingContent;
+						const partialMsgId = `msg-${Date.now()}`;
 						return {
 							...state,
 							messages: partial
-								? [...state.messages, { id: `msg-${Date.now()}`, role: 'assistant' as const, content: partial, createdAt: new Date() }]
+								? [...state.messages, { id: partialMsgId, role: 'assistant' as const, content: partial, createdAt: new Date() }]
 								: state.messages,
 							isStreaming: false,
 							streamingContent: '',
+							// Link stream questions to partial message (or leave unlinked if no content)
+							questions: partial
+								? state.questions.map(q => !q.messageId ? { ...q, messageId: partialMsgId } : q)
+								: state.questions,
 						};
 					});
 				} else {

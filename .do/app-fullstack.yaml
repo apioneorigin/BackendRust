@@ -5,11 +5,27 @@
 #   1. Create a new app in DO Console → Apps → Create App
 #   2. Connect your GitHub repo (apioneorigin/BackendRust, branch: main)
 #   3. Paste this spec in Settings → App Spec → Edit
-#   4. Set SECRET env vars in Settings → Environment Variables
+#   4. Replace <your-pg-cluster> / <your-valkey-cluster> below with the
+#      names of your managed database clusters (Databases → cluster name)
+#   5. Set SECRET env vars in DO Console → Settings → Environment Variables:
+#      - OPENAI_API_KEY
+#      - ANTHROPIC_API_KEY
+#      - JWT_SECRET
+#
+# DATABASE_URL and REDIS_URL are auto-injected from the attached database
+# components — no manual copy/paste of connection strings needed.
 #
 # Routing:
 #   /        → Frontend (SvelteKit)
-#   /api/*   → Backend  (FastAPI)
+#   /api/*   → Backend  (FastAPI, middleware strips /api prefix)
+#
+# Health checks:
+#   Frontend: GET /healthz  → SvelteKit server route
+#   Backend:  GET /healthz/ → FastAPI health endpoint (trailing slash required)
+#
+# Databases:
+#   Attach your PostgreSQL and Valkey clusters via the databases: section
+#   below.  Remember to add this app to each cluster's "Trusted Sources".
 # =============================================================================
 
 name: reality-transformer
@@ -21,17 +37,37 @@ alerts:
 
 ingress:
   rules:
+    # /api/* routes to backend (backend middleware strips /api prefix)
     - component:
         name: backend
       match:
         path:
           prefix: /api
 
+    # Everything else routes to SvelteKit frontend
     - component:
         name: frontend
       match:
         path:
           prefix: /
+
+# =============================================================================
+# Databases — attach your existing managed clusters here
+# =============================================================================
+# Replace the cluster_name values with YOUR cluster names from DO Console.
+# Once attached, ${db.DATABASE_URL} and ${valkey.DATABASE_URL} are auto-
+# injected into the backend service below.
+# =============================================================================
+databases:
+  - name: db
+    engine: PG
+    production: true
+    cluster_name: reality-transformer-pg
+
+  - name: valkey
+    engine: REDIS
+    production: true
+    cluster_name: db-valkey-nyc1-21088
 
 # =============================================================================
 # Services
@@ -57,6 +93,7 @@ services:
       period_seconds: 30
 
     envs:
+      # Backend URL for server-side calls (hooks, SSE proxy, layout loads)
       - key: BACKEND_URL
         scope: RUN_AND_BUILD_TIME
         value: ${backend.PRIVATE_URL}
@@ -65,10 +102,12 @@ services:
         scope: RUN_AND_BUILD_TIME
         value: ${APP_URL}/api
 
+      # SvelteKit CSRF origin check
       - key: ORIGIN
         scope: RUN_TIME
         value: ${APP_URL}
 
+      # Required for SvelteKit behind DO reverse proxy
       - key: PROTOCOL_HEADER
         scope: RUN_TIME
         value: X-Forwarded-Proto
@@ -95,7 +134,7 @@ services:
       deploy_on_push: true
 
     health_check:
-      http_path: /health
+      http_path: /healthz/
       initial_delay_seconds: 15
       period_seconds: 30
       timeout_seconds: 5
@@ -115,18 +154,24 @@ services:
         scope: RUN_TIME
         type: SECRET
 
+      # ── Auto-injected from attached database components ──────────────
       - key: DATABASE_URL
         scope: RUN_TIME
-        type: SECRET
+        value: ${db.DATABASE_URL}
 
       - key: REDIS_URL
         scope: RUN_TIME
-        type: SECRET
+        value: ${valkey.DATABASE_URL}
 
       # ── Public config ────────────────────────────────────────────────
       - key: ENVIRONMENT
         scope: RUN_TIME
         value: production
+
+      # Force PostgreSQL — fail fast if DATABASE_URL is missing
+      - key: USE_SQLITE
+        scope: RUN_TIME
+        value: "false"
 
       - key: HOST
         scope: RUN_TIME

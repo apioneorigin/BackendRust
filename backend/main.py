@@ -161,6 +161,31 @@ async def lifespan(app: FastAPI):
     await init_db()
     api_logger.info("Database initialized")
 
+    # Resolve Redis/Valkey URL (auto-discovers DigitalOcean-injected vars)
+    from utils.resolve_do_env import resolve_redis_url
+    _redis_url = resolve_redis_url()
+
+    # Connect cache to Redis if available
+    from utils.cache import cache
+    if _redis_url:
+        connected = await cache.connect(_redis_url)
+        if connected:
+            api_logger.info("[CACHE] Connected to Redis")
+        else:
+            api_logger.warning("[CACHE] Redis unavailable, using in-memory cache (no TTL support)")
+    else:
+        api_logger.info("[CACHE] No REDIS_URL found, using in-memory cache")
+
+    # Connect session store to Redis if available
+    if _redis_url:
+        connected = await api_session_store.connect_redis(_redis_url)
+        if connected:
+            api_logger.info("[SESSION STORE] Connected to Redis — sessions persist across restarts")
+        else:
+            api_logger.warning("[SESSION STORE] Redis unavailable, using in-memory session store")
+    else:
+        api_logger.info("[SESSION STORE] No REDIS_URL found, using in-memory session store")
+
     # Start background session cleanup task
     cleanup_task = asyncio.create_task(_session_cleanup_task())
     api_logger.info("Session cleanup task started")
@@ -174,6 +199,12 @@ async def lifespan(app: FastAPI):
     except asyncio.CancelledError:
         pass
     api_logger.info("Session cleanup task stopped")
+
+    # Disconnect session store
+    await api_session_store.disconnect()
+
+    # Disconnect cache
+    await cache.disconnect()
 
     from database import close_db
     await close_db()
@@ -193,17 +224,38 @@ apply_concealment(app, custom_server_name="API Server")
 # =====================================================================
 
 # Allowed origins for CORS (production-safe)
-CORS_ORIGINS = os.getenv("CORS_ORIGINS", "").split(",") if os.getenv("CORS_ORIGINS") else [
-    "http://localhost:5173",  # SvelteKit dev
-    "http://localhost:3000",  # Alternative dev port
-    "http://127.0.0.1:5173",
-    "http://127.0.0.1:3000",
-]
-# Filter out empty strings
-CORS_ORIGINS = [origin.strip() for origin in CORS_ORIGINS if origin.strip()]
+# Note: DigitalOcean SECRET env vars may inject empty strings — treat as unset
+_cors_env = os.getenv("CORS_ORIGINS", "").strip()
+if _cors_env:
+    CORS_ORIGINS = [origin.strip() for origin in _cors_env.split(",") if origin.strip()]
+else:
+    CORS_ORIGINS = [
+        "http://localhost:5173",  # SvelteKit dev
+        "http://localhost:3000",  # Alternative dev port
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:3000",
+    ]
+
+if os.getenv("ENVIRONMENT") == "production" and not CORS_ORIGINS:
+    api_logger.warning("[CORS] WARNING: No CORS origins configured in production! Set CORS_ORIGINS env var.")
 
 # Initialize security components
-_rate_limiter = RateLimiter()
+# Connect rate limiter to Redis if available (prevents data loss on restart)
+_redis_client = None
+_redis_url = os.getenv("REDIS_URL", "").strip()
+if _redis_url:
+    try:
+        import redis.asyncio as _redis_module
+        _redis_client = _redis_module.from_url(_redis_url, decode_responses=True)
+        api_logger.info(f"[REDIS] Rate limiter connected to Redis")
+    except ImportError:
+        api_logger.warning("[REDIS] redis package not installed, using in-memory rate limiter")
+    except Exception as e:
+        api_logger.warning(f"[REDIS] Failed to connect to Redis: {e}, using in-memory rate limiter")
+else:
+    api_logger.info("[REDIS] No REDIS_URL set, using in-memory rate limiter (state lost on restart)")
+
+_rate_limiter = RateLimiter(redis_client=_redis_client)
 set_rate_limiter(_rate_limiter)
 _audit_logger = AuditLogger()
 set_audit_logger(_audit_logger)
@@ -225,6 +277,20 @@ _security_config = SecurityConfig(rate_limit_enabled=_is_production)
 app.add_middleware(UnifiedSecurityMiddleware, rate_limiter=_rate_limiter, config=_security_config)
 
 api_logger.info("Security middleware initialized")
+
+# =====================================================================
+# PATH PREFIX STRIPPING (must be last middleware → runs first on request)
+# =====================================================================
+# DigitalOcean App Platform routes /api/* to the backend but does NOT strip
+# the /api prefix (unlike Nginx which does). This middleware normalizes all
+# incoming paths so the backend works identically under both deployments.
+# Harmless when the prefix is already stripped (Nginx, Vite dev proxy).
+@app.middleware("http")
+async def strip_api_prefix(request, call_next):
+    if request.url.path.startswith("/api"):
+        # Rewrite /api/chat/... → /chat/...
+        request.scope["path"] = request.url.path[4:] or "/"
+    return await call_next(request)
 
 # Include routers
 from routers import (
@@ -262,36 +328,98 @@ import uuid
 class APISessionStore:
     """
     Async-safe session storage for constellation Q&A flow.
-    Simple key-value store for FastAPI endpoints.
+    Uses Redis/Valkey when available, falls back to in-memory dict.
 
     Note: This is distinct from session_store.SessionStore which handles
     operator canonicalization and complex session state management.
-
-    In production, replace with Redis or database-backed storage.
     """
+
+    SESSION_KEY_PREFIX = "qasession:"
+    SESSION_TTL = 3600  # 1 hour
 
     def __init__(self):
         self._sessions: Dict[str, Dict[str, Any]] = {}
         self._lock = asyncio.Lock()
+        self._redis = None
+
+    async def connect_redis(self, redis_url: str) -> bool:
+        """Connect to Redis/Valkey. Returns True if connected."""
+        try:
+            import redis.asyncio as aioredis
+            self._redis = aioredis.from_url(
+                redis_url, encoding="utf-8", decode_responses=True
+            )
+            await self._redis.ping()
+            return True
+        except Exception as e:
+            api_logger.warning(f"[SESSION STORE] Redis connection failed: {e}, using in-memory fallback")
+            self._redis = None
+            return False
+
+    @property
+    def is_redis(self) -> bool:
+        return self._redis is not None
 
     async def create(self, session_id: str, data: Dict[str, Any]) -> None:
+        if self._redis:
+            try:
+                await self._redis.setex(
+                    f"{self.SESSION_KEY_PREFIX}{session_id}",
+                    self.SESSION_TTL,
+                    json.dumps(data, default=str),
+                )
+                return
+            except Exception as e:
+                api_logger.warning(f"[SESSION STORE] Redis write failed: {e}, falling back to memory")
         async with self._lock:
             self._sessions[session_id] = data
 
     def get(self, session_id: str) -> Optional[Dict[str, Any]]:
-        """Get session data (non-blocking read)."""
+        """Get session data. For Redis, use async get_async() instead."""
+        if self._redis:
+            return None  # Caller should use get_async()
+        return self._sessions.get(session_id)
+
+    async def get_async(self, session_id: str) -> Optional[Dict[str, Any]]:
+        """Get session data (async, works with both Redis and memory)."""
+        if self._redis:
+            try:
+                data = await self._redis.get(f"{self.SESSION_KEY_PREFIX}{session_id}")
+                if data:
+                    return json.loads(data)
+                return None
+            except Exception as e:
+                api_logger.warning(f"[SESSION STORE] Redis read failed: {e}, falling back to memory")
         return self._sessions.get(session_id)
 
     async def update(self, session_id: str, data: Dict[str, Any]) -> None:
+        if self._redis:
+            try:
+                await self._redis.setex(
+                    f"{self.SESSION_KEY_PREFIX}{session_id}",
+                    self.SESSION_TTL,
+                    json.dumps(data, default=str),
+                )
+                return
+            except Exception as e:
+                api_logger.warning(f"[SESSION STORE] Redis write failed: {e}, falling back to memory")
         async with self._lock:
             self._sessions[session_id] = data
 
     async def delete(self, session_id: str) -> None:
+        if self._redis:
+            try:
+                await self._redis.delete(f"{self.SESSION_KEY_PREFIX}{session_id}")
+                return
+            except Exception as e:
+                api_logger.warning(f"[SESSION STORE] Redis delete failed: {e}, falling back to memory")
         async with self._lock:
             self._sessions.pop(session_id, None)
 
     async def cleanup_expired(self, max_age_seconds: int = 3600) -> int:
-        """Remove sessions older than max_age_seconds."""
+        """Remove sessions older than max_age_seconds. Redis handles TTL automatically."""
+        if self._redis:
+            return 0  # Redis TTL handles expiry
         now = time.time()
         expired = []
         async with self._lock:
@@ -304,8 +432,14 @@ class APISessionStore:
         return len(expired)
 
     def session_count(self) -> int:
-        """Get current session count."""
+        """Get current session count (in-memory only, approximate for Redis)."""
         return len(self._sessions)
+
+    async def disconnect(self) -> None:
+        """Close Redis connection."""
+        if self._redis:
+            await self._redis.close()
+            self._redis = None
 
 # Global session store instance for API endpoints
 api_session_store = APISessionStore()
@@ -784,7 +918,7 @@ async def process_constellation_answer(
     actual operator values — no hardcoded mappings.
     """
     # Retrieve pending session data
-    session_data = api_session_store.get(session_id)
+    session_data = await api_session_store.get_async(session_id)
     if not session_data:
         raise HTTPException(status_code=404, detail="Session not found")
 
@@ -826,7 +960,7 @@ async def continue_inference(
     Runs LLM Call 1 on the combined context (original query + user's answer)
     to extract actual operator values, then re-runs full inference pipeline.
     """
-    session_data = api_session_store.get(session_id)
+    session_data = await api_session_store.get_async(session_id)
     if not session_data:
         raise HTTPException(status_code=404, detail="Session not found")
 
@@ -960,7 +1094,7 @@ especially operators that were uncertain (low confidence) in the initial extract
             api_logger.info(f"[STEP 1B] Re-extracted {new_obs_count} observations with answer context")
 
             # Update session evidence
-            session_data = api_session_store.get(session_id)
+            session_data = await api_session_store.get_async(session_id)
             if session_data:
                 session_data['evidence'] = evidence
                 await api_session_store.update(session_id, session_data)
@@ -983,7 +1117,7 @@ especially operators that were uncertain (low confidence) in the initial extract
         # Log inference results
         formula_count = posteriors.get('formula_count')
         tiers_executed = posteriors.get('tiers_executed')
-        posteriors_count = len(posteriors.get('values'))
+        posteriors_count = len(posteriors.get('values') or {})
         api_logger.info(f"[INFERENCE] Formulas: {formula_count} | Tiers: {tiers_executed} | Posteriors: {posteriors_count}")
 
         yield sse_status(f"Inference complete: {formula_count} formulas, {tiers_executed} tiers, {posteriors_count} posteriors")
@@ -1235,7 +1369,7 @@ async def inference_stream(
             api_logger.info(f"[TITLE] Generated: {conversation_title}")
             yield sse_event("title", {"title": conversation_title})
 
-        obs_count = len(evidence.get('observations'))
+        obs_count = len(evidence.get('observations') or [])
         api_logger.info(f"[EVIDENCE] Extracted {obs_count} observations")
         api_logger.debug(f"[EVIDENCE] Goal: {evidence.get('goal')}")
         api_logger.debug(f"[EVIDENCE] Domain: {evidence.get('domain')}")
@@ -1263,10 +1397,10 @@ async def inference_stream(
 
         # Log search guidance for evidence grounding (Phase 6 metrics)
         query_pattern = evidence.get('query_pattern')
-        search_guidance = evidence.get('search_guidance')
-        high_priority_values = search_guidance.get('high_priority_values')
-        evidence_search_queries = search_guidance.get('evidence_search_queries')
-        consciousness_mappings = search_guidance.get('consciousness_to_reality_mappings')
+        search_guidance = evidence.get('search_guidance') or {}
+        high_priority_values = search_guidance.get('high_priority_values') or []
+        evidence_search_queries = search_guidance.get('evidence_search_queries') or []
+        consciousness_mappings = search_guidance.get('consciousness_to_reality_mappings') or []
 
         api_logger.info(f"[EVIDENCE GROUNDING] Query pattern: {query_pattern}")
         api_logger.info(f"[EVIDENCE GROUNDING] High-priority values: {len(high_priority_values)}")
@@ -1281,8 +1415,8 @@ async def inference_stream(
 
         pipeline_logger.log_step("Evidence Extraction", {
             "observations": obs_count,
-            "search_queries": len(search_queries),
-            "key_facts": len(key_facts),
+            "search_queries": len(search_queries or []),
+            "key_facts": len(key_facts or []),
             "query_pattern": query_pattern,
             "high_priority_values": len(high_priority_values),
             "evidence_search_queries": len(evidence_search_queries),
@@ -1320,7 +1454,7 @@ async def inference_stream(
         api_logger.info(f"[OPERATORS] Extracted: {len(extracted_operators)} | Missing: {len(missing_operators)}")
 
         # Store evidence in session
-        session_data = api_session_store.get(session_id)
+        session_data = await api_session_store.get_async(session_id)
         session_data['evidence'] = evidence
         await api_session_store.update(session_id, session_data)
 
@@ -1351,7 +1485,7 @@ async def inference_stream(
         # Log inference results
         formula_count = posteriors.get('formula_count')
         tiers_executed = posteriors.get('tiers_executed')
-        posteriors_count = len(posteriors.get('values'))
+        posteriors_count = len(posteriors.get('values') or {})
         api_logger.info(f"[INFERENCE] Formulas: {formula_count} | Tiers: {tiers_executed} | Posteriors: {posteriors_count}")
         pipeline_logger.log_step("Inference", {"formulas": formula_count, "tiers": tiers_executed, "posteriors": posteriors_count})
 
@@ -1374,7 +1508,7 @@ async def inference_stream(
         posteriors_values = posteriors.get('values')
         total_values = len([v for v in posteriors_values.values() if v is not None]) if isinstance(posteriors_values, dict) else None
         api_logger.info(f"[PURE ARCHITECTURE] Sending ALL {total_values} non-null values to LLM Call 2")
-        api_logger.info(f"[PURE ARCHITECTURE] Context provided: targets={len(evidence.get('targets'))}, query_pattern={evidence.get('query_pattern')}")
+        api_logger.info(f"[PURE ARCHITECTURE] Context provided: targets={len(evidence.get('targets') or [])}, query_pattern={evidence.get('query_pattern')}")
 
         s_current = consciousness_state.tier1.s_level.current
         articulation_logger.info(f"[VALUE ORGANIZER] S-Level: {f'{s_current:.1f}' if s_current is not None else 'N/C'} ({consciousness_state.tier1.s_level.label})")
@@ -1536,8 +1670,8 @@ async def inference_stream(
 
         # Log comprehensive evidence-grounding metrics
         query_pattern = evidence.get('query_pattern')
-        search_guidance = evidence.get('search_guidance')
-        posteriors_values = posteriors.get('values')
+        search_guidance = evidence.get('search_guidance') or {}
+        posteriors_values = posteriors.get('values') or {}
         extreme_values = sum(1 for v in posteriors_values.values()
                            if isinstance(v, (int, float)) and (v > 0.7 or v < 0.3))
 
@@ -1545,13 +1679,13 @@ async def inference_stream(
 [EVIDENCE GROUNDING METRICS]
 Query: {prompt[:100]}...
 Query Pattern: {query_pattern}
-Targets Requested: {len(evidence.get('targets'))}
-Search Guidance Entries: {len(search_guidance.get('high_priority_values'))}
-Evidence Search Queries: {len(search_guidance.get('evidence_search_queries'))}
-Consciousness→Reality Mappings: {len(search_guidance.get('consciousness_to_reality_mappings'))}
+Targets Requested: {len(evidence.get('targets') or [])}
+Search Guidance Entries: {len(search_guidance.get('high_priority_values') or [])}
+Evidence Search Queries: {len(search_guidance.get('evidence_search_queries') or [])}
+Consciousness→Reality Mappings: {len(search_guidance.get('consciousness_to_reality_mappings') or [])}
 Values Sent to LLM: {len(posteriors_values)}
 Extreme Values (>0.7 or <0.3): {extreme_values}
-Web Searches in Call 1: {len(evidence.get('search_queries_used'))}
+Web Searches in Call 1: {len(evidence.get('search_queries_used') or [])}
 Web Search Enabled Call 2: {web_search_insights}
 Articulation Tokens: {token_count}
 """)
@@ -1612,7 +1746,7 @@ Articulation Tokens: {token_count}
                         goal_context=goal_context
                     )
 
-                    session_data = api_session_store.get(session_id)
+                    session_data = await api_session_store.get_async(session_id)
                     session_data['evidence'] = evidence
                     session_data['_pending_question'] = question
                     session_data['_question_asked'] = True
@@ -2005,8 +2139,23 @@ JSON structure:
   ],
   "targets": ["At_attachment", "F_fear", "R_resistance", ...],
   "relevant_oof_components": ["Sacred Chain", "Cascade", "UCB", "Seven Matrices", "Death Architecture"],
-  "missing_operator_priority": ["V", "Se", "Ce", "Su"]
+  "missing_operator_priority": ["V", "Se", "Ce", "Su"],
+  "conversation_title": "4-8 word concise descriptive title for this conversation"
 }}
+
+CONVERSATION TITLE (REQUIRED):
+- Generate a concise, descriptive title (4-8 words) that captures the essence of the user's query
+- Focus on the core topic/intent, not generic phrases
+- Examples: "NVIDIA Investment Analysis", "Career Change to Tech", "Startup Growth Strategy"
+- Return ONLY the title text, no quotes or punctuation at the end
+
+MISSING OPERATOR PRIORITY (CRITICAL):
+- 'missing_operator_priority' lists operators you could NOT confidently extract from the user input
+- Order them by IMPORTANCE to the user's specific query — most critical missing data first
+- These operators will be targeted in follow-up constellation questions
+- Only include operators where you had to GUESS (confidence < 0.4) or had NO data at all
+- The backend will use this list to prioritize which missing data to ask about first
+- This is the LLM's OPINION on what data matters most for THIS user's query — the backend does NOT decide this
 
 CRITICAL REQUIREMENTS FOR TARGET SELECTION:
 - 'targets' must be QUERY-SPECIFIC based on query pattern analysis (not the generic example)
@@ -2345,6 +2494,22 @@ def _extract_anthropic_text(data: dict) -> str:
     return ""
 
 
+def _extract_openai_response_text(data: dict) -> str:
+    """Extract text from OpenAI Responses API response."""
+    # Path 1: Direct output_text field
+    if data.get("output_text"):
+        return data["output_text"]
+    # Path 2: output array with message type
+    for item in data.get("output", []):
+        if item.get("type") == "message":
+            for c in item.get("content", []):
+                if c.get("type") in ("output_text", "text"):
+                    text = c.get("text", "")
+                    if text:
+                        return text
+    return ""
+
+
 def _strip_markdown_json(text: str) -> str:
     """Strip markdown code fences from LLM JSON responses (including truncated ones)."""
     text = text.strip()
@@ -2477,6 +2642,9 @@ REQUIREMENTS:
 - NO cells in this response - user generates those separately per document
 - Each document must have a unique perspective"""
 
+    if not api_key:
+        raise ValueError(f"No API key configured for provider: {provider}. Set {'ANTHROPIC_API_KEY' if provider == 'anthropic' else 'OPENAI_API_KEY'} in environment variables.")
+
     try:
         async with httpx.AsyncClient(timeout=300.0) as client:
             if provider == "anthropic":
@@ -2493,8 +2661,9 @@ REQUIREMENTS:
                 response = await client.post(endpoint, headers=headers, json=request_body)
 
                 if response.status_code != 200:
-                    api_logger.error(f"[DOC_PREVIEW] Anthropic error: {response.status_code} - {response.text}")
-                    return None
+                    error_detail = response.text[:500]
+                    api_logger.error(f"[DOC_PREVIEW] Anthropic error: {response.status_code} - {error_detail}")
+                    raise RuntimeError(f"Anthropic API {response.status_code}: {error_detail}")
 
                 data = response.json()
                 response_text = _extract_anthropic_text(data)
@@ -2508,20 +2677,21 @@ REQUIREMENTS:
                 }
                 request_body = {
                     "model": model,
-                    "max_completion_tokens": 4096,
-                    "messages": [{"role": "user", "content": prompt_text}],
-                    "response_format": {"type": "json_object"}
+                    "max_output_tokens": 4096,
+                    "input": [{"type": "message", "role": "user", "content": prompt_text}],
+                    "text": {"format": {"type": "json_object"}}
                 }
                 response = await client.post(endpoint, headers=headers, json=request_body)
 
                 if response.status_code != 200:
-                    api_logger.error(f"[DOC_PREVIEW] OpenAI error: {response.status_code} - {response.text}")
-                    return None
+                    error_detail = response.text[:500]
+                    api_logger.error(f"[DOC_PREVIEW] OpenAI error: {response.status_code} - {error_detail}")
+                    raise RuntimeError(f"OpenAI API {response.status_code}: {error_detail}")
 
                 data = response.json()
-                response_text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                response_text = _extract_openai_response_text(data)
                 usage = data.get("usage", {})
-                api_logger.info(f"[DOC_PREVIEW] Tokens - Input: {usage.get('prompt_tokens')}, Output: {usage.get('completion_tokens')}")
+                api_logger.info(f"[DOC_PREVIEW] Tokens - Input: {usage.get('input_tokens')}, Output: {usage.get('output_tokens')}")
 
             # Parse JSON response (strip markdown fences if present)
             response_text = _strip_markdown_json(response_text)
@@ -2706,6 +2876,9 @@ REQUIREMENTS:
 - Generate 5 presets with steps
 - Each play must reference actual leverage_point cell_ids"""
 
+    if not api_key:
+        raise ValueError(f"No API key configured for provider: {provider}. Set {'ANTHROPIC_API_KEY' if provider == 'anthropic' else 'OPENAI_API_KEY'} in environment variables.")
+
     try:
         async with httpx.AsyncClient(timeout=300.0) as client:
             if provider == "anthropic":
@@ -2716,14 +2889,15 @@ REQUIREMENTS:
                 }
                 request_body = {
                     "model": model,
-                    "max_tokens": 32768,
+                    "max_tokens": 65536,
                     "messages": [{"role": "user", "content": prompt_text}]
                 }
                 response = await client.post(endpoint, headers=headers, json=request_body)
 
                 if response.status_code != 200:
-                    api_logger.error(f"[MATRIX_GEN] Anthropic error: {response.status_code} - {response.text}")
-                    return None
+                    error_detail = response.text[:500]
+                    api_logger.error(f"[MATRIX_GEN] Anthropic error: {response.status_code} - {error_detail}")
+                    raise RuntimeError(f"Anthropic API {response.status_code}: {error_detail}")
 
                 data = response.json()
                 response_text = _extract_anthropic_text(data)
@@ -2737,20 +2911,21 @@ REQUIREMENTS:
                 }
                 request_body = {
                     "model": model,
-                    "max_completion_tokens": 32768,
-                    "messages": [{"role": "user", "content": prompt_text}],
-                    "response_format": {"type": "json_object"}
+                    "max_output_tokens": 65536,
+                    "input": [{"type": "message", "role": "user", "content": prompt_text}],
+                    "text": {"format": {"type": "json_object"}}
                 }
                 response = await client.post(endpoint, headers=headers, json=request_body)
 
                 if response.status_code != 200:
-                    api_logger.error(f"[MATRIX_GEN] OpenAI error: {response.status_code} - {response.text}")
-                    return None
+                    error_detail = response.text[:500]
+                    api_logger.error(f"[MATRIX_GEN] OpenAI error: {response.status_code} - {error_detail}")
+                    raise RuntimeError(f"OpenAI API {response.status_code}: {error_detail}")
 
                 data = response.json()
-                response_text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                response_text = _extract_openai_response_text(data)
                 usage = data.get("usage", {})
-                api_logger.info(f"[MATRIX_GEN] Tokens - Input: {usage.get('prompt_tokens')}, Output: {usage.get('completion_tokens')}")
+                api_logger.info(f"[MATRIX_GEN] Tokens - Input: {usage.get('input_tokens')}, Output: {usage.get('output_tokens')}")
 
             # Parse JSON response (strip markdown fences if present)
             response_text = _strip_markdown_json(response_text)
@@ -2804,6 +2979,130 @@ REQUIREMENTS:
         return None
 
 
+def _build_driver_articulation_prompt(driver_items: list) -> str:
+    """Build prompt section for driver insights (rows, indices 0-9).
+
+    Uses the 9-field structure: micro_moment → the_truth → your_truth → the_mark.
+    Describes each field FUNCTIONALLY — no hardcoded phrases for the LLM to parrot.
+    """
+    items_list = "\n".join([
+        f"- Index {i['index']}: row '{i['label']}' — title: '{i['title']}'"
+        for i in driver_items
+    ])
+    return f"""
+## DRIVER INSIGHTS (rows — indices 0-9)
+
+Generate for these drivers:
+{items_list}
+
+Each driver insight has 9 fields. Here is the FUNCTION of each field — express these functions using your own varied, natural language:
+
+**title**: Use the provided title exactly as given.
+
+**micro_moment** (40-60 words): A fly-on-the-wall scene set in the user's actual world. Present tense, sensory. Capture the precise instant where the pattern reveals itself — a meeting, a dashboard glance, a conversation. The reader should feel immediate recognition: "that's exactly what happens."
+
+**the_truth** (80-120 words): An analogy drawn from OUTSIDE the user's domain — a completely different world that maps perfectly onto what was just shown in the micro moment. Immersive present tense, rich sensory detail. The analogy should illuminate the underlying pattern in a way the user's own domain language cannot.
+
+**the_truth_law** (15-25 words): A single universal principle distilled from the analogy, wrapped in **bold**. This should feel like a law of nature, not advice.
+
+**your_truth** (50-80 words): Two functions here — WITNESS and EQUIP. First, demonstrate that you see what the user has been carrying, doing, or navigating. Then provide a future detection mechanism — reframe the pattern so they will catch it going forward. This is recognition plus liberation, not analysis plus blame.
+
+**your_truth_revelation**: A bold statement (wrapped in **bold**) revealing what is now visible that wasn't before.
+
+**the_mark_name** (2-5 words): A memorable concept name that installs this insight as a permanent pattern. Should feel like naming something that always existed but never had a name.
+
+**the_mark_prediction**: Where and when they will encounter this pattern next. Be specific to their context.
+
+**the_mark_identity**: A bold statement (wrapped in **bold**) of the new capability or identity this insight grants.
+
+CRITICAL — ANTI-REPETITION RULES:
+- Each insight in this batch MUST feel distinct. Vary your analogy domains, sentence structures, and openings.
+- Do NOT start multiple your_truth fields with the same phrase or sentence pattern.
+- Do NOT use the same opening structure across micro_moments.
+- Every field within a single insight must contain unique content — never repeat or near-duplicate a sentence within the same insight.
+- Vary the_mark_name naming conventions — mix metaphors, roles, principles, and spatial concepts.
+
+Output format for each driver (indices 0-9):
+{{
+  "title": "...",
+  "micro_moment": "...",
+  "the_truth": "...",
+  "the_truth_law": "**...**",
+  "your_truth": "...",
+  "your_truth_revelation": "**...**",
+  "the_mark_name": "...",
+  "the_mark_prediction": "...",
+  "the_mark_identity": "**...**"
+}}
+"""
+
+
+def _build_outcome_articulation_prompt(outcome_items: list) -> str:
+    """Build prompt section for outcome projections (columns, indices 10-19).
+
+    Uses the 8-field structure: the_arc → the_landscape → the_anchor.
+    Physics: PROJECTION (traces forces forward to resting states).
+    Domain: INSIDE user's world (not outside analogies).
+    """
+    items_list = "\n".join([
+        f"- Index {i['index']}: column '{i['label']}' — title: '{i['title']}'"
+        for i in outcome_items
+    ])
+    return f"""
+## OUTCOME PROJECTIONS (columns — indices 10-19)
+
+Generate for these outcomes:
+{items_list}
+
+GOVERNING PRINCIPLE: You are PROJECTING where forces land, not collapsing hidden realities. Outcomes trace the trajectory of drivers forward to their resting states. Stay INSIDE the user's domain — no borrowed metaphors from distant worlds (that is driver territory).
+
+INTERNAL ANALYSIS (do NOT output this — let it shape your writing):
+Before generating each outcome, internally determine:
+1. Operator signature — which force is dominant? (Karma=compounding momentum, Entropy=dissolution-into-renewal, Void=emergence-from-nothing, Resonance=amplification-through-alignment, Grace=acceleration-beyond-effort, Attachment=tightening-grip)
+2. Domain concreteness — how tangible is the user's world? (concrete domains get specific operational language; abstract domains get spatial/directional language)
+3. Trajectory type — is this accelerating, decelerating, oscillating, or approaching threshold?
+4. S-level calibration — how far along the growth curve? (early=potential language, mid=momentum language, late=refinement language)
+5. Scale/polarity — macro or micro outcome? Positive trajectory or risk trajectory?
+
+Each outcome has 8 fields. Express these FUNCTIONS using varied, natural language:
+
+**title**: Use the provided title exactly as given.
+
+**the_arc** (80-120 words): Three beats — force in motion, inflection point, resolution. Written in progressive present tense (time-lapse feel, not frozen moment). The arc STAYS INSIDE the user's domain. Show the force building, reaching its turning point, and settling into its natural resting state. The shape of the arc should reflect the dominant operator (e.g., Karma arcs compound and echo; Entropy arcs dissolve before renewing; Void arcs emerge from apparent emptiness).
+
+**the_arc_destination** (15-25 words): A bold statement (wrapped in **bold**) naming the specific destination this arc reaches. This is NOT a universal law — it is a specific landing point for THIS user's situation.
+
+**the_landscape** (50-80 words): Three beats — current position, fork, state description. Show the user where they stand, then present a fork where two qualitatively DIFFERENT realities diverge (not optimistic vs pessimistic versions of the same thing, but genuinely different kinds of futures). Describe the terrain of the path they are heading toward. Orient, don't predict. Map the territory, don't judge the traveler.
+
+**the_landscape_operating_reality**: A bold statement (wrapped in **bold**) describing the operating reality of the achieved state — what becomes true in daily practice.
+
+**the_anchor_name** (2-5 words): A destination or position name in Title Case. This names WHERE they arrive, not what they are diagnosed with. Think geographic/positional, not clinical.
+
+**the_anchor_signal**: An observable marker of arrival — a specific, concrete thing that happens in their world that tells them they have arrived. Not abstract feelings, but visible shifts.
+
+**the_anchor_identity**: A bold statement (wrapped in **bold**) of positional identity — how they operate from this new position. Frame as "from X, not Y" when possible.
+
+RESTRAINTS:
+- No universal laws (that is driver territory — outcomes project, they don't legislate)
+- No "You'll see this in..." or "You'll notice..." patterns (that is driver Mark language)
+- No borrowed metaphors from distant domains in concrete contexts — stay in the user's operational world
+- Each outcome must trace a genuinely different trajectory. Vary arc shapes, fork structures, and anchor names across the batch.
+- Never repeat or near-duplicate sentences within a single outcome.
+
+Output format for each outcome (indices 10-19):
+{{
+  "title": "...",
+  "the_arc": "...",
+  "the_arc_destination": "**...**",
+  "the_landscape": "...",
+  "the_landscape_operating_reality": "**...**",
+  "the_anchor_name": "...",
+  "the_anchor_signal": "...",
+  "the_anchor_identity": "**...**"
+}}
+"""
+
+
 async def generate_insights_batch_llm(
     document: dict,
     missing_indices: List[int],
@@ -2811,19 +3110,20 @@ async def generate_insights_batch_llm(
     model_config: dict
 ) -> Optional[dict]:
     """
-    Generate all missing articulated insights for a document in a single call.
+    Generate all missing articulated insights/outcomes for a document in a single call.
 
     Called when user clicks on any insight title that hasn't been generated yet.
-    Generates ALL missing insights to maximize efficiency of input tokens.
+    Generates ALL missing items to maximize efficiency of input tokens.
+    Rows (0-9) get driver articulation; columns (10-19) get outcome articulation.
 
     Args:
         document: Document with row_options and column_options
-        missing_indices: List of indices (0-19) for missing insights (0-9 = rows, 10-19 = columns)
+        missing_indices: List of indices (0-19) for missing items (0-9 = rows, 10-19 = columns)
         context_messages: Recent conversation messages for context
         model_config: Model configuration from user selection
 
     Returns:
-        Dict with 'insights' mapping index to full ArticulatedInsight, or None on failure
+        Dict with 'insights' mapping index to full articulation dict, or None on failure
     """
     provider = model_config.get("provider")
     api_key = model_config.get("api_key")
@@ -2842,81 +3142,60 @@ async def generate_insights_batch_llm(
     row_options = matrix_data.get("row_options", [])
     col_options = matrix_data.get("column_options", [])
 
-    # Build list of insights to generate
-    insights_to_generate = []
+    # Partition into driver (0-9) and outcome (10-19) items
+    driver_items = []
+    outcome_items = []
     for idx in missing_indices:
         if idx < 10:
-            # Row insight
             row = row_options[idx] if idx < len(row_options) else {}
-            insights_to_generate.append({
+            driver_items.append({
                 "index": idx,
-                "type": "row",
                 "label": row.get("label", f"Row {idx}"),
                 "title": row.get("insight_title", "")
             })
         else:
-            # Column insight
             col_idx = idx - 10
             col = col_options[col_idx] if col_idx < len(col_options) else {}
-            insights_to_generate.append({
+            outcome_items.append({
                 "index": idx,
-                "type": "column",
                 "label": col.get("label", f"Column {col_idx}"),
                 "title": col.get("insight_title", "")
             })
 
-    insights_list = "\n".join([
-        f"- Index {i['index']}: {i['type']} '{i['label']}' with title '{i['title']}'"
-        for i in insights_to_generate
-    ])
-
-    prompt_text = f"""Generate articulated insights for the following row/column options.
+    # Build prompt — only include relevant sections
+    prompt_text = f"""Generate articulated content for the following matrix options.
 
 DOCUMENT: {document.get("name", "Unknown")}
 
 CONVERSATION CONTEXT:
 {context_summary}
+"""
 
-INSIGHTS TO GENERATE:
-{insights_list}
+    if driver_items:
+        prompt_text += _build_driver_articulation_prompt(driver_items)
 
-For each insight, generate the full 9-field ArticulatedInsight structure:
+    if outcome_items:
+        prompt_text += _build_outcome_articulation_prompt(outcome_items)
 
-**TITLE**: Use the provided title exactly
-**MICRO MOMENT (40-60 words)**: Fly-on-the-wall scene set in the USER'S actual world. Present tense. Sensory. Capture the precise instant where the truth reveals itself — a meeting, a dashboard, a conversation. The reader should think "that's exactly what happens."
-**THE TRUTH (80-120 words)**: Analogy from OUTSIDE user's domain. Immersive present tense, sensory details. A completely different world that maps perfectly onto the micro moment.
-**THE TRUTH LAW**: One-line universal law in **bold** (15-25 words)
-**YOUR TRUTH (50-80 words)**: Opens with "I see you...", includes "never miss again" trigger
-**YOUR TRUTH REVELATION**: Bold revelation - what's now visible
-**THE MARK NAME**: Memorable concept name, 2-5 words
-**THE MARK PREDICTION**: Where they'll recognize this pattern
-**THE MARK IDENTITY**: New capability in **bold**
+    prompt_text += """
+Return ONLY valid JSON with ALL requested indices:
 
-Return ONLY valid JSON:
-
-{{
-  "insights": {{
-    "0": {{
-      "title": "The title provided",
-      "micro_moment": "You're sitting in the Monday standup...",
-      "the_truth": "...",
-      "the_truth_law": "**...**",
-      "your_truth": "I see you...",
-      "your_truth_revelation": "**...**",
-      "the_mark_name": "...",
-      "the_mark_prediction": "...",
-      "the_mark_identity": "**...**"
-    }},
-    ... (one entry per missing index)
-  }}
-}}
+{
+  "insights": {
+    "<index>": { ... fields per type ... },
+    ...
+  }
+}
 
 REQUIREMENTS:
-- Generate insights for ALL indices listed above
-- Each insight should be 200-300 words total across all fields
-- micro_moment MUST come first and ground the insight in the user's real world
+- Generate content for ALL indices listed above
+- Each item should be 200-300 words total across all fields
+- Use the exact title provided for each item
 - User should think: "I can't unsee this now"
-- Use the exact title provided for each insight"""
+"""
+
+    if not api_key:
+        raise ValueError(f"No API key configured for provider: {provider}. Set {'ANTHROPIC_API_KEY' if provider == 'anthropic' else 'OPENAI_API_KEY'} in environment variables.")
 
     try:
         async with httpx.AsyncClient(timeout=300.0) as client:
@@ -2934,8 +3213,9 @@ REQUIREMENTS:
                 response = await client.post(endpoint, headers=headers, json=request_body)
 
                 if response.status_code != 200:
-                    api_logger.error(f"[INSIGHT_GEN] Anthropic error: {response.status_code} - {response.text}")
-                    return None
+                    error_detail = response.text[:500]
+                    api_logger.error(f"[INSIGHT_GEN] Anthropic error: {response.status_code} - {error_detail}")
+                    raise RuntimeError(f"Anthropic API {response.status_code}: {error_detail}")
 
                 data = response.json()
                 response_text = _extract_anthropic_text(data)
@@ -2949,20 +3229,21 @@ REQUIREMENTS:
                 }
                 request_body = {
                     "model": model,
-                    "max_completion_tokens": 8192,
-                    "messages": [{"role": "user", "content": prompt_text}],
-                    "response_format": {"type": "json_object"}
+                    "max_output_tokens": 8192,
+                    "input": [{"type": "message", "role": "user", "content": prompt_text}],
+                    "text": {"format": {"type": "json_object"}}
                 }
                 response = await client.post(endpoint, headers=headers, json=request_body)
 
                 if response.status_code != 200:
-                    api_logger.error(f"[INSIGHT_GEN] OpenAI error: {response.status_code} - {response.text}")
-                    return None
+                    error_detail = response.text[:500]
+                    api_logger.error(f"[INSIGHT_GEN] OpenAI error: {response.status_code} - {error_detail}")
+                    raise RuntimeError(f"OpenAI API {response.status_code}: {error_detail}")
 
                 data = response.json()
-                response_text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                response_text = _extract_openai_response_text(data)
                 usage = data.get("usage", {})
-                api_logger.info(f"[INSIGHT_GEN] Tokens - Input: {usage.get('prompt_tokens')}, Output: {usage.get('completion_tokens')}")
+                api_logger.info(f"[INSIGHT_GEN] Tokens - Input: {usage.get('input_tokens')}, Output: {usage.get('output_tokens')}")
 
             # Parse JSON response (strip markdown fences if present)
             response_text = _strip_markdown_json(response_text)
@@ -2972,10 +3253,10 @@ REQUIREMENTS:
             result = json.loads(response_text)
             insights = result.get("insights", {})
 
-            api_logger.info(f"[INSIGHT_GEN] Generated {len(insights)} insights for document '{document.get('name')}'")
+            api_logger.info(f"[INSIGHT_GEN] Generated {len(insights)} items for document '{document.get('name')}' using {model}")
 
             if len(insights) < len(missing_indices):
-                api_logger.warning(f"[INSIGHT_GEN] Only got {len(insights)} insights, expected {len(missing_indices)}")
+                api_logger.warning(f"[INSIGHT_GEN] Only got {len(insights)} items, expected {len(missing_indices)}")
 
             return {"insights": insights}
 
@@ -3043,7 +3324,7 @@ async def format_results_streaming_bridge(
     query_pattern = evidence.get('query_pattern')
     if search_guidance_data:
         search_guidance_data['query_pattern'] = query_pattern
-        articulation_logger.info(f"[ARTICULATION BRIDGE] Search guidance: {len(search_guidance_data.get('high_priority_values'))} high-priority values, pattern={query_pattern}")
+        articulation_logger.info(f"[ARTICULATION BRIDGE] Search guidance: {len(search_guidance_data.get('high_priority_values') or [])} high-priority values, pattern={query_pattern}")
 
     # Log conversation context for Call 2
     if conversation_context:
@@ -3106,9 +3387,9 @@ async def format_results_streaming_bridge(
     if search_guidance_data:
         articulation_logger.info("[ARTICULATION BRIDGE] Evidence grounding enabled:")
         articulation_logger.info(f"  - Query pattern: {query_pattern}")
-        articulation_logger.info(f"  - High-priority values: {len(search_guidance_data.get('high_priority_values'))}")
-        articulation_logger.info(f"  - Evidence search queries: {len(search_guidance_data.get('evidence_search_queries'))}")
-        articulation_logger.info(f"  - Consciousness→reality mappings: {len(search_guidance_data.get('consciousness_to_reality_mappings'))}")
+        articulation_logger.info(f"  - High-priority values: {len(search_guidance_data.get('high_priority_values') or [])}")
+        articulation_logger.info(f"  - Evidence search queries: {len(search_guidance_data.get('evidence_search_queries') or [])}")
+        articulation_logger.info(f"  - Consciousness→reality mappings: {len(search_guidance_data.get('consciousness_to_reality_mappings') or [])}")
         if search_guidance_data.get('evidence_search_queries'):
             for esq in search_guidance_data['evidence_search_queries'][:3]:
                 articulation_logger.debug(f"  [SEARCH QUERY] {esq.get('target_value')}: {esq.get('search_query')}")
