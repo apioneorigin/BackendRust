@@ -453,6 +453,8 @@
 				<form class="promo-form" on:submit={handleRedeemPromoCode}>
 					<input
 						type="text"
+						id="settings-promo-code"
+						name="settings-promo-code"
 						bind:value={promoCode}
 						placeholder="ENTER CODE"
 						class="promo-input"

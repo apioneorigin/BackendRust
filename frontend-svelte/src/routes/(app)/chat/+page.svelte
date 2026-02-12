@@ -671,6 +671,8 @@
 			<!-- Hidden file input -->
 			<input
 				type="file"
+				id="chat-file-upload"
+				name="chat-file-upload"
 				bind:this={fileInputElement}
 				on:change={handleFileSelect}
 				multiple
@@ -700,6 +702,8 @@
 			<!-- Input row -->
 			<div class="input-row">
 				<textarea
+					id="chat-message-input"
+					name="chat-message-input"
 					bind:this={inputElement}
 					bind:value={messageInput}
 					on:keydown={handleKeyDown}
