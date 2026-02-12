@@ -551,6 +551,10 @@ def repair_truncated_json(text: str) -> str:
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 
+# Startup diagnostics — log whether API keys are configured (never log actual values)
+api_logger.info(f"[CONFIG] ANTHROPIC_API_KEY: {'set (' + str(len(ANTHROPIC_API_KEY)) + ' chars)' if ANTHROPIC_API_KEY else 'NOT SET'}")
+api_logger.info(f"[CONFIG] OPENAI_API_KEY: {'set (' + str(len(OPENAI_API_KEY)) + ' chars)' if OPENAI_API_KEY else 'NOT SET'}")
+
 # Model configurations with pricing (per million tokens)
 # Anthropic prompt caching: 5-min cache_write = 1.25x input, cache_read = 0.1x input
 # Opus 4.5 also has 1-hr extended cache at 2x input
@@ -4366,6 +4370,7 @@ async def health_check():
         "engine_loaded": inference_engine.is_loaded,
         "formula_count": inference_engine.formula_count,
         "openai_configured": OPENAI_API_KEY is not None,
+        "anthropic_configured": ANTHROPIC_API_KEY is not None,
         "oof_framework_loaded": len(LLM_CALL2_CONTEXT) > 0,
         "oof_framework_size": len(LLM_CALL2_CONTEXT),
         "web_research_enabled": True,
