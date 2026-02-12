@@ -1664,8 +1664,8 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		background: color-mix(in srgb, var(--color-field-void) 92%, transparent);
-		backdrop-filter: blur(4px);
+		background: color-mix(in srgb, var(--color-field-void) 60%, transparent);
+		backdrop-filter: blur(1px);
 		border-radius: 0.5rem;
 		z-index: 10;
 		transition: opacity 0.2s ease;
