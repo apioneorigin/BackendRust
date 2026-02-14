@@ -110,8 +110,7 @@ def sanitize_error_responses(app: FastAPI) -> None:
         return JSONResponse(
             status_code=exc.status_code,
             content={
-                "error": detail,
-                "status_code": exc.status_code,
+                "detail": detail,
             },
             headers=exc.headers if hasattr(exc, 'headers') else None
         )
@@ -125,8 +124,7 @@ def sanitize_error_responses(app: FastAPI) -> None:
             return JSONResponse(
                 status_code=500,
                 content={
-                    "error": "Internal Server Error",
-                    "status_code": 500,
+                    "detail": "Internal Server Error",
                 }
             )
         else:
@@ -135,7 +133,7 @@ def sanitize_error_responses(app: FastAPI) -> None:
             return JSONResponse(
                 status_code=500,
                 content={
-                    "error": str(exc),
+                    "detail": str(exc),
                     "type": type(exc).__name__,
                     "traceback": traceback.format_exc(),
                 }
