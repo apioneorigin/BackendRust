@@ -84,43 +84,31 @@ def sanitize_error_responses(app: FastAPI) -> None:
 
     @app.exception_handler(StarletteHTTPException)
     async def http_exception_handler(request: Request, exc: StarletteHTTPException):
-        """Handle HTTP exceptions without exposing internals."""
+        """Handle HTTP exceptions — pass through application-set detail messages.
 
-        # In production, hide error details
-        if IS_PRODUCTION:
-            # Map status codes to generic messages
-            generic_messages = {
-                400: "Bad Request",
-                401: "Unauthorized",
-                403: "Forbidden",
-                404: "Not Found",
-                405: "Method Not Allowed",
-                422: "Invalid Input",
-                429: "Too Many Requests",
-                500: "Internal Server Error",
-                502: "Bad Gateway",
-                503: "Service Unavailable",
-            }
-
-            detail = generic_messages.get(exc.status_code, "An error occurred")
-        else:
-            # In development, show actual error
-            detail = exc.detail
-
+        HTTPException.detail is always set explicitly by our handlers
+        (e.g. "Insufficient credits", "Session expired"). These are
+        user-facing messages, not stack traces, so they're safe to return
+        in production. Hiding them breaks UX and makes debugging impossible.
+        """
         return JSONResponse(
             status_code=exc.status_code,
             content={
-                "detail": detail,
+                "detail": exc.detail,
             },
             headers=exc.headers if hasattr(exc, 'headers') else None
         )
 
     @app.exception_handler(Exception)
     async def general_exception_handler(request: Request, exc: Exception):
-        """Handle all other exceptions without exposing internals."""
+        """Handle uncaught exceptions — log for diagnosis, hide internals from client."""
+        import logging
+        import traceback
+        logging.getLogger("api").error(
+            f"[UNHANDLED] {type(exc).__name__}: {exc}\n{traceback.format_exc()}"
+        )
 
         if IS_PRODUCTION:
-            # Generic error message
             return JSONResponse(
                 status_code=500,
                 content={
@@ -128,8 +116,6 @@ def sanitize_error_responses(app: FastAPI) -> None:
                 }
             )
         else:
-            # In development, show actual error for debugging
-            import traceback
             return JSONResponse(
                 status_code=500,
                 content={

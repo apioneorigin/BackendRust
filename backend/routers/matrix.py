@@ -284,7 +284,11 @@ async def design_reality(
     documents, doc_index, doc_stub = await _find_document(conversation, doc_id)
 
     context_messages = await _load_context_messages(conversation_id, db)
-    model_config = get_model_config(request.model)
+
+    try:
+        model_config = get_model_config(request.model)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
     try:
         result = await generate_matrix_data_llm(
@@ -374,7 +378,11 @@ async def generate_insights(
 
     if missing_indices:
         context_messages = await _load_context_messages(conversation_id, db)
-        model_config = get_model_config(request.model)
+
+        try:
+            model_config = get_model_config(request.model)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
 
         try:
             result = await generate_insights_batch_llm(
