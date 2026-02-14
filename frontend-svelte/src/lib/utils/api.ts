@@ -1,10 +1,14 @@
 /**
  * API Client for BackendRust
  *
+ * Auth is handled entirely server-side by hooks.server.ts:
+ *   - Reads HttpOnly auth cookie
+ *   - Adds Authorization header to backend proxy
+ *   - No client-side token storage needed (eliminates token leak surface)
+ *
  * Features:
- * - Automatic token handling
  * - Retry with exponential backoff
- * - Streaming support (SSE with async generator)
+ * - Streaming support (SSE)
  * - Request timeout
  * - Error handling
  */
@@ -13,7 +17,7 @@ import { browser } from '$app/environment';
 import { goto } from '$app/navigation';
 
 // All API calls go through SvelteKit (same origin)
-// SSE endpoints use SvelteKit server routes for native streaming
+// hooks.server.ts proxies /api/* to backend with auth from HttpOnly cookie
 const API_BASE_URL = '';
 
 interface RequestOptions {
@@ -34,18 +38,6 @@ class ApiError extends Error {
 	}
 }
 
-// Token stored in memory for client-side API calls
-// Token is passed from server via page data (from HttpOnly cookie)
-let authToken: string | null = null;
-
-function setToken(token: string | null): void {
-	authToken = token;
-}
-
-function getToken(): string | null {
-	return authToken;
-}
-
 async function request<T>(
 	method: string,
 	endpoint: string,
@@ -59,17 +51,10 @@ async function request<T>(
 		throw new DOMException('The operation was aborted.', 'AbortError');
 	}
 
-	const token = getToken();
-	const authHeaders: Record<string, string> = {};
-	if (token) {
-		authHeaders['Authorization'] = `Bearer ${token}`;
-	}
-
 	const config: RequestInit = {
 		method,
 		headers: {
 			'Content-Type': 'application/json',
-			...authHeaders,
 			...headers,
 		},
 	};
@@ -98,7 +83,6 @@ async function request<T>(
 			if (!response.ok) {
 				// Handle 401 - redirect to login
 				if (response.status === 401 && browser) {
-					authToken = null;
 					goto('/login');
 				}
 				const errorData = await response.json().catch(() => ({}));
@@ -157,59 +141,12 @@ export const api = {
 	},
 
 	/**
-	 * Set auth token for API calls
-	 */
-	setToken,
-
-	/**
-	 * Get current auth token
-	 */
-	getToken,
-
-	/**
-	 * Clear auth token
-	 */
-	clearToken(): void {
-		authToken = null;
-	},
-
-	/**
-	 * Raw fetch for streaming responses (SSE)
-	 */
-	async stream(endpoint: string, data?: any, options?: RequestOptions): Promise<Response> {
-		const token = getToken();
-		const headers: Record<string, string> = {
-			'Content-Type': 'application/json',
-			...options?.headers,
-		};
-		if (token) {
-			headers['Authorization'] = `Bearer ${token}`;
-		}
-
-		return fetch(`${API_BASE_URL}${endpoint}`, {
-			method: 'POST',
-			headers,
-			body: data ? JSON.stringify(data) : undefined,
-		});
-	},
-
-	/**
-	 * SSE stream - uses SvelteKit server endpoints for native streaming
-	 * All requests go through same-origin SvelteKit routes (no CORS, no buffering issues)
+	 * SSE stream — same-origin SvelteKit routes, hooks.server.ts adds auth
 	 */
 	async sseStream(endpoint: string, data?: any, signal?: AbortSignal): Promise<Response> {
-		const token = getToken();
-		const headers: Record<string, string> = {
-			'Content-Type': 'application/json',
-		};
-		if (token) {
-			headers['Authorization'] = `Bearer ${token}`;
-		}
-
-		// Use SvelteKit server endpoint (same origin, native streaming)
 		return fetch(`${API_BASE_URL}${endpoint}`, {
 			method: 'POST',
-			headers,
+			headers: { 'Content-Type': 'application/json' },
 			body: data ? JSON.stringify(data) : undefined,
 			signal,
 		});

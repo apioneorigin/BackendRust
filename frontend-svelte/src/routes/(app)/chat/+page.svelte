@@ -13,7 +13,7 @@
 	 * └────────────────────────────┴───────────────┘
 	 */
 
-	export let params: Record<string, string> = {};
+
 
 	import { onMount, onDestroy, tick } from 'svelte';
 	import {
@@ -533,7 +533,7 @@
 						<div class="message-content">
 							<div class="message-bubble" class:bubble-user={message.role === 'user'} class:bubble-assistant={message.role === 'assistant'}>
 								<div class="message-text">
-									{@html message.content.replace(/\n/g, '<br>')}
+									{message.content}
 								</div>
 								<div class="message-actions">
 									<button
@@ -604,7 +604,7 @@
 							<div class="message-bubble bubble-assistant">
 								{#if $streamingContent}
 									<div class="message-text">
-										{@html $streamingContent.replace(/\n/g, '<br>')}
+										{$streamingContent}
 									</div>
 								{:else}
 									<TypingIndicator />
@@ -1258,6 +1258,7 @@
 		font-size: var(--font-size-md);
 		line-height: 1.6;
 		word-break: break-word;
+		white-space: pre-wrap;
 	}
 
 	.bubble-assistant .message-text {
