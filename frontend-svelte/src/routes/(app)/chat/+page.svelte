@@ -317,6 +317,15 @@
 
 		try {
 			await chat.sendMessage(content, selectedModel, processedAttachments, webSearchEnabled);
+
+			// Auto-refresh: trigger Design Your Reality for the active document after chat response
+			if ($autoRefreshStore && $activeDocumentId) {
+				try {
+					await matrix.populateDocument($activeDocumentId, selectedModel);
+				} catch (error: any) {
+					addToast('error', error.message || 'Auto-refresh matrix failed');
+				}
+			}
 		} catch (error: any) {
 			addToast('error', error.message || 'Failed to send message');
 		}
