@@ -26,7 +26,8 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 _jwt_env = os.getenv("JWT_SECRET", "")
 JWT_SECRET = _jwt_env if _jwt_env else "dev-only-secret-not-for-production"
 JWT_ALGORITHM = "HS256"
-JWT_EXPIRATION_HOURS = 24 * 7  # 7 days
+JWT_EXPIRATION_HOURS = 24 * 7  # 7 days (idle timeout — sliding window)
+SESSION_MAX_LIFETIME_DAYS = 30  # absolute timeout — forces re-login regardless of activity
 
 # In production, JWT_SECRET must be set — empty key breaks token validation
 IS_PRODUCTION = os.getenv("ENVIRONMENT") == "production"
@@ -114,10 +115,20 @@ def create_token(user_id: str, email: str) -> str:
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
 
-def decode_token(token: str) -> dict:
-    """Decode and validate a JWT token."""
+def decode_token(token: str, verify_exp: bool = True) -> dict:
+    """Decode and validate a JWT token.
+
+    Args:
+        token: The JWT token string.
+        verify_exp: If False, skip expiration check (still verifies signature).
+                    Used for sliding-window session renewal where the DB
+                    session controls actual expiry.
+    """
     try:
-        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        options = {}
+        if not verify_exp:
+            options["verify_exp"] = False
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM], options=options)
         return payload
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token has expired")
@@ -129,7 +140,15 @@ async def get_current_user(
     request: Request,
     db: AsyncSession = Depends(get_db)
 ) -> User:
-    """Dependency to get the current authenticated user."""
+    """Dependency to get the current authenticated user.
+
+    Implements sliding-window session management:
+    - Accepts expired JWT tokens if the DB session is still valid (signature
+      verification still required). This lets the DB session control actual
+      expiry rather than the immutable JWT exp claim.
+    - Extends the DB session expires_at on every successful auth check, so
+      active users are never unexpectedly logged out.
+    """
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
         api_logger.debug(f"[AUTH] Missing/invalid auth header: {auth_header[:50] if auth_header else 'None'}")
@@ -137,12 +156,25 @@ async def get_current_user(
 
     token = auth_header.split(" ")[1]
 
+    # Decode JWT — accept expired tokens if signature is valid.
+    # The DB session's expires_at (extended on each request) is the real
+    # expiry control; the JWT exp claim is just an initial hint.
     try:
         payload = decode_token(token)
         api_logger.debug(f"[AUTH] Token decoded, user_id: {payload.get('sub', 'N/A')[:20]}")
     except HTTPException as e:
-        api_logger.debug(f"[AUTH] Token decode failed: {e.detail}")
-        raise
+        if e.detail == "Token has expired":
+            # JWT expired but signature may still be valid — verify signature
+            # only and let the DB session decide if access is allowed.
+            try:
+                payload = decode_token(token, verify_exp=False)
+                api_logger.debug(f"[AUTH] Expired JWT accepted (signature valid), user_id: {payload.get('sub', 'N/A')[:20]}")
+            except HTTPException:
+                api_logger.debug("[AUTH] Expired JWT also has invalid signature")
+                raise
+        else:
+            api_logger.debug(f"[AUTH] Token decode failed: {e.detail}")
+            raise
 
     # Single query: validate session and get user via join
     try:
@@ -179,8 +211,18 @@ async def get_current_user(
         api_logger.debug(f"[AUTH] Session found but user is None")
         raise HTTPException(status_code=401, detail="User not found")
 
-    # Update last active
+    # Absolute timeout: force re-login after SESSION_MAX_LIFETIME_DAYS
+    # regardless of activity. Limits damage window if a token is stolen.
+    session_age = datetime.utcnow() - session.created_at
+    if session_age > timedelta(days=SESSION_MAX_LIFETIME_DAYS):
+        api_logger.info(f"[AUTH] Session exceeded max lifetime ({session_age.days}d), forcing re-login")
+        await db.delete(session)
+        await db.commit()
+        raise HTTPException(status_code=401, detail="Session expired — please log in again")
+
+    # Sliding window: extend idle timeout on every successful auth check.
     session.last_active_at = datetime.utcnow()
+    session.expires_at = datetime.utcnow() + timedelta(hours=JWT_EXPIRATION_HOURS)
     await db.commit()
 
     api_logger.debug(f"[AUTH] Auth successful for user: {session.user.email}")

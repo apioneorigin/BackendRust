@@ -7,6 +7,12 @@
  *    streaming support. This is the single source of truth for API
  *    routing in every environment (dev, docker, DO App Platform).
  * 2. Auth middleware — validates tokens and guards protected routes.
+ *
+ * Session lifecycle:
+ *   The backend uses sliding-window sessions — every authenticated
+ *   request extends the DB session by JWT_EXPIRATION_HOURS. The cookie
+ *   maxAge is rolled forward on every request here so it stays in sync.
+ *   As long as the user is active, they stay logged in indefinitely.
  */
 
 import type { Handle } from '@sveltejs/kit';
@@ -14,12 +20,24 @@ import { redirect } from '@sveltejs/kit';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8000';
 const AUTH_COOKIE = 'auth_token';
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 days — matches backend JWT_EXPIRATION_HOURS
 
 // Routes that don't require authentication
 const PUBLIC_ROUTES = ['/login', '/register', '/api', '/healthz'];
 
 // Routes accessible with 0 credits (add-credits page + credits page for redeeming)
 const ZERO_CREDIT_ROUTES = ['/add-credits', '/credits', '/logout'];
+
+/** Set (or roll forward) the auth cookie maxAge. */
+function setCookie(cookies: any, token: string) {
+	cookies.set(AUTH_COOKIE, token, {
+		path: '/',
+		httpOnly: true,
+		secure: process.env.NODE_ENV === 'production',
+		sameSite: 'lax' as const,
+		maxAge: COOKIE_MAX_AGE,
+	});
+}
 
 export const handle: Handle = async ({ event, resolve }) => {
 	// ── API Proxy ────────────────────────────────────────────────────────
@@ -70,6 +88,12 @@ export const handle: Handle = async ({ event, resolve }) => {
 			);
 		}
 
+		// Rolling cookie: extend maxAge on every successful API call so the
+		// cookie lifetime slides forward in sync with the backend session.
+		if (token && backendResponse.status >= 200 && backendResponse.status < 400) {
+			setCookie(event.cookies, token);
+		}
+
 		// Stream the response back with original headers
 		const responseHeaders = new Headers();
 		const backendContentType = backendResponse.headers.get('content-type') || '';
@@ -105,8 +129,12 @@ export const handle: Handle = async ({ event, resolve }) => {
 				const user = await response.json();
 				event.locals.user = user;
 				event.locals.token = token;
+
+				// Rolling cookie: extend maxAge on every page load so the
+				// cookie lifetime slides forward with user activity.
+				setCookie(event.cookies, token);
 			} else {
-				// Invalid token - clear it
+				// Token/session truly invalid — clear and force re-login
 				event.cookies.delete(AUTH_COOKIE, { path: '/' });
 				event.locals.user = null;
 				event.locals.token = null;
