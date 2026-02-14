@@ -6,7 +6,6 @@
 	import type { LayoutData } from './$types';
 
 	export let data: LayoutData;
-	export let params: Record<string, string> = {};
 
 	// User guaranteed by hooks.server.ts guard
 	$: user = data.user;

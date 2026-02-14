@@ -15,8 +15,6 @@
 	import { Spinner } from '$lib/components/ui';
 	import { api } from '$lib/utils/api';
 
-	export let params: Record<string, string> = {};
-
 	// Types
 	interface TeamMember {
 		id: string;
