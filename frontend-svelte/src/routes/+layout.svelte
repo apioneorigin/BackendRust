@@ -1,4 +1,5 @@
 <script lang="ts">
+	import '@fontsource-variable/inter';
 	import { onMount } from 'svelte';
 	import { auth, theme } from '$lib/stores';
 	import { ToastContainer } from '$lib/components/ui';
