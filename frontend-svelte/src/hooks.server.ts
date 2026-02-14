@@ -7,6 +7,12 @@
  *    streaming support. This is the single source of truth for API
  *    routing in every environment (dev, docker, DO App Platform).
  * 2. Auth middleware — validates tokens and guards protected routes.
+ *
+ * Session lifecycle:
+ *   The backend uses sliding-window sessions — every authenticated
+ *   request extends the DB session by JWT_EXPIRATION_HOURS. The cookie
+ *   maxAge is rolled forward on every request here so it stays in sync.
+ *   As long as the user is active, they stay logged in indefinitely.
  */
 
 import type { Handle } from '@sveltejs/kit';
@@ -14,7 +20,7 @@ import { redirect } from '@sveltejs/kit';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8000';
 const AUTH_COOKIE = 'auth_token';
-const COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 days — matches backend JWT_EXPIRATION_HOURS
 
 // Routes that don't require authentication
 const PUBLIC_ROUTES = ['/login', '/register', '/api', '/healthz'];
@@ -22,7 +28,7 @@ const PUBLIC_ROUTES = ['/login', '/register', '/api', '/healthz'];
 // Routes accessible with 0 credits (add-credits page + credits page for redeeming)
 const ZERO_CREDIT_ROUTES = ['/add-credits', '/credits', '/logout'];
 
-/** Set (or refresh) the auth cookie with a rolling maxAge. */
+/** Set (or roll forward) the auth cookie maxAge. */
 function setCookie(cookies: any, token: string) {
 	cookies.set(AUTH_COOKIE, token, {
 		path: '/',
@@ -31,29 +37,6 @@ function setCookie(cookies: any, token: string) {
 		sameSite: 'lax' as const,
 		maxAge: COOKIE_MAX_AGE,
 	});
-}
-
-/**
- * Try to refresh an expired token via the backend /auth/refresh endpoint.
- * Returns the new token on success, or null if refresh failed.
- */
-async function tryRefreshToken(oldToken: string): Promise<string | null> {
-	try {
-		const response = await fetch(`${BACKEND_URL}/auth/refresh`, {
-			method: 'POST',
-			headers: {
-				'Authorization': `Bearer ${oldToken}`,
-				'Content-Type': 'application/json',
-			},
-		});
-		if (response.ok) {
-			const data = await response.json();
-			return data.token || null;
-		}
-	} catch {
-		// Refresh failed — caller will handle
-	}
-	return null;
 }
 
 export const handle: Handle = async ({ event, resolve }) => {
@@ -105,34 +88,8 @@ export const handle: Handle = async ({ event, resolve }) => {
 			);
 		}
 
-		// On 401, try to refresh the token and retry the request once.
-		// The backend accepts expired JWTs if the DB session is still valid,
-		// so this handles the case where the JWT expired but the session
-		// was extended by the sliding window.
-		if (backendResponse.status === 401 && token) {
-			const newToken = await tryRefreshToken(token);
-			if (newToken) {
-				// Update cookie with fresh token
-				setCookie(event.cookies, newToken);
-
-				// Retry the original request with the new token
-				const retryHeaders = { ...headers, 'Authorization': `Bearer ${newToken}` };
-				try {
-					backendResponse = await fetch(`${BACKEND_URL}${backendPath}`, {
-						...init,
-						headers: retryHeaders,
-					});
-				} catch {
-					return new Response(
-						JSON.stringify({ detail: 'Backend unavailable' }),
-						{ status: 502, headers: { 'Content-Type': 'application/json' } }
-					);
-				}
-			}
-		}
-
-		// Rolling cookie: extend maxAge on every successful API call so
-		// active users never have their cookie expire from under them.
+		// Rolling cookie: extend maxAge on every successful API call so the
+		// cookie lifetime slides forward in sync with the backend session.
 		if (token && backendResponse.status >= 200 && backendResponse.status < 400) {
 			setCookie(event.cookies, token);
 		}
@@ -156,7 +113,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 	}
 
 	// ── Auth Middleware ───────────────────────────────────────────────────
-	let token = event.cookies.get(AUTH_COOKIE);
+	const token = event.cookies.get(AUTH_COOKIE);
 
 	// Try to get user if token exists
 	if (token) {
@@ -177,34 +134,10 @@ export const handle: Handle = async ({ event, resolve }) => {
 				// cookie lifetime slides forward with user activity.
 				setCookie(event.cookies, token);
 			} else {
-				// Token might be expired — try to refresh before giving up
-				const newToken = await tryRefreshToken(token);
-				if (newToken) {
-					// Retry /auth/me with the new token
-					const retryResponse = await fetch(`${BACKEND_URL}/auth/me`, {
-						headers: {
-							'Authorization': `Bearer ${newToken}`,
-							'Content-Type': 'application/json'
-						}
-					});
-					if (retryResponse.ok) {
-						const user = await retryResponse.json();
-						event.locals.user = user;
-						event.locals.token = newToken;
-						setCookie(event.cookies, newToken);
-						token = newToken;
-					} else {
-						// Refresh succeeded but /auth/me still failed — clear cookie
-						event.cookies.delete(AUTH_COOKIE, { path: '/' });
-						event.locals.user = null;
-						event.locals.token = null;
-					}
-				} else {
-					// Refresh failed — clear cookie and force re-login
-					event.cookies.delete(AUTH_COOKIE, { path: '/' });
-					event.locals.user = null;
-					event.locals.token = null;
-				}
+				// Token/session truly invalid — clear and force re-login
+				event.cookies.delete(AUTH_COOKIE, { path: '/' });
+				event.locals.user = null;
+				event.locals.token = null;
 			}
 		} catch {
 			// Backend unreachable

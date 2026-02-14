@@ -158,7 +158,6 @@ async def get_current_user(
     # Decode JWT — accept expired tokens if signature is valid.
     # The DB session's expires_at (extended on each request) is the real
     # expiry control; the JWT exp claim is just an initial hint.
-    token_expired = False
     try:
         payload = decode_token(token)
         api_logger.debug(f"[AUTH] Token decoded, user_id: {payload.get('sub', 'N/A')[:20]}")
@@ -168,7 +167,6 @@ async def get_current_user(
             # only and let the DB session decide if access is allowed.
             try:
                 payload = decode_token(token, verify_exp=False)
-                token_expired = True
                 api_logger.debug(f"[AUTH] Expired JWT accepted (signature valid), user_id: {payload.get('sub', 'N/A')[:20]}")
             except HTTPException:
                 api_logger.debug("[AUTH] Expired JWT also has invalid signature")
@@ -219,10 +217,7 @@ async def get_current_user(
     session.expires_at = datetime.utcnow() + timedelta(hours=JWT_EXPIRATION_HOURS)
     await db.commit()
 
-    # Flag the request if the JWT is expired so the frontend can refresh it
-    request.state.token_needs_refresh = token_expired
-
-    api_logger.debug(f"[AUTH] Auth successful for user: {session.user.email} (token_expired={token_expired})")
+    api_logger.debug(f"[AUTH] Auth successful for user: {session.user.email}")
     return session.user
 
 
@@ -384,73 +379,6 @@ async def get_me(
         credits_enabled=current_user.credits_enabled,
         credit_quota=current_user.credit_quota,
         isGlobalAdmin=is_super_admin(current_user),
-    )
-
-
-@router.post("/refresh", response_model=TokenResponse)
-async def refresh_token(
-    request: Request,
-    db: AsyncSession = Depends(get_db)
-):
-    """Refresh an expired or soon-to-expire token.
-
-    Accepts a token whose JWT may be expired (but signature must be valid).
-    If the DB session is still active, issues a new JWT and updates the session.
-    This allows the frontend to transparently renew tokens without re-login.
-    """
-    auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Missing or invalid authorization header")
-
-    old_token = auth_header.split(" ")[1]
-
-    # Decode without expiry check — we only need a valid signature
-    try:
-        payload = decode_token(old_token, verify_exp=False)
-    except HTTPException:
-        raise
-
-    # Find existing session (must not have been expired for more than
-    # JWT_EXPIRATION_HOURS — prevents indefinite refresh of ancient tokens)
-    result = await db.execute(
-        select(UserSession)
-        .options(joinedload(UserSession.user))
-        .where(
-            UserSession.token == old_token,
-            UserSession.user_id == payload["sub"]
-        )
-    )
-    session = result.scalar_one_or_none()
-
-    if not session or not session.user:
-        raise HTTPException(status_code=401, detail="Session not found")
-
-    # Don't allow refresh for sessions that have been expired too long
-    max_grace = timedelta(hours=JWT_EXPIRATION_HOURS)
-    if session.expires_at < datetime.utcnow() - max_grace:
-        raise HTTPException(status_code=401, detail="Session too old to refresh — please log in again")
-
-    # Issue new JWT and update session
-    new_token = create_token(session.user.id, session.user.email)
-    session.token = new_token
-    session.expires_at = datetime.utcnow() + timedelta(hours=JWT_EXPIRATION_HOURS)
-    session.last_active_at = datetime.utcnow()
-    await db.commit()
-
-    api_logger.info(f"[AUTH] Token refreshed for user: {session.user.email}")
-
-    return TokenResponse(
-        token=new_token,
-        user={
-            "id": session.user.id,
-            "email": session.user.email,
-            "name": session.user.name,
-            "role": session.user.role.value,
-            "organization_id": session.user.organization_id,
-            "credits_enabled": session.user.credits_enabled,
-            "credit_quota": session.user.credit_quota,
-            "isGlobalAdmin": is_super_admin(session.user),
-        }
     )
 
 
