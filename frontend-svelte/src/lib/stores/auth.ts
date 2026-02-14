@@ -1,9 +1,15 @@
 /**
- * Authentication store - replaces AuthContext from React
+ * Authentication store
+ *
+ * Auth flow is fully SvelteKit-native:
+ * - Login/register: SvelteKit form actions (+page.server.ts) set HttpOnly cookie
+ * - Logout: POST /logout (+server.ts) clears cookie and calls backend
+ * - Hydration: +layout.server.ts passes user/token from hooks.server.ts locals
+ *
+ * This store holds the client-side reactive state — it never calls the API directly.
  */
 
-import { writable, derived, get } from 'svelte/store';
-import { api } from '$utils/api';
+import { writable, derived } from 'svelte/store';
 
 export interface User {
 	id: string;
@@ -41,14 +47,14 @@ const initialState: AuthState = {
 };
 
 function createAuthStore() {
-	const { subscribe, set, update } = writable<AuthState>(initialState);
+	const { subscribe, update } = writable<AuthState>(initialState);
 
 	return {
 		subscribe,
 
 		/**
 		 * Hydrate auth store from server-side data (no API call needed).
-		 * Called by root +layout.svelte with data from +layout.server.ts.
+		 * Called by +layout.svelte with data from +layout.server.ts.
 		 */
 		setFromServer(userData: User | null, org?: Organization | null) {
 			update(state => ({
@@ -59,103 +65,6 @@ function createAuthStore() {
 				isLoading: false,
 				error: null,
 			}));
-		},
-
-		// Alias for initialize - used by layout
-		async loadUser() {
-			return this.initialize();
-		},
-
-		async initialize() {
-			update(state => ({ ...state, isLoading: true, error: null }));
-			try {
-				const user = await api.get<User>('/api/auth/me');
-				const org = await api.get<Organization>('/api/organization');
-				update(state => ({
-					...state,
-					user,
-					organization: org,
-					isAuthenticated: true,
-					isLoading: false,
-				}));
-				return user;
-			} catch (error) {
-				update(state => ({
-					...state,
-					user: null,
-					organization: null,
-					isAuthenticated: false,
-					isLoading: false,
-				}));
-				return null;
-			}
-		},
-
-		async login(email: string, password: string) {
-			update(state => ({ ...state, isLoading: true, error: null }));
-			try {
-				const response = await api.post<{ token: string; user: User }>('/api/auth/login', {
-					email,
-					password,
-				});
-				api.setToken(response.token);
-				const org = await api.get<Organization>('/api/organization');
-				update(state => ({
-					...state,
-					user: response.user,
-					organization: org,
-					isAuthenticated: true,
-					isLoading: false,
-				}));
-				return true;
-			} catch (error: any) {
-				update(state => ({
-					...state,
-					error: error.message || 'Login failed',
-					isLoading: false,
-				}));
-				return false;
-			}
-		},
-
-		async register(email: string, password: string, name?: string, organizationName?: string) {
-			update(state => ({ ...state, isLoading: true, error: null }));
-			try {
-				const response = await api.post<{ token: string; user: User }>('/api/auth/register', {
-					email,
-					password,
-					name,
-					organization_name: organizationName,
-				});
-				api.setToken(response.token);
-				const org = await api.get<Organization>('/api/organization');
-				update(state => ({
-					...state,
-					user: response.user,
-					organization: org,
-					isAuthenticated: true,
-					isLoading: false,
-				}));
-				return true;
-			} catch (error: any) {
-				update(state => ({
-					...state,
-					error: error.message || 'Registration failed',
-					isLoading: false,
-				}));
-				return false;
-			}
-		},
-
-		async logout() {
-			try {
-				await api.post('/api/auth/logout', {});
-			} catch (error) {
-				// Ignore logout errors
-			}
-			api.clearToken();
-			set(initialState);
-			update(state => ({ ...state, isLoading: false }));
 		},
 
 		clearError() {

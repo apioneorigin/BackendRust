@@ -7,7 +7,7 @@
 	 */
 
 	import { goto } from '$app/navigation';
-	import { user, credits, addToast, auth } from '$lib/stores';
+	import { user, credits, addToast } from '$lib/stores';
 	import { Spinner } from '$lib/components/ui';
 
 	let promoCode = '';
@@ -170,7 +170,7 @@
 			<!-- Logout -->
 			<button
 				class="logout-btn"
-				on:click={async () => { await auth.logout(); goto('/login'); }}
+				on:click={async () => { await fetch('/logout', { method: 'POST' }); goto('/login'); }}
 			>
 				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 					<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
