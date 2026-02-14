@@ -60,7 +60,15 @@ export const handle: Handle = async ({ event, resolve }) => {
 			init.duplex = 'half';
 		}
 
-		const backendResponse = await fetch(`${BACKEND_URL}${backendPath}`, init);
+		let backendResponse: Response;
+		try {
+			backendResponse = await fetch(`${BACKEND_URL}${backendPath}`, init);
+		} catch {
+			return new Response(
+				JSON.stringify({ detail: 'Backend unavailable' }),
+				{ status: 502, headers: { 'Content-Type': 'application/json' } }
+			);
+		}
 
 		// Stream the response back with original headers
 		const responseHeaders = new Headers();
