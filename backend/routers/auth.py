@@ -26,7 +26,8 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 _jwt_env = os.getenv("JWT_SECRET", "")
 JWT_SECRET = _jwt_env if _jwt_env else "dev-only-secret-not-for-production"
 JWT_ALGORITHM = "HS256"
-JWT_EXPIRATION_HOURS = 24 * 7  # 7 days
+JWT_EXPIRATION_HOURS = 24 * 7  # 7 days (idle timeout — sliding window)
+SESSION_MAX_LIFETIME_DAYS = 30  # absolute timeout — forces re-login regardless of activity
 
 # In production, JWT_SECRET must be set — empty key breaks token validation
 IS_PRODUCTION = os.getenv("ENVIRONMENT") == "production"
@@ -210,9 +211,16 @@ async def get_current_user(
         api_logger.debug(f"[AUTH] Session found but user is None")
         raise HTTPException(status_code=401, detail="User not found")
 
-    # Sliding window: extend session expiry on every successful auth check.
-    # This keeps active users logged in indefinitely (session only expires
-    # after JWT_EXPIRATION_HOURS of inactivity).
+    # Absolute timeout: force re-login after SESSION_MAX_LIFETIME_DAYS
+    # regardless of activity. Limits damage window if a token is stolen.
+    session_age = datetime.utcnow() - session.created_at
+    if session_age > timedelta(days=SESSION_MAX_LIFETIME_DAYS):
+        api_logger.info(f"[AUTH] Session exceeded max lifetime ({session_age.days}d), forcing re-login")
+        await db.delete(session)
+        await db.commit()
+        raise HTTPException(status_code=401, detail="Session expired — please log in again")
+
+    # Sliding window: extend idle timeout on every successful auth check.
     session.last_active_at = datetime.utcnow()
     session.expires_at = datetime.utcnow() + timedelta(hours=JWT_EXPIRATION_HOURS)
     await db.commit()
