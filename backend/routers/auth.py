@@ -114,10 +114,20 @@ def create_token(user_id: str, email: str) -> str:
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
 
-def decode_token(token: str) -> dict:
-    """Decode and validate a JWT token."""
+def decode_token(token: str, verify_exp: bool = True) -> dict:
+    """Decode and validate a JWT token.
+
+    Args:
+        token: The JWT token string.
+        verify_exp: If False, skip expiration check (still verifies signature).
+                    Used for sliding-window session renewal where the DB
+                    session controls actual expiry.
+    """
     try:
-        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        options = {}
+        if not verify_exp:
+            options["verify_exp"] = False
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM], options=options)
         return payload
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token has expired")
@@ -129,7 +139,15 @@ async def get_current_user(
     request: Request,
     db: AsyncSession = Depends(get_db)
 ) -> User:
-    """Dependency to get the current authenticated user."""
+    """Dependency to get the current authenticated user.
+
+    Implements sliding-window session management:
+    - Accepts expired JWT tokens if the DB session is still valid (signature
+      verification still required). This lets the DB session control actual
+      expiry rather than the immutable JWT exp claim.
+    - Extends the DB session expires_at on every successful auth check, so
+      active users are never unexpectedly logged out.
+    """
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
         api_logger.debug(f"[AUTH] Missing/invalid auth header: {auth_header[:50] if auth_header else 'None'}")
@@ -137,12 +155,27 @@ async def get_current_user(
 
     token = auth_header.split(" ")[1]
 
+    # Decode JWT — accept expired tokens if signature is valid.
+    # The DB session's expires_at (extended on each request) is the real
+    # expiry control; the JWT exp claim is just an initial hint.
+    token_expired = False
     try:
         payload = decode_token(token)
         api_logger.debug(f"[AUTH] Token decoded, user_id: {payload.get('sub', 'N/A')[:20]}")
     except HTTPException as e:
-        api_logger.debug(f"[AUTH] Token decode failed: {e.detail}")
-        raise
+        if e.detail == "Token has expired":
+            # JWT expired but signature may still be valid — verify signature
+            # only and let the DB session decide if access is allowed.
+            try:
+                payload = decode_token(token, verify_exp=False)
+                token_expired = True
+                api_logger.debug(f"[AUTH] Expired JWT accepted (signature valid), user_id: {payload.get('sub', 'N/A')[:20]}")
+            except HTTPException:
+                api_logger.debug("[AUTH] Expired JWT also has invalid signature")
+                raise
+        else:
+            api_logger.debug(f"[AUTH] Token decode failed: {e.detail}")
+            raise
 
     # Single query: validate session and get user via join
     try:
@@ -179,11 +212,17 @@ async def get_current_user(
         api_logger.debug(f"[AUTH] Session found but user is None")
         raise HTTPException(status_code=401, detail="User not found")
 
-    # Update last active
+    # Sliding window: extend session expiry on every successful auth check.
+    # This keeps active users logged in indefinitely (session only expires
+    # after JWT_EXPIRATION_HOURS of inactivity).
     session.last_active_at = datetime.utcnow()
+    session.expires_at = datetime.utcnow() + timedelta(hours=JWT_EXPIRATION_HOURS)
     await db.commit()
 
-    api_logger.debug(f"[AUTH] Auth successful for user: {session.user.email}")
+    # Flag the request if the JWT is expired so the frontend can refresh it
+    request.state.token_needs_refresh = token_expired
+
+    api_logger.debug(f"[AUTH] Auth successful for user: {session.user.email} (token_expired={token_expired})")
     return session.user
 
 
@@ -345,6 +384,73 @@ async def get_me(
         credits_enabled=current_user.credits_enabled,
         credit_quota=current_user.credit_quota,
         isGlobalAdmin=is_super_admin(current_user),
+    )
+
+
+@router.post("/refresh", response_model=TokenResponse)
+async def refresh_token(
+    request: Request,
+    db: AsyncSession = Depends(get_db)
+):
+    """Refresh an expired or soon-to-expire token.
+
+    Accepts a token whose JWT may be expired (but signature must be valid).
+    If the DB session is still active, issues a new JWT and updates the session.
+    This allows the frontend to transparently renew tokens without re-login.
+    """
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid authorization header")
+
+    old_token = auth_header.split(" ")[1]
+
+    # Decode without expiry check — we only need a valid signature
+    try:
+        payload = decode_token(old_token, verify_exp=False)
+    except HTTPException:
+        raise
+
+    # Find existing session (must not have been expired for more than
+    # JWT_EXPIRATION_HOURS — prevents indefinite refresh of ancient tokens)
+    result = await db.execute(
+        select(UserSession)
+        .options(joinedload(UserSession.user))
+        .where(
+            UserSession.token == old_token,
+            UserSession.user_id == payload["sub"]
+        )
+    )
+    session = result.scalar_one_or_none()
+
+    if not session or not session.user:
+        raise HTTPException(status_code=401, detail="Session not found")
+
+    # Don't allow refresh for sessions that have been expired too long
+    max_grace = timedelta(hours=JWT_EXPIRATION_HOURS)
+    if session.expires_at < datetime.utcnow() - max_grace:
+        raise HTTPException(status_code=401, detail="Session too old to refresh — please log in again")
+
+    # Issue new JWT and update session
+    new_token = create_token(session.user.id, session.user.email)
+    session.token = new_token
+    session.expires_at = datetime.utcnow() + timedelta(hours=JWT_EXPIRATION_HOURS)
+    session.last_active_at = datetime.utcnow()
+    await db.commit()
+
+    api_logger.info(f"[AUTH] Token refreshed for user: {session.user.email}")
+
+    return TokenResponse(
+        token=new_token,
+        user={
+            "id": session.user.id,
+            "email": session.user.email,
+            "name": session.user.name,
+            "role": session.user.role.value,
+            "organization_id": session.user.organization_id,
+            "credits_enabled": session.user.credits_enabled,
+            "credit_quota": session.user.credit_quota,
+            "isGlobalAdmin": is_super_admin(session.user),
+        }
     )
 
 

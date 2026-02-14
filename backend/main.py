@@ -132,10 +132,32 @@ async def _session_cleanup_task():
     while True:
         await asyncio.sleep(300)  # Run every 5 minutes
         try:
-            # Clean up API sessions
+            # Clean up API sessions (in-memory Q&A flow)
             expired = await api_session_store.cleanup_expired(max_age_seconds=3600)
             if expired > 0:
                 api_logger.info(f"[SESSION CLEANUP] Removed {expired} expired sessions, {api_session_store.session_count()} active")
+
+            # Clean up expired database UserSessions (auth tokens).
+            # Sessions are extended by sliding window on each auth check,
+            # so only truly abandoned sessions get cleaned up here.
+            try:
+                from database import AsyncSessionLocal, UserSession as UserSessionModel
+                from sqlalchemy import select as sa_select
+                from datetime import datetime as dt
+                async with AsyncSessionLocal() as cleanup_db:
+                    result = await cleanup_db.execute(
+                        sa_select(UserSessionModel).where(
+                            UserSessionModel.expires_at < dt.utcnow()
+                        )
+                    )
+                    expired_sessions = result.scalars().all()
+                    if expired_sessions:
+                        for s in expired_sessions:
+                            await cleanup_db.delete(s)
+                        await cleanup_db.commit()
+                        api_logger.info(f"[DB SESSION CLEANUP] Removed {len(expired_sessions)} expired user sessions")
+            except Exception as e:
+                api_logger.debug(f"[DB SESSION CLEANUP] Skipped: {e}")
 
             # Clean up rate limiter state
             rate_limiter = get_rate_limiter()

@@ -45,13 +45,13 @@ export const actions: Actions = {
 
 			const result = await response.json();
 
-			// Set HttpOnly cookie
+			// Set HttpOnly cookie (maxAge matches backend JWT_EXPIRATION_HOURS)
 			cookies.set(AUTH_COOKIE, result.token, {
 				path: '/',
 				httpOnly: true,
 				secure: process.env.NODE_ENV === 'production',
 				sameSite: 'lax',
-				maxAge: 60 * 60 * 24 * 7 // 7 days
+				maxAge: 60 * 60 * 24 * 7, // 7 days — extended by rolling cookie in hooks.server.ts
 			});
 
 			// Super admins bypass credit requirements
