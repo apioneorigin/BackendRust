@@ -16,6 +16,8 @@
 
 
 	import { onMount, onDestroy, tick } from 'svelte';
+	import { page } from '$app/stores';
+	import { browser } from '$app/environment';
 	import {
 		chat,
 		messages,
@@ -65,6 +67,16 @@
 
 	// Welcome state - shows strategic overview until user starts chatting
 	$: isWelcomeState = $messages.length === 0 && !$isStreaming;
+
+	// Sync current conversation ID to URL for refresh persistence
+	// Uses history.replaceState to avoid triggering SvelteKit navigation/beforeNavigate
+	$: if (browser && $currentConversation?.id) {
+		const params = new URLSearchParams(window.location.search);
+		if (params.get('c') !== $currentConversation.id) {
+			params.set('c', $currentConversation.id);
+			history.replaceState(history.state, '', `/chat?${params.toString()}`);
+		}
+	}
 
 	// Stub state - conversation has documents but active doc has no cells yet
 	$: isStubState = !isWelcomeState && !$isMatrixGenerated && $matrixDocuments.length > 0;
@@ -148,8 +160,11 @@
 	}
 
 	onMount(async () => {
-		// Note: loadConversations is already called in the app layout, no need to call again here
-		// This prevents duplicate API calls and reactive update loops
+		// Restore conversation from URL parameter (handles page refresh)
+		const conversationId = $page.url.searchParams.get('c');
+		if (conversationId) {
+			chat.selectConversation(conversationId);
+		}
 
 		// Rotate placeholder every 3 seconds
 		placeholderInterval = setInterval(() => {
