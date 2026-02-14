@@ -3,9 +3,15 @@
 Deploys SvelteKit frontend, FastAPI backend, PostgreSQL, and Valkey as a single DO app.
 
 ```
-https://your-app.ondigitalocean.app/        -> Frontend (SvelteKit)
-https://your-app.ondigitalocean.app/api/*   -> Backend  (FastAPI)
+https://your-app.ondigitalocean.app/*   -> Frontend (SvelteKit)
+                                           hooks.server.ts proxies /api/* to backend internally
 ```
+
+**CRITICAL: ALL traffic must route through SvelteKit.** Do NOT add a separate
+`/api` ingress rule for the backend. The backend must be internal-only (no
+public ingress). SvelteKit's `hooks.server.ts` handles API routing, auth
+(HttpOnly cookie → Bearer header), and SSE streaming. Routing `/api/*`
+directly to the backend bypasses auth and causes 401 errors.
 
 ## 1. Create Databases
 
@@ -74,8 +80,8 @@ INFO: Uvicorn running on http://0.0.0.0:8000
 # Frontend
 curl -I https://your-app.ondigitalocean.app/
 
-# Backend health
-curl https://your-app.ondigitalocean.app/api/health/
+# Backend health (routed through SvelteKit proxy)
+curl https://your-app.ondigitalocean.app/api/healthz/
 ```
 
 ## Architecture
@@ -84,18 +90,27 @@ curl https://your-app.ondigitalocean.app/api/health/
                     DO App Platform
    ┌─────────────────────────────────────────┐
    │              Ingress Router              │
-   │   /  -> frontend    /api -> backend     │
-   ├──────────────┬──────────────────────────┤
-   │  Frontend    │    Backend               │
-   │  SvelteKit   │    FastAPI               │
-   │  :3000       │    :8000                 │
-   │  0.5GB       │    1GB                   │
-   └──────────────┴───────┬──────────────────┘
-                          │
-                  ┌───────┴───────┐
-                  │  PostgreSQL   │  (auto-injected DATABASE_URL)
-                  │  Valkey       │  (auto-injected REDIS_URL)
-                  └───────────────┘
+   │          /*  ->  frontend                │
+   │   (backend has NO public ingress)        │
+   ├──────────────────────────────────────────┤
+   │  Frontend (SvelteKit :3000)              │
+   │  ┌────────────────────────────────────┐  │
+   │  │ hooks.server.ts                    │  │
+   │  │  /api/* → proxy to backend         │  │
+   │  │  (strips /api, adds Bearer token,  │  │
+   │  │   streams SSE natively)            │  │
+   │  └──────────────┬─────────────────────┘  │
+   │                 │ internal (PRIVATE_URL)  │
+   │  ┌──────────────▼─────────────────────┐  │
+   │  │ Backend (FastAPI :8000)            │  │
+   │  │ internal-only — no public ingress  │  │
+   │  └──────────────┬─────────────────────┘  │
+   └─────────────────┼────────────────────────┘
+                     │
+             ┌───────┴───────┐
+             │  PostgreSQL   │  (auto-injected DATABASE_URL)
+             │  Valkey       │  (auto-injected REDIS_URL)
+             └───────────────┘
 ```
 
 ## 6. Post-Deploy
@@ -108,13 +123,37 @@ curl https://your-app.ondigitalocean.app/api/health/
 
 | Symptom | Fix |
 |---------|-----|
-| Frontend can't reach backend | Check `BACKEND_URL` in frontend env vars |
+| API returns 401 | Verify the ingress has ONLY one rule: `/ → frontend`. Remove any `/api → backend` route. The backend must be internal-only. |
+| Frontend can't reach backend | Check `BACKEND_URL` in frontend env vars — must be `${backend.PRIVATE_URL}` |
 | CORS errors in browser | Verify `CORS_ORIGINS` matches `${APP_URL}` |
-| API returns 404 | Ensure ingress routes `/api` to backend component |
+| API returns 404 | Check `BACKEND_URL` resolves. Verify backend is running (check runtime logs). Do NOT add a `/api` ingress route — that bypasses auth. |
 | Session store warning | Check `REDIS_URL` resolves — verify valkey database component is attached |
 | `DATABASE_URL` empty | Verify cluster name in `databases:` section matches your actual cluster |
 | Build fails (frontend) | Check `npm run build` locally in `frontend-svelte/` |
 | Build fails (backend) | Check `docker build -t test .` locally from repo root |
+
+## Verify Correct Ingress Configuration
+
+Run this in your terminal to check the app spec:
+
+```bash
+doctl apps spec get <your-app-id> | grep -A5 'ingress'
+```
+
+You should see ONLY ONE rule:
+
+```yaml
+ingress:
+  rules:
+    - component:
+        name: frontend
+      match:
+        path:
+          prefix: /
+```
+
+If you see a second rule routing `/api` to `backend`, **remove it** — that is
+the root cause of 401 errors.
 
 ## Cost Estimate
 
