@@ -37,9 +37,14 @@ alerts:
 
 ingress:
   rules:
-    # ALL traffic routes through SvelteKit frontend.
+    # ALL traffic routes through SvelteKit frontend — ONE rule only.
     # hooks.server.ts proxies /api/* to backend internally (strips prefix,
     # attaches auth from HttpOnly cookie, streams SSE natively).
+    #
+    # WARNING: Do NOT add a second rule routing /api to backend.
+    # The backend is internal-only (no public ingress). Routing /api/*
+    # directly to the backend bypasses SvelteKit's auth proxy and causes
+    # 401 Unauthorized on every API call.
     - component:
         name: frontend
       match:
