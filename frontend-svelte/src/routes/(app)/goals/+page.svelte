@@ -511,7 +511,7 @@
 				context: `Goal: ${g.identity}\n\nFirst Move: ${g.firstMove}\n\nType: ${g.type}\nConfidence: ${g.confidence}%`
 			});
 			await chat.loadConversations();
-			goto(`/chat`);
+			goto(`/chat?c=${conversation.id}`);
 			await chat.selectConversation(conversation.id);
 		} catch (error) {
 			addToast('error', 'Failed to create chat');
@@ -797,18 +797,17 @@
 								<p class="goal-first-move">{g.firstMove}</p>
 								<div class="goal-actions">
 									<button class="action-btn chat-btn" on:click={() => startChatWithGoal(g)}>
-										<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+										<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 											<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
 										</svg>
 										Chat
 									</button>
-									<button class="action-btn remove-btn" on:click={() => removeFromInventory(g.id)}>
+									<button class="action-btn remove-btn" on:click={() => removeFromInventory(g.id)} title="Delete goal">
 										<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 											<path d="M3 6h18" />
 											<path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
 											<path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
 										</svg>
-										Remove
 									</button>
 								</div>
 							</div>
@@ -1618,7 +1617,8 @@
 	.goal-actions {
 		display: flex;
 		justify-content: center;
-		gap: 0.375rem;
+		align-items: center;
+		position: relative;
 		margin-top: auto;
 		padding-top: 0.625rem;
 		border-top: 1px solid var(--color-veil-thin);
@@ -1628,15 +1628,15 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 0.25rem;
-		padding: 0.3125rem 0.625rem;
 		border-radius: 0.375rem;
-		font-size: 0.75rem;
 		font-weight: 500;
 		cursor: pointer;
 		transition: all 0.15s ease;
 	}
 
 	.chat-btn {
+		padding: 0.5rem 1.5rem;
+		font-size: 0.8125rem;
 		background: var(--color-primary-500);
 		border: none;
 		color: white;
@@ -1647,15 +1647,16 @@
 	}
 
 	.remove-btn {
+		position: absolute;
+		right: 0;
+		padding: 0.375rem;
 		background: transparent;
-		border: 1px solid var(--color-veil-soft);
-		color: var(--color-text-whisper);
+		border: none;
+		color: var(--color-text-hint);
 	}
 
 	.remove-btn:hover {
-		border-color: var(--color-error-400);
 		color: var(--color-error-500);
-		background: var(--color-error-50);
 	}
 
 	/* Loading and empty states */
