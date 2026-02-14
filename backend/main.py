@@ -2732,7 +2732,8 @@ REQUIREMENTS:
 async def generate_matrix_data_llm(
     document_stub: dict,
     context_messages: List[dict],
-    model_config: dict
+    model_config: dict,
+    existing_cells: Optional[dict] = None
 ) -> Optional[dict]:
     """
     Generate matrix data for "Design Your Reality" button click.
@@ -2773,6 +2774,59 @@ async def generate_matrix_data_llm(
     row_labels = [r.get("label", f"Row {i}") for i, r in enumerate(row_options)]
     col_labels = [c.get("label", f"Col {i}") for i, c in enumerate(col_options)]
 
+    # Detect whether existing cells have dimension metadata (names/explanations).
+    # If so, only ask the LLM for values — saves ~60% of dimension output tokens.
+    has_existing_dims = False
+    if existing_cells:
+        sample_cell = next(iter(existing_cells.values()), None)
+        if sample_cell:
+            sample_dims = sample_cell.get("dimensions", [])
+            if sample_dims and isinstance(sample_dims[0], dict) and sample_dims[0].get("name"):
+                has_existing_dims = True
+
+    if has_existing_dims:
+        dim_section = """=== CELL REQUIREMENTS ===
+Each cell needs:
+- impact_score: 0-100 (strength of row→column relationship)
+- relationship: Short description of how row drives column
+- dimensions: Array of exactly 5 values (33, 67, or 100 ONLY)
+  Order: [CLARITY, CAPACITY, READINESS, RESOURCES, INTEGRATION]
+  Dimension names/explanations already exist — generate values only."""
+
+        cell_example = f"""    "0-0": {{
+      "impact_score": 75,
+      "relationship": "How {row_labels[0] if row_labels else 'row'} affects {col_labels[0] if col_labels else 'column'}",
+      "dimensions": [67, 100, 33, 67, 100]
+    }}"""
+    else:
+        dim_section = """=== CELL REQUIREMENTS ===
+Each cell needs:
+- impact_score: 0-100 (strength of row→column relationship)
+- relationship: Short description of how row drives column
+- dimensions: Array of 5 dimensions, each with:
+  - name: Contextual name for this specific row×column intersection
+  - value: 33 (Low), 67 (Medium), or 100 (High) ONLY
+  - explanation: Max 10-word phrase describing what this dimension measures (value-neutral — never reference current state/level)
+
+5-DIMENSION FRAMEWORK (generate contextual names, NOT these literal words):
+1. CLARITY - Understanding/vision of this intersection
+2. CAPACITY - Ability/bandwidth to act
+3. READINESS - Preparedness/timing
+4. RESOURCES - Assets/tools available
+5. INTEGRATION - How well row and column harmonize"""
+
+        cell_example = f"""    "0-0": {{
+      "impact_score": 75,
+      "relationship": "How {row_labels[0] if row_labels else 'row'} affects {col_labels[0] if col_labels else 'column'}",
+      "dimensions": [
+        {{"name": "Contextual Clarity Name", "value": 67, "explanation": "Alignment of strategic resource vision"}},
+        {{"name": "Contextual Capacity Name", "value": 100, "explanation": "Operational throughput for growth execution"}},
+        {{"name": "Contextual Readiness Name", "value": 33, "explanation": "Preparedness of deployment infrastructure"}},
+        {{"name": "Contextual Resources Name", "value": 67, "explanation": "Availability of capital and tooling"}},
+        {{"name": "Contextual Integration Name", "value": 100, "explanation": "Harmony between driver and outcome"}}
+      ]
+    }}"""
+
     prompt_text = f"""Generate matrix data for a 10x10 transformation matrix.
 
 DOCUMENT: {document_stub.get("name", "Unknown")}
@@ -2790,37 +2844,13 @@ Generate:
 4. 3-5 plays (transformation strategies)
 5. 5 presets (strategic paths)
 
-=== CELL REQUIREMENTS ===
-Each cell needs:
-- impact_score: 0-100 (strength of row→column relationship)
-- relationship: Short description of how row drives column
-- dimensions: Array of 5 dimensions, each with:
-  - name: Contextual name for this specific row×column intersection
-  - value: 33 (Low), 67 (Medium), or 100 (High) ONLY
-  - explanation: Max 10-word phrase explaining this dimension's state at this intersection
-
-5-DIMENSION FRAMEWORK (generate contextual names, NOT these literal words):
-1. CLARITY - Understanding/vision of this intersection
-2. CAPACITY - Ability/bandwidth to act
-3. READINESS - Preparedness/timing
-4. RESOURCES - Assets/tools available
-5. INTEGRATION - How well row and column harmonize
+{dim_section}
 
 Return ONLY valid JSON:
 
 {{
   "cells": {{
-    "0-0": {{
-      "impact_score": 75,
-      "relationship": "How {row_labels[0] if row_labels else 'row'} affects {col_labels[0] if col_labels else 'column'}",
-      "dimensions": [
-        {{"name": "Contextual Clarity Name", "value": 67, "explanation": "Current understanding developing"}},
-        {{"name": "Contextual Capacity Name", "value": 100, "explanation": "Full capability here"}},
-        {{"name": "Contextual Readiness Name", "value": 33, "explanation": "Not yet prepared"}},
-        {{"name": "Contextual Resources Name", "value": 67, "explanation": "Some gaps remain"}},
-        {{"name": "Contextual Integration Name", "value": 100, "explanation": "Fully aligned"}}
-      ]
-    }},
+{cell_example},
     ... (all 100 cells from "0-0" to "9-9")
   }},
   "leverage_points": [
@@ -2881,9 +2911,9 @@ Return ONLY valid JSON:
 
 REQUIREMENTS:
 - Generate ALL 100 cells (0-0 through 9-9)
-- Dimension values MUST be 0, 50, or 100 only
-- Dimension names must be contextual to each specific cell
-- Each dimension MUST have an explanation (max 10 words)
+- Dimension values MUST be 33, 67, or 100 only
+- {'Dimensions are value-only arrays [v1,v2,v3,v4,v5] — names/explanations already exist' if has_existing_dims else 'Dimension names must be contextual to each specific cell'}
+- {'Do NOT include dimension names or explanations' if has_existing_dims else 'Each dimension explanation must be value-neutral (describe what it measures, not current state)'}
 - Generate 3-5 leverage_points for cells with impact_score >= 75
 - Generate 3-6 risk_analysis for bottlenecks/dependencies
 - Generate 3-5 plays covering different risk/timeline profiles
@@ -2952,6 +2982,21 @@ REQUIREMENTS:
             risk_analysis = result.get("risk_analysis", [])
             plays = result.get("plays", [])
             presets = result.get("presets", [])
+
+            # Merge: when LLM returned values-only dimensions, restore names/explanations from existing cells
+            if has_existing_dims and existing_cells:
+                for cell_key, cell_data in cells.items():
+                    dims = cell_data.get("dimensions", [])
+                    existing = existing_cells.get(cell_key, {}).get("dimensions", [])
+                    if dims and existing and isinstance(dims[0], (int, float)):
+                        # Values-only array → reconstruct full dimension objects
+                        merged = []
+                        for i, val in enumerate(dims):
+                            if i < len(existing) and isinstance(existing[i], dict):
+                                merged.append({**existing[i], "value": int(val)})
+                            else:
+                                merged.append({"name": f"Dimension {i+1}", "value": int(val), "explanation": ""})
+                        cell_data["dimensions"] = merged
 
             cell_count = len(cells)
             leverage_count = len(leverage_points)
