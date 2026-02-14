@@ -178,5 +178,13 @@ export const handle: Handle = async ({ event, resolve }) => {
 		}
 	}
 
-	return resolve(event);
+	return resolve(event, {
+		// Prevent SvelteKit from emitting <link rel="preload" as="style" crossorigin>
+		// for CSS chunks. The crossorigin attribute causes a credential-mode mismatch
+		// with the actual <link rel="stylesheet"> (which uses same-origin credentials),
+		// making the browser discard the preload and re-fetch — wasting a request.
+		// CSS still loads normally via stylesheet links; only the redundant preload hint
+		// is suppressed.
+		preload: ({ type }) => type !== 'css',
+	});
 };
