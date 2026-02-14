@@ -290,11 +290,14 @@ async def design_reality(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+    existing_cells = doc_stub.get("matrix_data", {}).get("cells")
+
     try:
         result = await generate_matrix_data_llm(
             document_stub=doc_stub,
             context_messages=context_messages,
-            model_config=model_config
+            model_config=model_config,
+            existing_cells=existing_cells
         )
     except Exception as e:
         api_logger.error(f"[DESIGN_REALITY] LLM call exception: {type(e).__name__}: {e}")

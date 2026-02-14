@@ -53,14 +53,16 @@
 		// Don't create conversation yet - just navigate to welcome page
 		// Conversation will be created when user sends first message
 		const isOnChatPage = $page.url.pathname === '/chat';
+		const hasConversationParam = $page.url.searchParams.has('c');
 
-		if (isOnChatPage && $messages.length === 0 && !$currentConversation) {
+		if (isOnChatPage && $messages.length === 0 && !$currentConversation && !hasConversationParam) {
 			// Already on welcome page with no conversation - do nothing
 			return;
 		}
 
 		chat.clearCurrentConversation();
-		if (!isOnChatPage) {
+		// Navigate to clean /chat URL (removes ?c= param if present)
+		if (!isOnChatPage || hasConversationParam) {
 			goto('/chat');
 		}
 	}
@@ -74,7 +76,7 @@
 		isSelectingConversation = true;
 		// Navigate first for instant feedback, then load data
 		if (!isOnChatPage) {
-			goto('/chat');
+			goto(`/chat?c=${conversationId}`);
 		}
 		try {
 			await chat.selectConversation(conversationId);
