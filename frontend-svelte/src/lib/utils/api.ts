@@ -53,6 +53,7 @@ async function request<T>(
 
 	const config: RequestInit = {
 		method,
+		credentials: 'same-origin',
 		headers: {
 			'Content-Type': 'application/json',
 			...headers,
@@ -146,6 +147,7 @@ export const api = {
 	async sseStream(endpoint: string, data?: any, signal?: AbortSignal): Promise<Response> {
 		return fetch(`${API_BASE_URL}${endpoint}`, {
 			method: 'POST',
+			credentials: 'same-origin',
 			headers: { 'Content-Type': 'application/json' },
 			body: data ? JSON.stringify(data) : undefined,
 			signal,
